@@ -4,11 +4,23 @@
 
 :< sm'_operators
 
-:== conduit_user = { email : string; token : string; username : string; bio : string; image : option string }
+:== conduit_user = { email : string; token : string; username : string; bio : option string; image : option string }
 
-:== conduit_profile = { username : string; bio : string; image : option string; following : bool }
+:== conduit_profile = { username : string; bio : option string; image : option string; following : bool }
 
-:== conduit_article = { slug : string; title : string; description : string; body : string; tag_list : list string; created_at : string; updated_at : string; favorited : bool; favorites_count : i32; author : conduit_profile }
+:== conduit_article =
+    {
+        slug : string
+        title : string
+        description : string
+        body : string
+        tag_list : list string
+        created_at : string
+        updated_at : string
+        favorited : bool
+        favorites_count : i32
+        author : conduit_profile
+    }
 
 :== conduit_comment = { id : i32; created_at : string; updated_at : string; body : string; author : conduit_profile }
 
@@ -18,13 +30,33 @@
 
 :== registration_body = { username : string; email : string; password : string }
 
-:== user_update = { email : option string; username : option string; password : option string; image : option string; bio : option string }
+:== user_update =
+    {
+        email : option string
+        username : option string
+        password : option string
+        image : option string
+        bio : option string
+    }
 
 :== new_article = { title : string; description : string; body : string; tag_list : list string }
 
-:== article_update = { title : option string; description : option string; body : option string }
+:== article_update =
+    {
+        title : option string
+        description : option string
+        body : option string
+        tagList : option (list string)
+    }
 
-:== article_query = { tag : option string; author : option string; favorited : option string; limit : i32; offset : i32 }
+:== article_query =
+    {
+        tag : option string
+        author : option string
+        favorited : option string
+        limit : i32
+        offset : i32
+    }
 
 :== feed_page = { limit : i32; offset : i32 }
 
@@ -43,7 +75,8 @@
 
 :== route_spec = { method : http_method; path : string; auth : route_auth }
 
-:= spec (method : http_method) (path : string) (auth : route_auth) : route_spec = { method = method; path = path; auth = auth }
+:= spec (method : http_method) (path : string) (auth : route_auth) : route_spec =
+    { method = method; path = path; auth = auth }
 
 :| user_route =
     | Login : login_body

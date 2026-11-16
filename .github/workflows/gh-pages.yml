@@ -67,7 +67,15 @@ jobs:
     steps:
       - run: echo "SPIRAL_BIN_CACHE_DIR=$RUNNER_TEMP/spiral-bin" >> "$GITHUB_ENV"
 
+      - run: echo "SPIRAL_CTL_COMPILER_DIR=$RUNNER_TEMP/spiral-ctl" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v7.0.1
+
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ${{ runner.temp }}/spiral-ctl
+          key: spiral-ctl-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: spiral-ctl-${{ runner.os }}-
 
       - uses: erlef/setup-beam@v1.24.1
         with:
@@ -95,7 +103,7 @@ jobs:
         run: git diff --no-color -- apps/compiler/tmp/samples > "$SPIRAL_BIN_CACHE_DIR/samples-output.diff"
 
       - if: always()
-        run: sudo apt-get update -q && sudo apt-get install -y -q linux-tools-common "linux-tools-$(uname -r)" && pwsh apps/compiler/scripts/ebpf-kernel-load.ps1 > "$SPIRAL_BIN_CACHE_DIR/ebpf-kernel-load.txt" 2>&1 || true
+        run: sudo apt-get update -q && sudo apt-get install -y -q linux-tools-common "linux-tools-$(uname -r)" gcc-multilib && (cd apps/compiler/scripts/ebpf_kernel_load && "$SPIRAL_BIN_CACHE_DIR/toolchains/dotnet/dotnet" "$SPIRAL_BIN_CACHE_DIR/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll" --backend Rust main.spi "$RUNNER_TEMP/ebpf_port.rs" && cd "$GITHUB_WORKSPACE" && rustc -O --edition 2021 "$RUNNER_TEMP/ebpf_port.rs" -o "$RUNNER_TEMP/ebpf_port" && SPIRAL_EBPF_SAMPLES=apps/compiler/tmp/samples "$RUNNER_TEMP/ebpf_port") > "$SPIRAL_BIN_CACHE_DIR/ebpf-kernel-load.txt" 2>&1 || true
 
       - uses: actions/upload-artifact@v7.0.2
         if: always()
@@ -148,7 +156,7 @@ jobs:
             b0a507e7ad0f626624f17112325e66691f9076d622e1d3274d103d00299f2696 "$models/stories260K.bin" \
             037cb335abb25d1fa9e8ecae30ed2a3a8ace9302862ebcdc05d51a6bbb10c312 "$models/tok512.bin" | sha256sum -c
 
-      - run: pwsh apps/cells/spi/ci_gate.ps1 -Out "${{ runner.temp }}/cells-gate" -Roots lib/spiral,apps/transformer
+      - run: pwsh apps/cells/spi/ci_gate.ps1 -Out "${{ runner.temp }}/cells-gate" -Roots lib/spiral,apps/transformer,apps/compiler/tmp/samples/mega_zeta_structural_laboratory,apps/compiler/tmp/samples/mega_spiral_proves_spiral_relative_consistency,apps/compiler/tmp/samples/mega_omniledger_erp_kernel,apps/compiler/tmp/samples/mega_brzozowski_derivatives
 
       - uses: actions/upload-artifact@v7.0.2
         if: always()

@@ -37,8 +37,8 @@ function Build-Program([string]$name, [string]$backend) {
     $sample = "mega_brzozowski_derivatives/$name"
     $source = Join-Path $PSScriptRoot "$name/main.$($ext[$backend])"
     if (-not $SkipCompile) {
-        $probe = & pwsh -NoProfile (Join-Path $tmpRoot 'scripts/probe.ps1') $sample -Mode single-flight -Backend $backend 2>&1 | Out-String
-        if (-not (Test-Path $source) -or $probe -notmatch '\s1\s+0\s') { throw "spiral compile of $sample ($backend) failed:`n$probe" }
+        $trial = & pwsh -NoProfile (Join-Path $tmpRoot 'scripts/trial.ps1') $sample -Mode single-flight -Backend $backend 2>&1 | Out-String
+        if (-not (Test-Path $source) -or $trial -notmatch '\s1\s+0\s') { throw "spiral compile of $sample ($backend) failed:`n$trial" }
     }
     $dir = Join-Path $out "$name/$backend"
     New-Item -ItemType Directory -Force $dir | Out-Null

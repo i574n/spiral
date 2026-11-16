@@ -11832,3 +11832,1522 @@
     exact_linear_active_indexed_surface_terminal ()
 
 := main () : string = self_root_contract ()
+///> c
+:# alpha_capture_is_refused fails "Got: exact_linear_indexed_all_unused (exact_linear_free_context_extend" =
+    := impossible_discarded_linear_binder () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            (exact_linear_arrow_type exact_linear_unit_type exact_linear_unit_type) =
+        ExactLinearIndexedLambda (
+            ExactLinearIndexedUnit (
+                ExactLinearIndexedAllUnusedExtend (
+                    ExactLinearIndexedAllUnusedEmpty
+                        "the-outer-context-is-empty",
+                    "the-bound-cell-is-marked-unused"),
+                "a-constant-body-would-discard-the-linear-binder"),
+            "this-lambda-must-be-rejected-because-its-body-usage-head-is-unused")
+
+///> c
+:# application_argument_choice_substitution_keeps_used_is_refused fails "Got:" =
+    := impossible_application_argument_choice_target_keeps_used () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            exact_linear_unit_type =
+        exact_linear_indexed_recursive_open_typed_substitution_application_argument ()
+
+///> c
+:# application_argument_function_branch_mismatch_is_refused fails "Got:" =
+    := impossible_application_argument_accepts_function_branch () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_target_usage
+            exact_linear_unit_type
+            exact_linear_unit_type =
+        exact_linear_indexed_recursive_open_typed_substitution_application_function ()
+
+///> c
+:# application_argument_substitution_keeps_used_is_refused fails "Got:" =
+    := impossible_application_argument_substitution_target_keeps_used () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            exact_linear_unit_type =
+        exact_linear_indexed_recursive_open_typed_substitution_application_argument ()
+
+///> c
+:# application_function_substitution_keeps_used_is_refused fails "Got:" =
+    := impossible_application_function_substitution_target_keeps_used () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) =
+        exact_linear_indexed_recursive_open_typed_substitution_application_function ()
+
+///> c
+:# beta_step_target_type_mismatch_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_beta_step_target_type_mismatch
+        (step : exact_linear_indexed_beta_step)
+        : exact_linear_indexed_term
+            exact_linear_indexed_beta_outer_context
+            exact_linear_indexed_beta_outer_usage
+            exact_linear_bool_type =
+        exact_linear_indexed_beta_step_target step
+    impossible_beta_step_target_type_mismatch
+        (exact_linear_indexed_beta_step_witness ())
+
+///> c
+:# beta_strengthening_target_without_index_transport_is_refused fails "Cannot dyn an existential into a runtime var" =
+    := impossible_beta_strengthening_target_without_index_transport
+        (step : exact_linear_indexed_beta_step)
+        : exact_linear_indexed_term exact_linear_indexed_beta_outer_context exact_linear_indexed_beta_outer_usage
+            exact_linear_unit_type
+        =
+        ?= step ?|
+        | ExactLinearIndexedBetaStep (proof, _) =>
+            exact_linear_indexed_recursive_open_typed_substitution_strengthening_target proof
+    impossible_beta_strengthening_target_without_index_transport
+        (exact_linear_indexed_beta_step_witness ())
+
+///> c
+:# choice_substitution_keeps_used_is_refused fails "Got: exact_linear_indexed_recursive_open_typed_substitution" =
+    := impossible_choice_substitution_target_keeps_used () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            exact_linear_unit_type =
+        exact_linear_indexed_recursive_open_typed_substitution_variable ()
+
+///> c
+:# close_nonempty_is_refused fails "Got: exact_linear_indexed_term exact_linear_free_context_empty usage" =
+    := impossible_close_nonempty () :
+        exact_linear_indexed_closed_term exact_linear_unit_type =
+        ?= exact_linear_indexed_fully_used_variable_term () ?|
+        | ExactLinearIndexedFullyUsedTerm payload =>
+            := \? usage. term, all_used, _ = payload
+            ExactLinearIndexedClosedTerm (\? (
+                term,
+                all_used,
+                "a-nonempty-context-cannot-enter-the-empty-context-closed-wrapper"))
+
+///> c
+:# closed_application_argument_identity_congruence_target_cross_type_is_refused fails "Got: exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty (exact_linear_arrow_type exact_linear_unit_type exact_linear_bool_type) Expected: " =
+    := impossible_closed_application_argument_identity_congruence_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_bool_type =
+        := function_term :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                (exact_linear_arrow_type exact_linear_unit_type exact_linear_unit_type) =
+            exact_linear_indexed_identity_term ()
+        := argument_term :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-argument-child-reduces-one-closed-Unit-redex")
+        := argument_relation :
+            exact_linear_indexed_closed_identity_beta_relation exact_linear_unit_type =
+            ExactLinearIndexedClosedIdentityBetaRelation (
+                argument_term,
+                "the-argument-child-reduces-by-closed-identity-beta")
+        exact_linear_indexed_reduction_target
+            (ExactLinearIndexedReductionClosedApplicationArgument (\? (
+                function_term,
+                ExactLinearIndexedReductionClosedAtomic (
+                    ExactLinearIndexedClosedAtomicReductionIdentity argument_relation),
+                "the-real-congruence-target-has-Unit-not-Bool")))
+    impossible_closed_application_argument_identity_congruence_target_cross_type ()
+
+///> c
+:# closed_application_argument_tensor_beta_target_cross_type_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_closed_application_argument_tensor_beta_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_bool_type =
+        := unit_argument :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-structural-Tensor-beta-argument-is-closed-Unit")
+        := tensor_function :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                (exact_linear_arrow_type
+                    (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)
+                    (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)) =
+            exact_linear_indexed_identity_term_for ()
+        exact_linear_indexed_reduction_target
+            (ExactLinearIndexedReductionClosedApplicationArgument (\? (
+                tensor_function,
+                ExactLinearIndexedReductionClosedAtomic (
+                    ExactLinearIndexedClosedAtomicReductionTensorBeta (
+                        unit_argument,
+                        "the-real-atomic-child-reduces-to-Tensor-Unit-Unit")),
+                "the-real-congruence-target-is-Tensor-Unit-Unit-not-Bool")))
+    impossible_closed_application_argument_tensor_beta_target_cross_type ()
+
+///> c
+:# closed_application_function_identity_congruence_target_cross_type_is_refused fails "Got: exact_linear_indexed_closed_identity_beta_relation (exact_linear_arrow_type exact_linear_unit_type exact_linear_bool_type) Expected: " =
+    := impossible_closed_application_function_identity_congruence_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_bool_type =
+        := function_relation :
+            exact_linear_indexed_closed_identity_beta_relation
+                (exact_linear_arrow_type exact_linear_unit_type exact_linear_unit_type) =
+            ExactLinearIndexedClosedIdentityBetaRelation (
+                exact_linear_indexed_identity_term (),
+                "the-function-child-reduces-by-higher-order-identity")
+        := argument_term :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-fixed-argument-is-Unit")
+        exact_linear_indexed_reduction_target
+            (ExactLinearIndexedReductionClosedApplicationFunction (\? (
+                ExactLinearIndexedReductionClosedAtomic (
+                    ExactLinearIndexedClosedAtomicReductionIdentity function_relation),
+                argument_term,
+                "the-real-congruence-target-has-Unit-not-Bool")))
+    impossible_closed_application_function_identity_congruence_target_cross_type ()
+
+///> c
+:# closed_atomic_tensor_beta_target_cross_type_is_refused fails "Got: exact_linear_indexed_closed_atomic_reduction" =
+    := impossible_closed_atomic_tensor_beta_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_bool_type =
+        := unit_argument :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-direct-atomic-Tensor-beta-argument-is-closed-Unit")
+        exact_linear_indexed_reduction_target
+            (ExactLinearIndexedReductionClosedAtomic
+                (ExactLinearIndexedClosedAtomicReductionTensorBeta (
+                    unit_argument,
+                    "the-real-direct-atomic-target-is-Tensor-Unit-Unit-not-Bool")))
+    impossible_closed_atomic_tensor_beta_target_cross_type ()
+
+///> c
+:# closed_beta_relation_result_mismatch_is_refused fails "Got: exact_linear_indexed_closed_beta_relation" =
+    := impossible_closed_beta_relation_result_mismatch () :
+        exact_linear_indexed_closed_beta_relation exact_linear_unit_type =
+        ExactLinearIndexedClosedBetaTensor (
+            ExactLinearIndexedUnit (
+                ExactLinearIndexedAllUnusedEmpty
+                    "the-negative-argument-is-a-closed-Unit-term",
+                "the-negative-tries-to-hide-a-Tensor-beta-relation-behind-a-Unit-result-index"),
+            "the-Tensor-case-produces-Tensor-Unit-Unit-not-Unit")
+
+///> c
+:# closed_bool_identity_progress_target_cross_type_is_refused fails "Got:" =
+    := impossible_closed_bool_identity_progress_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type =
+        := relation :
+            exact_linear_indexed_closed_identity_beta_relation exact_linear_bool_type =
+            ExactLinearIndexedClosedIdentityBetaRelation (
+                ExactLinearIndexedBoolTrue (
+                    exact_linear_indexed_empty_usage (),
+                    "the-negative-Bool-identity-argument-is-BoolTrue"),
+                "the-negative-attempts-to-observe-a-Bool-target-as-Unit")
+        exact_linear_indexed_closed_identity_beta_target relation
+    impossible_closed_bool_identity_progress_target_cross_type ()
+
+///> c
+:# closed_bool_multistep_tail_outcome_mismatch_is_refused fails "Got:" =
+    := impossible_closed_bool_normalization_outcome_mismatch ()
+        : exact_linear_indexed_closed_bool_normalization
+            exact_linear_closed_bool_false_normal =
+        ExactLinearIndexedClosedBoolNormalizationTrue
+            "a-False-indexed-normalization-cannot-be-backed-by-a-True-normalization"
+    impossible_closed_bool_normalization_outcome_mismatch ()
+
+///> c
+:# closed_bool_nested_right_beta_result_mismatch_is_refused fails "Got:" =
+    := impossible_closed_bool_nested_right_beta_result_mismatch () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_target_usage
+            exact_linear_unit_type
+            exact_linear_bool_type =
+        exact_linear_indexed_recursive_open_typed_substitution_tensor_right ()
+
+///> c
+:# closed_bool_normalization_outcome_mismatch_is_refused fails "Got: exact_linear_indexed_closed_bool_normalization" =
+    := impossible_closed_bool_normalization_outcome_mismatch ()
+        : exact_linear_indexed_closed_bool_normalization
+            exact_linear_closed_bool_true_normal =
+        ExactLinearIndexedClosedBoolNormalizationFalse
+            "a-normalization-ending-in-False-cannot-be-reclassified-as-ending-in-True"
+    impossible_closed_bool_normalization_outcome_mismatch ()
+
+///> c
+:# closed_bool_normalization_progress_source_type_mismatch_is_refused fails "Got:" =
+    := impossible_closed_bool_normalization_progress_source_type_mismatch ()
+        : exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type =
+        exact_linear_indexed_closed_progress_source
+            (exact_linear_indexed_closed_bool_normalization_progress
+                (ExactLinearIndexedClosedBoolNormalizationFalse
+                    "a-Bool-normalization-progress-source-cannot-be-reclassified-as-Unit"))
+    impossible_closed_bool_normalization_progress_source_type_mismatch ()
+
+///> c
+:# closed_bool_program_outcome_mismatch_is_refused fails "Got: exact_linear_indexed_closed_bool_program" =
+    := impossible_closed_bool_program_outcome_mismatch ()
+        : exact_linear_indexed_closed_bool_program
+            exact_linear_closed_bool_false_normal =
+        ExactLinearIndexedClosedBoolProgramIfTrue (
+            ExactLinearIndexedClosedBoolProgramTrue
+                "a-program-indexed-by-False-cannot-select-a-True-normalizing-then-program",
+            ExactLinearIndexedBoolFalse (
+                exact_linear_indexed_empty_usage (),
+                "the-unselected-else-branch-does-not-change-the-selected-program-outcome"),
+            "the-result-index-must-be-derived-from-the-selected-recursive-program")
+    impossible_closed_bool_program_outcome_mismatch ()
+
+///> c
+:# closed_bool_progress_continuation_outcome_mismatch_is_refused fails "Got:" =
+    := impossible_closed_bool_progress_continuation_outcome_mismatch ()
+        : exact_linear_indexed_closed_bool_normalization_progress
+            exact_linear_closed_bool_false_normal =
+        ExactLinearIndexedClosedBoolNormalizationProgressStep (
+            exact_linear_indexed_conditional_guard_bool_step (),
+            ExactLinearIndexedClosedBoolNormalizationTrue
+                "a-progress-step-normalizing-to-False-cannot-carry-a-True-continuation",
+            "the-continuation-normal-index-must-match-the-progress-result-index")
+    impossible_closed_bool_progress_continuation_outcome_mismatch ()
+
+///> c
+:# closed_bool_recursive_guard_outcome_mismatch_is_refused fails "Got: exact_linear_indexed_closed_bool_program" =
+    := impossible_closed_bool_recursive_guard_outcome_mismatch ()
+        : exact_linear_indexed_closed_bool_program
+            exact_linear_closed_bool_true_normal =
+        ExactLinearIndexedClosedBoolProgramIfProgramTrue (
+            ExactLinearIndexedClosedBoolProgramFalse
+                "a-recursive-guard-normalizing-to-False-cannot-select-the-True-guard-constructor",
+            ExactLinearIndexedClosedBoolProgramTrue
+                "the-selected-then-program-normalizes-to-True",
+            ExactLinearIndexedBoolFalse (
+                exact_linear_indexed_empty_usage (),
+                "the-unselected-else-branch-does-not-change-the-selected-program-outcome"),
+            "the-recursive-guard-outcome-must-drive-the-conditional-constructor")
+    impossible_closed_bool_recursive_guard_outcome_mismatch ()
+
+///> c
+:# closed_bool_right_beta_result_mismatch_is_refused fails "Got:" =
+    := impossible_closed_bool_right_beta_result_mismatch () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_target_usage
+            exact_linear_unit_type
+            exact_linear_bool_type =
+        exact_linear_indexed_recursive_open_typed_substitution_tensor_right ()
+
+///> c
+:# closed_bool_tensor_identity_progress_target_cross_type_is_refused fails "Got:" =
+    := impossible_closed_bool_tensor_identity_progress_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type =
+        := bool_value :
+            exact_linear_indexed_value
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_bool_type =
+            ExactLinearIndexedValueBoolTrue (
+                exact_linear_indexed_empty_usage (),
+                "the-negative-Bool-Tensor-children-are-canonical-Bool-values")
+        := tensor_value :
+            exact_linear_indexed_value
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                (exact_linear_tensor_type exact_linear_bool_type exact_linear_bool_type) =
+            ExactLinearIndexedValueTensor (\? (
+                bool_value,
+                bool_value,
+                ExactLinearIndexedUsageMergeEmpty
+                    "the-negative-Bool-Tensor-argument-has-empty-usage",
+                "the-negative-Bool-Tensor-identity-argument-is-canonical"))
+        := relation :
+            exact_linear_indexed_closed_identity_beta_relation
+                (exact_linear_tensor_type exact_linear_bool_type exact_linear_bool_type) =
+            ExactLinearIndexedClosedIdentityBetaRelation (
+                exact_linear_indexed_value_term tensor_value,
+                "the-negative-attempts-to-observe-a-Bool-Tensor-target-as-Unit")
+        exact_linear_indexed_closed_identity_beta_target relation
+    impossible_closed_bool_tensor_identity_progress_target_cross_type ()
+
+///> c
+:# closed_higher_order_identity_progress_target_cross_type_is_refused fails "Got:" =
+    := impossible_closed_higher_order_identity_progress_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_bool_type =
+        := identity_value :
+            exact_linear_indexed_value
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                (exact_linear_arrow_type exact_linear_unit_type exact_linear_unit_type) =
+            ?= exact_linear_indexed_identity_term () ?|
+            | ExactLinearIndexedLambda payload =>
+                ExactLinearIndexedValueLambda payload
+        := relation :
+            exact_linear_indexed_closed_identity_beta_relation
+                (exact_linear_arrow_type exact_linear_unit_type exact_linear_unit_type) =
+            ExactLinearIndexedClosedIdentityBetaRelation (
+                exact_linear_indexed_value_term identity_value,
+                "the-negative-attempts-to-observe-a-higher-order-identity-target-as-Bool")
+        exact_linear_indexed_closed_identity_beta_target relation
+    impossible_closed_higher_order_identity_progress_target_cross_type ()
+
+///> c
+:# closed_identity_beta_reduction_result_mismatch_is_refused fails "Got:" =
+    := impossible_closed_identity_beta_reduction_result_mismatch
+        (relation : exact_linear_indexed_closed_identity_beta_relation exact_linear_bool_type)
+        : exact_linear_indexed_reduction
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type =
+        ExactLinearIndexedReductionClosedAtomic (ExactLinearIndexedClosedAtomicReductionIdentity relation)
+    impossible_closed_identity_beta_reduction_result_mismatch
+        (ExactLinearIndexedClosedIdentityBetaRelation (
+            ExactLinearIndexedBoolTrue (
+                exact_linear_indexed_empty_usage (),
+                "BoolTrue-cannot-be-used-as-the-Unit-result-of-the-closed-beta-reduction"),
+            "the-negative-relation-is-indexed-by-Bool"))
+
+///> c
+:# closed_normalizing_fragment_false_type_is_refused fails "Got: exact_linear_indexed_closed_normalizing_fragment" =
+    := impossible_closed_normalizing_fragment_false_type ()
+        : exact_linear_indexed_closed_value_type_not_false exact_linear_false_type =
+        := bool_fragment :
+            exact_linear_indexed_closed_normalizing_fragment exact_linear_bool_type =
+            ExactLinearIndexedClosedNormalizingFragmentBoolProgramTrue (
+                ExactLinearIndexedClosedBoolProgramTrue
+                    "a-covered-closed-Bool-program-normalizes-to-True",
+                "the-covered-fragment-theorem-must-return-a-Bool-not-False-witness")
+        exact_linear_indexed_closed_normalizing_fragment_type_not_false bool_fragment
+    impossible_closed_normalizing_fragment_false_type ()
+
+///> c
+:# closed_normalizing_progress_authority_cross_type_is_refused fails "Got:" =
+    := impossible_closed_normalizing_progress_authority_cross_type () :
+        exact_linear_indexed_closed_normalizing_progress_authority
+            exact_linear_false_type =
+        := unit_fragment :
+            exact_linear_indexed_closed_normalizing_fragment exact_linear_unit_type =
+            ExactLinearIndexedClosedNormalizingFragmentValue (
+                ExactLinearIndexedValueUnit (
+                    exact_linear_indexed_empty_usage (),
+                    "the-negative-authority-payload-is-Unit"),
+                "the-negative-fragment-is-Unit-indexed")
+        ExactLinearIndexedClosedNormalizingProgressAuthority (
+            unit_fragment,
+            "a-Unit-fragment-cannot-be-relabelled-as-a-False-authority")
+    impossible_closed_normalizing_progress_authority_cross_type ()
+
+///> c
+:# closed_progress_from_reduction_cross_type_is_refused fails "Got:" =
+    := impossible_closed_progress_from_reduction_cross_type () :
+        exact_linear_indexed_closed_progress exact_linear_bool_type =
+        := argument :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-negative-progress-source-is-Unit")
+        := relation :
+            exact_linear_indexed_closed_identity_beta_relation exact_linear_unit_type =
+            ExactLinearIndexedClosedIdentityBetaRelation (
+                argument,
+                "the-negative-progress-reduction-is-indexed-by-Unit")
+        exact_linear_indexed_closed_progress_from_reduction
+            (ExactLinearIndexedReductionClosedAtomic (ExactLinearIndexedClosedAtomicReductionIdentity relation))
+    impossible_closed_progress_from_reduction_cross_type ()
+
+///> c
+:# closed_source_code_bool_mismatch_is_refused fails "Got: exact_linear_indexed_closed_value_source" =
+    := impossible_closed_source_code_bool_mismatch () :
+        exact_linear_indexed_closed_value_source
+            exact_linear_indexed_closed_source_bool_false
+            exact_linear_bool_type =
+        ExactLinearIndexedClosedValueSourceBoolTrue
+            "the-BoolTrue-structural-source-code-cannot-be-reindexed-as-BoolFalse"
+    impossible_closed_source_code_bool_mismatch ()
+
+///> c
+:# closed_tensor_identity_progress_target_cross_type_is_refused fails "Got:" =
+    := impossible_closed_tensor_identity_progress_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type =
+        := empty_usage = exact_linear_indexed_empty_usage ()
+        := unit_value :
+            exact_linear_indexed_value
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedValueUnit (
+                empty_usage,
+                "the-negative-Tensor-identity-left-and-right-values-are-Unit")
+        := tensor_value :
+            exact_linear_indexed_value
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type) =
+            ExactLinearIndexedValueTensor (\? (
+                unit_value,
+                unit_value,
+                ExactLinearIndexedUsageMergeEmpty
+                    "the-negative-Tensor-argument-has-empty-usage",
+                "the-negative-Tensor-identity-argument-is-canonical"))
+        := relation :
+            exact_linear_indexed_closed_identity_beta_relation
+                (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type) =
+            ExactLinearIndexedClosedIdentityBetaRelation (
+                exact_linear_indexed_value_term tensor_value,
+                "the-negative-attempts-to-observe-a-Tensor-target-as-Unit")
+        exact_linear_indexed_closed_identity_beta_target relation
+    impossible_closed_tensor_identity_progress_target_cross_type ()
+
+///> c
+:# closed_tensor_left_general_congruence_target_cross_type_is_refused fails "Got: exact_linear_indexed_reduction" =
+    := impossible_closed_tensor_left_general_congruence_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            (exact_linear_tensor_type exact_linear_bool_type exact_linear_bool_type) =
+        := left_argument :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-general-left-argument-is-Unit")
+        := left_relation :
+            exact_linear_indexed_closed_identity_beta_relation exact_linear_unit_type =
+            ExactLinearIndexedClosedIdentityBetaRelation (
+                left_argument,
+                "the-general-left-child-reduces-by-identity")
+        := left_reduction :
+            exact_linear_indexed_reduction
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedReductionClosedAtomic (ExactLinearIndexedClosedAtomicReductionIdentity left_relation)
+        := right_term :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_bool_type =
+            ExactLinearIndexedBoolTrue (
+                exact_linear_indexed_empty_usage (),
+                "the-general-right-child-is-Bool")
+        exact_linear_indexed_reduction_target
+            (ExactLinearIndexedReductionClosedTensorLeft (
+                left_reduction,
+                right_term,
+                "the-real-general-target-is-Tensor-Unit-Bool-not-Tensor-Bool-Bool"))
+    impossible_closed_tensor_left_general_congruence_target_cross_type ()
+
+///> c
+:# closed_tensor_left_identity_congruence_target_cross_type_is_refused fails "Got:" =
+    := impossible_closed_tensor_left_identity_congruence_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            (exact_linear_tensor_type exact_linear_bool_type exact_linear_bool_type) =
+        := left_argument :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-left-argument-is-Unit")
+        := relation :
+            exact_linear_indexed_closed_identity_beta_relation exact_linear_unit_type =
+            ExactLinearIndexedClosedIdentityBetaRelation (
+                left_argument,
+                "the-left-child-reduces-by-identity")
+        := right_term :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_bool_type =
+            ExactLinearIndexedBoolTrue (
+                exact_linear_indexed_empty_usage (),
+                "the-right-child-is-Bool")
+        exact_linear_indexed_reduction_target
+            (ExactLinearIndexedReductionClosedTensorLeft (
+                ExactLinearIndexedReductionClosedAtomic (ExactLinearIndexedClosedAtomicReductionIdentity relation),
+                right_term,
+                "the-real-general-target-is-Tensor-Unit-Bool-not-Tensor-Bool-Bool"))
+    impossible_closed_tensor_left_identity_congruence_target_cross_type ()
+
+///> c
+:# closed_tensor_right_conditional_congruence_target_cross_type_is_refused fails "Got:" =
+    := impossible_closed_tensor_right_conditional_congruence_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            (exact_linear_tensor_type exact_linear_bool_type exact_linear_bool_type) =
+        := left_term :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_bool_type =
+            ExactLinearIndexedBoolFalse (
+                exact_linear_indexed_empty_usage (),
+                "the-general-left-child-is-Bool")
+        := right_reduction :
+            exact_linear_indexed_reduction
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedReductionConditional
+                (exact_linear_indexed_conditional_true_unit_step ())
+        exact_linear_indexed_reduction_target
+            (ExactLinearIndexedReductionClosedTensorRight (
+                left_term,
+                right_reduction,
+                "the-real-general-target-is-Tensor-Bool-Unit-not-Tensor-Bool-Bool"))
+    impossible_closed_tensor_right_conditional_congruence_target_cross_type ()
+
+///> c
+:# closed_tensor_right_general_congruence_target_cross_type_is_refused fails "Got: exact_linear_indexed_reduction" =
+    := impossible_closed_tensor_right_general_congruence_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            (exact_linear_tensor_type exact_linear_bool_type exact_linear_bool_type) =
+        := left_term :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_bool_type =
+            ExactLinearIndexedBoolFalse (
+                exact_linear_indexed_empty_usage (),
+                "the-general-left-child-is-Bool")
+        := right_argument :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-general-right-argument-is-Unit")
+        := right_relation :
+            exact_linear_indexed_closed_identity_beta_relation exact_linear_unit_type =
+            ExactLinearIndexedClosedIdentityBetaRelation (
+                right_argument,
+                "the-general-right-child-reduces-by-identity")
+        := right_reduction :
+            exact_linear_indexed_reduction
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedReductionClosedAtomic (ExactLinearIndexedClosedAtomicReductionIdentity right_relation)
+        exact_linear_indexed_reduction_target
+            (ExactLinearIndexedReductionClosedTensorRight (
+                left_term,
+                right_reduction,
+                "the-real-general-target-is-Tensor-Bool-Unit-not-Tensor-Bool-Bool"))
+    impossible_closed_tensor_right_general_congruence_target_cross_type ()
+
+///> c
+:# closed_tensor_right_identity_congruence_target_cross_type_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_closed_tensor_right_identity_congruence_target_cross_type () :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type) =
+        := left_term :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_bool_type =
+            ExactLinearIndexedBoolFalse (
+                exact_linear_indexed_empty_usage (),
+                "the-left-child-is-Bool")
+        := right_argument :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                exact_linear_unit_type =
+            ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-right-argument-is-Unit")
+        := relation :
+            exact_linear_indexed_closed_identity_beta_relation exact_linear_unit_type =
+            ExactLinearIndexedClosedIdentityBetaRelation (
+                right_argument,
+                "the-right-child-reduces-by-identity")
+        exact_linear_indexed_reduction_target
+            (ExactLinearIndexedReductionClosedTensorRight (
+                left_term,
+                ExactLinearIndexedReductionClosedAtomic (ExactLinearIndexedClosedAtomicReductionIdentity relation),
+                "the-real-general-target-is-Tensor-Bool-Unit-not-Tensor-Unit-Unit"))
+    impossible_closed_tensor_right_identity_congruence_target_cross_type ()
+
+///> c
+:# closed_tensor_value_type_not_false_cross_type_is_refused fails "Got: exact_linear_indexed_value" =
+    := impossible_closed_tensor_value_type_not_false_cross_type
+        ()
+        : exact_linear_indexed_closed_value_type_not_false exact_linear_false_type
+        =
+        := tensor_value :
+            exact_linear_indexed_value
+                exact_linear_free_context_empty
+                exact_linear_indexed_usage_empty
+                (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type) =
+            ExactLinearIndexedValueTensor (\? (
+                ExactLinearIndexedValueUnit (
+                    exact_linear_indexed_empty_usage (),
+                    "the-negative-left-cell-is-Unit"),
+                ExactLinearIndexedValueUnit (
+                    exact_linear_indexed_empty_usage (),
+                    "the-negative-right-cell-is-Unit"),
+                ExactLinearIndexedUsageMergeEmpty
+                    "the-negative-Tensor-merges-empty-usages",
+                "the-negative-builds-one-valid-closed-Tensor-value"))
+        derive_exact_linear_indexed_closed_value_type_not_false tensor_value
+    impossible_closed_tensor_value_type_not_false_cross_type ()
+
+///> c
+:# closed_unit_identity_progress_value_cross_type_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_closed_unit_identity_progress_value_cross_type
+        ()
+        : exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty
+            exact_linear_bool_type
+        =
+        := step =
+            ExactLinearIndexedClosedUnitIdentityBetaStep (
+                ExactLinearIndexedUnit (
+                    exact_linear_indexed_empty_usage (),
+                    "the-negative-beta-argument-is-Unit"),
+                "the-negative-attempts-to-reclassify-the-beta-reduct")
+        exact_linear_indexed_closed_unit_identity_beta_target step
+    impossible_closed_unit_identity_progress_value_cross_type ()
+
+///> c
+:# conditional_guard_step_requires_bool_is_refused fails "Got: exact_linear_indexed_small_step" =
+    := impossible_conditional_guard_step_requires_bool
+        (guard_step :
+            exact_linear_indexed_small_step
+                exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty
+                exact_linear_unit_type)
+        : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty
+            exact_linear_indexed_usage_empty exact_linear_unit_type
+        =
+        ExactLinearIndexedConditionalGuardStep (\? (
+            guard_step,
+            ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-invalid-contextual-step-then-branch-is-Unit"),
+            ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-invalid-contextual-step-else-branch-is-Unit"),
+            ExactLinearIndexedUsageMergeEmpty
+                "the-invalid-contextual-step-source-merge-is-empty",
+            ExactLinearIndexedUsageMergeEmpty
+                "the-invalid-contextual-step-target-merge-is-empty",
+            "a-Unit-step-cannot-be-used-as-the-Bool-guard-step"))
+    impossible_conditional_guard_step_requires_bool
+        (exact_linear_indexed_conditional_true_unit_step ())
+
+///> c
+:# conditional_step_target_type_mismatch_is_refused fails "Got: exact_linear_indexed_small_step" =
+    := impossible_conditional_step_target_type_mismatch
+        (step :
+            exact_linear_indexed_small_step
+                exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty
+                exact_linear_unit_type)
+        : exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty
+            exact_linear_bool_type
+        =
+        exact_linear_indexed_small_step_target step
+
+///> c
+:# context_strengthening_removes_used_is_refused fails "Got: exact_linear_indexed_context_strengthening" =
+    := impossible_context_strengthening_removes_used () :
+        exact_linear_indexed_context_strengthening
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            (exact_linear_free_context_extend
+                exact_linear_free_context_empty exact_linear_unit_type)
+            (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty) =
+        ExactLinearIndexedContextStrengtheningThereUnused (
+            ExactLinearIndexedContextStrengtheningHere
+                "a-used-selected-cell-cannot-be-removed-by-Here",
+            "the-newer-unused-Unit-head-would-be-preserved")
+
+///> c
+:# false_elimination_requires_false_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_false_elimination_requires_false () :
+        exact_linear_indexed_false_elimination
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_bool_type =
+        exact_linear_indexed_false_eliminate
+            (ExactLinearTypeWitnessBool
+                "the-negative-target-asks-for-a-Bool-result")
+            (ExactLinearIndexedUnit (
+                exact_linear_indexed_empty_usage (),
+                "a-Unit-term-cannot-be-used-as-a-False-premise"))
+
+///> c
+:# false_has_canonical_value_is_refused fails "Got: exact_linear_indexed_value exact_linear_free_context_empty" =
+    := impossible_false_has_canonical_value
+        (unused : exact_linear_indexed_all_unused exact_linear_free_context_empty exact_linear_indexed_usage_empty)
+        : exact_linear_indexed_value exact_linear_free_context_empty exact_linear_indexed_usage_empty
+            exact_linear_false_type
+        =
+        ExactLinearIndexedValueUnit (
+            unused,
+            "Unit-cannot-be-reclassified-as-a-canonical-False-value")
+    impossible_false_has_canonical_value
+        (exact_linear_indexed_empty_usage ())
+
+///> c
+:# general_conditional_guard_target_usage_mismatch_is_refused fails "Got: exact_linear_indexed_usage_merge" =
+    := impossible_general_conditional_guard_target_usage_mismatch
+        (guard_step :
+            exact_linear_indexed_small_step
+                exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty
+                exact_linear_bool_type)
+        (branch :
+            exact_linear_indexed_term
+                exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type)
+        : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty
+            (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type
+        =
+        ExactLinearIndexedConditionalGuardStep (\? (
+            guard_step,
+            branch,
+            branch,
+            ExactLinearIndexedUsageMergeEmpty
+                "the-source-merge-is-correctly-empty",
+            ExactLinearIndexedUsageMergeEmpty
+                "this-empty-target-merge-must-not-inhabit-a-used-target-index",
+            "the-general-Conditional-guard-congruence-must-preserve-the-exact-target-usage"))
+    := empty_usage = exact_linear_indexed_empty_usage ()
+    := guard_step
+        : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty
+            exact_linear_indexed_usage_empty exact_linear_bool_type
+        =
+        ExactLinearIndexedConditionalTrueStep (\? (
+            empty_usage,
+            ExactLinearIndexedBoolFalse (
+                empty_usage,
+                "the-negative-guard-then-branch-is-closed"),
+            ExactLinearIndexedBoolTrue (
+                empty_usage,
+                "the-negative-guard-else-branch-is-closed"),
+            ExactLinearIndexedUsageMergeEmpty
+                "the-negative-guard-source-is-closed",
+            "the-inner-guard-step-is-well-typed"))
+    := branch = ExactLinearIndexedUnit (
+        empty_usage,
+        "the-negative-outer-branch-is-closed")
+    impossible_general_conditional_guard_target_usage_mismatch
+        guard_step branch
+
+///> c
+:# generic_conditional_false_preserves_domain_is_refused fails "Got:" =
+    := impossible_generic_conditional_false_preserves_domain
+        (derivation :
+            exact_linear_indexed_closed_recursive_beta_derivation exact_linear_unit_type exact_linear_unit_type)
+        :
+            exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_unit_type
+        =
+        ExactLinearIndexedClosedRecursiveBetaDerivationConditionalFalseDistinctBool (
+            derivation,
+            "the-generic-Conditional-False-constructor-must-preserve-the-input-domain-index")
+
+///> c
+:# identity_beta_raw_term_wrapper_is_refused fails "Got: exact_linear_indexed_term exact_linear_free_context_empty" =
+    := impossible_identity_beta_raw_term_wrapper () :
+        exact_linear_indexed_closed_identity_beta_step =
+        ExactLinearIndexedClosedIdentityBetaStep (\? (
+            ExactLinearIndexedBoolTrue (
+                exact_linear_indexed_empty_usage (),
+                "the-negative-presents-a-raw-closed-Bool-term-instead-of-an-explicit-beta-relation"),
+            "the-old-raw-term-wrapper-contract-must-no-longer-typecheck"))
+
+///> c
+:# lambda_outer_choice_substitution_keeps_used_is_refused fails "Got:" =
+    := impossible_lambda_outer_choice_target_keeps_used
+        ()
+        : exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            (
+                exact_linear_arrow_type
+                    exact_linear_bool_type
+                    (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type)
+            )
+        =
+        exact_linear_indexed_recursive_open_typed_substitution_lambda_outer ()
+
+///> c
+:# lambda_outer_substitution_keeps_used_is_refused fails "Got:" =
+    := impossible_lambda_outer_substitution_target_keeps_used
+        ()
+        : exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            (
+                exact_linear_arrow_type
+                    exact_linear_bool_type
+                    (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type)
+            )
+        =
+        exact_linear_indexed_recursive_open_typed_substitution_lambda_outer ()
+
+///> c
+:# linked_multistep_requires_normalization_is_refused fails "Got: exact_linear_indexed_closed_bool_normalization" =
+    := impossible_linked_multistep_requires_normalization
+        (trace : exact_linear_indexed_closed_bool_program exact_linear_closed_bool_false_normal)
+        : exact_linear_indexed_closed_bool_linked_multistep exact_linear_closed_bool_false_normal
+        =
+        ExactLinearIndexedClosedBoolLinkedMultistep (
+            trace,
+            "an-unlinked-public-trace-cannot-be-repacked-as-the-normalization-backed-authority")
+    impossible_linked_multistep_requires_normalization
+
+///> c
+:# nested_tensor_right_choice_substitution_keeps_used_is_refused fails "Got:" =
+    := impossible_nested_tensor_right_choice_target_keeps_used () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type) =
+        exact_linear_indexed_recursive_open_typed_substitution_tensor_right ()
+
+///> c
+:# open_application_beta_cross_wrapper_identity_is_refused fails "Got:" =
+    := impossible_open_application_beta_cross_wrapper_identity () :
+        exact_linear_indexed_open_application_beta_step exact_linear_unit_type =
+        ExactLinearIndexedOpenApplicationBetaStep (
+            exact_linear_indexed_open_identity_beta_substitution_strengthening (),
+            "forged-cross-wrapper-identity-proof")
+    impossible_open_application_beta_cross_wrapper_identity ()
+
+///> c
+:# open_application_beta_target_type_mismatch_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_open_application_beta_target_type_mismatch
+        (step : exact_linear_indexed_open_application_beta_step exact_linear_unit_type)
+        : exact_linear_indexed_term
+            (exact_linear_free_context_extend
+                exact_linear_free_context_empty exact_linear_unit_type)
+            (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
+            exact_linear_bool_type =
+        exact_linear_indexed_open_application_beta_step_target step
+    impossible_open_application_beta_target_type_mismatch
+        (exact_linear_indexed_open_application_beta_step_witness ())
+
+///> c
+:# open_conditional_beta_cross_wrapper_tensor_is_refused fails "Got:" =
+    := impossible_open_conditional_beta_cross_wrapper_tensor () :
+        exact_linear_indexed_open_conditional_beta_step =
+        ExactLinearIndexedOpenConditionalBetaStep (
+            exact_linear_indexed_open_tensor_beta_substitution_strengthening ())
+    impossible_open_conditional_beta_cross_wrapper_tensor ()
+
+///> c
+:# open_conditional_beta_target_type_mismatch_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_open_conditional_beta_target_type_mismatch
+        (step : exact_linear_indexed_open_conditional_beta_step)
+        : exact_linear_indexed_term
+            exact_linear_indexed_open_conditional_beta_outer_context
+            exact_linear_indexed_open_conditional_beta_outer_used
+            exact_linear_bool_type =
+        exact_linear_indexed_open_conditional_beta_step_target step
+    impossible_open_conditional_beta_target_type_mismatch
+        (exact_linear_indexed_open_conditional_beta_step_witness ())
+
+///> c
+:# open_identity_beta_cross_type_is_refused fails "Got: exact_linear_indexed_term (exact_linear_free_context_extend" =
+    := impossible_open_identity_beta_cross_type
+        (step : exact_linear_indexed_open_identity_beta_step exact_linear_bool_type)
+        : exact_linear_indexed_term
+            (exact_linear_free_context_extend
+                exact_linear_free_context_empty exact_linear_bool_type)
+            (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
+            exact_linear_unit_type =
+        exact_linear_indexed_open_identity_beta_step_target step
+    impossible_open_identity_beta_cross_type
+        (exact_linear_indexed_open_identity_beta_step_witness ())
+
+///> c
+:# open_identity_beta_cross_wrapper_application_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_open_identity_beta_cross_wrapper_application () :
+        exact_linear_indexed_open_identity_beta_step exact_linear_unit_type =
+        ExactLinearIndexedOpenIdentityBetaStep (
+            exact_linear_indexed_open_application_beta_substitution_strengthening (),
+            "forged-cross-wrapper-application-proof")
+    impossible_open_identity_beta_cross_wrapper_application ()
+
+///> c
+:# open_lambda_beta_cross_wrapper_tensor_is_refused fails "Got:" =
+    := impossible_open_lambda_beta_cross_wrapper_tensor () :
+        exact_linear_indexed_open_lambda_beta_step =
+        ExactLinearIndexedOpenLambdaBetaStep (
+            exact_linear_indexed_open_lambda_beta_source_term (),
+            ExactLinearIndexedOpenLambdaBetaTargetWitness (
+                exact_linear_indexed_open_lambda_beta_inner_target_term (),
+                exact_linear_indexed_open_tensor_beta_substitution_strengthening ()),
+            "forged-cross-wrapper-Tensor-proof-inside-the-fused-target-witness")
+    impossible_open_lambda_beta_cross_wrapper_tensor ()
+
+///> c
+:# open_lambda_beta_target_type_mismatch_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_open_lambda_beta_target_type_mismatch
+        (step : exact_linear_indexed_open_lambda_beta_step)
+        : exact_linear_indexed_term
+            exact_linear_indexed_open_lambda_beta_outer_context
+            exact_linear_indexed_open_lambda_beta_outer_used
+            exact_linear_unit_type =
+        exact_linear_indexed_open_lambda_beta_step_target step
+    impossible_open_lambda_beta_target_type_mismatch
+        (exact_linear_indexed_open_lambda_beta_step_witness ())
+
+///> c
+:# open_tensor_beta_cross_wrapper_conditional_is_refused fails "Got:" =
+    := impossible_open_tensor_beta_cross_wrapper_conditional () :
+        exact_linear_indexed_open_tensor_beta_step exact_linear_bool_type =
+        ExactLinearIndexedOpenTensorBetaStep (
+            exact_linear_indexed_open_conditional_beta_substitution_strengthening ())
+    impossible_open_tensor_beta_cross_wrapper_conditional ()
+
+///> c
+:# open_tensor_beta_target_type_mismatch_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_open_tensor_beta_target_type_mismatch
+        (step : exact_linear_indexed_open_tensor_beta_step exact_linear_unit_type)
+        : exact_linear_indexed_term
+            (exact_linear_free_context_extend
+                exact_linear_free_context_empty exact_linear_unit_type)
+            (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
+            exact_linear_unit_type =
+        exact_linear_indexed_open_tensor_beta_step_target step
+    impossible_open_tensor_beta_target_type_mismatch
+        (exact_linear_indexed_open_tensor_beta_step_witness ())
+
+///> c
+:# ready_tensor_tail_wrong_argument_domain_is_refused fails "Got: exact_linear_indexed_closed_value_source 'a" =
+    := impossible_ready_tensor_tail_accepts_wrong_domain () =
+        := function_source :
+            exact_linear_indexed_closed_value_source
+                (exact_linear_indexed_closed_source_lambda
+                    exact_linear_bool_type
+                    (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type))
+                (exact_linear_arrow_type exact_linear_bool_type
+                    (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type)) =
+            ExactLinearIndexedClosedValueSourceLambda (
+                exact_linear_indexed_closed_lambda_value_source (
+                    exact_linear_indexed_closed_tensor_tail_lambda_value,
+                    "the-TensorTail-function-is-a-closed-Bool-to-Bool-tensor-Unit-Lambda"))
+        := wrong_argument :
+            exact_linear_indexed_closed_value_source
+                exact_linear_indexed_closed_source_unit
+                exact_linear_unit_type =
+            ExactLinearIndexedClosedValueSourceUnit
+                "Unit-is-a-closed-value-but-not-the-Bool-domain-required-by-this-TensorTail-Lambda"
+        ExactLinearIndexedClosedReadyBetaTensorTail (
+            function_source,
+            wrong_argument,
+            "this-construction-must-be-rejected-because-TensorTail-Ready-keeps-the-Lambda-domain-and-argument-type-iden"
+            ^^ "tical"
+        )
+    impossible_ready_tensor_tail_accepts_wrong_domain ()
+
+///> c
+:# ready_unit_tensor_bool_argument_is_refused fails "Got: exact_linear_indexed_closed_value_source 'a" =
+    := impossible_ready_unit_tensor_accepts_bool_argument () =
+        := function_source
+            : exact_linear_indexed_closed_value_source
+                (
+                    exact_linear_indexed_closed_source_lambda
+                        exact_linear_unit_type
+                        (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)
+                )
+                (
+                    exact_linear_arrow_type
+                        exact_linear_unit_type
+                        (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)
+                )
+            =
+            ExactLinearIndexedClosedValueSourceLambda (
+                exact_linear_indexed_closed_lambda_value_source (
+                    exact_linear_indexed_closed_tensor_tail_lambda_value,
+                    "the-unit-TensorTail-Lambda-is-a-closed-value"))
+        := argument =
+            ExactLinearIndexedClosedValueSourceBoolTrue
+                "the-Bool-argument-is-a-closed-value-but-has-the-wrong-domain-for-this-Ready-beta"
+        ExactLinearIndexedClosedReadyBetaTensorTail (
+            function_source,
+            argument,
+            "this-construction-must-be-rejected-because-Ready-beta-keeps-the-function-domain-and-argument-type-aligned")
+    impossible_ready_unit_tensor_accepts_bool_argument ()
+
+///> c
+:# recursive_beta_application_identity_cannot_change_result_is_refused fails "Got:" =
+    := impossible_recursive_beta_application_identity_cannot_change_result
+        (derivation :
+            exact_linear_indexed_closed_recursive_beta_derivation
+                exact_linear_bool_type
+                (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type))
+        : exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_unit_type
+        =
+        ExactLinearIndexedClosedRecursiveBetaDerivationApplicationIdentity (
+            derivation,
+            "ApplicationIdentity-must-preserve-the-recursive-beta-result-type")
+
+:= type_applications_stay_on_one_line_or_the_parser_drops_the_definition () = ()
+
+///> c
+:# recursive_beta_composite_domain_wrong_argument_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_recursive_beta_composite_domain_accepts_Unit_argument () :
+        exact_linear_indexed_closed_recursive_beta_derivation
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type)
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) =
+        ExactLinearIndexedClosedRecursiveBetaDerivationBound (
+            ExactLinearIndexedUnit (
+                ExactLinearIndexedAllUnusedEmpty
+                    "Unit-is-closed-but-does-not-have-the-composite-Unit-Bool-Tensor-domain",
+                "this-argument-has-Unit-type-not-the-required-composite-domain"),
+            "this-construction-must-be-rejected-because-recursive-beta-Bound-keeps-domain-and-argument-type-identical")
+    impossible_recursive_beta_composite_domain_accepts_Unit_argument ()
+
+///> c
+:# recursive_beta_derivation_domain_mismatch_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_recursive_beta_derivation_domain_mismatch () :
+        exact_linear_indexed_closed_recursive_beta_derivation
+            exact_linear_bool_type exact_linear_bool_type =
+        ExactLinearIndexedClosedRecursiveBetaDerivationBound (
+            ExactLinearIndexedUnit (
+                ExactLinearIndexedAllUnusedEmpty
+                    "the-negative-recursive-derivation-domain-argument-is-closed",
+                "the-negative-recursive-derivation-tries-to-use-Unit-as-a-Bool-argument"),
+            "the-recursive-derivation-Bound-index-must-match-the-argument-type")
+
+///> c
+:# recursive_beta_derivation_result_mismatch_is_refused fails "Got:" =
+    := impossible_recursive_beta_derivation_result_mismatch () :
+        exact_linear_indexed_closed_recursive_beta_derivation
+            exact_linear_bool_type exact_linear_bool_type =
+        ExactLinearIndexedClosedRecursiveBetaDerivationTensorLeftUnit (
+            ExactLinearIndexedClosedRecursiveBetaDerivationBound (
+                ExactLinearIndexedBoolTrue (
+                    ExactLinearIndexedAllUnusedEmpty
+                        "the-negative-recursive-derivation-result-argument-is-closed",
+                    "the-negative-recursive-derivation-result-argument-is-BoolTrue"),
+                "the-negative-recursive-derivation-result-inner-is-Bound"),
+            "the-Tensor-left-wrapper-forces-a-Tensor-result-index")
+
+///> c
+:# recursive_beta_domain_mismatch_is_refused fails "Got: exact_linear_indexed_term exact_linear_free_context_empty" =
+    := impossible_recursive_beta_domain_mismatch
+        ()
+        : exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_bool_type
+        =
+        ExactLinearIndexedClosedRecursiveBetaDerivationBound (
+            ExactLinearIndexedUnit (
+                ExactLinearIndexedAllUnusedEmpty "the-negative-argument-is-closed",
+                "the-negative-tries-to-feed-Unit-to-a-Bool-domain-body"
+            ),
+            "the-recursive-derivation-requires-the-body-domain-and-argument-type-to-match"
+        )
+
+///> c
+:# recursive_beta_false_ready_domain_retag_is_refused fails "Got:" =
+    := impossible_recursive_beta_false_ready_domain_retag
+        (derivation :
+            exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_bool_type)
+        : exact_linear_indexed_closed_recursive_beta_derivation exact_linear_unit_type exact_linear_bool_type
+        =
+        derivation
+
+:= type_applications_stay_on_one_line_or_the_parser_drops_the_definition () = ()
+
+///> c
+:# recursive_beta_open_body_result_mismatch_is_refused fails "Got:" =
+    := impossible_recursive_beta_open_body_result_mismatch
+        ()
+        : exact_linear_indexed_term
+            (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type)
+            (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_bool_type
+        =
+        exact_linear_indexed_closed_recursive_beta_derivation_open_body (
+            ExactLinearIndexedClosedRecursiveBetaDerivationTensorLeftUnit (
+                ExactLinearIndexedClosedRecursiveBetaDerivationBound (
+                    ExactLinearIndexedBoolTrue (
+                        ExactLinearIndexedAllUnusedEmpty "the-negative-argument-is-closed",
+                        "the-negative-open-body-binds-Bool"
+                    ),
+                    "the-negative-open-body-binds-Bool"
+                ),
+                "the-negative-open-body-really-returns-Tensor-Bool-Unit"
+            )
+        )
+
+///> c
+:# recursive_beta_ready_opened_not_source_progress_is_refused fails "Got:" =
+    := impossible_recursive_beta_ready_opened_not_source_progress \* domain result_ty.
+        (opened : exact_linear_indexed_closed_recursive_beta_ready_opened domain result_ty) :
+        exact_linear_indexed_closed_source_progress
+            exact_linear_indexed_closed_source_unit result_ty =
+        opened
+
+///> c
+:# recursive_beta_result_mismatch_is_refused fails "Got: exact_linear_indexed_closed_recursive_beta_derivation" =
+    := impossible_recursive_beta_result_mismatch
+        ()
+        : exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_bool_type
+        =
+        ExactLinearIndexedClosedRecursiveBetaDerivationTensorLeftUnit (
+            ExactLinearIndexedClosedRecursiveBetaDerivationBound (
+                ExactLinearIndexedBoolTrue (
+                    ExactLinearIndexedAllUnusedEmpty
+                        "the-negative-Bool-argument-is-closed",
+                    "the-negative-argument-matches-the-body-domain"),
+                "the-negative-inner-body-binds-Bool"),
+            "the-negative-tries-to-hide-a-Tensor-result-behind-a-Bool-index")
+
+///> c
+:# recursive_beta_source_argument_mismatch_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_recursive_beta_source_argument_mismatch
+        ()
+        : exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty
+            (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type)
+        =
+        := open_body =
+            exact_linear_indexed_closed_recursive_beta_derivation_open_body (
+                ExactLinearIndexedClosedRecursiveBetaDerivationTensorLeftUnit (
+                    ExactLinearIndexedClosedRecursiveBetaDerivationBound (
+                        ExactLinearIndexedBoolTrue (
+                            ExactLinearIndexedAllUnusedEmpty "the-derivation-argument-is-closed",
+                            "the-negative-source-body-binds-Bool"
+                        ),
+                        "the-negative-source-body-binds-Bool"
+                    ),
+                    "the-negative-source-body-returns-Tensor-Bool-Unit"
+                )
+            )
+        ExactLinearIndexedApplication (
+            \? (
+                ExactLinearIndexedLambda (
+                    open_body,
+                    "the-negative-source-lambda-domain-is-Bool"
+                ),
+                ExactLinearIndexedUnit (
+                    ExactLinearIndexedAllUnusedEmpty "the-negative-source-argument-is-closed",
+                    "the-negative-source-tries-to-apply-Unit-to-a-Bool-lambda"
+                ),
+                ExactLinearIndexedUsageMergeEmpty
+                    "the-negative-source-uses-the-closed-empty-merge",
+                "the-Application-constructor-must-reject-the-wrong-argument-domain"
+            )
+        )
+
+///> c
+:# recursive_closed_bool_substitution_keeps_used_is_refused fails "Got:" =
+    := impossible_recursive_closed_bool_substitution_target_keeps_used () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) =
+        exact_linear_indexed_recursive_open_typed_substitution_tensor_left ()
+
+///> c
+:# recursive_open_bool_application_function_keeps_used_is_refused fails "Got:" =
+    := impossible_recursive_open_bool_application_function_keeps_used () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) =
+        exact_linear_indexed_recursive_open_typed_substitution_application_function ()
+
+///> c
+:# recursive_open_bool_endpoint_usage_mismatch_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_recursive_open_bool_endpoint_usage_mismatch () :
+        exact_linear_indexed_term
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) =
+        exact_linear_indexed_recursive_open_typed_substitution_application_function_target ()
+
+///> c
+:# recursive_open_bool_substitution_reuses_selected_is_refused fails "Got:" =
+    := impossible_recursive_open_bool_substitution_reuses_selected () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type exact_linear_unit_type =
+        exact_linear_indexed_recursive_open_typed_substitution_variable ()
+
+///> c
+:# recursive_open_typed_application_argument_domain_mismatch_is_refused fails "Got:" =
+    := impossible_recursive_open_typed_application_argument_domain_mismatch () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_target_usage
+            exact_linear_unit_type exact_linear_bool_type =
+        ExactLinearIndexedRecursiveOpenTypedSubstitutionApplicationArgument (\? (
+            ExactLinearIndexedLambda (
+                ExactLinearIndexedVariable (\? (
+                    ExactLinearFreeContextMembershipHere
+                        "the-negative-function-binds-a-Bool",
+                    ExactLinearIndexedSingleUseHere (
+                        exact_linear_indexed_open_unit_substitution_all_unused (),
+                        "the-bound-Bool-is-used-once"),
+                    "this-is-a-Bool-identity-function")),
+                "the-negative-function-has-domain-Bool"),
+            exact_linear_indexed_recursive_open_typed_substitution_variable (),
+            ExactLinearIndexedUsageMergeUnusedUnused (
+                ExactLinearIndexedUsageMergeUnusedUsed (
+                    ExactLinearIndexedUsageMergeEmpty
+                        "the-negative-source-merge-starts-empty",
+                    "the-selected-Unit-is-used-only-by-the-argument"),
+                "the-newer-Unit-is-unused-in-the-source"),
+            ExactLinearIndexedUsageMergeUnusedUsed (
+                ExactLinearIndexedUsageMergeUnusedUnused (
+                    ExactLinearIndexedUsageMergeEmpty
+                        "the-negative-target-merge-starts-empty",
+                    "the-selected-Unit-is-unused-in-the-target"),
+                "the-newer-Unit-is-used-only-by-the-target-argument"),
+            "a-Bool-function-cannot-consume-the-Unit-substitution-argument"))
+
+///> c
+:# recursive_open_typed_substitution_strengthening_drops_replacement_is_refused fails "Got: exact_linear_indexed_recursive_open_typed_substitution_strengthening (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) Expected: " =
+    := impossible_recursive_open_typed_substitution_strengthening_drops_replacement () :
+        exact_linear_indexed_recursive_open_typed_substitution_strengthening
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_target_usage
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) =
+        exact_linear_indexed_open_unit_tensor_substitution_strengthening ()
+
+///> c
+:# recursive_open_typed_substitution_strengthening_lambda_drops_replacement_is_refused fails "Got: exact_linear_indexed_recursive_open_typed_substitution_strengthening (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type (exact_linear_arrow_type exact_linear_unit_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)) Expected: " =
+    := impossible_recursive_open_typed_substitution_strengthening_lambda_drops_replacement () :
+        exact_linear_indexed_recursive_open_typed_substitution_strengthening
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_target_usage
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type
+            (exact_linear_arrow_type exact_linear_unit_type
+                (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)) =
+        exact_linear_indexed_open_unit_lambda_substitution_strengthening ()
+
+///> c
+:# recursive_open_typed_substitution_type_mismatch_is_refused fails "Got: exact_linear_indexed_term" =
+    := impossible_recursive_open_typed_substitution_type_mismatch () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            (exact_linear_indexed_usage_unused
+                (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty))
+            exact_linear_unit_type exact_linear_unit_type =
+        ExactLinearIndexedRecursiveOpenTypedSubstitutionVariable (\? (
+            exact_linear_indexed_open_unit_substitution_selected_membership (),
+            exact_linear_indexed_open_unit_substitution_selected_single_use (),
+            ExactLinearIndexedSelectedUnusedThereUnused (
+                ExactLinearIndexedSelectedUnusedHere
+                    "the-selected-Unit-is-unused-in-the-negative-target",
+                "the-newer-Unit-cell-is-also-unused-in-the-negative-target"),
+            ExactLinearIndexedBoolTrue (
+                exact_linear_indexed_open_unit_substitution_all_unused (),
+                "a-Bool-cannot-replace-the-selected-Unit"),
+            "the-variable-constructor-must-reject-a-replacement-of-another-type"))
+
+///> c
+:# source_progress_ready_identity_requires_identity_function_is_refused fails "Got:" =
+    := impossible_source_progress_ready_identity_requires_identity_function
+        ()
+        : exact_linear_indexed_closed_ready_beta_or_neutral
+            (exact_linear_indexed_closed_source_application_ready_unit_tensor exact_linear_indexed_closed_source_unit)
+            exact_linear_unit_type
+        =
+        := argument_source :
+            exact_linear_indexed_closed_value_source
+                exact_linear_indexed_closed_source_unit
+                exact_linear_unit_type =
+            ExactLinearIndexedClosedValueSourceUnit
+                "the-Unit-argument-has-the-domain-needed-by-the-nonidentity-Lambda"
+        ExactLinearIndexedClosedReadyBetaIdentity (
+            argument_source,
+            "this-must-be-rejected-because-the-Ready-identity-witness-is-indexed-by-the-canonical-identity-Lambda-not-a"
+            ^^ "n-arbitrary-closed-Lambda"
+        )
+    impossible_source_progress_ready_identity_requires_identity_function ()
+
+///> c
+:# substitution_keeps_used_is_refused fails "Got: exact_linear_indexed_recursive_open_typed_substitution" =
+    := impossible_substitution_target_keeps_used () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            exact_linear_unit_type =
+        exact_linear_indexed_recursive_open_typed_substitution_variable ()
+
+///> c
+:# tensor_branch_choice_substitution_keeps_used_is_refused fails "Got:" =
+    := impossible_tensor_branch_choice_target_keeps_used () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) =
+        exact_linear_indexed_recursive_open_typed_substitution_tensor_left ()
+
+///> c
+:# tensor_right_choice_substitution_keeps_used_is_refused fails "Got:" =
+    := impossible_tensor_right_choice_target_keeps_used () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type) =
+        exact_linear_indexed_recursive_open_typed_substitution_tensor_right ()
+
+///> c
+:# tensor_substitution_keeps_used_is_refused fails "Got: exact_linear_indexed_recursive_open_typed_substitution" =
+    := impossible_tensor_substitution_target_keeps_used () :
+        exact_linear_indexed_recursive_open_typed_substitution
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_indexed_open_unit_substitution_source_usage
+            exact_linear_unit_type
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) =
+        exact_linear_indexed_recursive_open_typed_substitution_tensor_left ()
+
+///> c
+:# term_strengthening_drops_preserved_is_refused fails "Got: exact_linear_indexed_term_strengthening" =
+    := impossible_term_strengthening_drops_preserved () :
+        exact_linear_indexed_term_strengthening
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_indexed_open_unit_substitution_target_usage
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) =
+        exact_linear_indexed_open_unit_tensor_strengthening ()
+
+///> c
+:# unified_reduction_preservation_target_type_mismatch_is_refused fails "Got: exact_linear_indexed_reduction" =
+    := impossible_unified_reduction_preservation_target_type_mismatch
+        (reduction :
+            exact_linear_indexed_reduction
+                (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type)
+                (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
+                (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
+                exact_linear_bool_type)
+        : exact_linear_indexed_term
+            (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type)
+            (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type
+        =
+        exact_linear_indexed_reduction_preservation reduction
+    := step :
+        exact_linear_indexed_open_identity_beta_step exact_linear_bool_type =
+        exact_linear_indexed_open_identity_beta_step_witness ()
+    impossible_unified_reduction_preservation_target_type_mismatch
+        (exact_linear_indexed_open_beta_reduction
+            (ExactLinearIndexedOpenBetaIdentity step))
+
+///> c
+:# used_used_merge_is_refused fails "Got: exact_linear_indexed_usage_merge (exact_linear_free_context_extend" =
+    := impossible_used_used_merge () :
+        exact_linear_indexed_usage_merge
+            (exact_linear_free_context_extend
+                exact_linear_free_context_empty
+                exact_linear_unit_type)
+            (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
+            (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
+            (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) =
+        ExactLinearIndexedUsageMergeUnusedUsed (
+            ExactLinearIndexedUsageMergeEmpty
+                "the-empty-tail-merges-empty-usages",
+            "a-single-linear-resource-cannot-be-used-by-both-branches")
+
+///> c
+:# variable_strengthening_drops_preserved_is_refused fails "Got: exact_linear_indexed_variable_strengthening" =
+    := impossible_variable_strengthening_drops_preserved () :
+        exact_linear_indexed_variable_strengthening
+            exact_linear_indexed_open_unit_substitution_context
+            exact_linear_zero
+            exact_linear_indexed_open_unit_substitution_target_usage
+            exact_linear_free_context_empty
+            exact_linear_zero
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type =
+        exact_linear_indexed_open_unit_variable_strengthening ()

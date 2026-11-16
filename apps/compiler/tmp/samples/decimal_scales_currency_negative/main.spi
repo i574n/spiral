@@ -1,0 +1,13 @@
+:! amount currency scale = i64
+
+:! brl = ()
+
+:! usd = ()
+
+:= plus \* c s. ((amount a) : amount c s) ((amount b) : amount c s) : amount c s = amount (a + b)
+
+:= main () : i32 =
+    := reais : amount brl 2i32 = amount 7374i64
+    := dollars : amount usd 2i32 = amount 1500i64
+    := (amount total) = plus reais dollars
+    conv total

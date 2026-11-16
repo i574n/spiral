@@ -11,6 +11,8 @@
     <RootNamespace>Spiral</RootNamespace>
     <SpiralCoreSource Condition="'$(SpiralCoreSource)' == ''">../../../spiral_compiler.fs</SpiralCoreSource>
     <Tailcalls>true</Tailcalls>
+    <NoWarn>$(NoWarn.Replace(';FS0025', ''))</NoWarn>
+    <WarningsAsErrors>$(WarningsAsErrors);FS0025</WarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(SpiralCore)' == 'hopacsota'">
     <DefineConstants>$(DefineConstants);SPIRAL_CORE_HOPACSOTA</DefineConstants>

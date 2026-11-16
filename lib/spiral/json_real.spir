@@ -82,39 +82,39 @@
     | f64 => json_scan::parse_f64 s at
     | u32 => json_scan::parse_u32 s at
     | {} => decode (json_scan::object_at s at) `value
-    | array_base ~el =>
-        ?: el ?|
-        | i32 => json_scan::parse_i32_array s at
-        | string => json_scan::parse_string_array s at
-        | {} =>
-            json_scan::fill_array `el (json_scan::item_count s at) \ i =>
-                decode (json_scan::object_at s (json_scan::item_start s at i)) `el
+    | array_base ~el => decode_array `el s at
     | ~a * ~b => decode_at `a s (json_scan::item_start s at 0i32), decode_items `b s at 1i32
-    | option ~inner =>
-        ? json_scan::absent s at
-        ?> None `inner
-        |: Some `inner (decode_at `inner s at)
-    | list ~el => json_scan::list_of_items `el (json_scan::item_count s at) \ i => decode_at `el s (json_scan::item_start s at i)
-    | _ =>
-        ? union_type_is `value ?>
-            := name = json_scan::union_case_name s at
-            := payload_at = json_scan::union_payload_at s at
-            := pick =
-                union_type_to_record `value \* cases. =>
-                    record_type_fold
-                        \ otherwise key =>
-                            \* payload. =>
-                                := case_name = !!!!SymbolToString(key)
-                                \ () =>
-                                    ? name = case_name ?>
-                                        ?: payload ?|
-                                        | () => nominal_create `value (key, ())
-                                        | _ => nominal_create `value (key, decode_at `payload s payload_at)
-                                    |: otherwise ()
-                        (\ () => failwith `value "unknown union case")
-                        `cases
-            pick ()
-        |: error_type "unsupported field type"
+    | option ~inner => ? json_scan::absent s at ?> None `inner |: Some `inner (decode_at `inner s at)
+    | list ~el =>
+        json_scan::list_of_items `el (json_scan::item_count s at) \ i => decode_at `el s (json_scan::item_start s at i)
+    | _ => ? union_type_is `value ?> decode_union `value s at |: error_type "unsupported field type"
+
+:& := decode_array \* el. (s : string) (at : i32) : array_base el =
+    ?: el ?|
+    | i32 => json_scan::parse_i32_array s at
+    | string => json_scan::parse_string_array s at
+    | {} =>
+        json_scan::fill_array `el (json_scan::item_count s at) \ i =>
+            decode (json_scan::object_at s (json_scan::item_start s at i)) `el
+
+:& := union_case \* value payload. (s : string) (payload_at : i32) key : value =
+    ?: payload ?|
+    | () => nominal_create `value (key, ())
+    | _ => nominal_create `value (key, decode_at `payload s payload_at)
+
+:& := decode_union \* value. (s : string) (at : i32) : value =
+    := name = json_scan::union_case_name s at
+    := payload_at = json_scan::union_payload_at s at
+    := pick =
+        union_type_to_record `value \* cases. =>
+            record_type_fold
+                \ otherwise key =>
+                    \* payload. =>
+                        := case_name = !!!!SymbolToString(key)
+                        \ () => ? name = case_name ?> union_case `value `payload s payload_at key |: otherwise ()
+                (\ () => failwith `value "unknown union case")
+                `cases
+    pick ()
 
 :& := decode_items \* value. (s : string) (at : i32) (i : i32) : value =
     ?: value ?|
@@ -127,3 +127,42 @@
             \* value. =>
                 decode_at `value s (json_scan::value_at s !!!!SymbolToString(key))
         `t
+
+:= ^ encode_value \* t. q (x : t) : string =
+    ?: t ?|
+    | i32 => json_emit::number_text `i32 x
+    | u32 => json_emit::number_text `u32 x
+    | i64 => json_emit::number_text `i64 x
+    | f64 => json_emit::number_text `f64 x
+    | bool => json_emit::bool_text x
+    | string => q x
+    | option ~el => json_emit::nullable `el (\ v => encode_value `el q v) x
+    | list ~el => json_emit::list_text `el (\ v => encode_value `el q v) x
+    | array_base ~el => json_emit::array_text `el (\ v => encode_value `el q v) x
+    | ~a * ~b => json_emit::bracketed (encode_items `t q x)
+    | {} => json_emit::braced (encode_members q x)
+    | _ => ? union_type_is `t ?> encode_union `t q x |: error_type "json encode: unsupported field type"
+
+:& := encode_items \* t. q (x : t) : string =
+    ?: t ?|
+    | ~a * ~b =>
+        := u, v = x
+        json_emit::item (encode_value `a q u) (encode_items `b q v)
+    | _ => encode_value `t q x
+
+:& := encode_members q x =
+    record_fold
+        \ { state key value } =>
+            json_emit::member state (in_quotes !!!!SymbolToString(key)) (encode_value `(`value) q value)
+        ""
+        x
+
+:& := encode_case \* p. (name : string) q (v : p) : string =
+    ?: p ?|
+    | () => name
+    | _ => json_emit::tagged name (encode_value `p q v)
+
+:& := encode_union \* t. q (x : t) : string =
+    unbox x \ (key, v) => encode_case `(`v) (in_quotes !!!!SymbolToString(key)) q v
+
+:= encode q x = encode_value `(`x) q x

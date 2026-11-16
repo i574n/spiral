@@ -1,0 +1,134 @@
+:| spell_group =
+    | AttackGroup
+    | HealingGroup
+    | SupportGroup
+
+:! attack = ()
+:! healing = ()
+:! support = ()
+:! action_slot = ()
+
+:! ms = i32
+
+:= ms_value ((ms t) : ms) : i32 = t
+
+:| spell_id g =
+    | StrikeSpell :: spell_id attack
+    | LightHealingSpell :: spell_id healing
+    | WoundCleansingSpell :: spell_id healing
+    | HasteSpell :: spell_id support
+
+:= group_of \* g. (id : spell_id g) : spell_group =
+    ?= id ?|
+    | StrikeSpell => AttackGroup
+    | LightHealingSpell => HealingGroup
+    | WoundCleansingSpell => HealingGroup
+    | HasteSpell => SupportGroup
+
+:== spell g = { id : spell_id g; own_ms : i32; group_ms : i32 }
+
+:== timers = { attack_at : i32; healing_at : i32; support_at : i32; strike_at : i32; light_at : i32; wound_at : i32; haste_at : i32 }
+
+:= idle_timers () : timers = { attack_at = 0; healing_at = 0; support_at = 0; strike_at = 0; light_at = 0; wound_at = 0; haste_at = 0 }
+
+:= group_ready_at (group : spell_group) (t : timers) : i32 =
+    ?= group ?|
+    | AttackGroup => t::attack_at
+    | HealingGroup => t::healing_at
+    | SupportGroup => t::support_at
+
+:= own_ready_at \* g. (id : spell_id g) (t : timers) : i32 =
+    ?= id ?|
+    | StrikeSpell => t::strike_at
+    | LightHealingSpell => t::light_at
+    | WoundCleansingSpell => t::wound_at
+    | HasteSpell => t::haste_at
+
+:= with_own_ready_at \* g. (id : spell_id g) (at : i32) (t : timers) : timers =
+    ?= id ?|
+    | StrikeSpell => { t ?| strike_at = at }
+    | LightHealingSpell => { t ?| light_at = at }
+    | WoundCleansingSpell => { t ?| wound_at = at }
+    | HasteSpell => { t ?| haste_at = at }
+
+:= with_group_ready_at (group : spell_group) (at : i32) (t : timers) : timers =
+    ?= group ?|
+    | AttackGroup => { t ?| attack_at = at }
+    | HealingGroup => { t ?| healing_at = at }
+    | SupportGroup => { t ?| support_at = at }
+
+:= ready_at \* g. (s : spell g) (t : timers) : i32 =
+    := own = own_ready_at s::id t
+    := group = group_ready_at (group_of s::id) t
+    ? own > group ?> own |: group
+
+:= can_cast \* g. (now : i32) (s : spell g) (t : timers) : bool = now >= ready_at s t
+
+:= after_cast \* g. (now : i32) (s : spell g) (t : timers) : timers =
+    with_group_ready_at (group_of s::id) (now +. s::group_ms) (with_own_ready_at s::id (now +. s::own_ms) t)
+
+:= strike_spell () : spell attack = { id = StrikeSpell; own_ms = 2000; group_ms = 2000 }
+
+:= light_healing_spell () : spell healing = { id = LightHealingSpell; own_ms = 1000; group_ms = 1000 }
+
+:| private ready g =
+    | AttackReady :: ms -> ready attack
+    | HealingReady :: ms -> ready healing
+    | ActionReady :: ms -> ready action_slot
+
+:| gate group =
+    | Open : ready group
+    | ClosedUntil : ms
+
+:| command =
+    | Strike : ready attack
+    | Heal : ready healing
+    | Hold
+
+:= since \* group. (proof : ready group) : ms =
+    ?= proof ?|
+    | AttackReady at => at
+    | HealingReady at => at
+    | ActionReady at => at
+
+:= attack_gate (now : ms) (t : timers) : gate attack =
+    := s = strike_spell ()
+    ? can_cast (ms_value now) s t ?> Open (AttackReady now) |: ClosedUntil (ms (ready_at s t))
+
+:= healing_gate (now : ms) (t : timers) : gate healing =
+    := s = light_healing_spell ()
+    ? can_cast (ms_value now) s t ?> Open (HealingReady now) |: ClosedUntil (ms (ready_at s t))
+
+:= action_gate (now : ms) (next : ms) : gate action_slot =
+    ? ms_value now >= ms_value next ?> Open (ActionReady now) |: ClosedUntil next
+
+:= gate_code \* group. (g : gate group) : i32 =
+    ?= g ?|
+    | Open proof => ms_value (since proof)
+    | ClosedUntil until => 0 -. ms_value until
+
+:= decide (attack : gate attack) (heal : gate healing) (wounded : bool) : command =
+    ?= heal ?|
+    | Open proof when wounded => Heal proof
+    | _ =>
+        ?= attack ?|
+        | Open proof => Strike proof
+        | ClosedUntil _ => Hold
+
+:= command_code (c : command) : i32 =
+    ?= c ?|
+    | Strike _ => 1
+    | Heal _ => 2
+    | Hold => 3
+
+:= main () : i32 =
+    := ~now = 5000i32
+    := busy = after_cast now (strike_spell ()) (idle_timers ())
+    := a1 = gate_code (attack_gate (ms now) (idle_timers ()))
+    := a2 = gate_code (attack_gate (ms (now +. 100)) busy)
+    := h1 = gate_code (healing_gate (ms (now +. 100)) busy)
+    := x1 = gate_code (action_gate (ms now) (ms (now +. 50)))
+    := c1 = command_code (decide (attack_gate (ms now) (idle_timers ())) (healing_gate (ms now) (idle_timers ())) true)
+    := c2 = command_code (decide (attack_gate (ms (now +. 100)) busy) (healing_gate (ms (now +. 100)) busy) false)
+    := c3 = command_code (decide (attack_gate (ms now) (idle_timers ())) (healing_gate (ms (now +. 100)) busy) false)
+    (a1 +. a2 +. h1 +. x1) /. 100 +. c1 *. 10 +. c2 *. 3 +. c3

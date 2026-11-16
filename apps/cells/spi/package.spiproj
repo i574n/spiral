@@ -4,6 +4,16 @@ packages:
     spiral-
 modules:
     text
+    type_trial
+    canonical
+    shown_text
+    host_text
+    display_value
+    html_page
+    main_shape
+    fsi_text
+    accept
+    livemd
     cell
     directives
     document
@@ -24,4 +34,5 @@ modules:
     run_result
     mount_text
     cell_budget
+    cell_budget_ruled
     main

@@ -128,7 +128,7 @@ fn discover_compiler(worktree: &Worktree, settings: &SpiralSettings) -> Result<C
         return command_for_compiler(worktree, &host_path(&path, zed::current_platform().0), settings);
     }
 
-    // DLLs are not executables: neither WASI filesystem probes nor `which`
+    // DLLs are not executables: neither WASI filesystem lookups nor `which`
     // can validate them. Let the host helper report a missing compiler.
     if let Some(cache) = spiral_cache_dir(worktree) {
         let dll = cache.join("bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll");

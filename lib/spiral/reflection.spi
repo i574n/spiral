@@ -480,7 +480,7 @@
         |> sm'::format
     )
 
-:| nameof_probe =
+:| nameof_trial =
     | Alpha
     | Beta
     | Gamma
@@ -500,7 +500,7 @@
     Gamma |> case_name |> case_of_name |> _assert_eq (Some Gamma)
     Delta |> case_name |> _assert_eq' "Delta"
     Epsilon |> case_name |> case_of_name |> _assert_eq (Some Epsilon)
-    "epsilon" |> case_of_name |> _assert_eq (None : option nameof_probe)
+    "epsilon" |> case_of_name |> _assert_eq (None : option nameof_trial)
 
 ///- --timeout 900000
 
@@ -525,7 +525,7 @@
     typed_name_kebab name |> _assert_eq' "browser"
     typed_name_lower name |> _assert_eq' "browser"
 
-:| case_style_probe =
+:| case_style_trial =
     | HostMacro
     | GadtCase
 
@@ -536,7 +536,7 @@
 ///> rust
 ///> typescript
 :# case_name_styles =
-    := ~macro : case_style_probe = HostMacro
+    := ~macro : case_style_trial = HostMacro
     macro |> case_name_snake |> _assert_eq' "host_macro"
     macro |> case_name_lower |> _assert_eq' "hostmacro"
     GadtCase |> case_name_kebab |> _assert_eq' "gadt-case"

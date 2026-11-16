@@ -211,7 +211,7 @@
 
 :== cancellation_token_switch =
     {
-        Gleam : $'System.Threading.CancellationToken'
+        Gleam : $'Dynamic'
         Lua : $'System.Threading.CancellationToken'
         Fsharp : $'System.Threading.CancellationToken'
         Python : $'System.Threading.CancellationToken'
@@ -227,7 +227,7 @@
 
 :== cancellation_token_source_switch =
     {
-        Gleam : $'System.Threading.CancellationTokenSource'
+        Gleam : $'Dynamic'
         Lua : $'System.Threading.CancellationTokenSource'
         Fsharp : $'System.Threading.CancellationTokenSource'
         Python : $'System.Threading.CancellationTokenSource'
@@ -243,7 +243,7 @@
 
 :== cancellation_token_registration_switch =
     {
-        Gleam : $'System.Threading.CancellationTokenRegistration'
+        Gleam : $'Dynamic'
         Lua : $'System.Threading.CancellationTokenRegistration'
         Fsharp : $'System.Threading.CancellationTokenRegistration'
         Python : $'System.Threading.CancellationTokenRegistration'

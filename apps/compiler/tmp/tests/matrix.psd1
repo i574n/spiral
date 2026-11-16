@@ -38,6 +38,7 @@
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Gleam'; Oracle = 'C'; Reason = 'C residual has no bounds check (exits 0); Gleam''s checked SpiralArray index halts with 3 as the fixture intends' }
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Lean'; Oracle = 'C'; Reason = 'C residual has no bounds check (exits 0); Lean''s checked index exits 3 as the fixture intends' }
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Bend'; Oracle = 'C'; Reason = 'C residual has no bounds check (exits 0); Bend''s checked array cell exits 3 as the fixture intends' }
+        @{ Id = 'samples/array_atomic_add'; Backend = 'Pascal'; Reason = 'ArrayAtomicAdd is typed for Fsharp, C, Cpp/Cuda and Rust (COMPILER-GPU-PRIMITIVES-S2-ATOMICS); Pascal refuses it at peval by design' }
         @{ Id = 'samples/lua_wide_integers'; Backend = 'Bend'; Reason = 'pairs i64 with f64, and Bend 2 has F32 only, so it fails on Float64T before the w64 path (BEND-BACKEND)' }
         @{ Id = 'samples/portable_console_lines'; Backend = 'Bend'; Reason = 'console.write_line lowers to a unit macro, which the Bend backend does not support yet (BEND-BACKEND)' }
         @{ Id = 'samples/union_i64_text'; Backend = 'Bend'; Reason = 'bend2 rejects the emitted union of i64 text (SOME PROOFS FAIL: expected Data, observed Type), a codegen gap (BEND-BACKEND)' }
@@ -58,12 +59,14 @@
     Mega = @(
         @{ Name = 'ERP'; Title = 'OmniLedger ERP kernel'; Source = 'samples/mega_omniledger_erp_kernel/main.spi' }
         @{ Name = 'Zeta'; Title = 'Structural factorization laboratory'; Source = 'samples/mega_zeta_structural_laboratory/main.spi' }
-        @{ Name = 'CIC'; Title = 'Lean CIC bottom-up kernel'; Source = 'samples/mega_lean_cic_bottom_up_kernel/main.spi' }
-        @{ Name = 'Self'; Title = 'Spiral proves Spiral relative-consistency laboratory'; Source = 'samples/mega_spiral_proves_spiral_relative_consistency/main.spi' }
         @{ Name = 'Brzozowski'; Title = 'Brzozowski derivative matcher'; Source = 'samples/mega_brzozowski_derivatives/main.spi' }
+        @{ Name = 'KernelLinear'; Title = 'Kernel linear half (peval stress: 21 GADT-indexed checks folded in one pass)'; Source = '../../kernel/mega_linear/main.spi'; Backends = 'Fsharp,Rust,C' }
+        @{ Name = 'KernelCic'; Title = 'Kernel CIC half (codegen stress: 7 checks, about 8.8k lines of Rust)'; Source = '../../kernel/mega_cic/main.spi'; Backends = 'Fsharp,Rust,C' }
     )
 
     Timeouts = @{
+        '../../kernel/mega_linear' = 300
+        '../../kernel/mega_cic' = 300
         'samples/rust_capture_in_macro_closure' = 90
         'samples/gadt_unbounded_index_negative' = 60
         'samples/runaway_inline_match_recursion' = 120
@@ -82,12 +85,8 @@
         'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime' = 180
         'samples/mega_omniledger_erp_kernel/all_terminals' = 180
         'samples/mega_zeta_structural_laboratory/all_terminals' = 180
-        'samples/mega_lean_cic_bottom_up_kernel/all_terminals' = 180
-        'samples/mega_spiral_proves_spiral_relative_consistency/all_terminals' = 180
         'samples/mega_zeta_structural_laboratory/runtime_native' = 180
         'samples/mega_omniledger_erp_kernel/runtime_native' = 180
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native' = 180
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native' = 180
     }
 
     ZigShims = @(
@@ -127,13 +126,17 @@
         @{ Pattern = 'dynamic_array_*'; Flags = '-include {shims}/dynamic-array-geometric-growth-c-shim.h' }
     )
     AlsoTypeScript = @(
+        'samples/gadt_font_joining'
+        'samples/gadt_fiscal_lifecycle'
+        'samples/gadt_index_refined_equality'
+        'samples/gadt_spell_readiness'
         'samples/bench_overhead'
         'samples/bench_sieve'
         'samples/bench_tree'
         'samples/bench_strings'
         'samples/bench_float'
         'samples/showcase_fiscal_kernel'
-        'samples/union_case_name_probe'
+        'samples/union_case_name_trial'
         'samples/union_case_name_styled'
         'samples/union_case_name_pruned'
         'samples/gadt_pruned_union_tag'
@@ -247,18 +250,27 @@
         'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime'
         'samples/mega_brzozowski_derivatives/runtime_bench'
         'samples/mega_brzozowski_derivatives/runtime_native'
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
         'samples/mega_omniledger_erp_kernel/runtime_native'
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
         'samples/mega_zeta_structural_laboratory/runtime_native'
     )
 
     ExpectedErrors = @(
+        @{ Id = 'samples/gpu_stages_mismatch_negative'; Contains = 'Got: i32 -> i32 Expected: {count : i32; total : i32} -> i32' }
+        @{ Id = 'samples/gpu_stage_boundary_in_join_point_negative'; Contains = "GpuStageBoundary splits a WGSL program only at main's top level" }
+        @{ Id = 'samples/gpu_pass_carry_heap_negative'; Contains = 'A carried GPU state cannot hold heap values' }
+        @{ Id = 'samples/showcase_gadt_rules_negative'; Contains = 'Unification failure. Got: rule bool Expected: rule money' }
         @{ Id = 'samples/empty_match_reachable_case_negative'; Contains = 'ETY-EmptyMatchReachableCase: A match with no arms needs a scrutinee no case can produce, but the UnitValue case of value can produce this type' }
         @{ Id = 'samples/gadt_font_initial_right_joining_negative'; Contains = 'Got: arabic right_j Expected: arabic dual_j' }
         @{ Id = 'samples/gadt_font_medial_right_joining_negative'; Contains = 'Got: arabic right_j Expected: arabic dual_j' }
         @{ Id = 'samples/gadt_font_base_independent_vowel_negative'; Contains = 'Got: deva indvow_c Expected: deva cons_c' }
         @{ Id = 'samples/gadt_font_base_matra_negative'; Contains = 'Got: deva matra_c Expected: deva cons_c' }
+        @{ Id = 'samples/gadt_fiscal_lifecycle_cancel_rejected_negative'; Contains = 'Got: document cfdi rejected Expected: document _ authorized' }
+        @{ Id = 'samples/gadt_fiscal_lifecycle_correct_issued_negative'; Contains = 'Got: document nfe issued Expected: document _ authorized' }
+        @{ Id = 'samples/gadt_fiscal_lifecycle_cancel_without_event_negative'; Contains = 'The higher order type instance ubl does not have the prototype cancellation_event' }
+        @{ Id = 'samples/gadt_fiscal_lifecycle_correct_without_event_negative'; Contains = 'The higher order type instance cfdi does not have the prototype correction_event' }
+        @{ Id = 'samples/gadt_spell_readiness_strike_with_healing_proof_negative'; Contains = 'Got: ready healing Expected: ready attack' }
+        @{ Id = 'samples/gadt_spell_readiness_attack_gate_from_action_negative'; Contains = 'Got: ready action_slot Expected: ready attack' }
+        @{ Id = 'samples/gadt_spell_readiness_healing_spell_as_attack_negative'; Contains = 'Got: spell_id attack Expected: spell_id healing' }
         @{ Id = 'samples/decimal_scales_currency_negative'; Contains = 'Got: amount brl 2i32 Expected: amount usd 2i32' }
         @{ Id = 'samples/decimal_scales_scale_negative'; Contains = 'Got: amount brl 2i32 Expected: amount brl 4i32' }
         @{ Id = 'samples/decimal_scales_unrounded_negative'; Contains = 'Got: add 4i32 10i32 Expected: 2i32' }
@@ -280,31 +292,19 @@
         @{ Id = 'samples/backend_switch_missing_arm_negative'; Contains = 'reaches a lib/spiral backend_switch that has no arm for the' }
         @{ Id = 'samples/backend_switch_missing_arm_site'; Contains = 'Reached from: main.spi:21 <' }
         @{ Id = 'samples/record_update_retype_negative'; Contains = 'This record update changes the field x from i32 to string.' }
-        @{ Id = 'samples/mega_brzozowski_derivatives/negative_alphabet_mix'; Contains = 'Got: (tri_alphabet : *) Expected: (bit_alphabet : *)' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_forge_structural_support_bound'; Contains = 'Got: antimirov_support_slot_assignment shape (finite_length_succ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_recursive_payload_outbox_version_mismatch'; Contains = 'Expected: erp_p2p_event_outbox (nat_succ (nat_succ (nat_succ nat_zero)))' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_beta_strengthening_target_without_index_transport'; Contains = 'Cannot dyn an existential into a runtime var' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_antimirov_support_assignment_count'; Contains = 'Unification failure. Got: antimirov_support_slot_assignment' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_exact_rows_not_soundness_witness'; Contains = 'Unification failure. Got: indexed_dfa_exact_transition_rows bit_alphabet' }
-        @{ Id = 'samples/mega_brzozowski_derivatives/negative_finite_index_out_of_range'; Contains = 'Got: finite_symbol_index finite_length_zero Expected: finite_symbol_index (finite_length_succ _)' }
-        @{ Id = 'samples/mega_brzozowski_derivatives/negative_hkt_batch_predicate_specific'; Contains = 'Got: forall alphabet. matcher_program alphabet -> bool Expected: matcher_program bit_alphabet -> bool' }
-        @{ Id = 'samples/mega_brzozowski_derivatives/negative_hkt_requires_capability_capture'; Contains = 'Got: forall alphabet. matcher_case alphabet' }
-        @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_descriptor_local_cardinality'; Contains = 'Got: finite_symbol_vector bit_alphabet _ Expected: finite_symbol_vector bit_alphabet (finite_length_succ' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_dfa_quotient_coverage_count'; Contains = 'Unification failure. Got: indexed_dfa_quotient_coverage' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_dfa_representative_origin_count'; Contains = 'Unification failure. Got: indexed_dfa_representative_origins' }
-        @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_row_length'; Contains = 'Got: indexed_dfa_transition_vector bit_alphabet (finite_length_succ finite_length_zero)' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_alphabet_symbols'; Contains = 'lone_alphabet does not have the prototype finite_alphabet' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_compare'; Contains = 'orphan_alphabet does not have the prototype symbol_compare' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_finite_inventory_witness'; Contains = 'lone_alphabet does not have the prototype finite_alphabet' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_rank_lookup'; Contains = 'paired_alphabet does not have the prototype finite_alphabet' }
-        @{ Id = 'samples/mega_brzozowski_derivatives/negative_phase_use'; Contains = 'Got: bit_matcher_state matcher_decided Expected: bit_matcher_state matcher_raw' }
-        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_generic_state_seal'; Contains = 'Got: matcher_state bit_alphabet matcher_decided Expected: matcher_state bit_alphabet matcher_raw' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_indexed_not_structural_support_bound'; Contains = 'Unification failure. Got: antimirov_support_vector bit_alphabet' }
-        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_inventory_bypass'; Contains = 'Got: certified_alphabet_inventory bit_alphabet Expected: symbol_list bit_alphabet' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_quotient_not_semantic_witness'; Contains = 'Unification failure. Got: indexed_dfa_quotient_coverage' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_regex_not_positioned_bound'; Contains = 'Got: regex bit_alphabet Expected: antimirov_positioned_regex _ bit_alphabet' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_representatives_not_minimality_witness'; Contains = 'Unification failure. Got: indexed_dfa_state_vector bit_alphabet' }
-        @{ Id = 'samples/mega_brzozowski_derivatives/negative_truncated_canonical_vector'; Contains = 'Unification failure. Got: finite_symbol_vector bit_alphabet (finite_length_succ finite_length_zero)' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_derivative_skip_normalization'; Contains = 'derivative_normalized Expected: derivative_pipeline' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_seal_unverified_derivative'; Contains = 'derivative_verified Expected: derivative_pipeline' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_derivative_runtime_phase_use'; Contains = 'derivative_runtime_checked Expected: derivative_runtime_state' }
@@ -319,214 +319,6 @@
         @{ Id = 'samples/native_layout_stack_mutable_string_negative'; Contains = 'support stack mutable layout types' }
         @{ Id = 'samples/native_prototype_union_closure_method_missing_instance'; Contains = 'does not have the prototype score' }
         @{ Id = 'samples/union_case_ambiguity_negative'; Contains = 'ETY-UnionCaseAmbiguous: The union case Hit is defined by more than one opened module' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_atomic_defeq_sort_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term empty_ctx bool_sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_capture'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term (ctx_extend empty_ctx bool_sort) bool_sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_context_sort_indexed_membership_sort_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_meta_open_membership empty_ctx (universe_sort universe_one) (corrected_cic_meta_states_open empty_ctx bool_sort (corrected_cic_meta_states_open empty_ctx (universe_sort universe_one) (corrected_cic_meta_states_solved empty_ctx bool_sort corrected_cic_meta_states_empty))) (corrected_cic_meta_states_open empty_ctx bool_sort (corrected_cic_meta_states_solved empty_ctx (universe_sort universe_one) (corrected_cic_meta_states_solved empty_ctx bool_sort corrected_cic_meta_states_empty))) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_conversion_constraint_sort_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term empty_ctx (universe_sort universe_one) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_dependent_cross_pair'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_bool_dependent_result corrected_cic_bool_false_index Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_dependent_pi_domain_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: binder empty_ctx bool_sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_dependent_result_type'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term empty_ctx bool_sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_general_dependent_application_argument_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term empty_ctx bool_sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_general_dependent_lambda_binder_body_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term (ctx_extend empty_ctx bool_sort) (universe_sort universe_one) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_general_pi_binder_body_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term (ctx_extend empty_ctx bool_sort) (universe_sort universe_one) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_indexed_dependent_application_result_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_indexed_dependent_application (corrected_cic_substituted_codomain corrected_cic_identity_codomain_code corrected_cic_closed_type_code_bool) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_indexed_unary_constructor_application_result_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_indexed_dependent_application (corrected_cic_substituted_codomain corrected_cic_unary_constructor_codomain_code corrected_cic_closed_type_code_bool) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_intrinsic_constraint_raw_relation'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_scoped_pi_dependent_application_intrinsic_acceptance ctx domain Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_iota_indexed_action_reduction_cross_category'; Contains = 'ETY-TermError: Unification failure. Got: cic_verified_inductive_iota_contractum_action cic_verified_inductive_iota_recursive_conclusion_category Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_iota_indexed_conclusion_cross_category'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_generic_identity_beta_step empty_ctx bool_sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_iota_indexed_recursor_component_cross_category'; Contains = 'ETY-TermError: Unification failure. Got: cic_verified_inductive_iota_indexed_witness cic_verified_inductive_iota_recursive_conclusion_category Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_legacy_application_codomain_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term empty_ctx (function_sort bool_sort bool_sort) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_legacy_let_codomain_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term (ctx_extend empty_ctx bool_sort) bool_sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_membership_identity_authority_not_scalar'; Contains = 'ETY-TermError: Unification failure. Got: exists identity. corrected_cic_typed_meta_id identity * corrected_cic_typed_meta_identity_decision identity expected Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_meta_assignment_future_dependency'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_meta_solved_membership empty_ctx bool_sort (corrected_cic_meta_states_solved empty_ctx bool_sort corrected_cic_meta_states_empty) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_meta_authority_forged_solved'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_meta_authority (corrected_cic_meta_states_open empty_ctx bool_sort corrected_cic_meta_states_empty) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_nondefeq_authority_not_intrinsic_application'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_scoped_application_intrinsic_defeq _ empty_ctx bool_sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_nondefeq_authority_not_scoped_pi_authority'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_scoped_pi_term_authority ctx domain Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_nondefeq_not_defeq_pair_authority'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_structural_defeq_pair_authority ctx sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_ordinary_identity_beta_source_sort_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_ordinary_identity_whnf_step empty_ctx (universe_sort universe_one) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_ordinary_identity_beta_target_sort_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_ordinary_identity_whnf_step empty_ctx (universe_sort universe_one) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_programmed_dependent_application_result_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_programmed_dependent_application (corrected_cic_substituted_codomain corrected_cic_unary_constructor_codomain_code corrected_cic_closed_type_code_bool) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_programmed_endpoint_cross_codomain'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_programmed_dependent_application (corrected_cic_substituted_codomain corrected_cic_identity_codomain_code corrected_cic_closed_type_code_sort_zero) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_recursive_codomain_application_depth_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_recursive_codomain_program (corrected_cic_recursive_codomain_unary (corrected_cic_recursive_codomain_unary corrected_cic_recursive_codomain_identity)) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_scalar_decision_authority_not_intrinsic'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_scoped_pi_dependent_application_intrinsic_defeq empty_ctx (universe_sort universe_one) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_scalar_defeq_cannot_be_pair_authority'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_structural_defeq_pair_authority empty_ctx bool_sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_scoped_application_obstruction_not_intrinsic'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_scoped_application_intrinsic_defeq empty_ctx bool_sort bool_sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_total_substitution_domain_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term (ctx_extend empty_ctx bool_sort) (function_sort bool_sort bool_sort) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_two_meta_assignment_sort_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term empty_ctx (universe_sort universe_one) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_two_meta_duplicate_first_assignment'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_meta_open_membership empty_ctx bool_sort (corrected_cic_meta_states_open empty_ctx bool_sort (corrected_cic_meta_states_open empty_ctx (universe_sort universe_one) (corrected_cic_meta_states_open empty_ctx bool_sort corrected_cic_meta_states_empty))) (corrected_cic_meta_states_open empty_ctx bool_sort (corrected_cic_meta_states_open empty_ctx (universe_sort universe_one) (corrected_cic_meta_states_solved empty_ctx bool_sort corrected_cic_meta_states_empty))) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_two_meta_second_self_reference'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_meta_solved_membership empty_ctx bool_sort (corrected_cic_meta_states_solved empty_ctx bool_sort (corrected_cic_meta_states_open empty_ctx (universe_sort universe_one) (corrected_cic_meta_states_open empty_ctx bool_sort corrected_cic_meta_states_empty))) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_typed_meta_identity_decision_not_scalar'; Contains = 'ETY-TermError: Unification failure. Got: i64 Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_unification_assignment_sort_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term empty_ctx (universe_sort universe_one) Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_unification_constraint_context_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term (ctx_extend empty_ctx bool_sort) bool_sort Expected: ' }
-        @{ Id = 'samples/mega_lean_cic_bottom_up_kernel/negative_whnf_sort_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: corrected_cic_term empty_ctx (universe_sort universe_one) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_closed_fact_input_wrong_history'; Contains = 'ETY-TermError: Unification failure. Got: typed_fx_hashed_statement_closed_history typed_fx_hashed_statement_history_empty typed_fx_statement_stream_position_zero Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_competing_successor_fence_wrong_after'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_competing_successor_fence_receipt (nat_succ nat_zero) (nat_succ (nat_succ nat_zero)) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_cross_process_fence_restart_wrong_after'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_cross_process_fence_restart_receipt (nat_succ (nat_succ nat_zero)) (nat_succ (nat_succ (nat_succ nat_zero))) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_direct_marker_sync'; Contains = 'ETY-TermError: Unification failure. Got: typed_fx_statement_durable_commit typed_fx_statement_durable_data_synced Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_equal_hash_collision'; Contains = 'ETY-TermError: Unification failure. Got: typed_fx_statement_payload_hash_not_equal typed_fx_statement_payload_hash_changed typed_fx_statement_payload_hash_primary Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_erp_step_detached_result'; Contains = 'ETY-TermError: Unification failure. Got: erp_op requisition_drafted budget_reserved _ Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_event_payload_codec_cross_family'; Contains = 'ETY-TermError: Unification failure. Got: erp_plan approvals_collected purchase_order_issued Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_external_crash_recovery_receipt_version_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_event_commit_tree (nat_succ (nat_succ (nat_succ (nat_succ nat_zero)))) requisition_drafted goods_partially_received Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_fact_derived_observation_cross_outcome'; Contains = 'ETY-TermError: Unification failure. Got: typed_fx_hashed_statement_identity_collision typed_fx_statement_command_identity_primary typed_fx_statement_payload_hash_primary (typed_fx_hashed_statement_history_more typed_fx_statement_command_identity_primary typed_fx_statement_aggregate_identity_primary typed_fx_statement_payload_hash_primary typed_fx_hashed_statement_history_empty) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_four_owner_lineage_cannot_force_nat_two'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_fence_history (nat_succ (nat_succ nat_zero)) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_multiprocess_fenced_commit_wrong_endpoint'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_multiprocess_fenced_commit_receipt (nat_succ nat_zero) (nat_succ (nat_succ (nat_succ (nat_succ nat_zero)))) (nat_succ (nat_succ (nat_succ (nat_succ nat_zero)))) requisition_drafted goods_partially_received Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_multiprocess_fenced_physical_append_wrong_endpoint'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_multiprocess_fenced_physical_append_receipt (nat_succ nat_zero) (nat_succ (nat_succ (nat_succ (nat_succ nat_zero)))) (nat_succ (nat_succ (nat_succ (nat_succ nat_zero)))) requisition_drafted goods_partially_received Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_net_intercompany_detached_mirrors'; Contains = 'ETY-TermError: Unification failure. Got: opposed_mirror_pair company_a ''a usd po_1001 Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_p2p_commit_tree_skipped_middle'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_unit_event budget_reserved purchase_order_issued Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_p2p_four_event_wrong_version'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_event_store (nat_succ (nat_succ (nat_succ nat_zero))) requisition_drafted goods_partially_received Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_p2p_outbox_detached_message'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_unit_event requisition_drafted budget_reserved Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_p2p_three_event_skipped_middle'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_event_store (nat_succ nat_zero) budget_reserved purchase_order_issued Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_p2p_three_event_wrong_version'; Contains = 'ETY-TermError: Unification failure. Got: nat_add (nat_succ (nat_succ nat_zero)) (nat_succ nat_zero) (nat_succ (nat_succ (nat_succ nat_zero))) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_p2p_three_event_wrong_version_sum'; Contains = 'ETY-TermError: Unification failure. Got: nat_add (nat_succ nat_zero) (nat_succ nat_zero) (nat_succ (nat_succ nat_zero)) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_p2p_two_event_wrong_final_stage'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_unit_event budget_reserved budget_reserved Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_p2p_unit_commit_cross_stage'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_unit_event requisition_drafted requisition_drafted Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_p2p_unit_outbox_detached_message'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_unit_event requisition_drafted budget_reserved Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_physical_lineage_existential_wrong_fixed_depth'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_fence_history (nat_succ (nat_succ (nat_succ nat_zero))) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_physical_owner_payload_not_fence_scalar'; Contains = 'ETY-TermError: Unification failure. Got: i64 Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_physical_selection_cannot_force_fixed_depth'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_fence_history (nat_succ (nat_succ nat_zero)) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_reapply'; Contains = 'ETY-TermError: Unification failure. Got: typed_fx_statement_command typed_fx_statement_command_fresh Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_recorded_hash_changed_caller_collision'; Contains = 'ETY-TermError: Unification failure. Got: typed_fx_statement_payload_hash_not_equal typed_fx_statement_payload_hash_changed typed_fx_statement_payload_hash_primary Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_recoverable_fenced_lock_receipt_owner_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_fence_owner (nat_succ (nat_succ nat_zero)) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_recursive_recovery_receipt_version_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_reopened_recovery_authority (nat_succ (nat_succ (nat_succ nat_zero))) requisition_drafted purchase_order_issued Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_recursive_takeover_program_wrong_endpoint'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_fence_takeover_program (nat_succ nat_zero) (nat_succ (nat_succ (nat_succ (nat_succ nat_zero)))) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_recursive_wal_recovery_receipt_version_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_event_commit_tree (nat_succ (nat_succ (nat_succ (nat_succ nat_zero)))) requisition_drafted goods_partially_received Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_specialized_observation_wrong_history'; Contains = 'ETY-TermError: Unification failure. Got: typed_fx_hashed_statement_closed_position_fact typed_fx_hashed_statement_history_empty typed_fx_statement_stream_position_zero Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_three_owner_fenced_lock_receipt_fence_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_fence_history (nat_succ (nat_succ nat_zero)) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_three_owner_fenced_lock_receipt_stale_b_source_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_stale_fence (nat_succ (nat_succ nat_zero)) (nat_succ (nat_succ (nat_succ nat_zero))) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_three_owner_lineage_cannot_force_nat_four'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_fence_history (nat_succ (nat_succ (nat_succ (nat_succ nat_zero)))) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_top_collision_wrong_identity'; Contains = 'ETY-TermError: Unification failure. Got: typed_fx_hashed_statement_identity_collision typed_fx_statement_command_identity_secondary typed_fx_statement_payload_hash_changed (typed_fx_hashed_statement_history_more typed_fx_statement_command_identity_secondary typed_fx_statement_aggregate_identity_primary typed_fx_statement_payload_hash_primary (typed_fx_hashed_statement_history_more typed_fx_statement_command_identity_primary typed_fx_statement_aggregate_identity_primary typed_fx_statement_payload_hash_primary typed_fx_hashed_statement_history_empty)) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_top_membership_wrong_identity'; Contains = 'ETY-TermError: Unification failure. Got: typed_fx_hashed_statement_history_contains typed_fx_statement_command_identity_secondary typed_fx_statement_aggregate_identity_primary typed_fx_statement_payload_hash_primary (typed_fx_hashed_statement_history_more typed_fx_statement_command_identity_secondary typed_fx_statement_aggregate_identity_primary typed_fx_statement_payload_hash_primary (typed_fx_hashed_statement_history_more typed_fx_statement_command_identity_primary typed_fx_statement_aggregate_identity_primary typed_fx_statement_payload_hash_primary typed_fx_hashed_statement_history_empty)) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_two_owner_lineage_cannot_force_nat_three'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_fence_history (nat_succ (nat_succ (nat_succ nat_zero))) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_two_takeover_program_wrong_endpoint'; Contains = 'ETY-TermError: Unification failure. Got: erp_p2p_fence_takeover_program (nat_succ (nat_succ (nat_succ nat_zero))) (nat_succ (nat_succ (nat_succ (nat_succ nat_zero)))) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_unified_evidence_observation_wrong_history'; Contains = 'ETY-TermError: Unification failure. Got: typed_fx_hashed_statement_closed_fact_observation (typed_fx_hashed_statement_history_more typed_fx_statement_command_identity_primary typed_fx_statement_aggregate_identity_primary typed_fx_statement_payload_hash_primary typed_fx_hashed_statement_history_empty) (typed_fx_statement_stream_position_next typed_fx_statement_stream_position_zero) Expected: ' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/negative_unit_event_multistep_plan'; Contains = 'ETY-TermError: Unification failure. Got: erp_plan approvals_collected approvals_collected Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_alpha_capture'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_all_unused (exact_linear_free_context_extend exact_linear_free_context_empty _) (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_application_argument_choice_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_application_argument_function_branch_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_application_argument_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_application_function_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_beta_step_target_type_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_choice_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_close_nonempty'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term exact_linear_free_context_empty usage exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_application_argument_identity_congruence_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty (exact_linear_arrow_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_application_argument_tensor_beta_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty (exact_linear_arrow_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type) exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_application_function_identity_congruence_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_identity_beta_relation (exact_linear_arrow_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_atomic_tensor_beta_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_atomic_reduction (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_beta_relation_result_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_beta_relation (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_bool_identity_progress_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_identity_beta_relation exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_bool_multistep_tail_outcome_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_bool_normalization exact_linear_closed_bool_true_normal Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_bool_nested_right_beta_result_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_bool_normalization_outcome_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_bool_normalization exact_linear_closed_bool_false_normal Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_bool_normalization_progress_source_type_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_progress exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_bool_program_outcome_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_bool_program exact_linear_closed_bool_true_normal Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_bool_progress_continuation_outcome_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_bool_normalization exact_linear_closed_bool_true_normal Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_bool_recursive_guard_outcome_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_bool_program exact_linear_closed_bool_false_normal Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_bool_right_beta_result_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_bool_tensor_identity_progress_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_identity_beta_relation exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_higher_order_identity_progress_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_identity_beta_relation exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_identity_beta_reduction_result_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_identity_beta_relation exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_normalizing_fragment_false_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_normalizing_fragment exact_linear_false_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_normalizing_progress_authority_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_normalizing_fragment exact_linear_false_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_progress_from_reduction_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_identity_beta_relation exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_source_code_bool_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_value_source exact_linear_indexed_closed_source_bool_true exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_tensor_identity_progress_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_identity_beta_relation exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_tensor_left_general_congruence_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_reduction exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_tensor_left_identity_congruence_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_identity_beta_relation exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_tensor_right_conditional_congruence_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_reduction exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_tensor_right_general_congruence_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_reduction exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_tensor_right_identity_congruence_target_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_tensor_value_type_not_false_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_value exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_false_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_closed_unit_identity_progress_value_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_conditional_guard_step_requires_bool'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_conditional_step_target_type_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_small_step exact_linear_free_context_empty _ exact_linear_indexed_usage_empty exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_context_strengthening_removes_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_context_strengthening (exact_linear_free_context_extend exact_linear_free_context_empty _) (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty) exact_linear_free_context_empty exact_linear_indexed_usage_empty Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_false_elimination_requires_false'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_false_has_canonical_value'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_value exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_general_conditional_guard_target_usage_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_usage_merge exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_generic_conditional_false_preserves_domain'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_identity_beta_raw_term_wrapper'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_lambda_outer_choice_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_arrow_type exact_linear_bool_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type)) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_lambda_outer_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_arrow_type exact_linear_bool_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type)) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_linked_multistep_requires_normalization'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_bool_normalization exact_linear_closed_bool_false_normal Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_nested_tensor_right_choice_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_open_application_beta_cross_wrapper_identity'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution_strengthening (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_open_application_beta_target_type_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_open_conditional_beta_cross_wrapper_tensor'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution_strengthening (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty _) _) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_free_context_extend exact_linear_free_context_empty _) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) _ (exact_linear_tensor_type _ exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_open_conditional_beta_target_type_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_open_identity_beta_cross_type'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_open_identity_beta_cross_wrapper_application'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type * exact_linear_indexed_usage_merge (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_open_lambda_beta_cross_wrapper_tensor'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution_strengthening (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty _) _) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_free_context_extend exact_linear_free_context_empty _) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) _ (exact_linear_tensor_type _ exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_open_lambda_beta_target_type_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) (exact_linear_arrow_type exact_linear_unit_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_open_tensor_beta_cross_wrapper_conditional'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution_strengthening (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type) exact_linear_bool_type) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_bool_type exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_open_tensor_beta_target_type_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_ready_tensor_tail_wrong_argument_domain'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_value_source ''a exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_ready_unit_tensor_bool_argument'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_value_source ''a exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_beta_application_identity_cannot_change_result'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_beta_composite_domain_wrong_argument'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_beta_derivation_domain_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_beta_derivation_result_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_beta_domain_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_beta_false_ready_domain_retag'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_recursive_beta_derivation exact_linear_unit_type exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_beta_open_body_result_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_beta_ready_opened_not_source_progress'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_source_progress exact_linear_indexed_closed_source_unit result_ty Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_beta_result_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_beta_source_argument_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_closed_bool_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_open_bool_application_function_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_open_bool_endpoint_usage_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_open_bool_substitution_reuses_selected'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_open_typed_application_argument_domain_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_open_typed_substitution_strengthening_drops_replacement'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution_strengthening (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_open_typed_substitution_strengthening_lambda_drops_replacement'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution_strengthening (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type (exact_linear_arrow_type exact_linear_unit_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_recursive_open_typed_substitution_type_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_bool_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_source_progress_ready_identity_requires_identity_function'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_closed_ready_beta_or_neutral (exact_linear_indexed_closed_source_application_ready_identity exact_linear_unit_type exact_linear_indexed_closed_source_unit) exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_tensor_branch_choice_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_tensor_right_choice_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_tensor_substitution_keeps_used'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_recursive_open_typed_substitution (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_unused (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) exact_linear_unit_type (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_term_strengthening_drops_preserved'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_term_strengthening (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_unified_reduction_preservation_target_type_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_reduction (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type) _ (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_used_used_merge'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_usage_merge (exact_linear_free_context_extend exact_linear_free_context_empty _) (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) Expected: ' }
-        @{ Id = 'samples/mega_spiral_proves_spiral_relative_consistency/negative_variable_strengthening_drops_preserved'; Contains = 'ETY-TermError: Unification failure. Got: exact_linear_indexed_variable_strengthening (exact_linear_free_context_extend (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) exact_linear_unit_type) meta_zero (exact_linear_indexed_usage_used (exact_linear_indexed_usage_unused exact_linear_indexed_usage_empty)) (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_unit_type) meta_zero (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_accessible_child_one_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_predecessor_accessibility positional_one Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_accessible_child_step_prime_predecessor_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_predecessor (positional_one_bit positional_one) positional_one Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_accessible_child_unit_direct_wrong_root'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_nat (positional_one_bit positional_one) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_accessible_composite_completion_wrong_root'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_complete_factorization_tree (positional_zero_bit (positional_one_bit positional_one)) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_accessible_step_prime_predecessor_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_predecessor (positional_one_bit positional_one) positional_one Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_accessible_step_prime_tree_wrong_root'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_nat (positional_zero_bit (positional_zero_bit positional_one)) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_child_recursion_authority_child_accessibility_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_nat (positional_one_bit positional_one) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_child_recursion_authority_wrong_root'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_child_recursion_authority (positional_zero_bit positional_one) (positional_one_bit positional_one) (z_nat_succ z_nat_zero) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_complete_descent_fold_missing_division'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_recursive_descent (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) positional_zero Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_complete_reconstruction_prime_four'; Contains = 'ETY-TermError: Unification failure. Got: exists length. positive_positional_nat (positional_zero_bit (positional_zero_bit positional_one)) * positive_positional_factor_candidate_nonunit (positional_zero_bit (positional_zero_bit positional_one)) * certified_interval_positive_positional_all_rejected (positional_zero_bit (positional_zero_bit positional_one)) (positional_zero_bit (positional_zero_bit positional_one)) length * string Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_composite_recursion_authority_wrong_root'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_factor_membership divisor (positional_zero_bit (positional_zero_bit positional_one)) length Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_descent_unavailable_divisor_blocked_equal_root'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_equal (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_forged_interval'; Contains = 'ETY-TermError: Unification failure. Got: certified_positive_positional_candidate_interval positional_one z_nat_zero Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_intrinsic_prime_four'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_all_rejected _ (positional_zero_bit positional_one) z_nat_zero Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_intrinsic_prime_one'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_factor_candidate_nonunit (positional_zero_bit positional_one) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_membership_accessibility_authority_candidate_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_factor_membership positional_one (positional_one_bit positional_one) (z_nat_succ z_nat_zero) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_membership_accessibility_candidate_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_factor_membership positional_one (positional_one_bit positional_one) (z_nat_succ z_nat_zero) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_membership_accessible_child_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_nat (positional_one_bit positional_one) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_membership_candidate_value_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_nat (positional_one_bit positional_one) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_membership_descent_wrong_root'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_predecessor (positional_one_bit positional_one) (positional_zero_bit positional_one) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_membership_recursion_authority_wrong_root'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_factor_membership (positional_zero_bit positional_one) (positional_zero_bit (positional_zero_bit positional_one)) (z_nat_succ z_nat_zero) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_membership_strict_path_identity'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_factor_membership (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) length Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_mixed_second_prime_strict_separation_cannot_reverse'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_less second_factor singleton_factor Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_mixed_singleton_prime_power_wrong_root'; Contains = 'ETY-TermError: Unification failure. Got: certified_arithmetic_prime_power _ _ positional_one Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_mixed_strict_separation_not_divisibility_obligation'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_exact_factor_decision root second_factor Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_multi_prime_nf_not_prime_power'; Contains = 'ETY-TermError: Unification failure. Got: exists factor count product. certified_arithmetic_prime_power factor count product * positive_positional_multiply product positional_one root Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_positive_exponent_equality_wrong_length'; Contains = 'ETY-TermError: Unification failure. Got: certified_arithmetic_positive_exponent_equal (z_nat_succ z_nat_zero) (z_nat_succ (z_nat_succ z_nat_zero)) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_predecessor_accessibility_parallel_less'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_less positional_one (positional_zero_bit positional_one) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_predecessor_accessibility_parallel_value'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_predecessor (positional_zero_bit positional_one) positional_one Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_prime_power_leaf_nonfactor_not_product_nonfactor'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_nonfactor_certificate product external Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_prime_product_split_found_not_rejection'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_nonfactor_certificate product external Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_prime_product_split_previous_nonfactor_not_base_nonfactor'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_nonfactor_certificate factor external Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_quotient_accessible_parent_root_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_complete_factorization_tree (positional_one_bit positional_one) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_quotient_recursion_authority_wrong_root'; Contains = 'ETY-TermError: Unification failure. Got: value_synthesized_structural_division (positional_zero_bit (positional_zero_bit positional_one)) divisor quotient positional_zero Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_sealed_composite_children_direct_forged_divisor'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_factor_membership (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) length Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_sealed_composite_children_wrong_divisor'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_sealed_composite_children (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) (positional_one_bit (positional_zero_bit (positional_zero_bit positional_one))) (positional_zero_bit positional_one) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_sealed_composite_children_wrong_root'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_sealed_composite_children (positional_zero_bit (positional_one_bit (positional_zero_bit (positional_zero_bit positional_one)))) (positional_zero_bit (positional_one_bit positional_one)) (positional_zero_bit positional_one) Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_structural_division_quotient_projection_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: value_synthesized_structural_division (positional_zero_bit positional_one) (positional_zero_bit positional_one) positional_one positional_zero Expected: ' }
-        @{ Id = 'samples/mega_zeta_structural_laboratory/negative_zero_remainder'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_nat positional_zero Expected: ' }
         @{ Id = 'samples/contract_ack_before_publish'; Contains = 'Unification failure. Got: event_box published Expected: event_box persisted' }
         @{ Id = 'samples/contract_missing_endpoint_capability'; Contains = 'Unification failure. Got: session present present Expected: session present missing' }
         @{ Id = 'samples/contract_scoped_resource_escape'; Contains = 'The main function should not have a forall' }
@@ -546,16 +338,16 @@
         @{ Id = 'samples/contract_compensation_before_commit'; Contains = 'Unification failure. Got: receipt draft sent committed Expected: receipt _ _ pending' }
         @{ Id = 'samples/contract_cross_abi_polyglot_lowering'; Contains = 'Unification failure. Got: backend_capability backend_fsharp abi_net11 memory_gc capability_managed available Expected: backend_capability backend_fsharp abi_cuda memory_gc capability_managed available' }
         @{ Id = 'samples/contract_cross_auction_vickrey_winner'; Contains = 'Unification failure. Got: winner auction_501 bidder_a lot_gpu_9 currency_usdc Expected: winner auction_502 bidder_a lot_gpu_9 currency_usdc' }
-        @{ Id = 'samples/contract_cross_backend_probe'; Contains = 'Unification failure. Got: v36b_probe v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_backend_wasm v36b_probed Expected: v36b_probe v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_backend_cuda v36b_probed' }
+        @{ Id = 'samples/contract_cross_backend_preflight'; Contains = 'Unification failure. Got: v36b_preflight v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_backend_wasm v36b_preflighted Expected: v36b_preflight v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_backend_cuda v36b_preflighted' }
         @{ Id = 'samples/contract_cross_branch_quantum_correction'; Contains = 'Unification failure. Got: classical_bit program_a epoch_4 branch_zero measured Expected: classical_bit program_a epoch_4 branch_one measured' }
         @{ Id = 'samples/contract_cross_build_trio_inheritance'; Contains = 'Unification failure. Got: haplotype father hg38 chr1 paternal_phase Expected: haplotype father hg19 chr1 paternal_phase' }
         @{ Id = 'samples/contract_cross_contig_variant_merge'; Contains = 'Unification failure. Got: callset donor_a hg38 chr1 Expected: callset donor_a hg38 chr2' }
         @{ Id = 'samples/contract_cross_epoch_hidden_quorum'; Contains = 'Unification failure. Got: v36_share v36_tenant_blue v36_epoch_13 v36_root_b v36_lane_gamma v36_quorum_ready Expected: v36_share v36_tenant_blue v36_epoch_12 v36_root_b v36_lane_gamma v36_quorum_ready' }
-        @{ Id = 'samples/contract_cross_epoch_peer_receipt'; Contains = 'Unification failure. Got: healed_output transfer_a manifest_a peer_b host_b epoch_0 payload_a digest_a accepted Expected: healed_output transfer_a manifest_a peer_b host_b epoch_1 payload_a digest_a accepted' }
+        @{ Id = 'samples/contract_cross_epoch_peer_receipt'; Contains = 'Unification failure. Got: healed_output transfer_a manifest_a peer_b host_b epoch_0 payload_a fingerprint_a accepted Expected: healed_output transfer_a manifest_a peer_b host_b epoch_1 payload_a fingerprint_a accepted' }
         @{ Id = 'samples/contract_cross_kind_handoff'; Contains = 'Unification failure. Got: promise term_kind filled Expected: promise ty_kind filled' }
         @{ Id = 'samples/contract_cross_lane_compensation'; Contains = 'Unification failure. Got: lane_compensation lane_bank settlement_batch_a branch_epoch_1 branch_compensated Expected: lane_compensation lane_carbon settlement_batch_a branch_epoch_1 branch_compensated' }
         @{ Id = 'samples/contract_cross_lineage_teleport_correction'; Contains = 'Unification failure. Got: classical_bits lineage_a outcome_01 Expected: classical_bits lineage_b outcome_01' }
-        @{ Id = 'samples/contract_cross_manifest_mesh_commit'; Contains = 'Unification failure. Got: peer_output transfer_a manifest_stale peer_c payload_a digest_a accepted Expected: peer_output transfer_a manifest_a peer_c payload_a digest_a accepted' }
+        @{ Id = 'samples/contract_cross_manifest_mesh_commit'; Contains = 'Unification failure. Got: peer_output transfer_a manifest_stale peer_c payload_a fingerprint_a accepted Expected: peer_output transfer_a manifest_a peer_c payload_a fingerprint_a accepted' }
         @{ Id = 'samples/contract_cross_operation_idempotency_key'; Contains = 'Unification failure. Got: request authorize string Expected: request query string' }
         @{ Id = 'samples/contract_cross_owner_ancilla_release'; Contains = 'Unification failure. Got: loan owner_a Expected: loan owner_b' }
         @{ Id = 'samples/contract_cross_pool_flash_repayment'; Contains = 'Unification failure. Got: repayment_receipt pool_alpha borrower_7 usdc block_19000000 Expected: repayment_receipt pool_beta borrower_7 usdc block_19000000' }
@@ -579,7 +371,7 @@
         @{ Id = 'samples/contract_expired_deadline'; Contains = 'Unification failure. Got: deadline epoch_42 fresh Expected: deadline epoch_42 expired' }
         @{ Id = 'samples/contract_federation_mixed_epoch'; Contains = 'Unification failure. Got: v36_share v36_tenant_blue v36_epoch_13 v36_root_b v36_lane_beta v36_quorum_ready Expected: v36_share v36_tenant_blue v36_epoch_12 v36_root_b v36_lane_beta v36_quorum_ready' }
         @{ Id = 'samples/contract_foreign_executor_receipt'; Contains = 'Unification failure. Got: drain_receipt scope_a epoch1 executor_a drained Expected: drain_receipt scope_a epoch1 executor_b drained' }
-        @{ Id = 'samples/contract_foreign_signer_genome_dashboard'; Contains = 'Unification failure. Got: resource _ _ signer_b digest_a sample_a hg38 chr1 live Expected: resource app_scope epoch1 signer_a digest_a sample_a hg38 chr1 live' }
+        @{ Id = 'samples/contract_foreign_signer_genome_dashboard'; Contains = 'Unification failure. Got: resource _ _ signer_b fingerprint_a sample_a hg38 chr1 live Expected: resource app_scope epoch1 signer_a fingerprint_a sample_a hg38 chr1 live' }
         @{ Id = 'samples/contract_foreign_suspense_cancel_token'; Contains = 'Unification failure. Got: cancel_token app_scope epoch1 owner_a fresh Expected: cancel_token app_scope epoch1 owner_b fresh' }
         @{ Id = 'samples/contract_gapped_genome_interval_merge'; Contains = 'Unification failure. Got: segment hg38 chr1 i1 i3 Expected: segment hg38 chr1 i2 i3' }
         @{ Id = 'samples/contract_hott_broken_associator_pentagon'; Contains = 'Unification failure. Got: associator_2cell space_x point_a point_e path_p path_q path_r path_s vertex_5 vertex_4 edge_54_alt Expected: associator_2cell space_x point_a point_e path_p path_q path_r path_s vertex_5 vertex_4 edge_54' }
@@ -625,7 +417,7 @@
         @{ Id = 'samples/contract_missing_query_interpreter'; Contains = 'The higher order type instance remote does not have the prototype run_query.' }
         @{ Id = 'samples/contract_missing_quota_capability'; Contains = 'Unification failure. Got: session present present present Expected: session present present missing' }
         @{ Id = 'samples/contract_missing_route_parameter'; Contains = 'Unification failure. Got: route_params user_params Expected: route_params no_params' }
-        @{ Id = 'samples/contract_mixed_epoch_root_quorum'; Contains = 'Unification failure. Got: root_vote signer_b _ root_digest epoch1 verified Expected: root_vote signer_b key_b root_digest epoch0 verified' }
+        @{ Id = 'samples/contract_mixed_epoch_root_quorum'; Contains = 'Unification failure. Got: root_vote signer_b _ root_fingerprint epoch1 verified Expected: root_vote signer_b key_b root_fingerprint epoch0 verified' }
         @{ Id = 'samples/contract_mixed_phase_set'; Contains = 'Unification failure. Got: phase_block sample_a hg38 chr1 pos1 ''a phase_set_a Expected: phase_block sample_a hg38 chr1 pos1 pos2 phase_set_b' }
         @{ Id = 'samples/contract_non_polymorphic_emitter'; Contains = 'Unification failure. Got: forall a b e. operation a b e -> row a b e Expected: operation draft validated idempotent -> row draft validated idempotent' }
         @{ Id = 'samples/contract_old_key_after_rotation'; Contains = 'Unification failure. Got: public_key _ _ _ active Expected: public_key signer_a key_old epoch0 retired' }
@@ -648,12 +440,12 @@
         @{ Id = 'samples/contract_self_targeting_cnot'; Contains = 'Unification failure. Got: distinct slot0 slot0 Expected: distinct slot0 slot1' }
         @{ Id = 'samples/contract_shared_budget_double_allocation'; Contains = 'Unification failure. Got: nat_add nat_two nat_one nat_three Expected: nat_add nat_two nat_two nat_three' }
         @{ Id = 'samples/contract_stale_cache_key'; Contains = 'Unification failure. Got: result Expected: string' }
-        @{ Id = 'samples/contract_stale_chain_genome_stream'; Contains = 'Unification failure. Got: resource _ _ _ _ _ digest_b live Expected: resource app_scope epoch1 sample_a hg38 chr1 digest_a live' }
+        @{ Id = 'samples/contract_stale_chain_genome_stream'; Contains = 'Unification failure. Got: resource _ _ _ _ _ fingerprint_b live Expected: resource app_scope epoch1 sample_a hg38 chr1 fingerprint_a live' }
         @{ Id = 'samples/contract_stale_dom_commit_ticket'; Contains = 'Unification failure. Got: commit_ticket scope_a epoch1 host_a current Expected: commit_ticket scope_a epoch0 host_a current' }
         @{ Id = 'samples/contract_stale_epoch_completion'; Contains = 'Unification failure. Got: completion worker_a epoch_1 Expected: completion worker_a epoch_2' }
         @{ Id = 'samples/contract_stale_epoch_lease'; Contains = 'Unification failure. Got: authority epoch_one Expected: authority epoch_two' }
         @{ Id = 'samples/contract_stale_host_epoch_commit'; Contains = 'Unification failure. Got: effect_drain root_scope generation_7 drained Expected: effect_drain root_scope generation_6 drained' }
-        @{ Id = 'samples/contract_stale_manifest_chunk_resume'; Contains = 'Unification failure. Got: chunk_receipt transfer_a manifest_v1 chunk_2 digest_2 receiver_a journal_a accepted Expected: chunk_receipt transfer_a manifest_v2 chunk_2 digest_2 receiver_a journal_a accepted' }
+        @{ Id = 'samples/contract_stale_manifest_chunk_resume'; Contains = 'Unification failure. Got: chunk_receipt transfer_a manifest_v1 chunk_2 fingerprint_2 receiver_a journal_a accepted Expected: chunk_receipt transfer_a manifest_v2 chunk_2 fingerprint_2 receiver_a journal_a accepted' }
         @{ Id = 'samples/contract_stale_membership_byzantine_commit'; Contains = 'Unification failure. Got: byzantine_commit transfer_a manifest_good round_28 epoch_0 committed Expected: byzantine_commit transfer_a manifest_good round_28 epoch_1 committed' }
         @{ Id = 'samples/contract_stale_pbft_view_certificate'; Contains = 'Unification failure. Got: new_view_certificate view_8 epoch_11 request_42 Expected: new_view_certificate view_7 epoch_11 request_42' }
         @{ Id = 'samples/contract_stale_quantum_epoch'; Contains = 'Unification failure. Got: qstate (succ zero) Expected: qstate zero' }
@@ -671,7 +463,7 @@
         @{ Id = 'samples/contract_uncompensated_non_idempotent'; Contains = 'Unification failure. Got: compensation_proof requires_compensation Expected: compensation_proof no_compensation' }
         @{ Id = 'samples/contract_uncompute_with_foreign_garbage'; Contains = 'Unification failure. Got: garbage owner_a computed Expected: garbage owner_b computed' }
         @{ Id = 'samples/contract_unitary_after_measurement'; Contains = 'Unification failure. Got: qstate measured (succ zero) Expected: qstate coherent (succ zero)' }
-        @{ Id = 'samples/contract_unrooted_byzantine_evidence'; Contains = 'Unification failure. Got: inclusion_proof leaf_0 snapshot_digest_fork merkle_root_30 authenticated Expected: inclusion_proof leaf_0 snapshot_digest_30 merkle_root_30 authenticated' }
+        @{ Id = 'samples/contract_unrooted_byzantine_evidence'; Contains = 'Unification failure. Got: inclusion_proof leaf_0 snapshot_fingerprint_fork merkle_root_30 authenticated Expected: inclusion_proof leaf_0 snapshot_fingerprint_30 merkle_root_30 authenticated' }
         @{ Id = 'samples/contract_unsafe_retry'; Contains = 'Unification failure. Got: request non_retryable string Expected: request retryable string' }
         @{ Id = 'samples/contract_unsealed_genome_dashboard'; Contains = 'Unification failure. Got: callset_authority sealed sample_a hg38 chr1 Expected: callset_authority unsealed sample_a hg38 chr1' }
         @{ Id = 'samples/contract_wrong_adjoint_program'; Contains = 'Unification failure. Got: adjoint_proof program_a verified Expected: adjoint_proof program_b verified' }
@@ -690,6 +482,7 @@
         @{ Id = 'samples/contract_zero_retry_budget'; Contains = 'Unification failure. Got: budget (succ _) Expected: budget zero' }
     )
 
+
     Linked = @{
         'samples/linked_rust_list_over_model' = @{ Backends = 'Rust'; Exit = 108; Calls = 'parse_parse,render_blocks_html' }
         'samples/linked_rust_host_type' = @{ Backends = 'Rust'; Exit = 13; Calls = 'model_push4,model_vlen' }
@@ -703,6 +496,8 @@
         'samples/linked_duplicate_package_type_hint' = @{ Backends = 'Rust'; Error = 'Both types print the same, but their nominals come from different package loads' }
         'samples/linked_literal_suffix_redundant' = @{ Backends = 'Rust'; Exit = 21; Warns = 'WTY-RedundantLiteralSuffix' }
         'samples/linked_literal_suffix_needed' = @{ Backends = 'Rust'; Exit = 22; NoWarns = 'WTY-RedundantLiteralSuffix' }
+        'samples/linked_unused_binding_warns' = @{ Backends = 'Rust'; Exit = 23; Env = @{ SPIRAL_WARN_UNUSED_BINDINGS = '1' }; Warns = 'WTY-UnusedBinding: dropped is never read' }
+        'samples/linked_unused_binding_underscore' = @{ Backends = 'Rust'; Exit = 24; Env = @{ SPIRAL_WARN_UNUSED_BINDINGS = '1' }; NoWarns = 'WTY-UnusedBinding' }
         'samples/linked_rust_local_union_loop' = @{ Backends = 'Rust'; Exit = 5; Calls = 'model_second_line' }
         'samples/linked_records' = @{ Backends = 'Zig,Gleam'; Exit = 13; Calls = 'model_norm,model_make,model_pair,model_label_len' }
         'samples/linked_union' = @{ Backends = 'Zig,Gleam'; Exit = 13; Calls = 'model_make_sq,model_area' }
@@ -744,8 +539,6 @@
         'samples/ebpf_t2'
         'samples/frontier_hopacsota_globals_order'
         'samples/mega_brzozowski_derivatives'
-        'samples/mega_lean_cic_bottom_up_kernel'
-        'samples/mega_spiral_proves_spiral_relative_consistency'
         'samples/mega_zeta_structural_laboratory'
         'samples/multiline_comment'
         'samples/union_texts'
@@ -758,6 +551,22 @@
     )
 
     Backends = @{
+        'Fsharp,C,Rust' = @(
+            'samples/gpu_stages_boundary'
+            'samples/gpu_pass_carry'
+            'samples/gpu_stages_two_stage'
+            'samples/gpu_stages_mismatch_negative'
+        )
+        'Fsharp,Zig' = @(
+            'samples/compiler_probe_existential_helper_control'
+            'samples/compiler_probe_finite_vector_rank'
+            'samples/compiler_probe_gadt_rank_matrix'
+            'samples/compiler_probe_gadt_runtime'
+            'samples/compiler_probe_gadt_uninhabited_payload_runtime'
+            'samples/compiler_probe_generic_inventory_pack'
+            'samples/compiler_probe_generic_matcher_state'
+            'samples/compiler_probe_recursive_indexed_definition'
+        )
         'Rust' = @(
             'samples/rust_capture_in_macro_closure'
         )
@@ -765,6 +574,9 @@
             'samples/empty_match_false_eliminator'
             'samples/match_wildcard_shared_fallback'
             'samples/gadt_font_joining'
+            'samples/gadt_fiscal_lifecycle'
+            'samples/gadt_index_refined_equality'
+            'samples/gadt_spell_readiness'
             'samples/c_operator_function_name'
             'samples/managed_string_array'
             'samples/managed_string_builder'
@@ -783,9 +595,7 @@
             'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime'
             'samples/mega_brzozowski_derivatives/runtime_bench'
             'samples/mega_brzozowski_derivatives/runtime_native'
-            'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
             'samples/mega_omniledger_erp_kernel/runtime_native'
-            'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
             'samples/mega_zeta_structural_laboratory/runtime_native'
             'samples/managed_string_invalid_utf8_slice'
             'samples/managed_string_utf8_boundaries'
@@ -928,15 +738,14 @@
             'samples/gadt_specialized_case_rank'
             'samples/hello'
             'samples/mega_brzozowski_derivatives'
-            'samples/mega_lean_cic_bottom_up_kernel'
             'samples/mega_omniledger_erp_kernel'
-            'samples/mega_spiral_proves_spiral_relative_consistency'
             'samples/mega_zeta_structural_laboratory'
         )
         'Fsharp,Rust' = @(
             'samples/zig_lib_console'
         )
         'C,Rust' = @(
+            'samples/showcase_hkt_one_rule'
             'samples/c_unit_main_self_check'
             'samples/rust_box_dyn_moves'
             'samples/rust_consuming_json'
@@ -1003,7 +812,7 @@
             'samples/op_args_deref_if'
         )
         'C,Rust,Pascal,Python' = @(
-            'samples/union_case_name_probe'
+            'samples/union_case_name_trial'
             'samples/union_case_name_styled'
             'samples/union_case_name_pruned'
         )
@@ -1029,12 +838,16 @@
         )
     }
     Gleam = @(
+        'samples/gadt_font_joining'
+        'samples/gadt_fiscal_lifecycle'
+        'samples/gadt_index_refined_equality'
+        'samples/gadt_spell_readiness'
         'samples/bench_overhead'
         'samples/bench_sieve'
         'samples/bench_tree'
         'samples/bench_strings'
         'samples/bench_float'
-        'samples/union_case_name_probe'
+        'samples/union_case_name_trial'
         'samples/union_case_name_styled'
         'samples/union_case_name_pruned'
         'samples/gadt_pruned_union_tag'
@@ -1184,9 +997,7 @@
         'samples/mega_brzozowski_derivatives/indexed_dfa_state_cardinality'
         'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime'
         'samples/mega_brzozowski_derivatives/runtime_bench'
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
         'samples/mega_omniledger_erp_kernel/runtime_native'
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
         'samples/mega_zeta_structural_laboratory/runtime_native'
         'samples/native_replay_repeat_call'
         'samples/native_string_utf8_canonical_equal_bounded_source'
@@ -1208,6 +1019,10 @@
         'samples/wgsl_gadt_payload_union'
     )
     Python = @(
+        'samples/gadt_font_joining'
+        'samples/gadt_fiscal_lifecycle'
+        'samples/gadt_index_refined_equality'
+        'samples/gadt_spell_readiness'
         'samples/bench_overhead'
         'samples/bench_sieve'
         'samples/bench_tree'
@@ -1222,15 +1037,19 @@
         'samples/frontier_hopacsota_recursion_inferred'
         'samples/macro_splice_before_quote'
         'samples/zig_exit_wide'
-        'samples/arithmetic_branch', 'samples/array_bool', 'samples/array_cell', 'samples/array_closure_union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/array_create_reads_zero', 'samples/array_f32', 'samples/array_f64', 'samples/array_fun', 'samples/array_heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/array_heap_f32', 'samples/array_heap_heap', 'samples/array_heap_heap_heap', 'samples/array_heap_heap_pair', 'samples/array_heap_mix', 'samples/array_heap_pair_heaps', 'samples/array_heap_triple_heaps', 'samples/array_heap_union_heap_pair_heaps', 'samples/array_heap_union_heap_union_heap_pair_heaps', 'samples/array_i16', 'samples/array_i32', 'samples/array_i64', 'samples/array_i64_at1', 'samples/array_i8', 'samples/array_mut', 'samples/array_mut_f32', 'samples/array_mut_heap_heap', 'samples/array_mut_heap_heap_pair', 'samples/array_mut_heap_union_heap_pair_heaps', 'samples/array_mut_heap_union_heap_union_heap_pair_heaps', 'samples/array_mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/array_mut_pair', 'samples/array_mut_pair_heaps', 'samples/array_mut_triple_heaps', 'samples/array_text', 'samples/array_text_at1', 'samples/array_u16', 'samples/array_u32', 'samples/array_u64', 'samples/array_u8', 'samples/array_union', 'samples/array_union_heap_heap', 'samples/array_union_heap_pair_heaps', 'samples/array_union_heap_union_heap_pair_heaps', 'samples/array_union_pair_heaps', 'samples/array_union_text', 'samples/array_union_triple_heaps', 'samples/array_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/array2_heap_union_heap_union_heap_pair_heaps', 'samples/array3_union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/backend_smoke', 'samples/branch_select', 'samples/c_gadt_union_array', 'samples/closure_apply', 'samples/closure_array', 'samples/closure_curry', 'samples/closure_depth', 'samples/closure_f32_heap', 'samples/closure_heap', 'samples/closure_heap_heap', 'samples/closure_heap_heap_heap', 'samples/closure_heap_pair_heaps', 'samples/closure_heap_union_heap_pair_heaps', 'samples/closure_heap_union_heap_union_heap_pair_heaps', 'samples/closure_heap_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/closure_mut', 'samples/closure_mut_pair', 'samples/closure_pair', 'samples/closure_pair_array', 'samples/closure_pair_bool', 'samples/closure_pair_cell', 'samples/closure_pair_f32', 'samples/closure_pair_f64', 'samples/closure_pair_fun', 'samples/closure_pair_heap', 'samples/closure_pair_heaps', 'samples/closure_pair_i64', 'samples/closure_pair_i8', 'samples/closure_pair_mix', 'samples/closure_pair_slot', 'samples/closure_pair_text', 'samples/closure_pair_union', 'samples/closure_pair_union_heap', 'samples/closure_real', 'samples/closure_return', 'samples/closure_return_heap', 'samples/closure_return_text', 'samples/closure_text', 'samples/closure_text_pair', 'samples/closure_triple', 'samples/closure_triple_heaps', 'samples/closure_u32_flag', 'samples/closure_union', 'samples/closure_union_heap_heap', 'samples/closure_union_heap_pair_heaps', 'samples/closure_union_heap_union_heap_pair_heaps', 'samples/closure_union_mix', 'samples/closure_union_pair_heaps', 'samples/closure_union_triple_heaps', 'samples/closure_union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/closure_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/dynamic_array_bool', 'samples/dynamic_array_f64', 'samples/dynamic_array_function_boundary', 'samples/dynamic_array_mutable_alias', 'samples/dynamic_array_nested', 'samples/dynamic_array_record', 'samples/dynamic_array_record_shared_alias', 'samples/dynamic_array_return', 'samples/dynamic_array_runtime_length', 'samples/dynamic_array_shared_alias', 'samples/dynamic_array_union', 'samples/dynamic_array_union_nested', 'samples/dynamic_array_union_nested_shared_alias', 'samples/dynamic_array_union_shared_alias', 'samples/ebpf_arith', 'samples/ebpf_bacc', 'samples/ebpf_bits', 'samples/ebpf_bool', 'samples/ebpf_cast', 'samples/ebpf_char', 'samples/ebpf_conv', 'samples/ebpf_div', 'samples/ebpf_facc', 'samples/ebpf_fdiv', 'samples/ebpf_float', 'samples/ebpf_flt', 'samples/ebpf_ineq', 'samples/ebpf_neq', 'samples/ebpf_nest3', 'samples/ebpf_sh31', 'samples/ebpf_shift', 'samples/ebpf_snot', 'samples/ebpf_t2', 'samples/ebpf_t3', 'samples/ebpf_tacc', 'samples/ebpf_tworec', 'samples/ebpf_uacc', 'samples/ebpf_uadd', 'samples/ebpf_umul', 'samples/expression_precedence', 'samples/f64_scalar', 'samples/failwith_exit', 'samples/fixed_array_runtime_index', 'samples/fixed_array_runtime_update', 'samples/fixed_array_scalar', 'samples/float_math', 'samples/folder_index_module', 'samples/frontier_fib', 'samples/frontier_format_any_union', 'samples/frontier_hello', 'samples/frontier_join_format_any', 'samples/frontier_macro_then_multiline_annotation', 'samples/frontier_static_list_eq', 'samples/frontier_try_item', 'samples/function_call', 'samples/gadt_lazy_payload', 'samples/gadt_match_loses_constraint', 'samples/gleam_match_narrowed', 'samples/gleam_match_single_case', 'samples/heap_array', 'samples/heap_array_f32', 'samples/heap_array_n', 'samples/heap_bool', 'samples/heap_bool_text', 'samples/heap_closure', 'samples/heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/heap_f32_n', 'samples/heap_f32_text', 'samples/heap_f32_u32', 'samples/heap_f64s', 'samples/heap_fun', 'samples/heap_heap', 'samples/heap_heap_heap', 'samples/heap_heap_pair_heaps', 'samples/heap_i16_text', 'samples/heap_i64_real', 'samples/heap_i64_text', 'samples/heap_i8', 'samples/heap_i8_text', 'samples/heap_mut_cell', 'samples/heap_nest', 'samples/heap_pair', 'samples/heap_pair_heaps', 'samples/heap_pair_mix', 'samples/heap_real', 'samples/heap_real_text', 'samples/heap_slot', 'samples/heap_text', 'samples/heap_text_eq', 'samples/heap_text_pair', 'samples/heap_texts', 'samples/heap_texts_flag', 'samples/heap_triple', 'samples/heap_triple_heaps', 'samples/heap_u16_text', 'samples/heap_u32_flag', 'samples/heap_u32_text', 'samples/heap_u64_text', 'samples/heap_u8_text', 'samples/heap_union', 'samples/heap_union_heap_pair_heaps', 'samples/heap_union_heap_union_heap_pair_heaps', 'samples/heap_union_pair_heaps', 'samples/heap_union_triple_heaps', 'samples/heap_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/i64_scalar', 'samples/item_metadata_missing_target', 'samples/lua_while_union_pair', 'samples/lua_wide_integers', 'samples/managed_string_array', 'samples/managed_string_builder', 'samples/managed_string_codepoints', 'samples/managed_string_concat', 'samples/managed_string_empty_slice', 'samples/managed_string_index', 'samples/managed_string_invalid_utf8_slice', 'samples/managed_string_record', 'samples/managed_string_recursive', 'samples/managed_string_runtime', 'samples/managed_string_runtime_choice', 'samples/managed_string_shared_calls', 'samples/managed_string_slice', 'samples/managed_string_union', 'samples/managed_string_utf8_boundaries', 'samples/match_multiline_scrutinee', 'samples/mega_brzozowski_derivatives/indexed_dfa_state_cardinality', 'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime', 'samples/mega_brzozowski_derivatives/runtime_bench', 'samples/mega_brzozowski_derivatives/runtime_native', 'samples/mega_lean_cic_bottom_up_kernel/runtime_native', 'samples/mega_omniledger_erp_kernel/runtime_native', 'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native', 'samples/mega_zeta_structural_laboratory/runtime_native', 'samples/method_array', 'samples/method_depth', 'samples/method_heap', 'samples/method_i8', 'samples/method_mut', 'samples/method_mut_pair', 'samples/method_pair_cell', 'samples/method_pair_f64', 'samples/method_pair_fun', 'samples/method_pair_heap', 'samples/method_pair_mix', 'samples/method_pair_slot', 'samples/method_pair_text', 'samples/method_pair_union', 'samples/method_pair_union_heap', 'samples/method_real', 'samples/method_return', 'samples/method_text', 'samples/method_text_pair', 'samples/method_union', 'samples/method_union_mix', 'samples/multiline_comment', 'samples/multiline_triple_string', 'samples/multiline_type_application_dropped', 'samples/mut_f32_text', 'samples/mut_heap_heap', 'samples/mut_heap_heap_heap', 'samples/mut_heap_heap_pair', 'samples/mut_heap_union_heap_pair_heaps', 'samples/mut_heap_union_heap_union_heap_pair_heaps', 'samples/mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/mut_i64_text', 'samples/mut_pair', 'samples/mut_pair_heaps', 'samples/mut_real_text', 'samples/mut_text', 'samples/mut_text_pair', 'samples/mut_triple_heaps', 'samples/mut_u32_text', 'samples/mutable_alias_method_branch', 'samples/native_bitwise_scalar', 'samples/native_closure_array_capture', 'samples/native_closure_branch', 'samples/native_closure_capture', 'samples/native_closure_captured_branch', 'samples/native_closure_diamond_package', 'samples/native_closure_external_package', 'samples/native_closure_managed_capture', 'samples/native_closure_managed_captured_branch', 'samples/native_closure_managed_reuse', 'samples/native_closure_multimodule', 'samples/native_closure_multiowner', 'samples/native_closure_nested_branch', 'samples/native_closure_recursive_capture', 'samples/native_closure_return', 'samples/native_closure_reuse', 'samples/native_closure_transitive_package', 'samples/native_closure_transport', 'samples/native_closure_union_capture_method', 'samples/native_closure_union_rec', 'samples/native_cube_direct', 'samples/native_float_infinity', 'samples/native_float_math_family', 'samples/native_float_pow_pi', 'samples/native_float_sqrt', 'samples/native_layout_heap', 'samples/native_layout_mutable', 'samples/native_literal_join_args', 'samples/native_managed_array_tail_recursion', 'samples/native_managed_scc_tail_recursion', 'samples/native_managed_tail_recursion', 'samples/native_managed_union_array_closure', 'samples/native_managed_union_capture_record', 'samples/native_managed_union_record_closure', 'samples/native_managed_union_record_two_managed', 'samples/native_multimodule', 'samples/native_package_fixed_array_local', 'samples/native_package_fixed_array_mixed_runtime_write', 'samples/native_package_fixed_array_mixed_types', 'samples/native_package_fixed_array_numeric_widths', 'samples/native_package_fixed_array_runtime_index', 'samples/native_package_fixed_array_two_runtime_indexes', 'samples/native_package_owned_array_failure', 'samples/native_package_owned_array_transitive', 'samples/native_package_owned_array_type', 'samples/native_package_owned_managed_type', 'samples/native_package_owned_type', 'samples/native_package_prototype_record_callback', 'samples/native_prototype_record_callback', 'samples/native_prototype_union_closure_method', 'samples/native_recursive_tail_recursion', 'samples/native_replay_repeat_call', 'samples/native_source_package_prototype_record_callback', 'samples/native_source_package_prototype_union_callback', 'samples/native_source_package_prototype_union_callback_managed_single_owner', 'samples/native_source_package_prototype_union_callback_managed_two_cases', 'samples/native_string_utf8_canonical_equal_bounded_source', 'samples/native_string_utf8_fold_source', 'samples/native_string_utf8_fold_source_invalid', 'samples/native_string_utf8_grapheme_bounded_source', 'samples/native_string_utf8_grapheme_bounded_source_invalid', 'samples/native_string_utf8_normalization_bounded_source', 'samples/native_string_utf8_scalar_source', 'samples/native_string_utf8_scalar_source_invalid', 'samples/native_string_utf8_validate_source', 'samples/native_string_utf8_validate_source_invalid', 'samples/native_tail_recursion', 'samples/nested_tuple', 'samples/nominal_phantom_parameter', 'samples/nominal_record_field_order', 'samples/nominal_union_case_pattern', 'samples/op_args_application', 'samples/package_default_int_i64', 'samples/portable_composite', 'samples/predicate_call', 'samples/qualified_union_case_pattern', 'samples/record_value', 'samples/recur_sum', 'samples/recursive_union_list', 'samples/recursive_union_managed', 'samples/recursive_union_multi_case', 'samples/recursive_union_mutual', 'samples/recursive_union_terminal_ownership', 'samples/recursive_union_tree_shared', 'samples/rust_emit_expr_macro', 'samples/rust_global_item_macro', 'samples/rust_static_closure_chain', 'samples/rust_target_globals', 'samples/small_int_ops', 'samples/small_int_scalar', 'samples/static_string', 'samples/string_eq', 'samples/string_ord', 'samples/string_utf8', 'samples/tagged_union_enum', 'samples/tagged_union_heterogeneous', 'samples/tagged_union_scalar', 'samples/tagged_union_three_case', 'samples/tail_loop', 'samples/target_global_conflict', 'samples/tuple_mixed', 'samples/tuple_pair', 'samples/typecheck_long_let_body', 'samples/union_array', 'samples/union_array_mix', 'samples/union_bool', 'samples/union_call', 'samples/union_case_record_field_order', 'samples/union_cell_mix', 'samples/union_f32_text', 'samples/union_f64s', 'samples/union_fun_mix', 'samples/union_heap', 'samples/union_heap_heap', 'samples/union_heap_heap_heap', 'samples/union_heap_pair_heaps', 'samples/union_heap_union_heap_pair_heaps', 'samples/union_i64_text', 'samples/union_i8', 'samples/union_i8_text', 'samples/union_mut', 'samples/union_nested', 'samples/union_option', 'samples/union_pair', 'samples/union_pair_heaps', 'samples/union_pair_mix', 'samples/union_real', 'samples/union_real_mix', 'samples/union_text', 'samples/union_text_pair', 'samples/union_texts', 'samples/union_texts_flag', 'samples/union_triple_heaps', 'samples/union_triple_mix', 'samples/union_u32_flag', 'samples/union_u32_text', 'samples/union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/union3_heap_union_heap_union_heap_pair_heaps', 'samples/unsigned_mod', 'samples/upstream_type_if', 'samples/wgsl_array_scalar', 'samples/wgsl_array_tuple', 'samples/wgsl_gadt_payload_union', 'samples/wgsl_nullary_union', 'samples/wgsl_payload_union', 'samples/wgsl_record_loop', 'samples/wgsl_tail_call_in_match', 'samples/wgsl_unit_self_loop'
+        'samples/arithmetic_branch', 'samples/array_bool', 'samples/array_cell', 'samples/array_closure_union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/array_create_reads_zero', 'samples/array_f32', 'samples/array_f64', 'samples/array_fun', 'samples/array_heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/array_heap_f32', 'samples/array_heap_heap', 'samples/array_heap_heap_heap', 'samples/array_heap_heap_pair', 'samples/array_heap_mix', 'samples/array_heap_pair_heaps', 'samples/array_heap_triple_heaps', 'samples/array_heap_union_heap_pair_heaps', 'samples/array_heap_union_heap_union_heap_pair_heaps', 'samples/array_i16', 'samples/array_i32', 'samples/array_i64', 'samples/array_i64_at1', 'samples/array_i8', 'samples/array_mut', 'samples/array_mut_f32', 'samples/array_mut_heap_heap', 'samples/array_mut_heap_heap_pair', 'samples/array_mut_heap_union_heap_pair_heaps', 'samples/array_mut_heap_union_heap_union_heap_pair_heaps', 'samples/array_mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/array_mut_pair', 'samples/array_mut_pair_heaps', 'samples/array_mut_triple_heaps', 'samples/array_text', 'samples/array_text_at1', 'samples/array_u16', 'samples/array_u32', 'samples/array_u64', 'samples/array_u8', 'samples/array_union', 'samples/array_union_heap_heap', 'samples/array_union_heap_pair_heaps', 'samples/array_union_heap_union_heap_pair_heaps', 'samples/array_union_pair_heaps', 'samples/array_union_text', 'samples/array_union_triple_heaps', 'samples/array_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/array2_heap_union_heap_union_heap_pair_heaps', 'samples/array3_union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/backend_smoke', 'samples/branch_select', 'samples/c_gadt_union_array', 'samples/closure_apply', 'samples/closure_array', 'samples/closure_curry', 'samples/closure_depth', 'samples/closure_f32_heap', 'samples/closure_heap', 'samples/closure_heap_heap', 'samples/closure_heap_heap_heap', 'samples/closure_heap_pair_heaps', 'samples/closure_heap_union_heap_pair_heaps', 'samples/closure_heap_union_heap_union_heap_pair_heaps', 'samples/closure_heap_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/closure_mut', 'samples/closure_mut_pair', 'samples/closure_pair', 'samples/closure_pair_array', 'samples/closure_pair_bool', 'samples/closure_pair_cell', 'samples/closure_pair_f32', 'samples/closure_pair_f64', 'samples/closure_pair_fun', 'samples/closure_pair_heap', 'samples/closure_pair_heaps', 'samples/closure_pair_i64', 'samples/closure_pair_i8', 'samples/closure_pair_mix', 'samples/closure_pair_slot', 'samples/closure_pair_text', 'samples/closure_pair_union', 'samples/closure_pair_union_heap', 'samples/closure_real', 'samples/closure_return', 'samples/closure_return_heap', 'samples/closure_return_text', 'samples/closure_text', 'samples/closure_text_pair', 'samples/closure_triple', 'samples/closure_triple_heaps', 'samples/closure_u32_flag', 'samples/closure_union', 'samples/closure_union_heap_heap', 'samples/closure_union_heap_pair_heaps', 'samples/closure_union_heap_union_heap_pair_heaps', 'samples/closure_union_mix', 'samples/closure_union_pair_heaps', 'samples/closure_union_triple_heaps', 'samples/closure_union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/closure_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/dynamic_array_bool', 'samples/dynamic_array_f64', 'samples/dynamic_array_function_boundary', 'samples/dynamic_array_mutable_alias', 'samples/dynamic_array_nested', 'samples/dynamic_array_record', 'samples/dynamic_array_record_shared_alias', 'samples/dynamic_array_return', 'samples/dynamic_array_runtime_length', 'samples/dynamic_array_shared_alias', 'samples/dynamic_array_union', 'samples/dynamic_array_union_nested', 'samples/dynamic_array_union_nested_shared_alias', 'samples/dynamic_array_union_shared_alias', 'samples/ebpf_arith', 'samples/ebpf_bacc', 'samples/ebpf_bits', 'samples/ebpf_bool', 'samples/ebpf_cast', 'samples/ebpf_char', 'samples/ebpf_conv', 'samples/ebpf_div', 'samples/ebpf_facc', 'samples/ebpf_fdiv', 'samples/ebpf_float', 'samples/ebpf_flt', 'samples/ebpf_ineq', 'samples/ebpf_neq', 'samples/ebpf_nest3', 'samples/ebpf_sh31', 'samples/ebpf_shift', 'samples/ebpf_snot', 'samples/ebpf_t2', 'samples/ebpf_t3', 'samples/ebpf_tacc', 'samples/ebpf_tworec', 'samples/ebpf_uacc', 'samples/ebpf_uadd', 'samples/ebpf_umul', 'samples/expression_precedence', 'samples/f64_scalar', 'samples/failwith_exit', 'samples/fixed_array_runtime_index', 'samples/fixed_array_runtime_update', 'samples/fixed_array_scalar', 'samples/float_math', 'samples/folder_index_module', 'samples/frontier_fib', 'samples/frontier_format_any_union', 'samples/frontier_hello', 'samples/frontier_join_format_any', 'samples/frontier_macro_then_multiline_annotation', 'samples/frontier_static_list_eq', 'samples/frontier_try_item', 'samples/function_call', 'samples/gadt_lazy_payload', 'samples/gadt_match_loses_constraint', 'samples/gleam_match_narrowed', 'samples/gleam_match_single_case', 'samples/heap_array', 'samples/heap_array_f32', 'samples/heap_array_n', 'samples/heap_bool', 'samples/heap_bool_text', 'samples/heap_closure', 'samples/heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/heap_f32_n', 'samples/heap_f32_text', 'samples/heap_f32_u32', 'samples/heap_f64s', 'samples/heap_fun', 'samples/heap_heap', 'samples/heap_heap_heap', 'samples/heap_heap_pair_heaps', 'samples/heap_i16_text', 'samples/heap_i64_real', 'samples/heap_i64_text', 'samples/heap_i8', 'samples/heap_i8_text', 'samples/heap_mut_cell', 'samples/heap_nest', 'samples/heap_pair', 'samples/heap_pair_heaps', 'samples/heap_pair_mix', 'samples/heap_real', 'samples/heap_real_text', 'samples/heap_slot', 'samples/heap_text', 'samples/heap_text_eq', 'samples/heap_text_pair', 'samples/heap_texts', 'samples/heap_texts_flag', 'samples/heap_triple', 'samples/heap_triple_heaps', 'samples/heap_u16_text', 'samples/heap_u32_flag', 'samples/heap_u32_text', 'samples/heap_u64_text', 'samples/heap_u8_text', 'samples/heap_union', 'samples/heap_union_heap_pair_heaps', 'samples/heap_union_heap_union_heap_pair_heaps', 'samples/heap_union_pair_heaps', 'samples/heap_union_triple_heaps', 'samples/heap_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/i64_scalar', 'samples/item_metadata_missing_target', 'samples/lua_while_union_pair', 'samples/lua_wide_integers', 'samples/managed_string_array', 'samples/managed_string_builder', 'samples/managed_string_codepoints', 'samples/managed_string_concat', 'samples/managed_string_empty_slice', 'samples/managed_string_index', 'samples/managed_string_invalid_utf8_slice', 'samples/managed_string_record', 'samples/managed_string_recursive', 'samples/managed_string_runtime', 'samples/managed_string_runtime_choice', 'samples/managed_string_shared_calls', 'samples/managed_string_slice', 'samples/managed_string_union', 'samples/managed_string_utf8_boundaries', 'samples/match_multiline_scrutinee', 'samples/mega_brzozowski_derivatives/indexed_dfa_state_cardinality', 'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime', 'samples/mega_brzozowski_derivatives/runtime_bench', 'samples/mega_brzozowski_derivatives/runtime_native', 'samples/mega_omniledger_erp_kernel/runtime_native', 'samples/mega_zeta_structural_laboratory/runtime_native', 'samples/method_array', 'samples/method_depth', 'samples/method_heap', 'samples/method_i8', 'samples/method_mut', 'samples/method_mut_pair', 'samples/method_pair_cell', 'samples/method_pair_f64', 'samples/method_pair_fun', 'samples/method_pair_heap', 'samples/method_pair_mix', 'samples/method_pair_slot', 'samples/method_pair_text', 'samples/method_pair_union', 'samples/method_pair_union_heap', 'samples/method_real', 'samples/method_return', 'samples/method_text', 'samples/method_text_pair', 'samples/method_union', 'samples/method_union_mix', 'samples/multiline_comment', 'samples/multiline_triple_string', 'samples/multiline_type_application_dropped', 'samples/mut_f32_text', 'samples/mut_heap_heap', 'samples/mut_heap_heap_heap', 'samples/mut_heap_heap_pair', 'samples/mut_heap_union_heap_pair_heaps', 'samples/mut_heap_union_heap_union_heap_pair_heaps', 'samples/mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/mut_i64_text', 'samples/mut_pair', 'samples/mut_pair_heaps', 'samples/mut_real_text', 'samples/mut_text', 'samples/mut_text_pair', 'samples/mut_triple_heaps', 'samples/mut_u32_text', 'samples/mutable_alias_method_branch', 'samples/native_bitwise_scalar', 'samples/native_closure_array_capture', 'samples/native_closure_branch', 'samples/native_closure_capture', 'samples/native_closure_captured_branch', 'samples/native_closure_diamond_package', 'samples/native_closure_external_package', 'samples/native_closure_managed_capture', 'samples/native_closure_managed_captured_branch', 'samples/native_closure_managed_reuse', 'samples/native_closure_multimodule', 'samples/native_closure_multiowner', 'samples/native_closure_nested_branch', 'samples/native_closure_recursive_capture', 'samples/native_closure_return', 'samples/native_closure_reuse', 'samples/native_closure_transitive_package', 'samples/native_closure_transport', 'samples/native_closure_union_capture_method', 'samples/native_closure_union_rec', 'samples/native_cube_direct', 'samples/native_float_infinity', 'samples/native_float_math_family', 'samples/native_float_pow_pi', 'samples/native_float_sqrt', 'samples/native_layout_heap', 'samples/native_layout_mutable', 'samples/native_literal_join_args', 'samples/native_managed_array_tail_recursion', 'samples/native_managed_scc_tail_recursion', 'samples/native_managed_tail_recursion', 'samples/native_managed_union_array_closure', 'samples/native_managed_union_capture_record', 'samples/native_managed_union_record_closure', 'samples/native_managed_union_record_two_managed', 'samples/native_multimodule', 'samples/native_package_fixed_array_local', 'samples/native_package_fixed_array_mixed_runtime_write', 'samples/native_package_fixed_array_mixed_types', 'samples/native_package_fixed_array_numeric_widths', 'samples/native_package_fixed_array_runtime_index', 'samples/native_package_fixed_array_two_runtime_indexes', 'samples/native_package_owned_array_failure', 'samples/native_package_owned_array_transitive', 'samples/native_package_owned_array_type', 'samples/native_package_owned_managed_type', 'samples/native_package_owned_type', 'samples/native_package_prototype_record_callback', 'samples/native_prototype_record_callback', 'samples/native_prototype_union_closure_method', 'samples/native_recursive_tail_recursion', 'samples/native_replay_repeat_call', 'samples/native_source_package_prototype_record_callback', 'samples/native_source_package_prototype_union_callback', 'samples/native_source_package_prototype_union_callback_managed_single_owner', 'samples/native_source_package_prototype_union_callback_managed_two_cases', 'samples/native_string_utf8_canonical_equal_bounded_source', 'samples/native_string_utf8_fold_source', 'samples/native_string_utf8_fold_source_invalid', 'samples/native_string_utf8_grapheme_bounded_source', 'samples/native_string_utf8_grapheme_bounded_source_invalid', 'samples/native_string_utf8_normalization_bounded_source', 'samples/native_string_utf8_scalar_source', 'samples/native_string_utf8_scalar_source_invalid', 'samples/native_string_utf8_validate_source', 'samples/native_string_utf8_validate_source_invalid', 'samples/native_tail_recursion', 'samples/nested_tuple', 'samples/nominal_phantom_parameter', 'samples/nominal_record_field_order', 'samples/nominal_union_case_pattern', 'samples/op_args_application', 'samples/package_default_int_i64', 'samples/portable_composite', 'samples/predicate_call', 'samples/qualified_union_case_pattern', 'samples/record_value', 'samples/recur_sum', 'samples/recursive_union_list', 'samples/recursive_union_managed', 'samples/recursive_union_multi_case', 'samples/recursive_union_mutual', 'samples/recursive_union_terminal_ownership', 'samples/recursive_union_tree_shared', 'samples/rust_emit_expr_macro', 'samples/rust_global_item_macro', 'samples/rust_static_closure_chain', 'samples/rust_target_globals', 'samples/small_int_ops', 'samples/small_int_scalar', 'samples/static_string', 'samples/string_eq', 'samples/string_ord', 'samples/string_utf8', 'samples/tagged_union_enum', 'samples/tagged_union_heterogeneous', 'samples/tagged_union_scalar', 'samples/tagged_union_three_case', 'samples/tail_loop', 'samples/target_global_conflict', 'samples/tuple_mixed', 'samples/tuple_pair', 'samples/typecheck_long_let_body', 'samples/union_array', 'samples/union_array_mix', 'samples/union_bool', 'samples/union_call', 'samples/union_case_record_field_order', 'samples/union_cell_mix', 'samples/union_f32_text', 'samples/union_f64s', 'samples/union_fun_mix', 'samples/union_heap', 'samples/union_heap_heap', 'samples/union_heap_heap_heap', 'samples/union_heap_pair_heaps', 'samples/union_heap_union_heap_pair_heaps', 'samples/union_i64_text', 'samples/union_i8', 'samples/union_i8_text', 'samples/union_mut', 'samples/union_nested', 'samples/union_option', 'samples/union_pair', 'samples/union_pair_heaps', 'samples/union_pair_mix', 'samples/union_real', 'samples/union_real_mix', 'samples/union_text', 'samples/union_text_pair', 'samples/union_texts', 'samples/union_texts_flag', 'samples/union_triple_heaps', 'samples/union_triple_mix', 'samples/union_u32_flag', 'samples/union_u32_text', 'samples/union3_all_heap_union_heap_union_heap_pair_heaps', 'samples/union3_both_heap_union_heap_union_heap_pair_heaps', 'samples/union3_heap_union_heap_union_heap_pair_heaps', 'samples/unsigned_mod', 'samples/upstream_type_if', 'samples/wgsl_array_scalar', 'samples/wgsl_array_tuple', 'samples/wgsl_gadt_payload_union', 'samples/wgsl_nullary_union', 'samples/wgsl_payload_union', 'samples/wgsl_record_loop', 'samples/wgsl_tail_call_in_match', 'samples/wgsl_unit_self_loop'
     )
     Lua = @(
+        'samples/gadt_font_joining'
+        'samples/gadt_fiscal_lifecycle'
+        'samples/gadt_index_refined_equality'
+        'samples/gadt_spell_readiness'
         'samples/bench_overhead'
         'samples/bench_sieve'
         'samples/bench_tree'
         'samples/bench_strings'
         'samples/bench_float'
-        'samples/union_case_name_probe'
+        'samples/union_case_name_trial'
         'samples/union_case_name_styled'
         'samples/union_case_name_pruned'
         'samples/gadt_pruned_union_tag'
@@ -1585,8 +1404,6 @@
         'samples/managed_string_slice'
         'samples/managed_string_union'
         'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime'
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
         'samples/mega_zeta_structural_laboratory/runtime_native'
         'samples/multiline_comment'
         'samples/multiline_triple_string'
@@ -1903,8 +1720,6 @@
         'samples/match_multiline_scrutinee'
         'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime'
         'samples/mega_brzozowski_derivatives/runtime_native'
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
         'samples/mega_zeta_structural_laboratory/runtime_native'
         'samples/method_array'
         'samples/method_depth'
@@ -2111,7 +1926,11 @@
         'samples/native_float_math_f32'
     )
     Lean = @(
-        'samples/union_case_name_probe'
+        'samples/gadt_font_joining'
+        'samples/gadt_fiscal_lifecycle'
+        'samples/gadt_index_refined_equality'
+        'samples/gadt_spell_readiness'
+        'samples/union_case_name_trial'
         'samples/union_case_name_styled'
         'samples/union_case_name_pruned'
         'samples/gadt_pruned_union_tag'
@@ -2273,8 +2092,6 @@
         'samples/heap_f64s'
         'samples/heap_texts'
         'samples/heap_texts_flag'
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
         'samples/mega_zeta_structural_laboratory/runtime_native'
         'samples/native_cube_frame_direct'
         'samples/ebpf_cast'
@@ -2301,12 +2118,20 @@
         'samples/rust_static_closure_chain'
     )
     Wasm = @(
+        'samples/assign_primitive_loop'
+        'samples/frontier_format_any_union'
+        'samples/frontier_join_format_any'
+        'samples/wasm_format_any_exact'
+        'samples/gadt_font_joining'
+        'samples/gadt_fiscal_lifecycle'
+        'samples/gadt_index_refined_equality'
+        'samples/gadt_spell_readiness'
         'samples/bench_overhead'
         'samples/bench_sieve'
         'samples/bench_tree'
         'samples/bench_strings'
         'samples/bench_float'
-        'samples/union_case_name_probe'
+        'samples/union_case_name_trial'
         'samples/union_case_name_styled'
         'samples/union_case_name_pruned'
         'samples/gadt_pruned_union_tag'
@@ -2609,8 +2434,6 @@
             'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime'
             'samples/mega_brzozowski_derivatives/runtime_bench'
             'samples/mega_brzozowski_derivatives/runtime_native'
-            'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
-            'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
             'samples/mega_zeta_structural_laboratory/runtime_native'
             'samples/multiline_comment'
             'samples/multiline_triple_string'
@@ -2757,6 +2580,19 @@
         'samples/qualified_union_case_no_payload'
     )
     Wgsl = @(
+        'samples/gpu_stages_boundary'
+        'samples/gpu_stage_boundary_in_join_point_negative'
+        'samples/gpu_pass_carry'
+        'samples/gpu_pass_carry_heap_negative'
+        'samples/wgsl_hoist_failing_arm'
+        'samples/c_deep_list_decref'
+        'samples/lua_while_union_pair'
+        'samples/recursive_union_mutual'
+        'samples/failwith_exit'
+        'samples/c_unit_main_self_check'
+        'samples/gadt_pruned_union_tag'
+        'samples/lua_union_tag_runtime'
+        'samples/union_tag_nullary'
         'samples/i64_scalar'
         'samples/array_i64'
         'samples/array_i64_at1'
@@ -2882,8 +2718,6 @@
         'samples/gadt_lazy_payload'
         'samples/gadt_match_loses_constraint'
         'samples/macro_splice_before_quote'
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
         'samples/mega_zeta_structural_laboratory/runtime_native'
         'samples/multiline_comment'
         'samples/multiline_type_application_dropped'
@@ -2949,8 +2783,6 @@
         'samples/gadt_lazy_payload'
         'samples/gadt_match_loses_constraint'
         'samples/match_multiline_scrutinee'
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
         'samples/mega_zeta_structural_laboratory/runtime_native'
         'samples/method_i8'
         'samples/multiline_comment'
@@ -2985,6 +2817,11 @@
         'samples/package_default_int_i64'
     )
     Kotlin = @(
+        'samples/assign_primitive_loop'
+        'samples/gadt_font_joining'
+        'samples/gadt_fiscal_lifecycle'
+        'samples/gadt_index_refined_equality'
+        'samples/gadt_spell_readiness'
         'samples/bench_overhead'
         'samples/bench_sieve'
         'samples/bench_tree'
@@ -3262,9 +3099,7 @@
         'samples/mega_brzozowski_derivatives/indexed_dfa_state_cardinality'
         'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime'
         'samples/mega_brzozowski_derivatives/runtime_native'
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
         'samples/mega_omniledger_erp_kernel/runtime_native'
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
         'samples/mega_zeta_structural_laboratory/runtime_native'
         'samples/native_closure_recursive_capture'
         'samples/native_float_math_family'
@@ -3307,6 +3142,11 @@
         'samples/portable_math_rounding'
     )
     Swift = @(
+        'samples/assign_primitive_loop'
+        'samples/gadt_font_joining'
+        'samples/gadt_fiscal_lifecycle'
+        'samples/gadt_index_refined_equality'
+        'samples/gadt_spell_readiness'
         'samples/bench_overhead'
         'samples/bench_sieve'
         'samples/bench_tree'
@@ -3584,9 +3424,7 @@
         'samples/mega_brzozowski_derivatives/indexed_dfa_state_cardinality'
         'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime'
         'samples/mega_brzozowski_derivatives/runtime_native'
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
         'samples/mega_omniledger_erp_kernel/runtime_native'
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
         'samples/mega_zeta_structural_laboratory/runtime_native'
         'samples/native_closure_array_capture'
         'samples/native_closure_branch'
@@ -3738,8 +3576,6 @@
         'samples/gadt_match_loses_constraint'
         'samples/macro_splice_before_quote'
         'samples/match_multiline_scrutinee'
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
         'samples/mega_zeta_structural_laboratory/runtime_native'
         'samples/multiline_comment'
         'samples/multiline_type_application_dropped'
@@ -3834,12 +3670,16 @@
         'samples/small_int_scalar'
     )
     Zig = @(
+        'samples/gadt_font_joining'
+        'samples/gadt_fiscal_lifecycle'
+        'samples/gadt_index_refined_equality'
+        'samples/gadt_spell_readiness'
         'samples/bench_overhead'
         'samples/bench_sieve'
         'samples/bench_tree'
         'samples/bench_strings'
         'samples/bench_float'
-        'samples/union_case_name_probe'
+        'samples/union_case_name_trial'
         'samples/union_case_name_styled'
         'samples/union_case_name_pruned'
         'samples/gadt_pruned_union_tag'
@@ -4301,9 +4141,7 @@
         'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime'
         'samples/mega_brzozowski_derivatives/runtime_bench'
         'samples/mega_brzozowski_derivatives/runtime_native'
-        'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
         'samples/mega_omniledger_erp_kernel/runtime_native'
-        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
         'samples/mega_zeta_structural_laboratory/runtime_native'
         'samples/frontier_format_any_union'
         'samples/frontier_hopacsota_globals_order'

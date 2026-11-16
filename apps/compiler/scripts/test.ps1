@@ -17,7 +17,7 @@ param(
     [switch]$ReuseCompile,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$WorkspaceRoot,
-    [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Pascal', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Probe,
+    [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Pascal', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Gauge,
     [string[]]$Oracle = @('Zig', 'C')
 )
 . $PSScriptRoot/env.ps1
@@ -25,7 +25,7 @@ $matrix = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/matrix.psd1') 
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 function ConvertTo-BackendName([string]$name) { if ($name -eq 'Delphi') { 'Pascal' } else { $name } }
 $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object { ConvertTo-BackendName $_ })
-if ($Probe) { $Probe = ConvertTo-BackendName $Probe }
+if ($Gauge) { $Gauge = ConvertTo-BackendName $Gauge }
 if ($BackendsFrom -and -not $Backend) {
     $pair = @($BackendsFrom | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
     if ($pair.Count -ne 2) { throw '-BackendsFrom takes two compiler sources: before, then after' }
@@ -95,7 +95,7 @@ if ($Parallel -le 0) {
     }
     $Parallel = [int][Math]::Max(1, [Math]::Min($byCpu, [Math]::Floor($freeGb / 1.5)))
 }
-if ($Accept -and $Probe) { throw '-Probe runs are never accepted: they only measure a backend against the C rows' }
+if ($Accept -and $Gauge) { throw '-Gauge runs are never accepted: they only measure a backend against the C rows' }
 if ($ChangedBetween -and ($Accept -or $Record)) { throw '-ChangedBetween runs a subset: -Accept and -Record need the full suite' }
 if ($ReuseCompile -and ($Accept -or $Record)) { throw '-ReuseCompile replays stored compile results: -Accept and -Record compile every row' }
 if ($ReuseNative -and ($Accept -or $Record)) { throw '-ReuseNative replays stored native outcomes: -Accept and -Record run every native row' }
@@ -147,9 +147,9 @@ if ($Suite -contains 'tstypes') {
         $out = Join-Path $runDir "tstypes/$($case.Name)"
         $types = Join-Path $out 'types.d.ts'
         $compiled = & $compileInto (Join-Path $case.FullName 'main.spi') $out @('--types-out', $types)
-        & $tsc --strict --noEmit --target es2022 --lib es2022 $types (Join-Path $case.FullName 'probe.ts') *> (Join-Path $out 'tsc.log')
+        & $tsc --strict --noEmit --target es2022 --lib es2022 $types (Join-Path $case.FullName 'trial.ts') *> (Join-Path $out 'tsc.log')
         $checked = $LASTEXITCODE
-        $expected = @(Select-String -LiteralPath (Join-Path $case.FullName 'probe.ts') -Pattern '^\s*// @ts-expect-error').Count
+        $expected = @(Select-String -LiteralPath (Join-Path $case.FullName 'trial.ts') -Pattern '^\s*// @ts-expect-error').Count
         $negatives = @(Get-ChildItem (Join-Path $case.FullName 'negatives') -Directory -ErrorAction Ignore | Sort-Object Name)
         $accepted = @(foreach ($n in $negatives) {
             $entry = Join-Path $n.FullName 'main.spi'
@@ -195,6 +195,8 @@ if ($Suite -contains 'linked') {
             New-Item -ItemType Directory -Force $out | Out-Null
             $row = [ordered]@{ id = $case; backend = $b; compile = 'ok'; linked = ''; native = ''; exit = ''; want = $(if ($spec['Error']) { "error: $($spec['Error'])" } else { $spec['Exit'] }); verdict = 'pass'; detail = '' }
             $errorText = ''
+            $envSaved = @{}
+            if ($spec['Env']) { foreach ($k in $spec['Env'].Keys) { $envSaved[$k] = [Environment]::GetEnvironmentVariable($k); [Environment]::SetEnvironmentVariable($k, [string]$spec['Env'][$k]) } }
             $entryOf = { param($u) @('main.spi', "$u.spi") | ForEach-Object { Join-Path $units[$u].Dir $_ } | Where-Object { Test-Path $_ } | Select-Object -First 1 }
             if ($env:SPIRAL_LINKED_WARM -ne '0') {
                 $jobsPath = Join-Path $out 'warm.jobs.tsv'
@@ -222,6 +224,7 @@ if ($Suite -contains 'linked') {
                     if ($LASTEXITCODE) { $row.compile = 'error'; $errorText = $text; $row.detail = "${u}: " + ($text -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($text -replace '\s+', ' ').Length)); break }
                 }
             }
+            foreach ($k in $envSaved.Keys) { [Environment]::SetEnvironmentVariable($k, $envSaved[$k]) }
             if ($spec['Error']) {
                 if ($row.compile -ne 'error' -or $errorText -notmatch [regex]::Escape($spec['Error'])) { $row.verdict = 'FAIL' }
             } elseif ($row.compile -ne 'ok') { $row.verdict = 'FAIL' }
@@ -506,7 +509,7 @@ foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm
 function Add-ListedBackends([string]$relative, [string[]]$backends) {
     $result = @($backends)
     foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'Python') { if ($listedSamples[$listed].ContainsKey($relative) -and $result -notcontains $listed) { $result += $listed } }
-    if ($Probe -and $result -contains 'C' -and $result -notcontains $Probe) { $result += $Probe }
+    if ($Gauge -and $result -contains 'C' -and $result -notcontains $Gauge) { $result += $Gauge }
     $result
 }
 function Get-ExampleBackends([string]$dir) {
@@ -547,7 +550,9 @@ function Get-Samples([string]$suite) {
         }
         'mega' {
             $matrix.Mega | ForEach-Object {
-                New-Sample 'mega' (Join-Path $BundleRoot $_.Source) @('Fsharp') }
+                $entry = $_
+                $backends = if ($entry['Backends']) { @($entry['Backends'] -split ',' | ForEach-Object { ConvertTo-BackendName $_.Trim() }) } else { @('Fsharp') }
+                New-Sample 'mega' (Join-Path $BundleRoot $entry.Source) $backends }
         }
     }
 }
@@ -583,11 +588,11 @@ $jobs = foreach ($sample in $samples) {
         if ($fastSuite -and $restKeys.Contains("$($sample.Id)|$b")) { continue }
         [pscustomobject]@{ Key = "$($sample.Id)|$b"; Suite = $sample.Suite; Id = $sample.Id; Backend = $b; Input = $sample.Input
             CoreBackend = $(if ($coreBackend.ContainsKey($b)) { $coreBackend[$b] } else { $b })
-            Output = $(if ($b -eq $Probe) { Join-Path $scratch "probe/$($sample.Id)/main.$($extension[$b])" } else { [IO.Path]::ChangeExtension($sample.Input, $extension[$b]) }); TimeoutSec = $timeout
+            Output = $(if ($b -eq $Gauge) { Join-Path $scratch "gauge/$($sample.Id)/main.$($extension[$b])" } else { [IO.Path]::ChangeExtension($sample.Input, $extension[$b]) }); TimeoutSec = $timeout
             Native = Join-Path $nativeRoot "$($sample.Id)/$b" }
     }
 }
-if ($Probe) { $jobs | Where-Object Backend -eq $Probe | ForEach-Object { New-Item -ItemType Directory -Force (Split-Path $_.Output) | Out-Null } }
+if ($Gauge) { $jobs | Where-Object Backend -eq $Gauge | ForEach-Object { New-Item -ItemType Directory -Force (Split-Path $_.Output) | Out-Null } }
 $jobs = @($jobs)
 if ($jobs.Count -eq 0) { throw 'no jobs selected' }
 $timeoutText = if ($TimeoutSec -gt 0) { "${TimeoutSec}s" } else { 'per suite' }
@@ -1019,7 +1024,7 @@ function Build-And-Run($job) {
         return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
     }
     if ($job.Backend -eq 'Swift') {
-        if (-not $tools.Swiftc -or -not $tools.SwiftSdk -or -not $tools.SwiftRuntime) { return 'no-toolchain' }
+        if (-not $tools.Swiftc -or (-not $IsLinux -and (-not $tools.SwiftSdk -or -not $tools.SwiftRuntime))) { return 'no-toolchain' }
         if ($swiftBatchExe -and $swiftBatch.ContainsKey($job.Output)) {
             $entry = $swiftBatch[$job.Output]
             $run = Invoke-Native $entry.Exe @($entry.Slot) $binDir 60 $tools.SwiftRuntime
@@ -1029,7 +1034,7 @@ function Build-And-Run($job) {
         }
         $exe = Join-Path $binDir ($(if ($IsWindows) { 'main.exe' } else { 'main' }))
         Remove-Item -LiteralPath $exe -ErrorAction SilentlyContinue
-        $build = Invoke-Native $tools.Swiftc @('-O', '-sdk', $tools.SwiftSdk, '-o', $exe, $job.Output) $binDir 180
+        $build = Invoke-Native $tools.Swiftc (@('-O') + @(if ($tools.SwiftSdk) { '-sdk', $tools.SwiftSdk }) + @('-o', $exe, $job.Output)) $binDir 180
         if ("$($build.Exit)" -ne '0' -or -not (Test-Path -LiteralPath $exe)) {
             $msg = ((($build.Err + "`n" + $build.Out) -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 4) -join ' / ') -replace '\s+', ' '
             if (-not $msg) { $msg = "swiftc exit $($build.Exit)" }
@@ -1052,9 +1057,17 @@ function Build-And-Run($job) {
         return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
     }
     if ($job.Backend -eq 'Wgsl') {
-        if (-not $tools.WgslRun) { return 'no-toolchain' }
+        $unrun = {
+            if (-not $tools.Naga) { return 'no-toolchain' }
+            $check = Invoke-Native $tools.Naga @($job.Output) $binDir 60
+            if ("$($check.Exit)" -eq '0') { return 'no-toolchain' }
+            $lines = "$($check.Err)`n$($check.Out)" -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 3
+            $msg = 'naga: ' + (($lines -join ' / ') -replace '\s+', ' ')
+            [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
+        }
+        if (-not $tools.WgslRun) { return (& $unrun) }
         $run = Invoke-Native $tools.WgslRun @($job.Output) $binDir 60
-        if ("$($run.Exit)" -eq '3') { return 'no-toolchain' }
+        if ("$($run.Exit)" -eq '3') { return (& $unrun) }
         if ($run.Err -match 'wgsl error:') {
             $msg = (($run.Err -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 3) -join ' / ') -replace '\s+', ' '
             return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
@@ -1299,7 +1312,7 @@ if ($Native) {
     $swiftBatch = @{}
     $swiftBatchExe = ''
     $swiftJobs = @($nativeJobs | Where-Object Backend -eq 'Swift')
-    if ($swiftJobs.Count -gt 1 -and $tools.Swiftc -and $tools.SwiftSdk -and $tools.SwiftRuntime) {
+    if ($swiftJobs.Count -gt 1 -and $tools.Swiftc -and ($IsLinux -or ($tools.SwiftSdk -and $tools.SwiftRuntime))) {
         $swiftWatch = [Diagnostics.Stopwatch]::StartNew()
         $swiftDir = Join-Path $scratch "swift-batch-$stamp"
         Remove-Item -LiteralPath $swiftDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -1309,20 +1322,23 @@ if ($Native) {
             $chunkDir = Join-Path $swiftDir "chunk$first"
             New-Item -ItemType Directory -Force $chunkDir | Out-Null
             $members = @($swiftJobs[$first..([Math]::Min($first + $swiftChunkSize, $swiftJobs.Count) - 1)])
-            $swiftMainLines = 'import CRT', 'import WinSDK', 'exit(spiral_main())', 'nonisolated(unsafe) var spiral_exit_code: Int32 = 0', 'WaitForSingleObject(spiral_thread, INFINITE)', 'exit(spiral_exit_code)'
+            $swiftMainLines = 'import CRT', 'import WinSDK', 'import Glibc', '#if os(Windows)', '#else', '#endif', 'exit(spiral_main())'
+            $swiftHeader = "#if os(Windows)`nimport CRT`n#else`nimport Glibc`n#endif"
             $cases = for ($slot = 0; $slot -lt $members.Count; $slot++) {
                 $source = [IO.File]::ReadAllLines($members[$slot].Output)
                 $imports = @($source | Where-Object { $_ -match '^import ' -and $_ -notin $swiftMainLines })
+                $inMainTail = $false
                 $wrapped = foreach ($line in $source) {
-                    if ($line -in $swiftMainLines -or $line -in $imports -or $line.StartsWith('let spiral_thread = CreateThread(')) { continue }
+                    if ($line -eq 'nonisolated(unsafe) var spiral_exit_code: Int32 = 0') { $inMainTail = $true }
+                    if ($inMainTail -or $line -in $swiftMainLines -or $line -in $imports) { continue }
                     if ($line -match '^(func|var|let) ') { "    static $line"; continue }
                     "    $line"
                 }
-                [IO.File]::WriteAllText((Join-Path $chunkDir "s$slot.swift"), ((@('import CRT') + $imports) -join "`n") + "`nenum SpiralBatch$slot {`n" + ($wrapped -join "`n") + "`n}`n")
+                [IO.File]::WriteAllText((Join-Path $chunkDir "s$slot.swift"), ((@($swiftHeader) + $imports) -join "`n") + "`nenum SpiralBatch$slot {`n" + ($wrapped -join "`n") + "`n}`n")
                 if ($source -match '\{ _ in spiral_main\(\); return 0 \}') { "case `"$slot`": SpiralBatch$slot.spiral_main(); exit(0)" }
                 else { "case `"$slot`": exit(SpiralBatch$slot.spiral_main())" }
             }
-            [IO.File]::WriteAllText((Join-Path $chunkDir 'main.swift'), "import CRT`nswitch CommandLine.arguments[1] {`n" + ($cases -join "`n") + "`ndefault: exit(99)`n}`n")
+            [IO.File]::WriteAllText((Join-Path $chunkDir 'main.swift'), "$swiftHeader`nswitch CommandLine.arguments[1] {`n" + ($cases -join "`n") + "`ndefault: exit(99)`n}`n")
             [pscustomobject]@{ Dir = $chunkDir; Outputs = @($members | ForEach-Object Output); Exe = Join-Path $chunkDir $(if ($IsWindows) { 'batch.exe' } else { 'batch' }) }
         }
         $swiftTools = $tools
@@ -1331,7 +1347,8 @@ if ($Native) {
             $tools = $using:swiftTools
             $sources = @(Join-Path $chunk.Dir 'main.swift') + @(0..($chunk.Outputs.Count - 1) | ForEach-Object { Join-Path $chunk.Dir "s$_.swift" })
             $mainThreadStack = if ($IsWindows) { @('-Xlinker', '/STACK:1073741824') } else { @() }
-            & $tools.Swiftc -O -no-whole-module-optimization -j 2 -sdk $tools.SwiftSdk @mainThreadStack -o $chunk.Exe @sources *> (Join-Path $chunk.Dir 'build.log')
+            $sdk = @(if ($tools.SwiftSdk) { '-sdk', $tools.SwiftSdk })
+            & $tools.Swiftc -O -no-whole-module-optimization -j 2 @sdk @mainThreadStack -o $chunk.Exe @sources *> (Join-Path $chunk.Dir 'build.log')
             [pscustomobject]@{ Chunk = $chunk; Ok = ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $chunk.Exe)) }
         }
         foreach ($built in @($swiftBuilt | Where-Object Ok)) {
@@ -1383,6 +1400,7 @@ if ($Native) {
         }
         Write-Host ("== gleam batch: {0} of {1} built in {2:N1}s{3}" -f ($gleamJobs.Count - $(if ($gleamFailures) { $gleamFailures.Count } else { 0 })), $gleamJobs.Count, $gleamWatch.Elapsed.TotalSeconds, $(if ($null -eq $gleamFailures) { '; unattributed build error, rows build one by one' } else { '' }))
     }
+    $rustPin = @(if ($tools.Rustc) { Get-SpiralRustPin $tools.Rustc })
     $laneFunctions = @{ 'Build-And-Run' = ${function:Build-And-Run}.ToString(); 'Invoke-Native' = ${function:Invoke-Native}.ToString(); 'Get-CFlags' = ${function:Get-CFlags}.ToString() }
     if ($IsWindows) {
         if (-not ('Spiral.NativeErrorMode' -as [type])) {
@@ -1395,6 +1413,8 @@ public static extern uint SetErrorMode(uint mode);
     }
     $laneResults = $lanes | ForEach-Object -ThrottleLimit ([Math]::Max(1, $lanes.Count)) -Parallel {
         foreach ($f in ($using:laneFunctions).GetEnumerator()) { Set-Item "function:$($f.Key)" -Value ([scriptblock]::Create($f.Value)) }
+        $rustPinValue = $using:rustPin
+        function Get-SpiralRustPin { $rustPinValue }
         $nativeLane = $_.Lane
         $kotlinBuilds = $using:kotlinBuilds; $kotlinStdlib = $using:kotlinStdlib; $gleamBuilds = $using:gleamBuilds
         $swiftBatch = $using:swiftBatch; $swiftBatchExe = $using:swiftBatchExe
@@ -1562,7 +1582,7 @@ $bad = @($rows | Where-Object { $_.baseline -in 'REGRESSED', 'NATIVE-DIFF' -or (
 foreach ($b in $bad | Select-Object -First 20) { Write-Host "  !! $($b.id) [$($b.backend)] $($b.baseline) $($b.oracle) $($b.detail)" -ForegroundColor Red }
 Write-Host "results: $resultPath"
 Write-Host "outputs: written next to their sources; git diff samples shows what changed"
-if ($Probe) { Write-Host "probe outputs ($Probe): $(Join-Path $scratch 'probe')" }
+if ($Gauge) { Write-Host "gauge outputs ($Gauge): $(Join-Path $scratch 'gauge')" }
 
 if ($Accept) {
     $existing = if (Test-Path $expectedPath) { @(Import-Csv $expectedPath -Delimiter "`t" | ForEach-Object { $_.backend = ConvertTo-BackendName $_.backend; $_ }) } else { @() }

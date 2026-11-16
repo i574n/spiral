@@ -202,7 +202,7 @@
 
 ///> rust
 :# only_a_real_append_reaches_the_file =
-    := path = durable_file::probe_path "spiral-event-log-probe.txt"
+    := path = durable_file::trial_path "spiral-event-log-trial.txt"
     file_system::file_delete path
     := text (e : string) : string = e
     := empty : event_log string = empty_log ()

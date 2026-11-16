@@ -36,9 +36,9 @@
 
 := utf8 (text : string) : array u8 =
     run_target \|
-        | Lua => \ () => filled (sm'.length text) (\ i => conv (sm'.char_code (sm'.index i text)))
-        | Gleam => \ () => filled (sm'.length text) (\ i => conv (sm'.char_code (sm'.index i text)))
-        | _ => \ () => sm'.utf8_get_bytes text
+        | Lua => \ () => filled (sm'::length text) (\ i => conv (sm'::char_code (sm'::index i text)))
+        | Gleam => \ () => filled (sm'::length text) (\ i => conv (sm'::char_code (sm'::index i text)))
+        | _ => \ () => sm'::utf8_get_bytes text
 
 :~ ^ copy_from (out : array u8) (at : i32) (part : array u8) (i : i32) : () =
     ? i < length part ?>
@@ -54,17 +54,17 @@
         | _ => \ () => copy_from out at part 0
 
 := concat (parts : list (array u8)) : array u8 =
-    := total = listm.fold (\ sum (part : array u8) => sum + length part) 0i32 parts
+    := total = listm::fold (\ sum (part : array u8) => sum + length part) 0i32 parts
     := out : array u8 = create total
     := place (at : i32) (part : array u8) : i32 =
         copy_into out at part
         at + length part
-    listm.fold place 0i32 parts |> ignore
+    listm::fold place 0i32 parts |> ignore
     out
 
 := hex_digit (n : u8) : string =
     := at : i32 = conv n
-    sm'.slice at at "0123456789abcdef"
+    sm'::slice at at "0123456789abcdef"
 
 := hex (bytes : array u8) : string =
     run_target \|

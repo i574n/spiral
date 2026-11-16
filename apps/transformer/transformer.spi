@@ -4,6 +4,7 @@
 
 :< sm'_operators
 :< f32_kernels
+:< f32_shaped
 
 :== bytes = array u8
 
@@ -73,26 +74,6 @@
 := layout_of (c : config) (shared : bool) : layout =
     := embed = { at = 0; size = c::vocab * c::dim }
     layout_with c shared embed (attention_of c embed)
-
-:! len n = i32
-
-:= width \* n. (_ : len n) : i32 = ~> real_core::type_lit_to_lit `n
-
-:~ ^ dot_l \* n. (k : len n) (a : floats) (ao : i32) (b : floats) (j : i32) (acc : f32) : f32 =
-    ? j >= width k ?> acc |: dot_l k a ao b (j + 1) (acc + index a (ao + j) * index b j)
-
-:~ ^ rows_l \* n d.
-    (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) (i : i32) (end : i32)
-    : ()
-    =
-    ? i < end ?>
-        set o i (dot_l kn w (off + i * width kn) x 0 0.0f32)
-        rows_l kn kd o x w off (i + 1) end
-
-:= rows_par \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) : () =
-    := chunk, rows = 16, width kd
-    parallel::for_index ((rows + chunk - 1) / chunk) \ c =>
-        rows_l kn kd o x w off (c * chunk) (min rows ((c + 1) * chunk))
 
 := rows_if \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) (p : i32 * i32) : bool =
     := n2, d2 = p
@@ -171,28 +152,6 @@
     | Stories15M => shaped_by (dims_15m ()) o x w off p
     | Stories42M => shaped_by (dims_42m ()) o x w off p
     | _ => hit_large k o x w off p
-
-:== rows_group = { o : floats; off : i32; d : i32 }
-
-:= row_l_into \* n. (kn : len n) (x : floats) (w : floats) (g : rows_group) (i : i32) : () =
-    set g::o i (dot_l kn w (g::off + i * width kn) x 0 0.0f32)
-
-:~ ^ rows_l_fused \* n.
-    (kn : len n) (x : floats) (w : floats) (a : rows_group) (b : rows_group) (c : rows_group) (r : i32) (end : i32)
-    : ()
-    =
-    ? r < end ?>
-        ? r < a::d
-        ?> row_l_into kn x w a r
-        |? r < a::d + b::d
-        ?> row_l_into kn x w b (r - a::d)
-        |: row_l_into kn x w c (r - a::d - b::d)
-        rows_l_fused kn x w a b c (r + 1) end
-
-:= rows_par_fused \* n. (kn : len n) (x : floats) (w : floats) (a : rows_group) (b : rows_group) (c : rows_group) : () =
-    := chunk, rows = 16, a::d + b::d + c::d
-    parallel::for_index ((rows + chunk - 1) / chunk) \ k =>
-        rows_l_fused kn x w a b c (k * chunk) (min rows ((k + 1) * chunk))
 
 := fused_with \* n.
     (kn : len n) (x : floats) (w : floats) (width_in : i32) (a : rows_group) (b : rows_group) (c : rows_group)
@@ -550,10 +509,8 @@
     zero_from b::xb (h * head_size c) (head_size c) 0
     mix_from c b s layer h pos 0
 
-:~ ^ heads_from (c : config) (b : buffers) (s : caches) (layer : i32) (pos : i32) (h : i32) : () =
-    ? h < c::heads ?>
-        attend_head c b s layer pos h
-        heads_from c b s layer pos (h + 1)
+:= attend_heads (c : config) (b : buffers) (s : caches) (layer : i32) (pos : i32) : () =
+    parallel::for_index c::heads \ h => attend_head c b s layer pos h
 
 := layer_at (s : slab) (layer : i32) (per : i32) : i32 = s::at + layer * per
 
@@ -588,7 +545,7 @@
     := d = m::c::dim
     qkv m b layer
     cache_kv m::c b s layer pos
-    heads_from m::c b s layer pos 0
+    attend_heads m::c b s layer pos
     project m b::xb2 b::xb m::l::att::wo layer d d
     add_into b::x b::xb2 d 0
 
@@ -935,22 +892,26 @@
     := r = run_of m (vocab_of (file_system::read_bytes (oracle::model_path o::tokenizer)) m::c::vocab) o::steps
     generate r 1 0 "" |> _assert_eq (oracle::stories260k_q8_text ())
 
-:= probe_error (logits : floats) (probes : list oracle::probe) : f32 =
-    probes |> listm::fold (\ worst (p : oracle::probe) => max worst (abs (index logits p::token - p::logit))) 0.0f32
+:= gauge_error (logits : floats) (gauges : list oracle::logit_gauge) : f32 =
+    gauges
+    |> listm::fold (\ worst (p : oracle::logit_gauge) => max worst (abs (index logits p::token - p::logit))) 0.0f32
 
-:~ ^ worst_logit_error (r : run) (token : i32) (pos : i32) (steps : list (list oracle::probe)) (worst : f32) : f32 =
+:~ ^ worst_logit_error
+    (r : run) (token : i32) (pos : i32) (steps : list (list oracle::logit_gauge)) (worst : f32)
+    : f32
+    =
     ?= steps ?|
     | [] => worst
-    | probes :: rest =>
+    | gauges :: rest =>
         := next = next_token r token pos
-        worst_logit_error r next (pos + 1) rest (max worst (probe_error r::s::logits probes))
+        worst_logit_error r next (pos + 1) rest (max worst (gauge_error r::s::logits gauges))
 
 ///> rust
 :# logits_stories260k_stay_within_1e4_of_run_c =
     := o = oracle::stories260k ()
     := m = model_at (oracle::model_path o::checkpoint)
     := r = run_of m (vocab_of (file_system::read_bytes (oracle::model_path o::tokenizer)) m::c::vocab) o::steps
-    (worst_logit_error r 1 0 (oracle::stories260k_probes ()) 0.0f32 < 0.0001f32) |> _assert_eq !+
+    (worst_logit_error r 1 0 (oracle::stories260k_gauges ()) 0.0f32 < 0.0001f32) |> _assert_eq !+
 
 :~ ^ dump_from (x : floats) (i : i32) : () =
     ? i < length x ?>

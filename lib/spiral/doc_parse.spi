@@ -27,8 +27,10 @@
     | InCode : string * list string
     | InTable : list align * list (list inline) * list (list (list inline))
 
-:~ starts_with (s : string) (prefix : string) : bool =
-    (sm::length prefix : i32) <= sm::length s && run_of s 0i32 (sm::length prefix) = prefix
+:~ ^ prefix_from (s : string) (prefix : string) (i : i32) : bool =
+    ? i >= sm::length prefix ?> !+ |? sm::index s i = sm::index prefix i ?> prefix_from s prefix (i + 1i32) |: !-
+
+:~ starts_with (s : string) (prefix : string) : bool = (sm::length prefix : i32) <= sm::length s && prefix_from s prefix 0i32
 
 :~ ^ hashes_from (s : string) (i : i32) : i32 =
     ? i < sm::length s && sm::index s i = '#' ?> hashes_from s (i + 1i32) |: i
@@ -183,10 +185,21 @@
     | RuleLine => Some (r, Idle, Rule :: c)
     | _ => None
 
+:~ ends_block (l : line) : bool =
+    ?= l ?|
+    | Fence _ => !+
+    | Blank => !+
+    | HeadingLine _ => !+
+    | RuleLine => !+
+    | _ => !-
+
 :~ plain_step (s : string) (l : line) (r : list string) (p : pending) (b : list block) =
-    ?= ended l r (close p b) ?|
-    | Some x => x
-    | None => item_step s l r p b
+    ? ends_block l
+    ?>
+        ?= ended l r (close p b) ?|
+        | Some x => x
+        | None => item_step s l r p b
+    |: item_step s l r p b
 
 :~ line_step (s : string) (r : list string) (p : pending) (b : list block) =
     ?= classify s ?|
@@ -290,3 +303,22 @@
 ///> gleam
 :# inline_code_may_wrap_a_line_inside_a_paragraph =
     parse_markdown "see `x\ny`." |> _assert_eq [ Paragraph [ Text "see "; Code "x y"; Text "." ] ]
+
+///> rust
+///> gleam
+:# multi_byte_text_at_a_line_start_parses_without_slicing_a_character =
+    := ~cyrillic = "Перевод"
+    := ~bold = "**é**"
+    := ~quoted = "a ‘b’"
+    parse_markdown cyrillic |> _assert_eq [ Paragraph [ Text "Перевод" ] ]
+    parse_markdown bold |> _assert_eq [ Paragraph [ Strong [ Text "é" ] ] ]
+    parse_markdown quoted |> _assert_eq [ Paragraph [ Text "a ‘b’" ] ]
+    := ~fence = "```é\nx\n```"
+    (parse_markdown fence = []) |> _assert_eq !-
+
+///> rust
+///> gleam
+:# block_ends_still_close_a_paragraph_from_run_time_text =
+    := ~doc = "a\nb\n# H\nc\n---\nd\n\ne\n```\nx\n```"
+    parse_markdown doc
+    |> _assert_eq [ Paragraph [ Text "a b" ]; Heading (H1, [ Text "H" ]); Paragraph [ Text "c" ]; Rule; Paragraph [ Text "d" ]; Paragraph [ Text "e" ]; CodeBlock ("", [ "x" ]) ]

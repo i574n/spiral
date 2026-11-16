@@ -43,12 +43,54 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
 """
     $'spiral_json_quote(&*!s)' : string
 
+:= gleam_quote (s : string) : string =
+    global "import gleam/string"
+    global "import gleam/list"
+    global "import gleam/int"
+    global """
+pub fn spiral_json_cp(n: Int) -> String {
+  let assert Ok(c) = string.utf_codepoint(n)
+  string.from_utf_codepoints([c])
+}
+
+pub fn spiral_json_hex2(n: Int) -> String {
+  let h = string.lowercase(int.to_base16(n))
+  case n < 16 {
+    True -> "0" <> h
+    False -> h
+  }
+}
+
+pub fn spiral_json_escape(c: UtfCodepoint) -> String {
+  case string.utf_codepoint_to_int(c) {
+    34 -> spiral_json_cp(92) <> spiral_json_cp(34)
+    92 -> spiral_json_cp(92) <> spiral_json_cp(92)
+    8 -> spiral_json_cp(92) <> "b"
+    9 -> spiral_json_cp(92) <> "t"
+    10 -> spiral_json_cp(92) <> "n"
+    12 -> spiral_json_cp(92) <> "f"
+    13 -> spiral_json_cp(92) <> "r"
+    n if n < 32 -> spiral_json_cp(92) <> "u00" <> spiral_json_hex2(n)
+    _ -> string.from_utf_codepoints([c])
+  }
+}
+
+pub fn spiral_json_quote(s: String) -> String {
+  let q = spiral_json_cp(34)
+  q <> string.concat(list.map(string.to_utf_codepoints(s), spiral_json_escape)) <> q
+}
+"""
+    $'spiral_json_quote(!s)' : string
+
 := quote (s : string) : string =
     run_target \|
         | Rust => \ () => rust_quote s
+        | Gleam => \ () => gleam_quote s
         | _ => \ () =>
             := escaped = s |> sm'::replace "\\" "\\\\" |> sm'::replace "\"" "\\\"" |> controls_from 0i32
             sm'::concat_list "" [ "\""; escaped; "\"" ]
+
+:= encode \* t. (x : t) : string = ~> json_real::encode (\ (s : string) => quote s) x
 
 ///> rust
 ///> gleam
@@ -129,6 +171,34 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
         "{\"where\":{\"city\":\"Cincinnati\",\"days\":40},\"note\":\"\\\"days\\\":9\",\"days\":3,\"metric\":true}"
     forecast_score (decode reply) |> _assert_eq 153i32
 
+:== signup = { username : string; email : string; password : string }
+
+:== signup_envelope = { user : signup }
+
+///> c
+///> rust
+:# decode_reads_a_pretty_printed_body_with_newlines_tabs_and_spaces_around_colons =
+    := ~reply =
+        "{\n  \"user\": {\n\t\"username\" : \"cmp1\",\r\n    \"email\":\t\"a@b.c\",\n    \"password\": \"pw\"\n  }\n}\n"
+    := e : signup_envelope = decode reply
+    (e::user::username, e::user::email, e::user::password) |> _assert_eq ("cmp1", "a@b.c", "pw")
+
+:== numbered = { count : i32; on : bool; tags : list string; where : place }
+
+///> rust
+:# decode_reads_pretty_printed_scalars_lists_and_nested_records =
+    := ~reply =
+        "{ \"count\": 7,\n \"on\": true,\n \"tags\": [ \"x\",\n  \"y\" ],\n"
+        ^^ " \"where\": { \"city\": \"Natal\", \"days\": 2 } }"
+    := n : numbered = decode reply
+    (n::count, n::on, n::tags, n::where::city, n::where::days) |> _assert_eq (7i32, !+, [ "x"; "y" ], "Natal", 2i32)
+
+///> rust
+:# a_string_value_spelled_like_a_key_is_not_a_key =
+    := ~reply = "{\"note\": \"city\", \"city\": \"Recife\", \"days\": 4}"
+    := p : place = decode reply
+    (p::city, p::days) |> _assert_eq ("Recife", 4i32)
+
 :== tagged_order = { customer : string; quantities : array_base i32; tags : array_base string }
 
 := quantities_score (q : array i32) : i32 = length q * 1000i32 + index q 0i32 + index q 1i32 + index q 2i32
@@ -178,6 +248,13 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
     := ~reply =
         "{\"units\":\"Imperial\",\"where\":{\"TargetCity\":\"Recife\"},\"other\":{\"TargetGrid\":{\"row\":4,\"col\""
         ^^ ":7}}}"
+    target_score (decode reply) |> _assert_eq 4762i32
+
+///> rust
+:# decode_reads_pretty_printed_unions_by_case_name =
+    := ~reply =
+        "{\n \"units\": \"Imperial\",\n \"where\": { \"TargetCity\" : \"Recife\" },\n \"other\": {\n"
+        ^^ "  \"TargetGrid\": { \"row\": 4, \"col\": 7 }\n }\n}"
     target_score (decode reply) |> _assert_eq 4762i32
 
 :| spot = SpotAt : i32 * i32 | SpotHere
@@ -262,3 +339,66 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
 :# number_fields_decode_as_f64_and_u32 =
     (decode "{\"amount\": 2.5e-3, \"height\": 4000000000}" : measured)
     |> _assert_eq { amount = 0.0025; height = 4000000000u32 }
+
+:= weather_sample () : weather_query = { location = "Cincinnati"; days = 3i32; metric = !+ }
+
+///> rust
+///> gleam
+:# encode_writes_a_flat_record_in_field_order =
+    := ~q = weather_sample ()
+    encode q |> _assert_eq "{\"location\":\"Cincinnati\",\"days\":3,\"metric\":true}"
+
+:= city_sample () : city_query = { city = "Natal"; days = None; units = Some "metric" }
+
+///> rust
+///> gleam
+:# encode_writes_none_as_null =
+    := ~q = city_sample ()
+    encode q |> _assert_eq "{\"city\":\"Natal\",\"days\":null,\"units\":\"metric\"}"
+
+:= numbered_sample () : numbered =
+    { count = 7i32; on = !+; tags = [ "x"; "y" ]; where = { city = "Natal"; days = 2i32 } }
+
+///> rust
+///> gleam
+:# encode_writes_lists_and_nested_records =
+    := ~n = numbered_sample ()
+    encode n |> _assert_eq "{\"count\":7,\"on\":true,\"tags\":[\"x\",\"y\"],\"where\":{\"city\":\"Natal\",\"days\":2}}"
+
+:= target_sample () : target_request =
+    { units = Imperial; where = TargetCity "Recife"; other = TargetGrid { row = 4i32; col = 7i32 } }
+
+:= target_text () : string =
+    "{\"units\":\"Imperial\",\"where\":{\"TargetCity\":\"Recife\"},\"other\":{\"TargetGrid\":{\"row\":4,\"col\":7}}}"
+
+///> rust
+///> gleam
+:# encode_writes_unions_by_case_name =
+    := ~r = target_sample ()
+    encode r |> _assert_eq (target_text ())
+
+:= span_sample () : span_request = { span = (12i32, "days"); where = SpotAt (3i32, 9i32) }
+
+///> rust
+///> gleam
+:# encode_writes_tuples_as_arrays =
+    := ~r = span_sample ()
+    encode r |> _assert_eq "{\"span\":[12,\"days\"],\"where\":{\"SpotAt\":[3,9]}}"
+
+:= quote_sample () : quote_query = { said = "say \"hi\"\n"; path = "a\\b"; days = 7i32 }
+
+///> rust
+:# encode_escapes_string_values =
+    := ~q = quote_sample ()
+    encode q |> _assert_eq "{\"said\":\"say \\\"hi\\\"\\n\",\"path\":\"a\\\\b\",\"days\":7}"
+
+///> c
+///> rust
+:# decode_reads_back_what_encode_wrote =
+    := ~r = target_sample ()
+    target_score (decode (encode r)) |> _assert_eq (target_score r)
+
+///> rust
+:# decode_reads_back_nested_records_and_lists =
+    := ~n = numbered_sample ()
+    (decode (encode n) : numbered) |> _assert_eq n

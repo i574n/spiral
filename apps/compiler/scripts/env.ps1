@@ -109,6 +109,7 @@ function Get-SpiralNativeTools {
         Zig = Resolve-SpiralTool 'zig' @($env:SPIRAL_ZIG, 'zig')
         Wasmtime = Resolve-SpiralTool 'wasmtime' @($env:SPIRAL_WASMTIME, (Join-Path $HOME 'scoop/apps/wasmtime/current/wasmtime.exe'), 'wasmtime', $(if ($env:ProgramFiles) { Join-Path $env:ProgramFiles 'Wasmtime/bin/wasmtime.exe' }), (Join-Path $HOME '.wasmtime/bin/wasmtime'))
         WgslRun = @($env:SPIRAL_WGSL_RUN, (Join-Path (Get-SpiralCacheDir) 'toolchains/wgsl-run/release/spiral-wgsl.exe'), (Join-Path (Get-SpiralCacheDir) 'toolchains/wgsl-run/release/spiral-wgsl')) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+        Naga = Resolve-SpiralTool 'naga' @($env:SPIRAL_NAGA, (Join-Path $HOME '.cargo/bin/naga.exe'), (Join-Path $HOME '.cargo/bin/naga'), 'naga')
         QasmRun = @($env:SPIRAL_QASM_RUN, (Join-Path (Get-SpiralCacheDir) 'toolchains/qasm-run/qasm-run.exe'), (Join-Path (Get-SpiralCacheDir) 'toolchains/qasm-run/qasm-run')) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
         Cider = @($env:SPIRAL_CIDER, (Join-Path (Get-SpiralCacheDir) 'toolchains/calyx-src/target/release/cider.exe'), (Join-Path (Get-SpiralCacheDir) 'toolchains/calyx-src/target/release/cider')) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
         Auxin = @($env:SPIRAL_AUXIN, (Join-Path (Get-SpiralCacheDir) 'toolchains/calyx-src/target/release/auxin.exe'), (Join-Path (Get-SpiralCacheDir) 'toolchains/calyx-src/target/release/auxin')) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1

@@ -1,0 +1,17 @@
+:| color =
+    | Red
+    | Green
+    | Blue
+
+:~ score (a : color) (b : color) (k : i32) : i32 =
+    := pair = a, b
+    ?= pair ?|
+    | Red, Red => 101i32
+    | Green, Green => 202i32
+    | _ => k *. k +. 7i32 *. k -. 3i32
+
+:= main () : i32 =
+    := ~red = Red
+    := ~green = Green
+    := ~k = 5i32
+    ? score green green k =. 202i32 ?> score red green k |: 1i32

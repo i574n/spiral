@@ -1,0 +1,160 @@
+///- --package .
+:# type_trial static =
+    :< testing
+
+:== test_block = { name : string; header : i32; first : i32; last : i32; is_static : bool; no_target : bool; fails : bool }
+
+:| origin =
+    | Generated
+    | ModuleLine : i32
+    | TestLine : i32 * string * bool
+
+:== trial =
+    {
+        lines : list string
+        origins : list origin
+        typed : i32
+        lifted : list string
+        skipped : list string
+        expected : list string
+        control_line : i32
+    }
+
+:== draft = { out : list string; from : list origin; count : i32 }
+
+:~ add (d : draft) (line : string) (o : origin) : draft = { out = line :: d::out; from = o :: d::from; count = d::count + 1i32 }
+
+:~ ^ numbered_from (lines : list string) (i : i32) (acc : list (i32 * string)) : list (i32 * string) =
+    ?= lines ?|
+    | l :: rest => numbered_from rest (i + 1i32) ((i, l) :: acc)
+    | [] => listm::rev acc
+
+:~ numbered (lines : list string) : list (i32 * string) = numbered_from lines 0i32 []
+
+:~ ^ line_at (rows : list (i32 * string)) (i : i32) : string =
+    ?= rows ?|
+    | (j, l) :: rest => ? j = i ?> l |: line_at rest i
+    | [] => ""
+
+:~ is_directive (line : string) : bool = text::starts_with line "///>" || text::starts_with line "///-"
+
+:~ is_open (line : string) : bool = text::starts_with line ":< "
+
+:~ unindented (line : string) : string = ? text::starts_with line "    " ?> text::drop line 4i32 |: line
+
+:~ ^ run_start (rows : list (i32 * string)) (j : i32) : i32 =
+    ? j >= 0i32 && is_directive (line_at rows j) ?> run_start rows (j - 1i32) |: j + 1i32
+
+:~ test_span (rows : list (i32 * string)) (b : test_block) : i32 * i32 = run_start rows (b::header - 2i32), b::last - 1i32
+
+:~ ^ in_any_span (spans : list (i32 * i32)) (i : i32) : bool =
+    ?= spans ?|
+    | (lo, hi) :: rest => (i >= lo && i <= hi) || in_any_span rest i
+    | [] => !-
+
+:~ ^ add_opens (rows : list (i32 * string)) (d : draft) : draft =
+    ?= rows ?|
+    | (_, l) :: rest => add_opens rest (? is_open l ?> add d l Generated |: d)
+    | [] => d
+
+:~ ^ add_range (rows : list (i32 * string)) (i : i32) (last : i32) (shape : string -> string) (o : i32 -> origin) (d : draft) : draft =
+    ? i > last ?> d |: add_range rows (i + 1i32) last shape o (add d (shape (line_at rows i)) (o (i + 1i32)))
+
+:~ block_lines (b : test_block) : i32 = b::last - b::first + 1i32
+
+:~ ^ add_statics (rows : list (i32 * string)) (blocks : list test_block) (d : draft) (lifted : list string) : draft * list string =
+    ?= blocks ?|
+    | b :: rest =>
+        ? b::is_static
+        ?>
+            := d = add_range rows (b::first - 1i32) (b::last - 1i32) unindented (\ (n : i32) => TestLine (n, b::name, !+)) d
+            add_statics rows rest (add d "" Generated) ((b::name ^^ " (" ^^ text::show_i32 (block_lines b) ^^ " lines)") :: lifted)
+        |: add_statics rows rest d lifted
+    | [] => d, listm::rev lifted
+
+:~ ^ add_module (rows : list (i32 * string)) (spans : list (i32 * i32)) (d : draft) : draft =
+    ?= rows ?|
+    | (i, l) :: rest =>
+        := keep = not (in_any_span spans i) && not (is_open l)
+        add_module rest spans (? keep ?> add d l (ModuleLine (i + 1i32)) |: d)
+    | [] => add d "" Generated
+
+:== tests_done = { d : draft; typed : i32; skipped : list string; expected : list string }
+
+:~ ^ add_tests (rows : list (i32 * string)) (blocks : list test_block) (acc : tests_done) : tests_done =
+    ?= blocks ?|
+    | b :: rest =>
+        ? b::is_static
+        ?> add_tests rows rest acc
+        |? b::no_target
+        ?> add_tests rows rest { acc ?| skipped = b::name :: acc::skipped }
+        |? b::fails
+        ?> add_tests rows rest { acc ?| expected = b::name :: acc::expected }
+        |:
+            := d = add acc::d (":= test_trial_" ^^ b::name ^^ " () =") (TestLine (b::header, b::name, !-))
+            := d = add_range rows (b::first - 1i32) (b::last - 1i32) (\ (l : string) => l) (\ (n : i32) => TestLine (n, b::name, !-)) d
+            add_tests rows rest { acc ?| d = add d "" Generated; typed = acc::typed + 1i32 }
+    | [] => { acc ?| skipped = listm::rev acc::skipped; expected = listm::rev acc::expected }
+
+:= assemble (lines : list string) (blocks : list test_block) (module_open : bool) : trial =
+    := rows = numbered lines
+    := d = add_opens rows { out = []; from = []; count = 0i32 }
+    := d = add (add d ":< testing" Generated) "" Generated
+    := d, lifted = add_statics rows blocks d []
+    := d = ? module_open ?> add_module rows (listm::map (test_span rows) blocks) d |: d
+    := t = add_tests rows blocks { d = d; typed = 0i32; skipped = []; expected = [] }
+    := control = t::d::count + 1i32
+    := d = add t::d ":= type_trial_control_must_fail () : i32 =" Generated
+    := d = add d "    \"the trial typed nothing if this line passes\"" Generated
+    := d = add (add d "" Generated) ":= main () : i32 = 0i32" Generated
+    {
+        lines = listm::rev d::out
+        origins = listm::rev d::from
+        typed = t::typed
+        lifted = lifted
+        skipped = t::skipped
+        expected = t::expected
+        control_line = control
+    }
+
+:~ ^ origin_at (origins : list origin) (n : i32) : origin =
+    ?= origins ?|
+    | o :: rest => ? n <= 1i32 ?> o |: origin_at rest (n - 1i32)
+    | [] => Generated
+
+:= sample_lines () : list string =
+    [
+        ":< foo"; ":# m static ="; "    := x = 1"; ""; ":= f () = 1"; "///> rust"; ":# f_is_one ="; "    f () |> _assert_eq 1"; ""
+        "///> _"; ":# skipped ="; "    1"
+    ]
+
+:= sample_blocks () : list test_block =
+    [
+        { name = "m"; header = 2i32; first = 3i32; last = 3i32; is_static = !+; no_target = !-; fails = !- }
+        { name = "f_is_one"; header = 7i32; first = 8i32; last = 8i32; is_static = !-; no_target = !-; fails = !- }
+        { name = "skipped"; header = 11i32; first = 12i32; last = 12i32; is_static = !-; no_target = !+; fails = !- }
+    ]
+
+///> gleam
+:# a_trial_lifts_statics_keeps_the_module_body_and_wraps_each_typed_test =
+    := t = assemble (sample_lines ()) (sample_blocks ()) !+
+    (t::lines, t::typed, t::lifted, t::skipped, t::expected, t::control_line)
+    |> _assert_eq (
+        [
+            ":< foo"; ":< testing"; ""; ":= x = 1"; ""; ""; ":= f () = 1"; ""; ""; ":= test_trial_f_is_one () ="
+            "    f () |> _assert_eq 1"; ""; ":= type_trial_control_must_fail () : i32 ="
+            "    \"the trial typed nothing if this line passes\""; ""; ":= main () : i32 = 0i32"
+        ],
+        1i32, [ "m (1 lines)" ], [ "skipped" ], [], 13i32
+    )
+
+///> gleam
+:# every_trial_line_maps_back_to_its_source_line_and_kind =
+    := t = assemble (sample_lines ()) (sample_blocks ()) !+
+    (origin_at t::origins 4i32, origin_at t::origins 7i32, origin_at t::origins 10i32, origin_at t::origins 11i32, origin_at t::origins 13i32)
+    |> _assert_eq (TestLine (3i32, "m", !+), ModuleLine 5i32, TestLine (7i32, "f_is_one", !-), TestLine (8i32, "f_is_one", !-), Generated)
+
+///> gleam
+:# a_prelude_member_leaves_its_module_body_out_of_the_trial =
+    := t = assemble (sample_lines ()) (sample_blocks ()) !-
+    ((listm::length t::lines : i32), t::control_line) |> _assert_eq (12i32, 9i32)

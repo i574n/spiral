@@ -1,0 +1,16 @@
+:! money = i32
+
+:! rate = i32
+
+:| ^ rule t =
+    | Base :: rule money
+    | Const :: \* t. t -> rule t
+    | RateBp :: i32 -> rule rate
+    | Apply :: rule money * rule rate -> rule money
+    | Above :: rule money * rule money -> rule bool
+    | When :: \* t. rule bool * rule t * rule t -> rule t
+
+:= wrong_rule () : rule money =
+    When (Base, Apply (Base, RateBp 90), Apply (Base, RateBp 36))
+
+:= main () : i32 = 0

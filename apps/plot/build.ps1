@@ -25,11 +25,11 @@ if (!$svg.StartsWith("<svg") -or !$svg.Contains("square") -or !$svg.Contains("li
 Write-Output "RUST-OK apps/plot / $plotExe"
 
 $livebook = Join-Path ($env:SPIRAL_CELLS_ROOT ? $env:SPIRAL_CELLS_ROOT : (Join-Path $ScriptDir "../cells")) "spi/run_notebook.ps1"
-$notebook = Join-Path $ScriptDir "physics.spi"
+$notebook = Join-Path $ScriptDir "charts.spi"
 $log = @(pwsh -NoProfile -File $livebook --path $notebook --livemd --output-path "$notebook.ipynb" 2>&1 | ForEach-Object { "$_" })
 $notebookExit = $LASTEXITCODE
-$log | Where-Object { $_ -like 'spiral-tests *' } | ForEach-Object { Write-Output "apps/plot / physics / $_" }
-if ($notebookExit -ne 0) { $log | Select-Object -Last 30 | ForEach-Object { Write-Output "apps/plot / physics / $_" }; throw "apps/plot / physics.spi notebook exited $notebookExit" }
+$log | Where-Object { $_ -like 'spiral-tests *' } | ForEach-Object { Write-Output "apps/plot / charts / $_" }
+if ($notebookExit -ne 0) { $log | Select-Object -Last 30 | ForEach-Object { Write-Output "apps/plot / charts / $_" }; throw "apps/plot / charts.spi notebook exited $notebookExit" }
 $svgs = ([regex]::Matches([IO.File]::ReadAllText("$notebook.ipynb"), '<svg')).Count
-if ($svgs -eq 0) { throw "apps/plot / physics.spi.ipynb rendered no svg although $plotExe exists" }
-Write-Output "apps/plot / physics / $svgs svg in physics.spi.ipynb"
+if ($svgs -eq 0) { throw "apps/plot / charts.spi.ipynb rendered no svg although $plotExe exists" }
+Write-Output "apps/plot / charts / $svgs svg in charts.spi.ipynb"

@@ -34,7 +34,7 @@ $env:SPIRAL_COMPILER_PACKAGE_DIR = (Resolve-Path $Candidate).Path
 $env:SPIRAL_CELLS_COMPILER = $Compiler
 $env:SPIRAL_CELLS_MEMO = '0'
 Push-Location (Join-Path $PSScriptRoot '..')
-$metrics = Join-Path ([IO.Path]::GetTempPath()) "probe-lib-metrics-$PID"
+$metrics = Join-Path ([IO.Path]::GetTempPath()) "gauge-lib-metrics-$PID"
 if (-not $NotebookOut -and $RawOut) { $NotebookOut = "$RawOut.ipynb" }
 $notebookArgs = if ($NotebookOut) { @('--output-path', $NotebookOut) } else { @() }
 $testArgs = if ($Test.Count) { @('--test', ($Test -join ',')) } else { @() }

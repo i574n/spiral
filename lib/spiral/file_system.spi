@@ -139,7 +139,8 @@
 := get_source_directory () =
     run_target \|
         | Rust => \ () => $'Rc::<str>::from(env\!("CARGO_MANIFEST_DIR"))' : string
-        | _ => \ () => $'__SOURCE_DIRECTORY__' : string
+        | Fsharp => \ () => $'__SOURCE_DIRECTORY__' : string
+        | _ => \ () => failwith "file_system.get_source_directory: no arm for this backend"
 
 ///> fsharp
 :# get_source_directory =
@@ -564,7 +565,8 @@
         | Rust => \ () => $'(std::path::MAIN_SEPARATOR as u8)' : char
         | TypeScript _ => \ () => '/'
         | Zig => \ () => $'std.fs.path.sep' : char
-        | _ => \ () => $'System.IO.Path.DirectorySeparatorChar'
+        | Fsharp => \ () => $'System.IO.Path.DirectorySeparatorChar'
+        | _ => \ () => failwith "file_system.directory_separator_char: no arm for this backend"
 
 /// ### get_current_directory
 := file_system_gleam_stat () =
@@ -1039,10 +1041,54 @@
         ^^ "return !m || at < 8 || (at - 8) % 4 || at + 4 * count > n ? NULL : spiral_pin_header(m + at - 8, count); }"
     )
 
+:= c_localize () : () =
+    global (
+        "#ifdef _WIN32\nstatic char * spiral_localize(char * m, long n) { (void)n; return m; }\n#else\n"
+        ^^ "#include <sys/syscall.h>\n#include <string.h>\n"
+        ^^ "static int spiral_page_node(void * p) { int node = -1; "
+        ^^ "return syscall(SYS_get_mempolicy, &node, NULL, 0UL, p, 3UL) == 0 ? node : -1; }\n"
+        ^^ "static int spiral_cpu_node(void) { unsigned cpu = 0, node = 0; "
+        ^^ "return syscall(SYS_getcpu, &cpu, &node, NULL) == 0 ? (int)node : -1; }\n"
+        ^^ "static int spiral_maps_node(char * m) { char want[32]; "
+        ^^ "snprintf(want, sizeof want, \"%lx \", (unsigned long)m); "
+        ^^ "FILE * f = fopen(\"/proc/self/numa_maps\", \"r\"); if (!f) return -1; "
+        ^^ "char line[4096]; int best = -1; long most = 0; "
+        ^^ "while (fgets(line, sizeof line, f)) { if (strncmp(line, want, strlen(want))) continue; "
+        ^^ "for (char * s = strstr(line, \" N\"); s; s = strstr(s + 1, \" N\")) { int node; long cnt; "
+        ^^ "if (sscanf(s, \" N%d=%ld\", &node, &cnt) == 2 && cnt > most) { most = cnt; best = node; } } break; } "
+        ^^ "fclose(f); return best; }\n"
+        ^^ "static int spiral_pages_remote(char * m, long n) { int cn = spiral_cpu_node(), unknown = 0, remote = 0; "
+        ^^ "for (int k = 1; k <= 8; k++) { char * p = m + (n / 9) * k; volatile char t = *p; (void)t; "
+        ^^ "int pn = spiral_page_node(p); if (pn < 0) unknown = 1; else if (pn != cn) remote = 1; } "
+        ^^ "if (unknown) { int mn = spiral_maps_node(m); if (mn < 0) return 1; remote = mn != cn; } "
+        ^^ "return cn < 0 || remote; }\n"
+        ^^ "static int spiral_thp_on(void) { char b[128] = {0}; "
+        ^^ "FILE * f = fopen(\"/sys/kernel/mm/transparent_hugepage/enabled\", \"r\"); if (!f) return 0; "
+        ^^ "if (!fgets(b, sizeof b, f)) b[0] = 0; fclose(f); "
+        ^^ "return strstr(b, \"[always]\") != NULL || strstr(b, \"[madvise]\") != NULL; }\n"
+        ^^ "static char * spiral_localize(char * m, long n) { "
+        ^^ "const char * opt = getenv(\"SPIRAL_WEIGHTS_MAP\"); if (!m || n <= 0 || (opt && opt[0] == '1')) return m; "
+        ^^ "long l3 = sysconf(_SC_LEVEL3_CACHE_SIZE); if (l3 <= 0) l3 = 32L << 20; "
+        ^^ "int thp = spiral_thp_on(); "
+        ^^ "if (!thp && (n > 2 * l3 || !spiral_pages_remote(m, n))) return m; "
+        ^^ "size_t H = (size_t)2 << 20; size_t sz = ((size_t)n + 3 * H) & ~(H - 1); "
+        ^^ "char * r = (char *)mmap(NULL, sz, PROT_READ | PROT_WRITE, "
+        ^^ "MAP_PRIVATE | MAP_ANONYMOUS | (thp ? 0 : MAP_POPULATE), -1, 0); "
+        ^^ "if (r == MAP_FAILED) return m; "
+        ^^ "if (thp) madvise(r, sz, MADV_HUGEPAGE); "
+        ^^ "char * b = (char *)(((uintptr_t)r + H - 1) & ~(uintptr_t)(H - 1)) + 36; "
+        ^^ "long blocks = (n + (long)H - 1) / (long)H; "
+        ^^ "_Pragma(\"omp parallel for schedule(static)\") for (long k = 0; k < blocks; k++) { "
+        ^^ "long at = k * (long)H; memcpy(b + at, m + at, (size_t)(n - at < (long)H ? n - at : (long)H)); } "
+        ^^ "munmap(m, (size_t)n); return b; }\n#endif"
+    )
+
 := c_map_f32s_global () : () =
+    c_localize ()
     global (
         "__attribute__((noinline)) static void * spiral_map_f32s(const char * p, long at, long count) { "
-        ^^ "long n = 0; char * m = spiral_map_private(p, &n); return spiral_view_f32s(m, n, at, count); }"
+        ^^ "long n = 0; char * mapped = spiral_map_private(p, &n); char * m = spiral_localize(mapped, n); "
+        ^^ "return spiral_view_f32s(m, n, at, count); }"
     )
 
 := c_map_global () : () =
@@ -1167,7 +1213,7 @@
 
 ///> pascal
 :# pascal_read_all_text_reads_back_what_was_written =
-    := path = "spiral-pascal-read-probe.txt"
+    := path = "spiral-pascal-read-trial.txt"
     write_all_text path "ab"
     path |> read_all_text |> _assert_eq "ab"
     write_all_text path ""
@@ -1181,29 +1227,29 @@
             $'(try System.IO.File.ReadAllText(!path : string) with _ -> "")' : string
         | _ => \ () => no_arm "file_system.read_text_or_empty"
 
-:= read_text_or_empty_probe () : string =
+:= read_text_or_empty_trial () : string =
     := path = get_temp_path () </> "spiral-read-text-or-empty.txt"
     write_all_text path "kept"
     path
 
 ///> rust
 :# read_text_or_empty_reads_a_file_or_gives_empty =
-    := path = read_text_or_empty_probe ()
+    := path = read_text_or_empty_trial ()
     (read_text_or_empty path, read_text_or_empty (path ++# ".missing")) |> _assert_eq ("kept", "")
 
 := read_text_under (root : string) (relative : string) : string = read_text_or_empty (root </> relative)
 
 := read_text_lf (path : string) : string = read_text_or_empty path |> sm'::replace "\r\n" "\n"
 
-:= crlf_probe () : string =
+:= crlf_trial () : string =
     := path = get_temp_path () </> "spiral-read-text-lf.txt"
     write_all_text path "a\r\nb\r\n"
     path
 
 ///> rust
 :# rooted_and_lf_reads_follow_read_text_or_empty =
-    := lf = read_text_lf (crlf_probe ())
-    (read_text_under (get_temp_path ()) "spiral-read-text-lf.txt", lf, read_text_lf (crlf_probe () ++# ".missing"))
+    := lf = read_text_lf (crlf_trial ())
+    (read_text_under (get_temp_path ()) "spiral-read-text-lf.txt", lf, read_text_lf (crlf_trial () ++# ".missing"))
     |> _assert_eq ("a\r\nb\r\n", "a\nb\n", "")
 
 := directory_create_symbolic_link (target : string) (path : string) : () =
@@ -1393,7 +1439,7 @@
 
 ///> gleam
 :# file_exists_on_gleam_tells_files_from_missing_paths =
-    := ~path = "spiral-file-exists-probe.txt"
+    := ~path = "spiral-file-exists-trial.txt"
     (written_then_deleted path, file_exists "spiral-no-such-file.txt") |> _assert_eq ((!+, !-), !-)
 
 :~ read_link (path : string) : resultm::result' path_buf stream::io_error =
@@ -1470,7 +1516,8 @@
                         |> stream::new_io_error
                     path' |> run 루프 n error
             path |> 루프 0u8
-        | _ => \ () => $'Unchecked.defaultof<_>'
+        | Fsharp => \ () => $'Unchecked.defaultof<_>'
+        | _ => \ () => failwith "file_system.read_link: no arm for this backend"
 
 :~ normalize_path (path : string) : string =
     ? path = ""
@@ -1616,9 +1663,9 @@
 :# get_full_path_keeps_the_drive_of_an_absolute_path =
     ? platform::is_windows () ?>
         := drive = ? get_current_directory () |> sm'::starts_with "Z" ?> "Y" |: "Z"
-        sm'::(++#) drive ":/spiral_drive_probe/x"
+        sm'::(++#) drive ":/spiral_drive_trial/x"
         |> get_full_path
-        |> _assert_eq (sm'::(++#) drive ":\\spiral_drive_probe\\x")
+        |> _assert_eq (sm'::(++#) drive ":\\spiral_drive_trial\\x")
 
 ///> rust -d regex
 :# get_full_path_3 =
@@ -1761,7 +1808,7 @@
         ? platform::is_windows ()
         ?> env::get_environment_variable "USERPROFILE"
         |: env::get_environment_variable "HOME"
-    := scratch = get_temp_path () </> "spiral-delete-guard-probe"
+    := scratch = get_temp_path () </> "spiral-delete-guard-trial"
     (
         delete_target_is_protected home,
         delete_target_is_protected (home </> ".."),
@@ -2178,12 +2225,12 @@
 ///> rust
 :# last_write_ms_is_zero_for_a_missing_path_and_positive_for_a_written_file =
     := missing = get_temp_path () </> "spiral-last-write-missing.txt"
-    := probe = get_temp_path () </> "spiral-last-write-probe.txt"
+    := trial = get_temp_path () </> "spiral-last-write-trial.txt"
     file_delete missing
     last_write_ms missing |> _assert_eq 0u64
-    write_all_text probe "x"
-    (last_write_ms probe > 0u64) |> _assert_eq !+
-    file_delete probe
+    write_all_text trial "x"
+    (last_write_ms trial > 0u64) |> _assert_eq !+
+    file_delete trial
 
 := append_all_text (path : string) (text : string) : () =
     run_target_args' (path, text) \|
@@ -2201,12 +2248,12 @@
         | _ => \ _ => ()
 
 := appended_text () : string =
-    := probe = get_temp_path () </> "spiral-append-probe.txt"
-    file_delete probe
-    append_all_text probe "a"
-    append_all_text probe "b"
-    := text = read_all_text probe
-    file_delete probe
+    := trial = get_temp_path () </> "spiral-append-trial.txt"
+    file_delete trial
+    append_all_text trial "a"
+    append_all_text trial "b"
+    := text = read_all_text trial
+    file_delete trial
     text
 
 ///> rust
@@ -2215,7 +2262,7 @@
 
 ///> lua
 :# lua_files_write_read_append_and_delete =
-    := path = "spiral-lua-file-probe.txt"
+    := path = "spiral-lua-file-trial.txt"
     file_delete path
     path |> file_exists |> _assert_eq !-
     write_all_text path "ab"

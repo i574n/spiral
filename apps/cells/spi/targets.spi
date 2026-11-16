@@ -1,3 +1,9 @@
+///- --package .
+:# targets static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
 :| target =
     | RustTarget
     | FsharpTarget
@@ -13,7 +19,7 @@
     | LeanTarget
     | WgslTarget
 
-:= target_of (tool : string) : option target =
+:~ target_of (tool : string) : option target =
     ? tool = "rust"
     ?> Some RustTarget
     |? tool = "fsharp"
@@ -42,7 +48,7 @@
     ?> Some WgslTarget
     |: None
 
-:= backend_name (t : target) : string =
+:~ backend_name (t : target) : string =
     ?= t ?|
     | RustTarget => "Rust"
     | FsharpTarget => "Fsharp"
@@ -58,7 +64,7 @@
     | LeanTarget => "Lean"
     | WgslTarget => "Wgsl"
 
-:= extension_name (t : target) : string =
+:~ extension_name (t : target) : string =
     ?= t ?|
     | RustTarget => ".rs"
     | FsharpTarget => ".fsx"
@@ -74,12 +80,12 @@
     | LeanTarget => ".lean"
     | WgslTarget => ".wgsl"
 
-:= backend (t : option target) : string =
+:~ backend (t : option target) : string =
     ?= t ?|
     | Some t => backend_name t
     | None => ""
 
-:= extension (t : option target) : string =
+:~ extension (t : option target) : string =
     ?= t ?|
     | Some t => extension_name t
     | None => ""
@@ -91,7 +97,7 @@
     | JavascriptHost
     | PowershellHost
 
-:= host_of (language : string) : option host =
+:~ host_of (language : string) : option host =
     ? language = "fsharp" || language = "fs"
     ?> Some FsiHost
     |? language = "python" || language = "py"
@@ -104,7 +110,7 @@
     ?> Some PowershellHost
     |: None
 
-:= host_name (h : host) : string =
+:~ host_name (h : host) : string =
     ?= h ?|
     | FsiHost => "fsharp"
     | PythonHost => "python"
@@ -112,7 +118,7 @@
     | JavascriptHost => "javascript"
     | PowershellHost => "powershell"
 
-:= host_file_extension (h : host) : string =
+:~ host_file_extension (h : host) : string =
     ?= h ?|
     | FsiHost => ".fsx"
     | PythonHost => ".py"
@@ -120,12 +126,12 @@
     | JavascriptHost => ".js"
     | PowershellHost => ".ps1"
 
-:= host_language (language : string) : string =
+:~ host_language (language : string) : string =
     ?= host_of (text::lowercase language) ?|
     | Some h => host_name h
     | None => ""
 
-:= host_extension (name : string) : string =
+:~ host_extension (name : string) : string =
     ?= host_of name ?|
     | Some h => host_file_extension h
     | None => ""
@@ -135,4 +141,102 @@
     ?> without_exe (text::take s (text::length s - 4i32))
     |: s
 
-:= is_cl (basename : string) : bool = without_exe (text::lowercase basename) = "cl"
+:~ is_cl (basename : string) : bool = without_exe (text::lowercase basename) = "cl"
+
+:| zig_mode =
+    | ZigRun
+    | ZigRelease : string
+
+:~ zig_self_hosted (arch : string) (llvm : string) : bool =
+    := a = text::lowercase arch
+    llvm <> "1" && (text::contains a "x86_64" || text::contains a "amd64" || text::contains a "win32")
+
+:~ zig_args (mode : zig_mode) (self_hosted : bool) (global_cache : string) (local_cache : string) (path : string) : list string =
+    := caches = [ "--global-cache-dir"; global_cache; "--cache-dir"; local_cache ]
+    ?= mode ?|
+    | ZigRun => listm::append (listm::append [ "run" ] (? self_hosted ?> [ "-fno-llvm" ] |: [])) (listm::append caches [ path ])
+    | ZigRelease exe => listm::append (listm::append [ "build-exe"; "-O"; "ReleaseFast" ] caches) [ "-femit-bin=" ++ exe; path ]
+
+:~ c_args (cc_name : string) (exe : string) (source : string) (shim : option string) : list string =
+    := forced = ?= shim ?| Some s => [ "-include"; s ] | None => []
+    ? is_cl cc_name
+    ?> [ "/nologo"; "/O2"; "/Fe:" ++ exe; source ]
+    |: listm::append (listm::append [ "-std=c11"; "-O2"; "-w"; "-fwrapv" ] forced) [ "-o"; exe; source; "-lm" ]
+
+:~ ^ lines_of (xs : list string) (acc : string) : string =
+    ?= xs ?|
+    | x :: rest => lines_of rest (? acc = "" ?> x |: acc ++ "\n" ++ x)
+    | [] => acc
+
+:~ zig_wire (release_exe : string) (arch : string) (llvm : string) (global_cache : string) (local_cache : string) (path : string) : string =
+    := mode = ? release_exe = "" ?> ZigRun |: ZigRelease release_exe
+    lines_of (zig_args mode (zig_self_hosted arch llvm) global_cache local_cache path) ""
+
+:~ c_wire (cc_name : string) (exe : string) (source : string) (shim : string) : string =
+    lines_of (c_args cc_name exe source (? shim = "" ?> None |: Some shim)) ""
+
+:~ python_warnings (existing : string) : string =
+    := cupy = "ignore:CUDA path could not be detected:UserWarning"
+    ? existing = "" ?> cupy |: existing ++ "," ++ cupy
+
+:~ builder_failed_text (status : string) (output : string) : string =
+    "builder failed (exit " ++ status ++ ")\n\n" ++ output
+
+:~ c_exe_path (source : string) (windows : bool) : string = source ++ ".out" ++ (? windows ?> ".exe" |: "")
+
+:~ duration_text (ms : i32) : string =
+    ? ms < 0i32 ?> "infinity" |? ms % 1000i32 = 0i32 ?> text::show_i32 (ms / 1000i32) ++ "s" |: text::show_i32 ms ++ "ms"
+
+:~ cell_timeout_text (kind : string) (ms : i32) (note : string) (tree : string) : string =
+    kind ++ " cell timed out after " ++ duration_text ms ++ note ++ "; the " ++ tree ++ "process tree was killed."
+
+///> gleam
+:# zig_args_pick_the_backend_and_the_release_build =
+    := run = zig_wire "" "x86_64-pc-windows" "" "g" "l" "m.zig"
+    := llvm = zig_wire "" "x86_64-pc-windows" "1" "g" "l" "m.zig"
+    := arm = zig_wire "" "aarch64-unknown-linux" "" "g" "l" "m.zig"
+    := release = zig_wire "c/cell" "x86_64" "" "g" "l" "m.zig"
+    (run, llvm, arm)
+    |> _assert_eq (
+        "run\n-fno-llvm\n--global-cache-dir\ng\n--cache-dir\nl\nm.zig",
+        "run\n--global-cache-dir\ng\n--cache-dir\nl\nm.zig",
+        "run\n--global-cache-dir\ng\n--cache-dir\nl\nm.zig"
+    )
+    release |> _assert_eq "build-exe\n-O\nReleaseFast\n--global-cache-dir\ng\n--cache-dir\nl\n-femit-bin=c/cell\nm.zig"
+
+///> gleam
+:# c_args_follow_the_compiler_spelling_and_the_shim =
+    := gcc = c_wire "gcc.exe" "cell.exe" "main.c" ""
+    := shimmed = c_wire "gcc" "cell" "main.c" "d/c-shim.h"
+    := cl = c_wire "CL.EXE" "cell.exe" "main.c" "d/c-shim.h"
+    (gcc, shimmed, cl)
+    |> _assert_eq (
+        "-std=c11\n-O2\n-w\n-fwrapv\n-o\ncell.exe\nmain.c\n-lm",
+        "-std=c11\n-O2\n-w\n-fwrapv\n-include\nd/c-shim.h\n-o\ncell\nmain.c\n-lm",
+        "/nologo\n/O2\n/Fe:cell.exe\nmain.c"
+    )
+
+///> gleam
+:# python_warnings_append_the_cupy_filter_and_failures_name_the_exit =
+    (python_warnings "", python_warnings "default")
+    |> _assert_eq ("ignore:CUDA path could not be detected:UserWarning", "default,ignore:CUDA path could not be detected:UserWarning")
+    (builder_failed_text "1" "boom\n", builder_failed_text "3221225477" "") |> _assert_eq ("builder failed (exit 1)\n\nboom\n", "builder failed (exit 3221225477)\n\n")
+    (c_exe_path "a/m.c" !+, c_exe_path "a/m.c" !-) |> _assert_eq ("a/m.c.out.exe", "a/m.c.out")
+
+///> gleam
+:# host_languages_their_extensions_and_the_cl_check_cover_every_spelling =
+    := ~languages = [ "fsharp"; "FSharp"; "fs"; "FS"; "python"; "Py"; "py"; "lua"; "LUA"; "javascript"; "JS"; "js"; "powershell"; "PowerShell"; "pwsh"; "PYTHON" ]
+    := hosts = [ "fsharp"; "fsharp"; "fsharp"; "fsharp"; "python"; "python"; "python"; "lua"; "lua"; "javascript"; "javascript"; "javascript"; "powershell"; "powershell"; "powershell"; "python" ]
+    listm::map host_language languages |> _assert_eq hosts
+    := ~others = [ ""; "rust"; "spiral"; "c"; "f#"; " fs"; "fs "; "café"; "İ"; "Luá" ]
+    listm::map host_language others |> _assert_eq [ ""; ""; ""; ""; ""; ""; ""; ""; ""; "" ]
+    listm::map host_extension [ "fsharp"; "python"; "lua"; "javascript"; "powershell"; "" ] |> _assert_eq [ ".fsx"; ".py"; ".lua"; ".js"; ".ps1"; "" ]
+    := ~names = [ "cl"; "cl.exe"; "CL.EXE"; "cl.exe.exe"; "Cl.Exe"; "cl.EXE.exe"; "gcc"; "clang"; "cl.ex"; "xcl.exe"; "cl.exe "; "" ]
+    listm::map is_cl names |> _assert_eq [ !+; !+; !+; !+; !+; !+; !-; !-; !-; !-; !-; !- ]
+
+///> gleam
+:# cell_timeouts_name_the_kind_the_budget_and_the_tree =
+    := ~budget = 900000i32
+    (duration_text budget, duration_text 1500i32, duration_text -1i32, duration_text 0i32) |> _assert_eq ("900s", "1500ms", "infinity", "0s")
+    cell_timeout_text "F#" 3000i32 " (x2)" "fsi " |> _assert_eq "F# cell timed out after 3s (x2); the fsi process tree was killed."
+    cell_timeout_text "Spiral" budget "" "" |> _assert_eq "Spiral cell timed out after 900s; the process tree was killed."

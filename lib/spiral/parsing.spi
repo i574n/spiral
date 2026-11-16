@@ -914,12 +914,13 @@
 
 := many1_strings (p : parser _) : parser string = \ t, i, s =>
     trace_entry "parsing.many1_strings" \ () => { t_len = ##t }
-    ?= p (t, i, s) ?|
+    :~ ^ step (i0 : int) (s0 : parser_state) : result (_ * int * parser_state) parser_error = p (t, i0, s0)
+    ?= step i s ?|
     | Error e => e |> Error
     | Ok (r, i', s') =>
         := first = string_of r
         :~ ^ 루프 (acc : list string) (i'' : int) s'' : result (string * int * _) _ =
-            ?= p (t, i'', s'') ?|
+            ?= step i'' s'' ?|
             | Error _ =>
                 := r =
                     ?= acc ?|
@@ -943,7 +944,8 @@
 
 := many_strings (p : parser _) : parser string = \ t, i, s =>
     trace_entry "parsing.many_strings" \ () => { t_len = ##t }
-    ?= p (t, i, s) ?|
+    :~ ^ step (i0 : int) (s0 : parser_state) : result (_ * int * parser_state) parser_error = p (t, i0, s0)
+    ?= step i s ?|
     | Error _ => Ok ("", i, s)
     | Ok (_, i', _) ?& i' = i => fail (\ _ => "parsing.many_strings / first inner parser consumed no text") i s
     | Ok (r, i', s') ?& is_rust () =>
@@ -951,7 +953,7 @@
         := push (x : string) : () = $'!buf.borrow_mut().push_str(&*!x)'
         := first = string_of r
         :~ ^ 루프 (n : int) (i' : int) s' : result (string * int * _) _ =
-            ?= p (t, i', s') ?|
+            ?= step i' s' ?|
             | Error _ =>
                 := r = ? n = 0 ?> first |: $'Rc::<str>::from(!buf.borrow().as_str())' : string
                 Ok (r, i', s')
@@ -963,7 +965,7 @@
         s' |> 루프 0 i'
     | Ok (r, i', s') =>
         :~ ^ 루프 (acc : list string) (i' : int) s' : result (string * int * _) _ =
-            ?= p (t, i', s') ?|
+            ?= step i' s' ?|
             | Error _ =>
                 := r = string_of r
                 := r =

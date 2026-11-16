@@ -3,7 +3,7 @@
 :! authorized = ()
 
 :! nfe_draft = { id : string }
-:! nfe_signed = { xml : string; digest : string }
+:! nfe_signed = { xml : string; fingerprint : string }
 :! nfe_authorized = { xml : string; protocol : string }
 
 :| document state =
@@ -13,7 +13,7 @@
 
 := sign (document : document draft) : document signed =
     ?= document ?|
-    | Draft _ => Signed (nfe_signed { xml = "nfe.xml"; digest = "sha256" })
+    | Draft _ => Signed (nfe_signed { xml = "nfe.xml"; fingerprint = "sha256" })
 
 := authorize (document : document signed) : document authorized =
     ?= document ?|

@@ -1,0 +1,17 @@
+:! counters = array_base i32
+
+:= create (n : i32) : counters = counters !!!!ArrayCreate(`i32, n)
+:= get (array : counters) (i : i32) : i32 =
+    ?= array ?|
+    | counters values => !!!!ArrayIndex(values, i)
+:= fetch_add (array : counters) (i : i32) (v : i32) : i32 =
+    ?= array ?|
+    | counters values => !!!!ArrayAtomicAdd(values, i, v)
+
+:= main () : i32 =
+    := ~n = 3i32
+    := a = create n
+    := first = fetch_add a 1i32 5i32
+    := second = fetch_add a 1i32 7i32
+    := other = fetch_add a 2i32 1i32
+    first +. (second -. 5i32) +. (get a 1i32 -. 12i32) +. other +. get a 0i32

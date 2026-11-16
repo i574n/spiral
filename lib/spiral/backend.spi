@@ -269,7 +269,7 @@
             ()
     }
 
-:= wgsl_probe_code () : i32 =
+:= wgsl_trial_code () : i32 =
     run_target \|
         | Wgsl => \ () => 7i32
         | C => \ () => 3i32
@@ -278,14 +278,14 @@
 ///> c
 :# run_target_picks_the_c_arm =
     := ~expected = 3i32
-    wgsl_probe_code () |> _assert_eq expected
+    wgsl_trial_code () |> _assert_eq expected
 
 ///> wgsl
 :# run_target_picks_the_wgsl_arm =
     := ~expected = 7i32
-    ? wgsl_probe_code () = expected ?> 0i32 |: 1i32
+    ? wgsl_trial_code () = expected ?> 0i32 |: 1i32
 
-:= circuit_probe_code () : i32 =
+:= circuit_trial_code () : i32 =
     run_target \|
         | Calyx => \ () => 11i32
         | OpenQasm => \ () => 13i32
@@ -295,4 +295,4 @@
 ///> c
 :# run_target_names_calyx_openqasm_and_ebpf =
     := ~expected = 5i32
-    circuit_probe_code () |> _assert_eq expected
+    circuit_trial_code () |> _assert_eq expected

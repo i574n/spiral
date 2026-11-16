@@ -1,5 +1,2 @@
-packageDir: ../..
-packages:
-    mega_brzozowski_derivatives-
 modules:
     main

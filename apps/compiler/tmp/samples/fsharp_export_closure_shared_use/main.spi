@@ -1,0 +1,7 @@
+:= double (x : i64) : i64 = x *. 2
+
+:= main () : i32 =
+    !!!!Export("spiral_double", double)
+    := ~f = double
+    := ~seed = 21i64
+    ? !!!!EQ(f seed, 42i64) ?> 0i32 |: 1i32

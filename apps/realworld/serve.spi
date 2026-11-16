@@ -7,13 +7,35 @@
 :< server
 
 := method_of (text : string) : realworld_api::http_method =
-    ? text = "POST" ?> realworld_api::Post |? text = "PUT" ?> realworld_api::Put |? text = "DELETE" ?> realworld_api::Delete |: realworld_api::Get
+    ? text = "POST"
+    ?> realworld_api::Post
+    |? text = "PUT"
+    ?> realworld_api::Put
+    |? text = "DELETE"
+    ?> realworld_api::Delete
+    |: realworld_api::Get
 
 := token_of (r : erlang_http_server::request) : string = erlang_http_server::header_value "authorization" r::head
 
+:= rfc3339_options () : erlang_term::term =
+    := unit = erlang_term::tuple [ erlang_term::atom "unit"; erlang_term::atom "millisecond" ]
+    erlang_term::list_term [ unit; erlang_term::tuple [ erlang_term::atom "offset"; erlang_term::charlist "Z" ] ]
+
+:= utc_stamp () : string =
+    := millis = erlang_term::apply "erlang" "system_time" [ erlang_term::atom "millisecond" ]
+    := text = erlang_term::apply "calendar" "system_time_to_rfc3339" [ millis; rfc3339_options () ]
+    erlang_term::apply "unicode" "characters_to_binary" [ text ] |> erlang_term::cast
+
 := request_from (raw : string) : http_request =
     := r = erlang_http_server::request_of raw
-    { method = method_of r::method; path = r::path; authorization = token_of r; body = erlang_http_server::body_of r }
+    {
+        method = method_of r::method
+        path = r::path
+        query = r::query
+        authorization = token_of r
+        body = erlang_http_server::body_of r
+        now = utc_stamp ()
+    }
 
 := answer_raw (k : server_keys) (s : rw_store) (raw : string) : string * rw_store =
     := out = dispatch k s (request_from raw)
@@ -29,7 +51,10 @@
 := reply_for (k : server_keys) (s : rw_store) (raw : string) : string * rw_store =
     ? erlang_http_server::complete raw ?> answer_raw k s raw |: "", s
 
-:= sent (sock : erlang_tcp::socket) (reply : string) : () = ? reply = "" ?> () |: erlang_tcp::send_text sock reply |> ignore
+:= sent (sock : erlang_tcp::socket) (reply : string) : () =
+    ? reply = ""
+    ?> ()
+    |: erlang_tcp::send_text sock reply |> ignore
 
 :~ handled (k : server_keys) (s : rw_store) (sock : erlang_tcp::socket) : rw_store =
     := reply, next = reply_for k s (received sock "")
@@ -59,11 +84,13 @@
     := length = sm'::obj_to_string (erlang_term::byte_size_of body)
     "POST " ++# path ++# " HTTP/1.1\r\nHost: rw\r\nContent-Length: " ++# length ++# "\r\n\r\n" ++# body
 
-:= raw_get (path : string) (token : string) : string = "GET " ++# path ++# " HTTP/1.1\r\nHost: rw\r\nAuthorization: " ++# token ++# "\r\n\r\n"
+:= raw_get (path : string) (token : string) : string =
+    "GET " ++# path ++# " HTTP/1.1\r\nHost: rw\r\nAuthorization: " ++# token ++# "\r\n\r\n"
 
 := status_word (reply : string) : string = sm'::slice 9i32 11i32 reply
 
-:= registered_raw () : string * rw_store = answer_raw (keys ()) (realworld_model::empty_store ()) (raw_post "/api/users" (jake_body ()))
+:= registered_raw () : string * rw_store =
+    answer_raw (keys ()) (realworld_model::empty_store ()) (raw_post "/api/users" (jake_body ()))
 
 := status_after (s : rw_store) (raw : string) : string =
     := reply, _ = answer_raw (keys ()) s raw
@@ -74,4 +101,11 @@
 ///> gleam
 :# raw_http_requests_round_trip_through_the_dispatcher =
     := made, s = registered_raw ()
-    (status_word made, status_after s (jake_get "/api/user"), status_after s (raw_get "/api/nowhere" "")) |> _assert_eq ("201", "200", "404")
+    (status_word made, status_after s (jake_get "/api/user"), status_after s (raw_get "/api/nowhere" ""))
+    |> _assert_eq ("201", "200", "404")
+
+///> gleam
+:# the_request_clock_is_rfc3339_utc_with_milliseconds =
+    := stamp = utc_stamp ()
+    (sm'::length stamp, sm'::substring 10i32 1i32 stamp, sm'::substring 13i32 1i32 stamp, sm'::ends_with "Z" stamp)
+    |> _assert_eq (24i32, "T", ":", !+)

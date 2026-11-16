@@ -1,5 +1,5 @@
 :! payload_a = ()
-:! digest_a = ()
+:! fingerprint_a = ()
 :! transfer_a = ()
 :! manifest_a = ()
 :! manifest_stale = ()
@@ -26,12 +26,12 @@
 :! idempotent = ()
 :! non_idempotent = ()
 
-:| payload artifact digest state =
-    | Payload :: \* artifact digest state. string -> payload artifact digest state
+:| payload artifact fingerprint state =
+    | Payload :: \* artifact fingerprint state. string -> payload artifact fingerprint state
 
-:| mesh_manifest transfer artifact digest route manifest state =
-    | MeshManifest :: \* transfer artifact digest route manifest state.
-        string -> mesh_manifest transfer artifact digest route manifest state
+:| mesh_manifest transfer artifact fingerprint route manifest state =
+    | MeshManifest :: \* transfer artifact fingerprint route manifest state.
+        string -> mesh_manifest transfer artifact fingerprint route manifest state
 
 :| peer_identity peer state =
     | PeerIdentity :: \* peer state. string -> peer_identity peer state
@@ -55,107 +55,115 @@
     | BackpressureReceipt :: \* transfer manifest peer inbox state.
         string -> backpressure_receipt transfer manifest peer inbox state
 
-:| peer_output transfer manifest peer artifact digest state =
-    | PeerOutput :: \* transfer manifest peer artifact digest state.
-        string -> peer_output transfer manifest peer artifact digest state
+:| peer_output transfer manifest peer artifact fingerprint state =
+    | PeerOutput :: \* transfer manifest peer artifact fingerprint state.
+        string -> peer_output transfer manifest peer artifact fingerprint state
 
-:| mesh_commit transfer manifest route artifact digest state =
-    | MeshCommit :: \* transfer manifest route artifact digest state.
-        string -> mesh_commit transfer manifest route artifact digest state
+:| mesh_commit transfer manifest route artifact fingerprint state =
+    | MeshCommit :: \* transfer manifest route artifact fingerprint state.
+        string -> mesh_commit transfer manifest route artifact fingerprint state
 
-:| mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to effect =
-    | ScheduleAdversarially :: \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic.
-        payload artifact digest source_ready *
-        mesh_manifest transfer artifact digest route manifest scheduled *
+:| mesh_op transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to effect =
+    | ScheduleAdversarially :: \* transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic.
+        payload artifact fingerprint source_ready *
+        mesh_manifest transfer artifact fingerprint route manifest scheduled *
         peer_identity pa accepted *
         peer_identity pb accepted *
         peer_identity pc accepted *
         peer_distinct pa pb pc distinct ->
-        mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic source_ready scheduled idempotent
-    | ApplyBackpressure :: \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic.
+        mesh_op
+            transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic source_ready scheduled idempotent
+    | ApplyBackpressure :: \* transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic.
         backpressure_receipt transfer manifest pa ia accepted *
         backpressure_receipt transfer manifest pb ib accepted *
         backpressure_receipt transfer manifest pc ic accepted ->
-        mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic scheduled throttled non_idempotent
-    | DeliverOutOfOrder :: \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic.
+        mesh_op
+            transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic scheduled throttled non_idempotent
+    | DeliverOutOfOrder :: \* transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic.
         chunk_delivery transfer manifest pa cc ia accepted *
         chunk_delivery transfer manifest pa ca ia accepted *
         chunk_delivery transfer manifest pb cb ib accepted *
         chunk_delivery transfer manifest pb ca ib accepted *
         chunk_delivery transfer manifest pc cc ic accepted *
         chunk_delivery transfer manifest pc cb ic accepted ->
-        mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic throttled delivered idempotent
-    | DeduplicateAndRejectCorruption :: \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic.
+        mesh_op transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic throttled delivered idempotent
+    | DeduplicateAndRejectCorruption :: \* transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic.
         duplicate_receipt transfer manifest pb cb accepted *
         duplicate_receipt transfer manifest pc cc accepted *
         corruption_rejection transfer manifest pa cb rejected ->
-        mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic delivered converged idempotent
-    | PublishConvergedMesh :: \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic.
-        mesh_manifest transfer artifact digest route manifest scheduled *
-        peer_output transfer manifest pa artifact digest accepted *
-        peer_output transfer manifest pb artifact digest accepted *
-        peer_output transfer manifest pc artifact digest accepted *
+        mesh_op transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic delivered converged idempotent
+    | PublishConvergedMesh :: \* transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic.
+        mesh_manifest transfer artifact fingerprint route manifest scheduled *
+        peer_output transfer manifest pa artifact fingerprint accepted *
+        peer_output transfer manifest pb artifact fingerprint accepted *
+        peer_output transfer manifest pc artifact fingerprint accepted *
         peer_distinct pa pb pc distinct *
-        mesh_commit transfer manifest route artifact digest committed ->
-        mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic converged committed non_idempotent
+        mesh_commit transfer manifest route artifact fingerprint committed ->
+        mesh_op
+            transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic converged committed non_idempotent
 
 :| mesh_row transfer manifest from to effect =
     | MeshRow :: \* transfer manifest from to effect. string -> mesh_row transfer manifest from to effect
 
-:| mesh_node transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to =
-    | MeshNode :: \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
+:| mesh_node transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to =
+    | MeshNode :: \* transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to.
         (\? effect.
-            mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to effect *
+            mesh_op transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to effect *
             mesh_row transfer manifest from to effect)
-        -> mesh_node transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to
+        -> mesh_node transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to
 
-:| ^ mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to =
-    | MeshLeaf :: \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
-        mesh_node transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to ->
-        mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to
-    | MeshThen :: \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
+:| ^ mesh_plan transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to =
+    | MeshLeaf :: \* transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to.
+        mesh_node transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to ->
+        mesh_plan transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to
+    | MeshThen :: \* transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to.
         (\? middle.
-            mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from middle *
-            mesh_node transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic middle to)
-        -> mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to
+            mesh_plan transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from middle *
+            mesh_node transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic middle to)
+        -> mesh_plan transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to
 
-:| packed_mesh transfer artifact digest =
-    | PackedMesh :: \* transfer artifact digest.
+:| packed_mesh transfer artifact fingerprint =
+    | PackedMesh :: \* transfer artifact fingerprint.
         (\? route manifest pa pb pc ca cb cc ia ib ic.
-            mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic source_ready committed)
-        -> packed_mesh transfer artifact digest
+            mesh_plan transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic source_ready committed)
+        -> packed_mesh transfer artifact fingerprint
 
-:= with_packed_mesh \* transfer artifact digest result.
-    (visit : \* route manifest pa pb pc ca cb cc ia ib ic.
-        mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic source_ready committed -> result)
-    (packed : packed_mesh transfer artifact digest) : result =
+:= with_packed_mesh \* transfer artifact fingerprint result.
+    (visit :
+        \* route manifest pa pb pc ca cb cc ia ib ic.
+            mesh_plan transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic source_ready committed ->
+            result)
+    (packed : packed_mesh transfer artifact fingerprint)
+    : result
+    =
     ?= packed ?|
     | PackedMesh payload =>
         := \? route manifest pa pb pc ca cb cc ia ib ic. plan = payload
         visit plan
 
-:= node_label \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
-    (node : mesh_node transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to) : string =
+:= node_label \* transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to.
+    (node : mesh_node transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to) : string =
     ?= node ?|
     | MeshNode payload =>
         := \? effect. _, MeshRow label = payload
         label
 
-:= terminal_label \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
-    (plan : mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to) : string =
+:= terminal_label \* transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to.
+    (plan : mesh_plan transfer artifact fingerprint route manifest pa pb pc ca cb cc ia ib ic from to) : string =
     ?= plan ?|
     | MeshLeaf node => node_label node
     | MeshThen payload =>
         := \? middle. _, node = payload
         node_label node
 
-:= manifest () : mesh_manifest transfer_a payload_a digest_a route_mesh manifest_a scheduled =
+:= manifest () : mesh_manifest transfer_a payload_a fingerprint_a route_mesh manifest_a scheduled =
     MeshManifest "mesh-manifest-a"
 := distinct_peers () : peer_distinct peer_a peer_b peer_c distinct = PeerDistinct "a-ne-b-ne-c"
 
 := schedule_node
     ()
-    : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+    : mesh_node transfer_a payload_a fingerprint_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2
+        inbox_a
         inbox_b inbox_c source_ready scheduled
     =
     MeshNode (\? (
@@ -172,7 +180,8 @@
 
 := throttle_node
     ()
-    : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+    : mesh_node transfer_a payload_a fingerprint_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2
+        inbox_a
         inbox_b inbox_c scheduled throttled
     =
     MeshNode (\? (
@@ -186,7 +195,8 @@
 
 := deliver_node
     ()
-    : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+    : mesh_node transfer_a payload_a fingerprint_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2
+        inbox_a
         inbox_b inbox_c throttled delivered
     =
     MeshNode (\? (
@@ -200,7 +210,8 @@
 
 := converge_node
     ()
-    : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+    : mesh_node transfer_a payload_a fingerprint_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2
+        inbox_a
         inbox_b inbox_c delivered converged
     =
     MeshNode (\? (
@@ -212,12 +223,13 @@
         MeshRow "deduplicate-and-recover"
     ))
 
-:= stale_peer_c_output () : peer_output transfer_a manifest_stale peer_c payload_a digest_a accepted =
+:= stale_peer_c_output () : peer_output transfer_a manifest_stale peer_c payload_a fingerprint_a accepted =
     PeerOutput "peer-c-stale-manifest"
 
 := commit_node
     ()
-    : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+    : mesh_node transfer_a payload_a fingerprint_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2
+        inbox_a
         inbox_b inbox_c converged committed
     =
     MeshNode (\? (
@@ -234,7 +246,8 @@
 
 := plan
     ()
-    : mesh_plan transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+    : mesh_plan transfer_a payload_a fingerprint_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2
+        inbox_a
         inbox_b inbox_c source_ready committed
     =
     MeshThen (\? (
@@ -252,11 +265,12 @@
     ))
 
 := inspect \* route manifest pa pb pc ca cb cc ia ib ic.
-    (plan : mesh_plan transfer_a payload_a digest_a route manifest pa pb pc ca cb cc ia ib ic source_ready committed)
+    (plan :
+        mesh_plan transfer_a payload_a fingerprint_a route manifest pa pb pc ca cb cc ia ib ic source_ready committed)
     : string
     =
     terminal_label plan
 
 := main () : string =
-    := packed : packed_mesh transfer_a payload_a digest_a = PackedMesh (\? (plan ()))
+    := packed : packed_mesh transfer_a payload_a fingerprint_a = PackedMesh (\? (plan ()))
     with_packed_mesh `$inspect packed

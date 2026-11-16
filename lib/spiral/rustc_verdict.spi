@@ -1,0 +1,105 @@
+///- --package .
+:# rustc_verdict static =
+    :< testing
+
+:< sm'_operators
+
+:| rustc_error =
+    | MismatchedTypes : string * string
+    | OtherError : string * string
+
+:| rustc_verdict =
+    | Built
+    | Rejected : list rustc_error
+    | NotRun
+
+:~ ^ odd_parts (parts : list string) : list string =
+    ?= parts ?|
+    | _ :: x :: rest => x :: odd_parts rest
+    | _ => []
+
+:= backticked (text : string) : list string = sm'::split_list "`" text |> odd_parts
+
+:= after (marker : string) (text : string) : string =
+    := from = sm'::index_of marker text + sm'::length marker
+    sm'::substring from (sm'::length text - from) text
+
+:= error_of_message (code : string) (message : string) : rustc_error =
+    := other = OtherError (code, message)
+    ? code = "E0308"
+    ?>
+        ?= backticked message ?|
+        | expected :: found :: [] => MismatchedTypes (expected, found)
+        | _ => other
+    |: other
+
+:= error_of_line (line : string) : option rustc_error =
+    ? sm'::index_of "error[" line < 0i32
+    ?> None
+    |:
+        := rest = after "error[" line
+        := code = sm'::substring 0i32 (sm'::index_of "]" rest) rest
+        Some (error_of_message code (after "]: " rest))
+
+:= collected (acc : list rustc_error) (line : string) : list rustc_error =
+    ?= error_of_line (sm'::trim line) ?|
+    | Some e => e :: acc
+    | None => acc
+
+:= verdict_of (c : process::captured) : rustc_verdict =
+    ? c::ran |> not
+    ?> NotRun
+    |? c::code = 0i32
+    ?> Built
+    |: sm'::split_list "\n" c::stdout |> listm::fold collected [] |> listm::rev |> Rejected
+
+:= rustc_args (dir : string) (path : string) : list string =
+    [ "--edition"; "2021"; "--error-format"; "short"; "--emit"; "metadata"; "--out-dir"; dir; path ]
+
+:= attempt (tag : string) (source : string) : rustc_verdict =
+    := dir, disposable = file_system::create_temp_directory' ("spiral-rustc-attempt-" ++# tag)
+    disposable |> use |> ignore
+    := path = file_system::(</>) dir (~~ "attempt_source") |> file_system::normalize_path
+    file_system::write_all_text path source
+    process::captured_by "rustc" (rustc_args dir path) !+ |> verdict_of
+
+///> rust
+:# a_mismatch_line_names_both_types =
+    "small:1:27: error[E0308]: mismatched types: expected `i32`, found `bool`"
+    |> error_of_line
+    |> _assert_eq (Some (MismatchedTypes ("i32", "bool")))
+
+///> rust
+:# a_type_parameter_mismatch_names_the_parameter =
+    "a:17:23: error[E0308]: mismatched types: expected type parameter `T`, found `Money`"
+    |> error_of_line
+    |> _assert_eq (Some (MismatchedTypes ("T", "Money")))
+
+///> rust
+:# another_code_keeps_its_message =
+    "a:3:5: error[E0425]: cannot find value `y` in this scope"
+    |> error_of_line
+    |> _assert_eq (Some (OtherError ("E0425", "cannot find value `y` in this scope")))
+
+///> rust
+:# summary_lines_are_not_errors =
+    "error: aborting due to 1 previous error" |> error_of_line |> _assert_eq None
+
+///> rust
+:# a_failed_run_keeps_every_error_in_order =
+    { ran = !+; code = 1i32; stdout = "a:1:1: error[E0308]: mismatched types: expected `i32`, found `bool`\r\na:2:1: error[E0425]: cannot find value `y` in this scope\nerror: aborting due to 2 previous errors\n" }
+    |> verdict_of
+    |> _assert_eq (Rejected [ MismatchedTypes ("i32", "bool"); OtherError ("E0425", "cannot find value `y` in this scope") ])
+
+///> rust
+:# a_missing_rustc_is_not_run =
+    { ran = !-; code = -1i32; stdout = "" } |> verdict_of |> _assert_eq NotRun
+
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+:# rustc_builds_a_valid_program =
+    attempt "valid" "fn main() {}\n" |> _assert_eq Built
+
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+:# rustc_rejects_a_bool_for_an_i32 =
+    attempt "mismatch" "fn main() { let x : i32 = true; let _ = x; }\n"
+    |> _assert_eq (Rejected [ MismatchedTypes ("i32", "bool") ])

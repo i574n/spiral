@@ -2,18 +2,19 @@
 :! signer_b = ()
 :! key_a = ()
 :! key_b = ()
-:! digest_a = ()
+:! fingerprint_a = ()
 :! verified = ()
-:| public_signature signer key digest state =
-    | Signature :: \* signer key digest state. string -> public_signature signer key digest state
+:| public_signature signer key fingerprint state =
+    | Signature :: \* signer key fingerprint state. string -> public_signature signer key fingerprint state
 :| distinct left right = | SignerAB :: distinct signer_a signer_b
-:| quorum digest left right = | Quorum :: \* digest left right. string -> quorum digest left right
-:= authorize \* left right key_left key_right digest.
-    (first : public_signature left key_left digest verified) (second : public_signature right key_right digest verified)
+:| quorum fingerprint left right = | Quorum :: \* fingerprint left right. string -> quorum fingerprint left right
+:= authorize \* left right key_left key_right fingerprint.
+    (first : public_signature left key_left fingerprint verified)
+    (second : public_signature right key_right fingerprint verified)
     (proof : distinct left right)
-    : quorum digest left right
+    : quorum fingerprint left right
     =
     Quorum "quorum"
 := main () =
-    := first : public_signature signer_a key_a digest_a verified = Signature "a"
+    := first : public_signature signer_a key_a fingerprint_a verified = Signature "a"
     authorize first first SignerAB

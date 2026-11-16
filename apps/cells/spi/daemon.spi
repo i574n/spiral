@@ -10,9 +10,9 @@
     ?> listm::rev (text::drop line at :: acc)
     |: fields_from line (tab + 1i32) (text::slice_len line at (tab - at) :: acc)
 
-:= fields (line : string) : list string = fields_from line 0i32 []
+:~ fields (line : string) : list string = fields_from line 0i32 []
 
-:= tabbed (xs : list string) : string = sm'::concat_list "\t" xs
+:~ tabbed (xs : list string) : string = sm'::concat_list "\t" xs
 
 :~ ^ digits_from (s : string) (i : i32) : bool =
     ? i >= text::length s
@@ -21,13 +21,14 @@
     ?> !-
     |: digits_from s (i + 1i32)
 
-:= queue_ms (s : string) : option i32 = ? s <> "" && digits_from s 0i32 ?> Some (text::parse_i32 s) |: None
+:~ queue_ms (s : string) : option i32 = ? s <> "" && digits_from s 0i32 ?> Some (text::parse_i32 s) |: None
 
 :| compile_wait =
     | Unbounded
     | WithinMs : i32
 
-:== compile_ask = { backend : string; spi : string; rs : string; wait : compile_wait; mtime : string; client : string }
+:== compile_ask =
+    { backend : string; spi : string; rs : string; wait : compile_wait; mtime : string; client : string; pin : option string; test_name : option string }
 
 :| compile_reply =
     | Compiled : string * option i32
@@ -51,37 +52,248 @@
     | Retire :: request ()
     | Compile :: compile_ask -> request compile_reply
 
-:= wait_text (w : compile_wait) : string = ?= w ?| Unbounded => "-1" | WithinMs ms => text::show_i32 ms
+:~ wait_text (w : compile_wait) : string = ?= w ?| Unbounded => "-1" | WithinMs ms => text::show_i32 ms
 
-:= wait_of (s : string) : compile_wait = ? s = "-1" ?> Unbounded |: WithinMs (text::parse_i32 s)
+:~ wait_of (s : string) : compile_wait = ? s = "-1" ?> Unbounded |: WithinMs (text::parse_i32 s)
 
-:= ask_fields (a : compile_ask) : list string = [ a::backend; a::spi; a::rs; wait_text a::wait; a::mtime; a::client ]
+:~ optional (o : option string) (head : list string) : list string = ?= o ?| Some v => listm::append head [ v ] | None => []
+
+:~ ask_fields (a : compile_ask) : list string =
+    := base = [ a::backend; a::spi; a::rs; wait_text a::wait; a::mtime; a::client ]
+    listm::append (listm::append base (optional a::pin [])) (optional a::test_name [ "test" ])
 
 := request_line \* r. (q : request r) : string =
     ?= q ?|
     | Compile a => tabbed (sm'::to_lower (reflection::case_name q) :: ask_fields a)
     | _ => sm'::to_lower (reflection::case_name q)
 
-:= retiring_text (r : retiring) : string = ?= r ?| NotRetiring => "false" | RetiringSince ms => ms
+:~ present (s : string) : option string = ? s = "" ?> None |: Some s
 
-:= retiring_of (s : string) : retiring = ? s = "false" ?> NotRetiring |: RetiringSince s
+:~ ask_of (fields : string * string * string * string * string * string * string * string) : compile_ask =
+    := backend, spi, rs, wait, mtime, client, pin, named = fields
+    { backend = backend; spi = spi; rs = rs; wait = wait_of wait; mtime = mtime; client = client; pin = present pin; test_name = present named }
 
-:= with_queue (head : list string) (queue : option i32) : list string =
+:~ compile_line (fields : string * string * string * string * string * string * string * string) : string =
+    request_line (Compile (ask_of fields))
+
+:~ quoted (s : string) : string = "\"" ++ s ++ "\""
+
+:~ daemon_command (elixir : string) (log : string) (err : string) (ebins : string) : string =
+    := start = ? ebins = "" ?> " -S mix spiral.compiler_daemon" |: " -pa " ++ quoted ebins ++ " -e Spiral.Cells.CompilerDaemon.serve_app()"
+    quoted elixir ++ start ++ " 1>" ++ quoted log ++ " 2>" ++ quoted err
+
+:~ retiring_text (r : retiring) : string = ?= r ?| NotRetiring => "false" | RetiringSince ms => ms
+
+:~ retiring_of (s : string) : retiring = ? s = "false" ?> NotRetiring |: RetiringSince s
+
+:~ with_queue (head : list string) (queue : option i32) : list string =
     ?= queue ?| Some ms => listm::append head [ text::show_i32 ms ] | None => head
 
-:= compile_text (c : compile_reply) : string =
+:~ compile_text (c : compile_reply) : string =
     ?= c ?|
     | Compiled (revision, queue) => tabbed (with_queue [ "ok"; revision ] queue)
     | CompileTimedOut queue => tabbed (with_queue [ "error"; "timeout" ] queue)
     | CompileFailed (queue, message) => tabbed (listm::append (with_queue [ "error" ] queue) [ message ])
 
-:= status_text (s : status_reply) : string =
+:~ wire_control (b : i32) : bool = b = 9i32 || b = 10i32 || b = 13i32
+
+:~ ^ control_end (s : string) (i : i32) : i32 = ? i < text::length s && wire_control (text::byte_at s i) ?> control_end s (i + 1i32) |: i
+
+:~ ^ clean_runs (s : string) (i : i32) (start : i32) (acc : list string) : list string =
+    ? i >= text::length s
+    ?> listm::rev (text::slice_len s start (i - start) :: acc)
+    |? wire_control (text::byte_at s i)
+    ?>
+        := j = control_end s i
+        clean_runs s j j (" " :: text::slice_len s start (i - start) :: acc)
+    |: clean_runs s (i + 1i32) start acc
+
+:~ wire_clean (s : string) : string = sm'::concat_list "" (clean_runs s 0i32 0i32 [])
+
+:~ compile_reply_wire (kind : string) (payload : string) (queue : string) : string =
+    := q = queue_ms queue
+    ? kind = "ok"
+    ?> compile_text (Compiled (payload, q))
+    |? kind = "timeout"
+    ?> compile_text (CompileTimedOut q)
+    |: compile_text (CompileFailed (q, wire_clean payload))
+
+:~ ^ after_test (xs : list string) : string =
+    ?= xs ?|
+    | "test" :: name :: _ => name
+    | _ :: rest => after_test rest
+    | [] => ""
+
+:~ client_of (extra : list string) : string = ?= extra ?| c :: _ => c | [] => "anonymous"
+
+:~ pin_of (extra : list string) : string =
+    ?= extra ?|
+    | _ :: p :: _ ?& p <> "" && p <> "test" => p
+    | _ => ""
+
+:~ request_fields (rest : string) : string =
+    ?= fields (text::trim rest) ?|
+    | backend :: input :: output :: timeout :: mtime :: extra =>
+        tabbed [ backend; input; output; timeout; mtime; client_of extra; pin_of extra; after_test extra ]
+    | _ => ""
+
+:~ count_or (raw : string) (fallback : i32) : i32 = ?= queue_ms raw ?| Some n => n | None => fallback
+
+:~ idle_window (raw : string) (default_min : i32) : option i32 =
+    ?= queue_ms raw ?|
+    | Some m ?& m = 0i32 => None
+    | Some m => Some (m * 60000i32)
+    | None => Some (default_min * 60000i32)
+
+:~ idle_wire (raw : string) (default_min : i32) : string = ?= idle_window raw default_min ?| Some ms => text::show_i32 ms | None => ""
+
+:~ pressure_window (raw : string) : i32 = count_or raw 5i32 * 60000i32
+
+:~ memory_pressed (free : string) (retire_mb : i32) : bool = ?= queue_ms free ?| Some mb => mb < retire_mb | None => !-
+
+:~ recycle_why (compiles : i32) (mb : string) (max_mb : i32) (max_compiles : i32) : string =
+    ? max_compiles > 0i32 && compiles >= max_compiles
+    ?> text::show_i32 compiles ++ " compiles"
+    |:
+        ?= queue_ms mb ?|
+        | Some m ?& max_mb > 0i32 && m >= max_mb => "reaching " ++ text::show_i32 m ++ " MB"
+        | _ => ""
+
+:~ banner_text (version : string) (pid : string) (stamp : string) (tag : string) : string =
+    tabbed [ "spiral-cells"; version; pid; stamp; tag ]
+
+:~ dll_stamp_text (mtime : i32) (size : i32) (core : option (i32 * i32)) : string =
+    := head = text::show_i32 mtime ++ "-" ++ text::show_i32 size
+    ?= core ?|
+    | Some (m, s) => head ++ "-" ++ text::show_i32 m ++ "-" ++ text::show_i32 s
+    | None => head
+
+:~ ^ digits_to (s : string) (i : i32) : i32 =
+    ? i < text::length s && text::byte_at s i >= 48i32 && text::byte_at s i <= 57i32 ?> digits_to s (i + 1i32) |: i
+
+:~ stamp_shaped (name : string) : bool =
+    := dash = digits_to name 0i32
+    dash > 0i32 && dash < text::length name && text::byte_at name dash = 45i32 && digits_to name (dash + 1i32) = text::length name && text::length name > dash + 1i32
+
+:~ prunable (keep : string) (name : string) : bool = name <> keep && stamp_shaped name
+
+:~ forwarded (name : string) : bool = text::starts_with name "SPIRAL_" || text::lowercase name = "path"
+
+:~ cells_module (name : string) : bool = text::starts_with name "Elixir.Spiral.Cells" || text::starts_with name "spiral_cells@"
+
+:~ session_lost (message : string) : bool =
+    text::contains message "compiler socket" || text::contains message "closed the socket" || text::contains message "compiler stalled"
+
+:~ native_path (path : string) (windows : bool) : string = ? windows ?> text::replace path "/" "\\" |: path
+
+:~ two_digits (n : i32) : string = ? n < 10i32 ?> "0" ++ text::show_i32 n |: text::show_i32 n
+
+:~ clock_text (h : i32) (m : i32) (s : i32) : string = two_digits h ++ ":" ++ two_digits m ++ ":" ++ two_digits s
+
+:~ log_tail (log : string) : string = ? log = "" ?> "" |: "\n" ++ text::trim log
+
+:~ ^ digits_of (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |? text::digit_val (text::index s i) < 0i32
+    ?> digits_of s (i + 1i32) acc
+    |: digits_of s (i + 1i32) (acc ++ text::slice_len s i 1i32)
+
+:~ ^ digit_end (s : string) (i : i32) : i32 =
+    ? i < text::length s && text::digit_val (text::index s i) >= 0i32 ?> digit_end s (i + 1i32) |: i
+
+:~ ^ last_from (s : string) (pat : string) (at : i32) (best : i32) : i32 =
+    := p = text::find_from s pat at
+    ? p < 0i32 ?> best |: last_from s pat (p + 1i32) p
+
+:~ kb_of (digits : string) : i32 = ? digits = "" ?> -1i32 |: text::parse_i32 digits
+
+:~ tasklist_line_kb (raw : string) (pid : string) : i32 =
+    := line = text::take raw (text::trim_end raw (text::length raw))
+    := key = "\"" ++ pid ++ "\""
+    := p = text::find_from line key 0i32
+    := n = text::length line
+    ? p < 0i32 || n < 2i32 || text::byte_at line (n - 1i32) <> 34i32
+    ?> -1i32
+    |:
+    := q = last_from line ",\"" (p + text::length key) -1i32
+    := field = ? q < 0i32 || q + 3i32 > n ?> "" |: text::slice_len line (q + 2i32) (n - q - 3i32)
+    ? field = "" || text::contains field "\"" ?> -1i32 |: kb_of (digits_of field 0i32 "")
+
+:~ ^ tasklist_kb_from (out : string) (pid : string) (at : i32) : i32 =
+    := nl = text::find_from out "\n" at
+    := stop = ? nl < 0i32 ?> text::length out |: nl
+    := kb = tasklist_line_kb (text::slice_len out at (stop - at)) pid
+    ? kb >= 0i32 || nl < 0i32 ?> kb |: tasklist_kb_from out pid (nl + 1i32)
+
+:~ tasklist_kb (out : string) (pid : string) : i32 = tasklist_kb_from out pid 0i32
+
+:~ rss_value (s : string) (i : i32) : i32 =
+    := a = text::trim_start s i
+    := d = digit_end s a
+    := b = text::trim_start s d
+    ? a = i || d = a || b = d || not (text::starts_at s b "kB") ?> -1i32 |: text::parse_i32 (text::slice_len s a (d - a))
+
+:~ ^ vm_rss_from (s : string) (at : i32) : i32 =
+    := p = text::find_from s "VmRSS:" at
+    ? p < 0i32
+    ?> -1i32
+    |? p > 0i32 && text::byte_at s (p - 1i32) <> 10i32
+    ?> vm_rss_from s (p + 1i32)
+    |:
+    := v = rss_value s (p + 6i32)
+    ? v >= 0i32 ?> v |: vm_rss_from s (p + 1i32)
+
+:~ vm_rss_kb (status : string) : i32 = vm_rss_from status 0i32
+
+:~ pin_stale (now : i32) (complete : option i32) : bool = ?= complete ?| Some m => now - m > 86400i32 | None => !+
+
+:~ slot_of (first : i32) (n : i32) (base : i32) (stride : i32) (slots : i32) : i32 =
+    := k = (((first - base) / stride) + n) % slots
+    base + stride * k
+
+:~ ^ spaced_controls (s : string) (i : i32) (start : i32) (acc : list string) : list string =
+    ? i >= text::length s
+    ?> listm::rev (text::slice_len s start (i - start) :: acc)
+    |? wire_control (text::byte_at s i)
+    ?> spaced_controls s (i + 1i32) (i + 1i32) (" " :: text::slice_len s start (i - start) :: acc)
+    |: spaced_controls s (i + 1i32) start acc
+
+:~ owner_text (raw : string) : string = sm'::concat_list "" (spaced_controls raw 0i32 0i32 [])
+
+:~ tool_spelling (path : string) (windows : bool) : string =
+    := forward = text::replace path "\\" "/"
+    ? windows ?> text::lowercase forward |: forward
+
+:~ status_text (s : status_reply) : string =
     tabbed [ "status"; s::pid; s::stamp; s::idle; s::queue; retiring_text s::retiring; s::owner ]
 
-:= free_text (free : option i32) : string = ?= free ?| Some mb => text::show_i32 mb | None => "-"
+:~ free_text (free : option i32) : string = ?= free ?| Some mb => text::show_i32 mb | None => "-"
 
-:= pool_text (p : pool_reply) : string =
+:~ pool_text (p : pool_reply) : string =
     tabbed [ "pool"; text::show_i32 p::served; text::show_i32 p::refused; text::show_i32 p::peak; free_text p::free_mb ]
+
+:~ status_wire (pid : string) (stamp : string) (idle : string) (queue : string) (retiring : string) (owner : string) : string =
+    status_text { pid; stamp; idle; queue; retiring = retiring_of retiring; owner }
+
+:~ pool_wire (served : i32) (refused : i32) (peak : i32) (free_mb : i32) : string =
+    pool_text { served; refused; peak; free_mb = ? free_mb < 0i32 ?> None |: Some free_mb }
+
+:~ session_line (backend : string) (input : string) (output : string) (test_name : string) : string =
+    tabbed (listm::append [ "compile"; backend; input; output ] (? test_name = "" ?> [] |: [ "test"; test_name ]))
+
+:~ session_reply (line : string) : string =
+    ?= fields (text::trim line) ?|
+    | "spiral-session" :: "ok" :: _ :: _ :: _ :: revision :: _ => "ok\t" ++ revision
+    | "spiral-session" :: "error" :: _ :: rest => "error\t" ++ sm'::concat_list " " rest
+    | parts => "error\t" ++ sm'::concat_list " " parts
+
+:~ ^ without_bom (raw : string) : string =
+    ? text::length raw >= 3i32 && text::byte_at raw 0i32 = 239i32 && text::byte_at raw 1i32 = 187i32 && text::byte_at raw 2i32 = 191i32
+    ?> without_bom (text::drop raw 3i32)
+    |: raw
+
+:~ file_number (raw : string) : i32 = ?= queue_ms (text::trim (without_bom raw)) ?| Some n => n | None => -1i32
 
 := reply_line \* r. (q : request r) (reply : r) : string =
     ?= q ?|
@@ -91,14 +303,14 @@
     | Retire => "retiring"
     | Compile _ => compile_text reply
 
-:= failed_of (rest : list string) : compile_reply =
+:~ failed_of (rest : list string) : compile_reply =
     ?= rest ?|
     | queue :: message :: more ?& queue_ms queue <> None => CompileFailed (queue_ms queue, tabbed (message :: more))
     | _ => CompileFailed (None, tabbed rest)
 
-:= unexpected (line : string) : compile_reply = CompileFailed (None, "unexpected compiler reply: " ++ line)
+:~ unexpected (line : string) : compile_reply = CompileFailed (None, "unexpected compiler reply: " ++ line)
 
-:= compile_of (line : string) : compile_reply =
+:~ compile_of (line : string) : compile_reply =
     ?= fields line ?|
     | "ok" :: revision :: [] => Compiled (revision, None)
     | "ok" :: revision :: queue :: [] => Compiled (revision, queue_ms queue)
@@ -109,47 +321,47 @@
     | "error" :: rest => failed_of rest
     | _ => unexpected line
 
-:= status_of (line : string) : status_reply =
+:~ status_of (line : string) : status_reply =
     ?= fields line ?|
     | "status" :: pid :: stamp :: idle :: queue :: retiring :: owner =>
         { pid; stamp; idle; queue; retiring = retiring_of retiring; owner = sm'::concat_list " " owner }
     | _ => { pid = ""; stamp = ""; idle = ""; queue = ""; retiring = NotRetiring; owner = "" }
 
-:= compile_row (line : string) : string =
+:~ compile_row (line : string) : string =
     ?= compile_of line ?|
     | Compiled (revision, queue) => tabbed [ "ok"; free_text queue; revision ]
     | CompileTimedOut queue => tabbed [ "timeout"; free_text queue; "" ]
     | CompileFailed (queue, message) => tabbed [ "failed"; free_text queue; message ]
 
-:= status_row (line : string) : string =
+:~ status_row (line : string) : string =
     := s = status_of line
     tabbed [ s::pid; s::stamp; s::idle; s::queue; retiring_text s::retiring; s::owner ]
 
-:= hello_of (line : string) : hello_reply =
+:~ hello_of (line : string) : hello_reply =
     ?= fields line ?|
     | "spiral-cells" :: "1" :: pid :: stamp :: _ => { pid; stamp }
     | _ => { pid = ""; stamp = "" }
 
-:= count_of (s : string) : i32 = ?= queue_ms s ?| Some n => n | None => 0i32
+:~ count_of (s : string) : i32 = ?= queue_ms s ?| Some n => n | None => 0i32
 
-:= no_pool () : pool_reply = { served = 0i32; refused = 0i32; peak = 1i32; free_mb = None }
+:~ no_pool () : pool_reply = { served = 0i32; refused = 0i32; peak = 1i32; free_mb = None }
 
-:= pool_of (line : string) : pool_reply =
+:~ pool_of (line : string) : pool_reply =
     ?= fields line ?|
     | "pool" :: served :: refused :: peak :: free :: [] =>
         { served = count_of served; refused = count_of refused; peak = count_of peak; free_mb = queue_ms free }
     | _ => no_pool ()
 
-:= counted (s : string) : bool = queue_ms s <> None
+:~ counted (s : string) : bool = queue_ms s <> None
 
-:= pool_row (line : string) : string =
+:~ pool_row (line : string) : string =
     ?= fields line ?|
     | "pool" :: served :: refused :: peak :: _ :: [] ?& counted served && counted refused && counted peak =>
         := p = pool_of line
         tabbed [ text::show_i32 p::served; text::show_i32 p::refused; text::show_i32 p::peak; free_text p::free_mb ]
     | _ => ""
 
-:= hello_row (line : string) : string =
+:~ hello_row (line : string) : string =
     ?= fields line ?|
     | "spiral-cells" :: "1" :: pid :: stamp :: tag :: _ ?& counted pid && counted stamp => tabbed [ "banner"; pid; stamp; tag ]
     | "spiral-cells" :: "1" :: pid :: stamp :: [] ?& counted pid && counted stamp => tabbed [ "legacy"; pid; stamp; "" ]
@@ -164,12 +376,106 @@
     | Retire => ()
     | Compile _ => compile_of line
 
-:= sample_ask () : compile_ask =
-    { backend = "rust"; spi = "a.spi"; rs = "a.rs"; wait = WithinMs 900000i32; mtime = "17"; client = "42" }
+:~ sample_ask () : compile_ask =
+    { backend = "rust"; spi = "a.spi"; rs = "a.rs"; wait = WithinMs 900000i32; mtime = "17"; client = "42"; pin = None; test_name = None }
 
 ///> gleam
 :# a_compile_request_is_one_tab_separated_line =
     request_line (Compile (sample_ask ())) |> _assert_eq "compile\trust\ta.spi\ta.rs\t900000\t17\t42"
+
+///> gleam
+:# the_daemon_command_runs_mix_or_the_compiled_ebins =
+    := mix = daemon_command "C:\\e\\elixir.bat" "C:\\r\\k.log" "C:\\r\\k.err.log" ""
+    := ebins = daemon_command "e" "l" "r" "C:/k/_build/dev/lib/*/ebin"
+    (mix, ebins)
+    |> _assert_eq (
+        "\"C:\\e\\elixir.bat\" -S mix spiral.compiler_daemon 1>\"C:\\r\\k.log\" 2>\"C:\\r\\k.err.log\"",
+        "\"e\" -pa \"C:/k/_build/dev/lib/*/ebin\" -e Spiral.Cells.CompilerDaemon.serve_app() 1>\"l\" 2>\"r\""
+    )
+
+///> gleam
+:# the_daemon_reads_a_request_and_writes_its_reply_like_the_elixir_server =
+    := plain = request_fields "rust\ta.spi\ta.rs\t-1\t17\n"
+    := full = request_fields "  gleam\ta.spi\ta.gleam\t900\t17\t42\tp1\ttest\tadds  "
+    := named = request_fields "rust\ta.spi\ta.rs\t5\t1\t2\ttest\tt"
+    (plain, full, named, request_fields "rust\ta.spi")
+    |> _assert_eq ("rust\ta.spi\ta.rs\t-1\t17\tanonymous\t\t", "gleam\ta.spi\ta.gleam\t900\t17\t42\tp1\tadds", "rust\ta.spi\ta.rs\t5\t1\t2\t\tt", "")
+    (compile_reply_wire "ok" "r7" "", compile_reply_wire "ok" "r7" "3", compile_reply_wire "timeout" "" "", compile_reply_wire "timeout" "" "4")
+    |> _assert_eq ("ok\tr7", "ok\tr7\t3", "error\ttimeout", "error\ttimeout\t4")
+    (compile_reply_wire "error" "no\t\tmain\r\nhere" "", compile_reply_wire "error" "bad" "5") |> _assert_eq ("error\tno main here", "error\t5\tbad")
+
+///> gleam
+:# daemon_limits_read_their_env_and_name_the_recycle_reason =
+    (count_or "12" 4096i32, count_or "" 4096i32, count_or "x" 4096i32, count_or "-3" 4096i32) |> _assert_eq (12i32, 4096i32, 4096i32, 4096i32)
+    (idle_wire "0" 30i32, idle_wire "2" 30i32, idle_wire "" 30i32, pressure_window "", pressure_window "1")
+    |> _assert_eq ("", "120000", "1800000", 300000i32, 60000i32)
+    (memory_pressed "100" 4096i32, memory_pressed "9000" 4096i32, memory_pressed "" 4096i32) |> _assert_eq (!+, !-, !-)
+    (recycle_why 10000i32 "2499" 2500i32 0i32, recycle_why 1i32 "2500" 2500i32 0i32, recycle_why 1i32 "" 2500i32 0i32)
+    |> _assert_eq ("", "reaching 2500 MB", "")
+    (recycle_why 50i32 "100" 0i32 50i32, recycle_why 49i32 "9000" 0i32 50i32) |> _assert_eq ("50 compiles", "")
+
+///> gleam
+:# banner_stamp_slot_owner_and_tool_spelling_match_the_elixir_daemon =
+    banner_text "1" "77" "5" "a~b" |> _assert_eq "spiral-cells\t1\t77\t5\ta~b"
+    (dll_stamp_text 1700000000i32 4i32 (Some (1700000100i32, 7i32)), dll_stamp_text 1700000000i32 4i32 None) |> _assert_eq ("1700000000-4-1700000100-7", "1700000000-4")
+    (slot_of (13905i32 + 8i32 * 11i32) 1i32 13905i32 8i32 12i32, slot_of 13905i32 1i32 13905i32 8i32 12i32) |> _assert_eq (13905i32, 13913i32)
+    owner_text "x\tlane\r\n" |> _assert_eq "x lane  "
+    (tool_spelling "C:\\Tools\\bun.exe" !+, tool_spelling "C:\\Tools\\bun.exe" !-) |> _assert_eq ("c:/tools/bun.exe", "C:/Tools/bun.exe")
+
+///> gleam
+:# only_other_stamp_shaped_dirs_prune_and_pins_go_stale_after_a_day =
+    (prunable "17-4" "18-5", prunable "17-4" "17-4", prunable "17-4" "17-4.123", prunable "17-4" "17-4.trash9")
+    |> _assert_eq (!+, !-, !-, !-)
+    (prunable "17-4" "-4", prunable "17-4" "17-", prunable "17-4" "a-1", prunable "17-4" "1-2-3", prunable "17-4" "")
+    |> _assert_eq (!-, !-, !-, !-, !-)
+    (pin_stale 100000i32 (Some 13600i32), pin_stale 100000i32 (Some 13599i32), pin_stale 100000i32 None) |> _assert_eq (!-, !+, !+)
+
+///> gleam
+:# a_server_request_forwards_spiral_vars_and_the_callers_path_only =
+    (forwarded "SPIRAL_BUN", forwarded "SPIRAL_COMPILER_DLL", forwarded "PATH", forwarded "Path") |> _assert_eq (!+, !+, !+, !+)
+    (forwarded "HOME", forwarded "MIX_ENV", forwarded "SPIRAL", forwarded "PATHS", forwarded "spiral_x") |> _assert_eq (!-, !-, !-, !-, !-)
+
+///> gleam
+:# session_status_pool_and_pid_files_read_and_write_like_the_elixir_daemon =
+    session_line "rust" "a.spi" "a.rs" "" |> _assert_eq "compile\trust\ta.spi\ta.rs"
+    session_line "gleam" "a.spi" "a.gleam" "adds" |> _assert_eq "compile\tgleam\ta.spi\ta.gleam\ttest\tadds"
+    (session_reply "spiral-session\tok\t9\t120\tb\tr7\textra\r\n", session_reply "spiral-session\terror\t9\tno\tmain", session_reply "garbage here", session_reply "spiral-session\tok\t9")
+    |> _assert_eq ("ok\tr7", "error\tno main", "error\tgarbage here", "error\tspiral-session ok 9")
+    (status_wire "77" "5" "30" "2" "false" "x lane", pool_wire 0i32 0i32 1i32 -1i32, pool_wire 4i32 1i32 3i32 2048i32)
+    |> _assert_eq ("status\t77\t5\t30\t2\tfalse\tx lane", "pool\t0\t0\t1\t-", "pool\t4\t1\t3\t2048")
+    (file_number " 4242\r\n", file_number "", file_number "x1", file_number "12x") |> _assert_eq (4242i32, -1i32, -1i32, -1i32)
+
+///> gleam
+:# cells_beams_and_lost_sessions_are_named_by_their_prefix_or_phrase =
+    (cells_module "Elixir.Spiral.Cells.Memo", cells_module "spiral_cells@domain", cells_module "Elixir.Spiral.CellsX", cells_module "Elixir.Enum", cells_module "spiral_cell")
+    |> _assert_eq (!+, !+, !+, !-, !-)
+    (session_lost "compiler socket failed: :econnrefused", session_lost "the compiler closed the socket", session_lost "compiler stalled for 120 s", session_lost "type error")
+    |> _assert_eq (!+, !+, !+, !-)
+
+///> gleam
+:# socket_paths_clock_stamps_and_log_tails_match_the_elixir_daemon =
+    := ~sock = "C:/Users/x/AppData/Local/Temp/spiral-cells-1-2.sock"
+    := ~log = "  boom\n\n"
+    := ~hour = 7i32
+    (native_path sock !+, native_path "/tmp/spiral-cells-1-2.sock" !-) |> _assert_eq ("C:\\Users\\x\\AppData\\Local\\Temp\\spiral-cells-1-2.sock", "/tmp/spiral-cells-1-2.sock")
+    (clock_text hour 5i32 0i32, clock_text 23i32 59i32 10i32) |> _assert_eq ("07:05:00", "23:59:10")
+    (log_tail log, log_tail "", log_tail " ") |> _assert_eq ("\nboom", "", "\n")
+
+///> gleam
+:# working_set_readings_parse_tasklist_csv_and_proc_status =
+    := ~csv = "\"dotnet.exe\",\"4242\",\"Console\",\"1\",\"123,456 K\"\r\n\"other.exe\",\"77\",\"Console\",\"1\",\"1.234 KB\" \r\n"
+    (tasklist_kb csv "4242", tasklist_kb csv "77", tasklist_kb csv "999", tasklist_kb "INFO: No tasks are running" "4242") |> _assert_eq (123456i32, 1234i32, -1i32, -1i32)
+    (tasklist_kb "\"a\",\"5\",\"x\"" "5", tasklist_kb "\"a\",\"5\",\"\"" "5", tasklist_kb "\"a\",\"5\",\"none\"" "5") |> _assert_eq (-1i32, -1i32, -1i32)
+    := ~status = "Name:\tdotnet\nVmPeak:\t  9 kB\nVmRSS:\t  524288 kB\nThreads: 3\n"
+    (vm_rss_kb status, vm_rss_kb "XVmRSS: 5 kB\nVmRSS: 7 kB", vm_rss_kb "VmRSS: x kB", vm_rss_kb "VmRSS:5 kB", vm_rss_kb "") |> _assert_eq (524288i32, 7i32, -1i32, -1i32, -1i32)
+
+///> gleam
+:# a_compile_line_adds_the_pin_and_the_test_name_only_when_given =
+    := plain = compile_line ("rust", "a.spi", "a.rs", "-1", "17", "42", "", "")
+    := both = compile_line ("gleam", "a.spi", "a.gleam", "900", "17", "42", "p1", "adds")
+    := named = compile_line ("rust", "a.spi", "a.rs", "5", "1", "2", "", "t")
+    (plain, both, named)
+    |> _assert_eq ("compile\trust\ta.spi\ta.rs\t-1\t17\t42", "compile\tgleam\ta.spi\ta.gleam\t900\t17\t42\tp1\ttest\tadds", "compile\trust\ta.spi\ta.rs\t5\t1\t2\ttest\tt")
 
 ///> gleam
 :# compile_replies_round_trip_through_their_line =

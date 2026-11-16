@@ -322,7 +322,7 @@
 
 :! rust_clock_fields = $'[i64; 3]'
 
-:= rust_clock_shims () : () =
+:= rust_local_clock_shim () : () =
     global """
         #[cfg(target_arch = "wasm32")]
         fn spiral_cfg_local_clock() -> Option<[i64; 3]> { None }
@@ -346,6 +346,10 @@
         }
         #[cfg(not(any(windows, unix, target_arch = "wasm32")))]
         fn spiral_cfg_local_clock() -> Option<[i64; 3]> { None }
+        """
+
+:= rust_epoch_nanos_shim () : () =
+    global """
         #[cfg(target_arch = "wasm32")]
         fn spiral_cfg_epoch_nanos() -> u64 { near_sdk::env::block_timestamp() }
         #[cfg(not(target_arch = "wasm32"))]
@@ -356,11 +360,11 @@
         """
 
 := rust_local_clock () : optionm'::option' rust_clock_fields =
-    rust_clock_shims ()
+    rust_local_clock_shim ()
     $'spiral_cfg_local_clock()' : optionm'::option' rust_clock_fields
 
 := rust_epoch_nanos () : u64 =
-    rust_clock_shims ()
+    rust_epoch_nanos_shim ()
     $'spiral_cfg_epoch_nanos()' : u64
 
 := rust_clock_hour (fields : rust_clock_fields) : i64 = $'!fields[0]' : i64

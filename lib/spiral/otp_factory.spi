@@ -1,0 +1,108 @@
+:< sm'_operators
+
+:# otp_factory static =
+    :< testing
+
+:= otp_factory_imports () =
+    global "import gleam/otp/factory_supervisor"
+    global "import gleam/otp/supervision"
+
+:! factory a d = $'factory_supervisor.Supervisor(`a, `d)'
+:! factory_builder a d = $'factory_supervisor.Builder(`a, `d)'
+:! factory_message a d = $'factory_supervisor.Message(`a, `d)'
+
+:= worker_child \* a d. (template : a -> otp_actor::start_result d) : factory_builder a d =
+    otp_factory_imports ()
+    $'factory_supervisor.worker_child(fn(argument) { !template(argument) })'
+
+:= supervisor_child \* a d. (template : a -> otp_actor::start_result d) : factory_builder a d =
+    otp_factory_imports ()
+    $'factory_supervisor.supervisor_child(fn(argument) { !template(argument) })'
+
+:= named \* a d. (address : erlang_process::name (factory_message a d)) (spec : factory_builder a d)
+    : factory_builder a d
+    =
+    otp_factory_imports ()
+    $'factory_supervisor.named(!spec, !address)'
+
+:= restart_tolerance \* a d. (intensity : i32) (period_s : i32) (spec : factory_builder a d) : factory_builder a d =
+    otp_factory_imports ()
+    $'factory_supervisor.restart_tolerance(!spec, !intensity, !period_s)'
+
+:= timeout \* a d. (ms : i32) (spec : factory_builder a d) : factory_builder a d =
+    otp_factory_imports ()
+    $'factory_supervisor.timeout(!spec, !ms)'
+
+:= restart_strategy \* a d. (choice : otp_supervisor::restart) (spec : factory_builder a d) : factory_builder a d =
+    otp_factory_imports ()
+    := term = otp_supervisor::restart_of choice
+    $'factory_supervisor.restart_strategy(!spec, !term)'
+
+:= start \* a d. (spec : factory_builder a d) : otp_actor::start_result (factory a d) =
+    otp_factory_imports ()
+    $'factory_supervisor.start(!spec)'
+
+:= supervised \* a d. (spec : factory_builder a d) : otp_supervisor::child (factory a d) =
+    otp_factory_imports ()
+    $'factory_supervisor.supervised(!spec)'
+
+:= start_child \* a d. (owner : factory a d) (argument : a) : otp_actor::start_result d =
+    otp_factory_imports ()
+    $'factory_supervisor.start_child(!owner, !argument)'
+
+:= count_children \* a d. (owner : factory a d) : i32 =
+    otp_factory_imports ()
+    $'factory_supervisor.count_children(!owner)'
+
+:= get_by_name \* a d. (address : erlang_process::name (factory_message a d)) : factory a d =
+    otp_factory_imports ()
+    $'factory_supervisor.get_by_name(!address)'
+
+:| echo_msg =
+    | EchoAsk : erlang_process::subject i32
+    | EchoCrash
+
+:== echo_inbox = erlang_process::subject echo_msg
+
+:= echo_step (value : i32) (message : echo_msg) : otp_actor::next i32 echo_msg =
+    ?= message ?|
+    | EchoAsk reply =>
+        otp_actor::send reply value
+        otp_actor::continue value
+    | EchoCrash => otp_actor::stop_abnormal "crash on request"
+
+:= echo_worker (value : i32) : otp_actor::start_result echo_inbox =
+    otp_actor::new value |> otp_actor::on_message echo_step |> otp_actor::start
+
+:= pause (ms : i32) : () = erlang_term::apply "timer" "sleep" [ erlang_term::of ms ] |> ignore
+
+:= asked (child : option echo_inbox) : i32 =
+    ?= child ?|
+    | Some inbox => otp_actor::call inbox 5000i32 EchoAsk
+    | None => -1i32
+
+:= crashed (child : option echo_inbox) : () =
+    ?= child ?|
+    | Some inbox => otp_actor::send inbox EchoCrash
+    | None => ()
+
+:= factory_counts (owner : factory i32 echo_inbox) : list i32 * i32 * i32 =
+    := child_of = \ (value : i32) => start_child owner value |> otp_actor::started_data
+    := children = [ 10i32; 20; 30 ] |> listm::map child_of
+    := answers = children |> listm::map asked
+    := before = count_children owner
+    ?= children ?|
+    | _ :: second :: _ => crashed second
+    | _ => ()
+    pause 300i32
+    answers, before, count_children owner
+
+:= factory_outcome () : list i32 * i32 * i32 =
+    := built = worker_child echo_worker |> restart_tolerance 3i32 5i32 |> start |> otp_actor::started_data
+    ?= built ?|
+    | Some owner => factory_counts owner
+    | None => [], -1i32, -1i32
+
+///> gleam
+:# a_factory_starts_three_dynamic_children_and_restarts_one_that_crashes =
+    factory_outcome () |> _assert_eq ([ 10i32; 20; 30 ], 3i32, 3i32)

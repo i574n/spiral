@@ -1,0 +1,25 @@
+:< sm'_operators
+
+:| policy =
+    | Policy :: (\? s. s * (s -> i32 -> s * i32)) -> policy
+
+:= cap_step (spent : i32) (amount : i32) : i32 * i32 = ? spent + amount > 120i32 ?> spent, 0i32 |: spent + amount, amount
+
+:= unique_step (seen : list i32) (amount : i32) : list i32 * i32 = ? listm'::contains amount seen ?> seen, 0i32 |: amount :: seen, amount
+
+:= approve \* s. ((next, ok) : s * i32) (total : i32) : s * i32 = next, total + ok
+
+:~ ^ run_policy \* s. (step : s -> i32 -> s * i32) (amounts : list i32) ((state, total) : s * i32) : i32 =
+    ?= amounts ?|
+    | a :: rest => run_policy step rest (approve (step state a) total)
+    | [] => total
+
+:= total_of (amounts : list i32) (p : policy) : i32 =
+    ?= p ?|
+    | Policy payload =>
+        := \? s. state, step = payload
+        run_policy step amounts (state, 0i32)
+
+:= main () : i32 =
+    := policies = [Policy (\? (0i32, cap_step)); Policy (\? ([] : list i32, unique_step))]
+    listm::fold (\ total p => total + total_of [40i32; 30i32; 40i32] p) 0i32 policies

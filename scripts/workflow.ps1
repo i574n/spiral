@@ -99,7 +99,89 @@ if ($Compiler) {
     if (-not $matrixRustToolchain) { throw 'test.ps1 no longer names the matrix rustc toolchain' }
     { rustup toolchain install $matrixRustToolchain --profile minimal } | Invoke-Block
 
-    { pwsh ../apps/compiler/scripts/test.ps1 -Mode single-flight -Suite $Suite -Native -Parallel 2 -Accept } | Invoke-Block
+    if ($IsLinux) {
+        $pins = @{ Lean = 'v4.35.0'; Wasmtime = 'v39.0.1'; Kotlin = '2.4.21'; Swift = '6.3.1' }
+        $tools = Join-Path ($env:RUNNER_TEMP ?? [IO.Path]::GetTempPath()) 'spiral-ci-tools'
+        New-Item -ItemType Directory -Force $tools | Out-Null
+
+        { curl -fsSL --retry 3 -o (Join-Path $tools 'elan-init.sh') https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh } | Invoke-Block
+        { sh (Join-Path $tools 'elan-init.sh') -y --no-modify-path --default-toolchain "leanprover/lean4:$($pins.Lean)" } | Invoke-Block
+        $env:SPIRAL_LEAN = Join-Path $HOME '.elan/bin/lean'
+
+        $wasmtimeDir = "wasmtime-$($pins.Wasmtime)-x86_64-linux"
+        { curl -fsSL --retry 3 -o (Join-Path $tools 'wasmtime.tar.xz') "https://github.com/bytecodealliance/wasmtime/releases/download/$($pins.Wasmtime)/$wasmtimeDir.tar.xz" } | Invoke-Block
+        { tar -xJf (Join-Path $tools 'wasmtime.tar.xz') -C $tools } | Invoke-Block
+        $env:SPIRAL_WASMTIME = Join-Path $tools "$wasmtimeDir/wasmtime"
+
+        { curl -fsSL --retry 3 -o (Join-Path $tools 'kotlin.zip') "https://github.com/JetBrains/kotlin/releases/download/v$($pins.Kotlin)/kotlin-compiler-$($pins.Kotlin).zip" } | Invoke-Block
+        { unzip -q -o (Join-Path $tools 'kotlin.zip') -d $tools } | Invoke-Block
+        $env:SPIRAL_KOTLINC = Join-Path $tools 'kotlinc/bin/kotlinc'
+
+        $swiftRelease = "swift-$($pins.Swift)-RELEASE"
+        { curl -fsSL --retry 3 -o (Join-Path $tools 'swift.tar.gz') "https://download.swift.org/swift-$($pins.Swift)-release/ubuntu2404/$swiftRelease/$swiftRelease-ubuntu24.04.tar.gz" } | Invoke-Block
+        { tar -xzf (Join-Path $tools 'swift.tar.gz') -C $tools } | Invoke-Block
+        $env:SPIRAL_SWIFTC = Join-Path $tools "$swiftRelease-ubuntu24.04/usr/bin/swiftc"
+
+        { sudo apt-get install -y -q fp-compiler } | Invoke-Block
+        $env:SPIRAL_FPC = (Get-Command fpc).Source
+
+        foreach ($tool in 'SPIRAL_LEAN', 'SPIRAL_WASMTIME', 'SPIRAL_KOTLINC', 'SPIRAL_SWIFTC', 'SPIRAL_FPC') {
+            $path = [Environment]::GetEnvironmentVariable($tool)
+            if (-not $path -or -not (Test-Path $path)) { throw "$tool was not installed: '$path'" }
+            "${tool}: $path"
+        }
+    }
+
+    $binTail = 'bin/single-flight/SpiralCompiler/Release/net11.0'
+    $ctlDir = $env:SPIRAL_CTL_COMPILER_DIR
+    $suiteResults = {
+        param($cacheDir, $log, [switch] $Accept)
+        $env:SPIRAL_BIN_CACHE_DIR = $cacheDir
+        pwsh ../apps/compiler/scripts/test.ps1 -Mode single-flight -Suite $Suite -Native -Parallel 4 @($Accept ? @('-Accept') : @()) *> $log
+        $code = $LASTEXITCODE
+        $path = (Select-String -Path $log -Pattern 'results: (.*results\.tsv)' | Select-Object -Last 1).Matches.Groups[1].Value
+        Get-Content $log -Tail 25
+        [pscustomobject]@{ Code = $code; Results = $path }
+    }
+    $trtCache = $env:SPIRAL_BIN_CACHE_DIR
+    $work = Join-Path ($env:RUNNER_TEMP ?? [IO.Path]::GetTempPath()) 'spiral-ab'
+    New-Item -ItemType Directory -Force $work | Out-Null
+    $ctl = $null
+    if ($ctlDir -and (Test-Path (Join-Path $ctlDir "$binTail/SpiralCompiler.dll"))) {
+        $ctlCache = Join-Path $work 'ctl-cache'
+        New-Item -ItemType Directory -Force (Join-Path $ctlCache 'bin/single-flight/SpiralCompiler/Release') | Out-Null
+        Copy-Item -Recurse -Force (Join-Path $ctlDir $binTail) (Join-Path $ctlCache 'bin/single-flight/SpiralCompiler/Release')
+        if (Test-Path (Join-Path $trtCache 'toolchains')) { New-Item -ItemType SymbolicLink -Path (Join-Path $ctlCache 'toolchains') -Target (Join-Path $trtCache 'toolchains') | Out-Null }
+        "ctl: last green compiler from $ctlDir"
+        $ctl = & $suiteResults $ctlCache (Join-Path $work 'suite-ctl.log')
+    }
+    else { 'ctl: no cached last-green compiler, so this run only records the trt arm' }
+    $trt = & $suiteResults $trtCache (Join-Path $work 'suite-trt.log') -Accept
+    $env:SPIRAL_BIN_CACHE_DIR = $trtCache
+    if (-not $trt.Results -or -not (Test-Path $trt.Results)) { throw "the trt suite wrote no results.tsv (exit $($trt.Code))" }
+    $changed = @()
+    if ($ctl -and $ctl.Results -and (Test-Path $ctl.Results)) {
+        $before = @{}
+        foreach ($row in Import-Csv $ctl.Results -Delimiter "`t") { $before["$($row.id)|$($row.backend)"] = $row }
+        foreach ($row in Import-Csv $trt.Results -Delimiter "`t") {
+            $old = $before["$($row.id)|$($row.backend)"]
+            if (-not $old) { continue }
+            $fields = @('compile', 'native', 'exit', 'stdout') | Where-Object { $old.$_ -ne $row.$_ }
+            if ($fields) { $changed += "$($row.id) [$($row.backend)] " + (($fields | ForEach-Object { "$_ $($old.$_)->$($row.$_)" }) -join ', ') }
+        }
+        "ab: $($before.Count) ctl rows, $($changed.Count) changed between ctl and trt"
+        $changed | Select-Object -First 60 | ForEach-Object { "  $_" }
+        $changed | Set-Content (Join-Path $trtCache 'ab-changed.txt')
+    }
+    elseif (-not $ctl -and $trt.Code -ne 0) { throw "the trt suite exited $($trt.Code) and there is no ctl arm to compare against" }
+    elseif ($ctl) { throw "the ctl suite wrote no results.tsv (exit $($ctl.Code))" }
+    if ($changed) { throw "$($changed.Count) row(s) changed between the last green compiler and this one; see ab-changed.txt" }
+    if ($ctlDir) {
+        if (Test-Path $ctlDir) { Remove-Item -Recurse -Force $ctlDir }
+        New-Item -ItemType Directory -Force (Join-Path $ctlDir 'bin/single-flight/SpiralCompiler/Release') | Out-Null
+        Copy-Item -Recurse -Force (Join-Path $trtCache $binTail) (Join-Path $ctlDir 'bin/single-flight/SpiralCompiler/Release')
+        "ctl: this green compiler is staged in $ctlDir for the cache to save"
+    }
 
     return
 }

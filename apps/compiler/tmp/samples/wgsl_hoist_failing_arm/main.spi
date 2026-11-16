@@ -1,0 +1,12 @@
+:= failwith \* t. (msg : string) : t = !!!!FailWith(`t, msg)
+
+:= main () : i32 =
+    := ~h = 60i32
+    := a, b =
+        ? h > 0i32 ?>
+            := x = h *. 3i32
+            x, x +. 1i32
+        |: failwith "h must be positive"
+    := y = h *. 5i32
+    := c, d = ? h > 10i32 ?> y, h |: y, h +. 1i32
+    ? a =. 180i32 ?> (? b =. 181i32 ?> (? c =. 300i32 ?> (? d =. 60i32 ?> 0i32 |: 4i32) |: 3i32) |: 2i32) |: 1i32

@@ -161,6 +161,7 @@
     )
 :== async_switch t =
     {
+        Gleam : $'fn() -> `t'
         Fsharp : $'Async<`t>'
         Python : async_python t
         Rust : $'std::pin::Pin<Box<dyn std::future::Future<Output = `t>>>'

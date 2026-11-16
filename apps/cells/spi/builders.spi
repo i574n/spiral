@@ -4,50 +4,13 @@
 
 := (++) (left : string) (right : string) : string = left ^^ right
 
-:= ffi () : () =
-    global "import gleam/string"
-    global """
-        fn builders_graphemes(text: String) -> Int {
-          string.length(text)
-        }
-        """
-    global """
-        fn builders_first(text: String) -> String {
-          case string.pop_grapheme(text) {
-            Ok(#(first, _)) -> first
-            Error(_) -> ""
-          }
-        }
-        """
-    global """
-        fn builders_rest(text: String) -> String {
-          case string.pop_grapheme(text) {
-            Ok(#(_, rest)) -> rest
-            Error(_) -> ""
-          }
-        }
-        """
-    global """
-        fn builders_slice(text: String, at: Int, len: Int) -> String {
-          string.slice(text, at, len)
-        }
-        """
+:~ grapheme_count (s : string) : i32 = unicode.grapheme_count s
 
-:= grapheme_count (s : string) : i32 =
-    ffi ()
-    $'builders_graphemes(!s)' : i32
+:~ first_grapheme (s : string) : string = unicode.first_grapheme s
 
-:= first_grapheme (s : string) : string =
-    ffi ()
-    $'builders_first(!s)' : string
+:~ rest_graphemes (s : string) : string = unicode.rest_graphemes s
 
-:= rest_graphemes (s : string) : string =
-    ffi ()
-    $'builders_rest(!s)' : string
-
-:= grapheme_slice (s : string) (at : i32) (n : i32) : string =
-    ffi ()
-    $'builders_slice(!s, !at, !n)' : string
+:~ grapheme_slice (s : string) (at : i32) (n : i32) : string = unicode.grapheme_slice s at n
 
 :| tool =
     | ForRust
@@ -94,7 +57,7 @@
 :| command =
     | Builder : builder
 
-:= tool_of (name : string) : option tool =
+:~ tool_of (name : string) : option tool =
     ? name = "rust"
     ?> Some ForRust
     |? name = "fsharp" || name = "fs"
@@ -123,7 +86,7 @@
     ?> Some ForWgsl
     |: None
 
-:= tool_name (t : tool) : string =
+:~ tool_name (t : tool) : string =
     ?= t ?|
     | ForRust => "rust"
     | ForFsharp => "fsharp"
@@ -139,14 +102,14 @@
     | ForLean => "lean"
     | ForWgsl => "wgsl"
 
-:= expected () : string =
+:~ expected () : string =
     "rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, pascal, delphi, zig, lean, or wgsl"
 
-:= deps_long (name : string) : option flag_kind = ? name = "deps" ?> Some TakesDeps |: None
+:~ deps_long (name : string) : option flag_kind = ? name = "deps" ?> Some TakesDeps |: None
 
-:= deps_short (letter : string) : option flag_kind = ? letter = "d" ?> Some TakesDeps |: None
+:~ deps_short (letter : string) : option flag_kind = ? letter = "d" ?> Some TakesDeps |: None
 
-:= rust_long (name : string) : option flag_kind =
+:~ rust_long (name : string) : option flag_kind =
     ? name = "contract"
     ?> Some (TakesOptional FContract)
     |? name = "wasm"
@@ -155,7 +118,7 @@
     ?> Some TakesCleanup
     |: deps_long name
 
-:= rust_short (letter : string) : option flag_kind =
+:~ rust_short (letter : string) : option flag_kind =
     ? letter = "c"
     ?> Some (TakesOptional FContract)
     |? letter = "w"
@@ -164,7 +127,7 @@
     ?> Some TakesCleanup
     |: deps_short letter
 
-:= long_flag (t : tool) (name : string) : option flag_kind =
+:~ long_flag (t : tool) (name : string) : option flag_kind =
     ?= t ?|
     | ForRust => rust_long name
     | ForGleam => ? name = "target" ?> Some (TakesOne FTarget) |: deps_long name
@@ -173,7 +136,7 @@
     | ForTypescript => deps_long name
     | _ => None
 
-:= short_flag (t : tool) (letter : string) : option flag_kind =
+:~ short_flag (t : tool) (letter : string) : option flag_kind =
     ?= t ?|
     | ForRust => rust_short letter
     | ForGleam => ? letter = "t" ?> Some (TakesOne FTarget) |: deps_short letter
@@ -182,7 +145,7 @@
     | ForTypescript => deps_short letter
     | _ => None
 
-:= blank (t : tool) (raw : string) : builder =
+:~ blank (t : tool) (raw : string) : builder =
     {
         tool = t
         raw = raw
@@ -191,24 +154,24 @@
         cleanup = None
     }
 
-:= set_value (f : field) (v : string) (x : builder_values) : builder_values =
+:~ set_value (f : field) (v : string) (x : builder_values) : builder_values =
     ?= f ?|
     | FContract => { x ?| contract = Some v }
     | FWasm => { x ?| wasm = Some v }
     | FTarget => { x ?| target = Some v }
     | FEnv => { x ?| env = Some v }
 
-:= with_value (f : field) (v : string) (b : builder) : builder = { b ?| values = set_value f v b::values }
+:~ with_value (f : field) (v : string) (b : builder) : builder = { b ?| values = set_value f v b::values }
 
-:= upper_hex (n : i32) : string = text::one "0123456789ABCDEF" n
+:~ upper_hex (n : i32) : string = text::one "0123456789ABCDEF" n
 
-:= hex4_upper (c : i32) : string =
+:~ hex4_upper (c : i32) : string =
     upper_hex (c / 4096i32 % 16i32)
     ++ upper_hex (c / 256i32 % 16i32)
     ++ upper_hex (c / 16i32 % 16i32)
     ++ upper_hex (c % 16i32)
 
-:= named_escape (c : i32) : string =
+:~ named_escape (c : i32) : string =
     ? c = 7i32
     ?> "\\a"
     |? c = 8i32
@@ -233,13 +196,13 @@
     ?> "\\\\"
     |: ""
 
-:= within (c : i32) (lo : i32) (hi : i32) : bool = c >= lo && c <= hi
+:~ within (c : i32) (lo : i32) (hi : i32) : bool = c >= lo && c <= hi
 
-:= unicode_escaped (c : i32) : bool =
+:~ unicode_escaped (c : i32) : bool =
     c = 160i32 || c = 847i32 || c = 1564i32 || within c 8192i32 8207i32 || within c 8232i32 8238i32
     || within c 8287i32 8292i32 || within c 8294i32 8297i32 || c = 65279i32 || within c 65529i32 65532i32
 
-:= unprintable (c : i32) : bool =
+:~ unprintable (c : i32) : bool =
     (c < 32i32 && (c < 7i32 || c > 13i32) && c <> 27i32) || within c 128i32 159i32 || c = 65534i32 || c = 65535i32
 
 :~ ^ printable_from (s : string) (i : i32) : bool =
@@ -275,10 +238,10 @@
     ?> quoted_from s (i + w) (acc ++ "\\u" ++ hex4_upper c)
     |: quoted_from s (i + w) (acc ++ text::slice_len s i w)
 
-:= inspect (s : string) : string =
+:~ inspect (s : string) : string =
     ? printable_from s 0i32 ?> "\"" ++ quoted_from s 0i32 "" ++ "\"" |: "<<" ++ bytes_from s 0i32 "" ++ ">>"
 
-:= is_quote (g : string) : bool = g = "\"" || g = "'"
+:~ is_quote (g : string) : bool = g = "\"" || g = "'"
 
 :~ ^ tokens_from (s : string) (current : string) (q : option string) (acc : list string) : result (list string) string =
     := g = first_grapheme s
@@ -305,17 +268,17 @@
             ?> tokens_from rest current None acc
             |: tokens_from rest (current ++ g) q acc
 
-:= ends_with (s : string) (p : string) : bool =
+:~ ends_with (s : string) (p : string) : bool =
     text::length s >= text::length p && text::starts_at s (text::length s - text::length p) p
 
-:= quoted_by (v : string) (mark : string) : bool =
+:~ quoted_by (v : string) (mark : string) : bool =
     text::starts_with v mark && ends_with v mark && text::length v >= 2i32
 
-:= unquoted (v : string) : string =
+:~ unquoted (v : string) : string =
     := n = grapheme_count v
     ? quoted_by v "\"" || quoted_by v "'" ?> grapheme_slice v 1i32 (? n >= 2i32 ?> n - 2i32 |: 0i32) |: v
 
-:= dep_of (token : string) : dep =
+:~ dep_of (token : string) : dep =
     := k = text::find_from token "=" 0i32
     ? k >= 0i32
     ?> { name = text::take token k; version = Version (unquoted (text::drop token (k + 1i32))); raw = token }
@@ -323,9 +286,9 @@
     ?> { name = token; version = NoVersion; raw = token }
     |: { name = token; version = AnyVersion; raw = token }
 
-:= is_flag_token (t : string) : bool = text::starts_with t "-" && t <> "-"
+:~ is_flag_token (t : string) : bool = text::starts_with t "-" && t <> "-"
 
-:= bool_of (v : string) (flag : string) : result bool string =
+:~ bool_of (v : string) (flag : string) : result bool string =
     ? v = "true"
     ?> Ok !+
     |? v = "false"
@@ -337,19 +300,19 @@
     | t :: rest => ? is_flag_token t ?> listm::rev taken, tokens |: deps_run rest (dep_of t :: taken)
     | [] => listm::rev taken, []
 
-:= add_deps (b : builder) (more : list dep) : builder = { b ?| deps = listm::append b::deps more }
+:~ add_deps (b : builder) (more : list dep) : builder = { b ?| deps = listm::append b::deps more }
 
-:= optional_step (f : field) (rest : list string) (b : builder) : result (builder * list string) string =
+:~ optional_step (f : field) (rest : list string) (b : builder) : result (builder * list string) string =
     ?= rest ?|
     | next :: left => ? is_flag_token next ?> Ok (with_value f "" b, rest) |: Ok (with_value f next b, left)
     | [] => Ok (with_value f "" b, [])
 
-:= one_step (f : field) (rest : list string) (b : builder) (flag : string) : result (builder * list string) string =
+:~ one_step (f : field) (rest : list string) (b : builder) (flag : string) : result (builder * list string) string =
     ?= rest ?|
     | next :: left => ? is_flag_token next ?> Error ("expected a value for " ++ flag) |: Ok (with_value f next b, left)
     | [] => Error ("expected a value for " ++ flag)
 
-:= cleanup_step (rest : list string) (b : builder) : builder * list string =
+:~ cleanup_step (rest : list string) (b : builder) : builder * list string =
     ?= rest ?|
     | next :: left =>
         ? next = "true"
@@ -359,7 +322,7 @@
         |: { b ?| cleanup = Some !- }, rest
     | [] => { b ?| cleanup = Some !- }, rest
 
-:= optional_flag
+:~ optional_flag
     (f : field) (value : inline) (rest : list string) (b : builder)
     : result (builder * list string) string
     =
@@ -367,7 +330,7 @@
     | Inline v => Ok (with_value f v b, rest)
     | Bare => optional_step f rest b
 
-:= one_flag
+:~ one_flag
     (f : field) (value : inline) (rest : list string) (b : builder) (flag : string)
     : result (builder * list string) string
     =
@@ -375,11 +338,11 @@
     | Inline v => Ok (with_value f v b, rest)
     | Bare => one_step f rest b flag
 
-:= deps_bare (rest : list string) (b : builder) (flag : string) : result (builder * list string) string =
+:~ deps_bare (rest : list string) (b : builder) (flag : string) : result (builder * list string) string =
     := taken, left = deps_run rest []
     ? listm::length taken = 0i32 ?> Error ("expected a dependency name for " ++ flag) |: Ok (add_deps b taken, left)
 
-:= deps_flag
+:~ deps_flag
     (value : inline) (rest : list string) (b : builder) (flag : string)
     : result (builder * list string) string
     =
@@ -387,7 +350,7 @@
     | Inline v => Ok (add_deps b [ dep_of v ], rest)
     | Bare => deps_bare rest b flag
 
-:= cleanup_inline
+:~ cleanup_inline
     (v : string) (rest : list string) (b : builder) (flag : string)
     : result (builder * list string) string
     =
@@ -395,7 +358,7 @@
     | Ok on => Ok ({ b ?| cleanup = Some on }, rest)
     | Error e => Error e
 
-:= cleanup_flag
+:~ cleanup_flag
     (value : inline) (rest : list string) (b : builder) (flag : string)
     : result (builder * list string) string
     =
@@ -413,16 +376,16 @@
     | TakesDeps => deps_flag value rest b flag
     | TakesCleanup => cleanup_flag value rest b flag
 
-:= unknown_flag (flag : string) : result (builder * list string) string =
+:~ unknown_flag (flag : string) : result (builder * list string) string =
     Error ("unknown builder flag " ++ inspect flag)
 
-:= consuming (kind : flag_kind) : bool =
+:~ consuming (kind : flag_kind) : bool =
     ?= kind ?|
     | TakesOne _ => !+
     | TakesDeps => !+
     | _ => !-
 
-:= cluster_value (kind : flag_kind) : inline =
+:~ cluster_value (kind : flag_kind) : inline =
     ?= kind ?|
     | TakesCleanup => Inline "false"
     | _ => Inline ""
@@ -446,17 +409,17 @@
                 | Ok (next, _) => cluster t others rest next
                 | Error e => Error e
 
-:= split_eq (body : string) : string * inline =
+:~ split_eq (body : string) : string * inline =
     := k = text::find_from body "=" 0i32
     ? k < 0i32 ?> body, Bare |: text::take body k, Inline (text::drop body (k + 1i32))
 
-:= long_step (t : tool) (token : string) (rest : list string) (b : builder) : result (builder * list string) string =
+:~ long_step (t : tool) (token : string) (rest : list string) (b : builder) : result (builder * list string) string =
     := name, value = split_eq (text::drop token 2i32)
     ?= long_flag t name ?|
     | Some kind => apply_flag kind value rest b ("--" ++ name)
     | None => unknown_flag ("--" ++ name)
 
-:= short_step (t : tool) (token : string) (rest : list string) (b : builder) : result (builder * list string) string =
+:~ short_step (t : tool) (token : string) (rest : list string) (b : builder) : result (builder * list string) string =
     := letters, value = split_eq (text::drop token 1i32)
     ?= value ?|
     | Bare => cluster t letters rest b
@@ -482,33 +445,33 @@
         | Ok (next, left) => parse_tokens t left next
         | Error e => Error e
 
-:= unknown_backend (name : string) : result command string =
+:~ unknown_backend (name : string) : result command string =
     Error ("unknown Spiral backend " ++ inspect name ++ ", expected " ++ expected ())
 
-:= chosen_command (t : tool) (args : list string) (raw : string) : result command string =
+:~ chosen_command (t : tool) (args : list string) (raw : string) : result command string =
     ?= parse_tokens t args (blank t raw) ?|
     | Ok b => Ok (Builder b)
     | Error e => Error e
 
-:= named_command (name : string) (args : list string) (raw : string) : result command string =
+:~ named_command (name : string) (args : list string) (raw : string) : result command string =
     ?= tool_of (text::lowercase name) ?|
     | Some t => chosen_command t args raw
     | None => unknown_backend name
 
-:= retired_skip () : result command string =
+:~ retired_skip () : result command string =
     Error (
         "///> _ is retired: Cells infers the cells that never run. A file with any test cell never runs its main; "
         ^^ "a main that only registers exports, or that dispatches on the backend (backend_switch, ? is_rust ()), "
         ^^ "never runs. Delete the line."
     )
 
-:= command_of (tokens : list string) (raw : string) : result command string =
+:~ command_of (tokens : list string) (raw : string) : result command string =
     ?= tokens ?|
     | [] => unknown_backend ""
     | name :: args =>
         ? name <> "_" ?> named_command name args raw |: retired_skip ()
 
-:= parse_command (rest : string) : result command string =
+:~ parse_command (rest : string) : result command string =
     ? rest = "_"
     ?> retired_skip ()
     |:
@@ -516,7 +479,7 @@
         | Ok tokens => command_of tokens rest
         | Error e => Error e
 
-:= command_text (line : string) : option string =
+:~ command_text (line : string) : option string =
     := lead = builder_output::content_start line 0i32
     := trimmed = text::drop line lead
     ? text::starts_with trimmed "////" ?> None
@@ -537,30 +500,30 @@
             | Ok c => split_lines rest body (c :: commands)
             | Error e => Error e
 
-:= split (code : string) : result (list command * string) string =
+:~ split (code : string) : result (list command * string) string =
     split_lines (sm'::split_list "\n" (text::replace code "\r\n" "\n")) [] []
 
-:= field_text (s : string) : string = text::show_i32 (text::length s) ++ ":" ++ s
+:~ field_text (s : string) : string = text::show_i32 (text::length s) ++ ":" ++ s
 
-:= option_text (v : option string) : string =
+:~ option_text (v : option string) : string =
     ?= v ?|
     | Some x => field_text ("+" ++ x)
     | None => field_text "-"
 
-:= cleanup_text (v : option bool) : string =
+:~ cleanup_text (v : option bool) : string =
     ?= v ?|
     | Some on => field_text (? on ?> "t" |: "f")
     | None => field_text "-"
 
-:= version_text (v : dep_version) : string =
+:~ version_text (v : dep_version) : string =
     ?= v ?|
     | NoVersion => field_text "-"
     | AnyVersion => field_text "+*"
     | Version x => field_text ("+" ++ x)
 
-:= dep_text (d : dep) : string = field_text d::name ++ version_text d::version ++ field_text d::raw
+:~ dep_text (d : dep) : string = field_text d::name ++ version_text d::version ++ field_text d::raw
 
-:= builder_text (b : builder) : string =
+:~ builder_text (b : builder) : string =
     := v = b::values
     := head = field_text (tool_name b::tool) ++ field_text b::raw ++ option_text v::contract ++ option_text v::wasm
     := tail =
@@ -570,21 +533,138 @@
         ++ field_text (text::show_i32 (listm::length b::deps))
     head ++ tail ++ sm'::concat_list "" (listm::map dep_text b::deps)
 
-:= command_wire (c : command) : string =
+:~ command_wire (c : command) : string =
     ?= c ?|
     | Builder b => builder_text b
 
 
-:= split_ok_wire (commands : list command) (body : string) : string =
+:~ split_ok_wire (commands : list command) (body : string) : string =
     "K"
     ++ field_text body
     ++ field_text (text::show_i32 (listm::length commands))
     ++ sm'::concat_list "" (listm::map command_wire commands)
 
-:= split_wire (code : string) : string =
+:~ ^ blank_from (line : string) (i : i32) : i32 =
+    ? i < text::length line && (text::index line i = ' ' || text::index line i = '\t') ?> blank_from line (i + 1i32) |: i
+
+:~ retired_skip_line (line : string) : bool =
+    := a = blank_from line 0i32
+    := b = blank_from line (a + 4i32)
+    text::starts_at line a "///>" && text::starts_at line b "_"
+    && (b + 1i32 >= text::length line || text::index line (b + 1i32) = ' ' || text::index line (b + 1i32) = '\t')
+
+:~ ^ retired_from (path : string) (lines : list string) (n : i32) : string =
+    ?= lines ?|
+    | [] => ""
+    | raw :: rest =>
+        := n_raw = text::length raw
+        := line = ? n_raw > 0i32 && text::starts_at raw (n_raw - 1i32) "\r" ?> text::take raw (n_raw - 1i32) |: raw
+        ? retired_skip_line line
+        ?> (?= split (text::trim line) ?| Error e => path ++ ":" ++ text::show_i32 n ++ ": " ++ e | Ok _ => retired_from path rest (n + 1i32))
+        |: retired_from path rest (n + 1i32)
+
+:~ retired_skip_error (path : string) (source : string) : string = retired_from path (sm'::split_list "\n" source) 1i32
+
+:~ split_wire (code : string) : string =
     ?= split code ?|
     | Ok (commands, body) => split_ok_wire commands body
     | Error e => "E" ++ e
+
+:| route =
+    | RouteFsi
+    | RoutePython
+    | RouteBun
+    | RouteCc
+    | RouteDcc
+    | RouteGleam
+    | RouteZig
+    | RouteLean
+    | RouteWgsl
+    | RouteSpiral : list string
+
+:~ value_arg (name : string) (v : option string) : list string = ?= v ?| Some x => [ "--" ++ name ++ "=" ++ x ] | None => []
+
+:~ option_arg (flag : string) (v : option string) : list string = ?= v ?| Some x => [ flag; x ] | None => []
+
+:~ version_of (v : dep_version) : option string = ?= v ?| Version x => Some x | AnyVersion => Some "*" | NoVersion => None
+
+:~ dep_arg (d : dep) : string =
+    := quoted = text::contains d::raw "\"" || text::contains d::raw "'"
+    ?= version_of d::version ?|
+    | Some v => ? text::contains d::raw "=" && (quoted = !-) && (text::starts_with v "{" = !-) ?> d::name ++ "='" ++ v ++ "'" |: d::raw
+    | None => d::raw
+
+:~ dep_args (deps : list dep) : list string =
+    deps |> listm::fold (\ (acc : list string) (d : dep) => listm::append acc [ "--deps"; dep_arg d ]) []
+
+:~ rust_argv (b : builder) (path : string) : list string =
+    := values = listm::append (value_arg "contract" b::values::contract) (value_arg "wasm" b::values::wasm)
+    := cleanup = ? b::cleanup = Some !- ?> [ "--cleanup" ] |: []
+    listm::append (listm::append (listm::append [ "rust"; "--rs-path"; path ] values) (dep_args b::deps)) cleanup
+
+:~ spiral_argv (b : builder) (path : string) : list string =
+    ?= b::tool ?|
+    | ForRust => rust_argv b path
+    | ForPython => listm::append (listm::append [ "cuda"; "--py-path"; path ] (option_arg "--env" b::values::env)) (dep_args b::deps)
+    | ForCuda => listm::append (listm::append [ "cuda"; "--py-path"; path ] (option_arg "--env" b::values::env)) (dep_args b::deps)
+    | ForGleam => listm::append (listm::append [ "gleam"; "--gleam-path"; path ] (option_arg "--target" b::values::target)) (dep_args b::deps)
+    | ForLua => [ "lua"; "--lua-path"; path ]
+    | _ => [ "cpp"; "--cpp-path"; path ]
+
+:~ erlang_gleam (target : option string) : bool = target = None || target = Some "erlang"
+
+:~ route_of (b : builder) (path : string) : route =
+    ?= b::tool ?|
+    | ForFsharp => RouteFsi
+    | ForPython ?& listm::length b::deps = 0i32 && b::values::env = None => RoutePython
+    | ForTypescript => RouteBun
+    | ForC => RouteCc
+    | ForPascal => RouteDcc
+    | ForGleam ?& erlang_gleam b::values::target => RouteGleam
+    | ForZig => RouteZig
+    | ForLean => RouteLean
+    | ForWgsl => RouteWgsl
+    | _ => RouteSpiral (spiral_argv b path)
+
+:~ route_text (r : route) : string =
+    ?= r ?|
+    | RouteFsi => "fsi"
+    | RoutePython => "python"
+    | RouteBun => "bun"
+    | RouteCc => "cc"
+    | RouteDcc => "dcc"
+    | RouteGleam => "gleam"
+    | RouteZig => "zig"
+    | RouteLean => "lean"
+    | RouteWgsl => "wgsl"
+    | RouteSpiral argv => sm'::concat_list "\n" ("spiral" :: argv)
+
+:~ parsed_builder (raw : string) : result builder string =
+    ?= parse_command raw ?|
+    | Ok (Builder b) => Ok b
+    | Error e => Error e
+
+:~ route_wire (raw : string) (path : string) : string =
+    ?= parsed_builder raw ?|
+    | Ok b => route_text (route_of b path)
+    | Error e => "E" ++ e
+
+:~ argv_wire (raw : string) (path : string) : string =
+    ?= parsed_builder raw ?|
+    | Ok b => sm'::concat_list "\n" (spiral_argv b path)
+    | Error e => "E" ++ e
+
+///> gleam
+:# builders_route_to_their_runner_or_a_spiral_argv =
+    := routes = listm::map (\ raw => route_wire raw "m") [ "fsharp"; "python"; "python -d numpy"; "ts"; "c"; "pascal"; "gleam"; "zig"; "lean"; "wgsl"; "lua" ]
+    routes |> _assert_eq [ "fsi"; "python"; "spiral\ncuda\n--py-path\nm\n--deps\nnumpy"; "bun"; "cc"; "dcc"; "gleam"; "zig"; "lean"; "wgsl"; "spiral\nlua\n--lua-path\nm" ]
+    route_wire "gleam -t javascript" "m.gleam" |> _assert_eq "spiral\ngleam\n--gleam-path\nm.gleam\n--target\njavascript"
+
+///> gleam
+:# rust_argv_keeps_contract_wasm_deps_and_the_cleanup_opt_out =
+    argv_wire "rust -cd near-token" "main.rs" |> _assert_eq "rust\n--rs-path\nmain.rs\n--contract=\n--deps\nnear-token"
+    argv_wire "rust -d num-complex pyo3='=0.26.0'" "main.rs" |> _assert_eq "rust\n--rs-path\nmain.rs\n--deps\nnum-complex\n--deps\npyo3='=0.26.0'"
+    argv_wire "rust -l" "main.rs" |> _assert_eq "rust\n--rs-path\nmain.rs\n--cleanup"
 
 ///> gleam
 :# builder_lines_parse_into_typed_builders =
@@ -606,3 +686,10 @@
     split_wire "///> rust -dc x" |> _assert_eq "Ebuilder flag -d must be the last flag in -dc"
     split_wire "///> gleam -l" |> _assert_eq "Eunknown builder flag \"-l\""
     inspect ("a\tb#{" ++ unicode::char_of 160i32) |> _assert_eq "\"a\\tb\\#{\\u00A0\""
+
+///> gleam
+:# a_retired_skip_line_is_refused_with_its_file_and_line =
+    := ~source = "///> rust\n:# a =\n    1i32\n  ///>  _ \r\n///> _x\n"
+    := found = retired_skip_error "n.spi" source
+    (text::starts_with found "n.spi:4: ///> _ is retired", retired_skip_error "n.spi" "///> rust\n///> _x\n// ///> _\n") |> _assert_eq (!+, "")
+    (retired_skip_line "\t///>\t_", retired_skip_line "///>_", retired_skip_line "///> __") |> _assert_eq (!+, !+, !-)

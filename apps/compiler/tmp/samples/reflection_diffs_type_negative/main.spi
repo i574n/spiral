@@ -1,0 +1,22 @@
+:< sm'_operators
+
+:== invoice = { number : i32; customer : string; total_cents : i64; paid : bool }
+
+:= field_change \* v. (name : string) (a : v) (b : v) (acc : list string) : list string =
+    ? a = b ?> acc |: (((name ++# ": ") ++#? a) ++# " -> " ++#? b) :: acc
+
+:= changes \* t. (before : t) (after : t) : list string =
+    ~>
+        real_core::record_fold_back
+            \ { state key value } => field_change `(`value) !!!!SymbolToString(key) value (after key) state
+            before
+            (Nil `string)
+
+:~ ^ total_length (lines : list string) (n : i32) : i32 =
+    ?= lines ?|
+    | line :: rest => total_length rest (n + sm'::length line)
+    | [] => n
+
+:= main () : i32 =
+    := before : invoice = { number = 7i32; customer = "Ana"; total_cents = 1990i64; paid = false }
+    total_length (changes before { number = 7i32; customer = "Ana" }) 0i32

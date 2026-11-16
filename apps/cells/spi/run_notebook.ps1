@@ -160,7 +160,7 @@ if (-not (Test-Path "deps/kino/mix.exs")) {
     }
 }
 
-& $mix spiral.notebook @fixed
-$notebookExit = if ($null -eq $LASTEXITCODE) { 1 } else { $LASTEXITCODE }
+$notebook = Start-Process $mix (@('spiral.notebook') + $fixed | ForEach-Object { $_ -match '\s' ?"`"$_`"" : $_ }) -NoNewWindow -Wait -PassThru -RedirectStandardError "$env:ERL_CRASH_DUMP.stderr.log"
+$notebookExit = $notebook.ExitCode ?? 1; try { [Console]::Error.Write([IO.File]::ReadAllText("$env:ERL_CRASH_DUMP.stderr.log")) } catch { }
 Write-NotebookLedger 'mix' $notebookExit
 Exit-Notebook $notebookExit

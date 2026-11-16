@@ -1,0 +1,139 @@
+///- --package .
+:# main_shape static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ line_end (s : string) (at : i32) : i32 =
+    := nl = text::find_from s "\n" at
+    ? nl < 0i32 ?> text::length s |: nl
+
+:~ ^ blanks_only (s : string) (i : i32) (stop : i32) : bool =
+    ? i >= stop ?> !+ |? text::index s i = ' ' || text::index s i = '\t' ?> blanks_only s (i + 1i32) stop |: !-
+
+:~ head_length (line : string) : i32 =
+    ? text::starts_with line "let main () =" || text::starts_with line "inl main () ="
+    ?> 13i32
+    |? text::starts_with line ":= main () =" || text::starts_with line ":~ main () ="
+    ?> 12i32
+    |: -1i32
+
+:~ main_line (line : string) : bool =
+    := h = head_length line
+    h > 0i32 && blanks_only line h (text::length line)
+
+:~ ^ last_main_from (code : string) (at : i32) (best : i32) : i32 =
+    := stop = line_end code at
+    := found = ? main_line (text::slice_len code at (stop - at)) ?> at |: best
+    ? stop >= text::length code ?> found |: last_main_from code (stop + 1i32) found
+
+:~ ^ body_after (code : string) (at : i32) : bool =
+    := stop = line_end code at
+    := line = text::slice_len code at (stop - at)
+    := ok = line = "" || text::starts_with line " "
+    ? not ok ?> !- |? stop >= text::length code ?> !+ |: body_after code (stop + 1i32)
+
+:~ main_span (code : string) : string =
+    := at = last_main_from code 0i32 -1i32
+    := stop = ? at >= 0i32 ?> line_end code at |: -1i32
+    ? at < 0i32 || not (stop >= text::length code || body_after code (stop + 1i32))
+    ?> ""
+    |: text::show_i32 at ++ "\t" ++ text::show_i32 (stop - at)
+
+:~ ^ last_from (s : string) (pat : string) (at : i32) (best : i32) : i32 =
+    := k = text::find_from s pat at
+    ? k < 0i32 ?> best |: last_from s pat (k + 1i32) k
+
+:~ ^ count_from (s : string) (pat : string) (at : i32) (n : i32) : i32 =
+    := k = text::find_from s pat at
+    ? k < 0i32 ?> n |: count_from s pat (k + 1i32) (n + 1i32)
+
+:~ ^ digits_to (s : string) (i : i32) : i32 = ? i < text::length s && text::digit_val (text::index s i) >= 0i32 ?> digits_to s (i + 1i32) |: i
+
+:~ ^ uppers_to (s : string) (i : i32) : i32 =
+    ? i < text::length s && text::has_char "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 0i32 (text::index s i) ?> uppers_to s (i + 1i32) |: i
+
+:~ ^ letters_to (s : string) (i : i32) : i32 = ? i < text::length s && text::is_letter (text::index s i) ?> letters_to s (i + 1i32) |: i
+
+:~ ^ code_tail (s : string) (start : i32) (n : i32) : i32 =
+    := u = start + n
+    := digit_end = ? digits_to s u >= u + 4i32 ?> u + 4i32 |: -1i32
+    := dash_end = ? u < text::length s && text::index s u = '-' && letters_to s (u + 1i32) > u + 1i32 ?> letters_to s (u + 1i32) |: -1i32
+    := tail = ? digit_end >= 0i32 && text::starts_at s digit_end ": " ?> digit_end + 2i32 |? dash_end >= 0i32 && text::starts_at s dash_end ": " ?> dash_end + 2i32 |: -1i32
+    ? n < 2i32 ?> -1i32 |? tail >= 0i32 ?> tail |: code_tail s start (n - 1i32)
+
+:~ after_code (s : string) (i : i32) : i32 =
+    := runs = uppers_to s (i + 1i32) - (i + 1i32)
+    := n = ? runs > 4i32 ?> 4i32 |: runs
+    := tail = ? i < text::length s && text::index s i = 'E' ?> code_tail s (i + 1i32) n |: -1i32
+    ? tail >= 0i32 ?> tail |: i
+
+:~ ^ locations (s : string) (at : i32) (acc : list (i32 * string * bool)) : list (i32 * string * bool) =
+    := k = text::find_from s "main.spi:" at
+    := a = k + 9i32
+    := d = ? k >= 0i32 ?> digits_to s a |: -1i32
+    := e = ? d > a && text::starts_at s d ":" ?> digits_to s (d + 1i32) |: -1i32
+    := ok = e > d + 1i32 && text::starts_at s e ": "
+    := p = ? ok ?> after_code s (e + 2i32) |: -1i32
+    := uf = ok && text::starts_at s p "Unification failure."
+    := next = ? uf ?> p + 20i32 |? ok ?> p |: k + 1i32
+    ? k < 0i32
+    ?> listm::rev acc
+    |? ok
+    ?> locations s next ((text::parse_i32 (text::slice_len s a (d - a)), text::slice_len s (d + 1i32) (e - d - 1i32), uf) :: acc)
+    |: locations s next acc
+
+:~ word (c : char) : bool = text::is_letter c || text::digit_val c >= 0i32 || c = '_'
+
+:~ ^ spaces_to (s : string) (i : i32) : i32 = ? i < text::length s && text::is_space (text::index s i) ?> spaces_to s (i + 1i32) |: i
+
+:~ ^ labelled_i32 (s : string) (label : string) (at : i32) : bool =
+    := k = text::find_from s label at
+    := w = ? k >= 0i32 ?> spaces_to s (k + text::length label) |: -1i32
+    := hit = k >= 0i32 && text::starts_at s w "i32" && (w + 3i32 >= text::length s || not (word (text::index s (w + 3i32))))
+    ? k < 0i32 ?> !- |? hit ?> !+ |: labelled_i32 s label (k + 1i32)
+
+:~ same_stage (i32_side : string) (other : string) : bool =
+    := n = text::length i32_side
+    := ends = n >= 7i32 && text::starts_at i32_side (n - 7i32) " -> i32"
+    ends && text::starts_with other (text::take i32_side (n - 3i32)) && other <> i32_side
+
+:~ ^ next_expected (s : string) (at : i32) : i32 =
+    := k = text::find_from s "Expected:" at
+    ? k < 0i32 ?> -1i32 |: k
+
+:~ i32_stage (s : string) : bool =
+    := g = text::find_from s "Got:" 0i32
+    := x = ? g >= 0i32 ?> next_expected s (g + 4i32) |: -1i32
+    := got = ? x >= 0i32 ?> text::trim (text::slice_len s (g + 4i32) (x - g - 4i32)) |: ""
+    := after = x + 9i32
+    := stop = ? x >= 0i32 ?> line_end s (spaces_to s after) |: -1i32
+    := expected = ? x >= 0i32 ?> text::trim (text::slice_len s after (stop - after)) |: ""
+    x >= 0i32 && (same_stage got expected || same_stage expected got)
+
+:~ main_head () : string = "inl main () : i32 =\n"
+
+:~ value_result (output : string) (code : string) : bool =
+    := at = last_from code (main_head ()) 0i32 -1i32
+    := head = ? at >= 0i32 ?> count_from (text::take code at) "\n" 0i32 0i32 + 1i32 |: 0i32
+    := trimmed = text::take code (text::trim_end code (text::length code))
+    := last = count_from trimmed "\n" 0i32 0i32 + 1i32
+    ?= locations output 0i32 [] ?|
+    | (line, column, !+) :: [] =>
+        at >= 0i32 && line > head && (column = "5" || line = last)
+        && (labelled_i32 output "Got:" 0i32 || labelled_i32 output "Expected:" 0i32 || i32_stage output)
+    | _ => !-
+
+///> gleam
+:# the_last_main_line_is_found_only_when_nothing_unindented_follows =
+    := ~code = "let x = 1\ninl main () =\n    1\n:= main () =  \n    run ()\n\n"
+    (main_span code, main_span "inl main () =\nlet y = 2\n", main_span "inl main () = 1", main_span "x\n:~ main () =") |> _assert_eq ("30\t14", "", "", "2\t12")
+
+///> gleam
+:# a_value_result_is_one_unification_failure_past_the_head_against_i32 =
+    := ~code = "inl helper () = 1\ninl main () : i32 =\n    spiral_cells_main ()\n"
+    := out = "main.spi:3:5: EJP0040: Unification failure.\nGot: i32\nExpected: ()"
+    (value_result out code, value_result "main.spi:2:5: Unification failure.\nGot: i32" code, value_result "main.spi:3:9: Unification failure.\nGot: i32" code) |> _assert_eq (!+, !-, !+)
+    (value_result "main.spi:3:5: Unification failure.\nGot: i64\nExpected: string" code, value_result "main.spi:3:5: type error\nGot: i32" code, value_result out "inl main () = 1") |> _assert_eq (!-, !-, !-)
+    (value_result "main.spi:3:5: Unification failure. main.spi:4:5: x" code, value_result "main.spi:3:5: Unification failure.\nGot: () -> i32\nExpected: () -> string" code) |> _assert_eq (!-, !+)
+    (same_stage "a -> i32" "a -> b", same_stage "a -> i32" "a -> i32", same_stage "i32" "x") |> _assert_eq (!+, !-, !-)

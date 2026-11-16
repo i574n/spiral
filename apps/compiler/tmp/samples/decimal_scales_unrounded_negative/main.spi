@@ -1,0 +1,15 @@
+:! amount currency scale = i64
+
+:! qty uom scale = i64
+
+:! brl = ()
+
+:! litre = ()
+
+:= times \* u c s1 s2. ((qty q) : qty u s1) ((amount p) : amount c s2) : amount c (type_arith::add s1 s2) = amount (q * p)
+
+:= main () : i32 =
+    := litres : qty litre 4i32 = qty 425000i64
+    := price : amount brl 10i32 = amount 17350000000i64
+    := (amount cents) : amount brl 2i32 = times litres price
+    conv cents

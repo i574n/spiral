@@ -656,7 +656,7 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
 - `frontier_hopacsota_globals_order` covers the two cases R4 found: a nominal stub first emitted while
   validating another backend's arm, and a type join point hit by a deferred body before the caller that
   single-flight evaluated it under.
-- `-Mode hopacsota` and `SPIRAL_CORE_HOPACSOTA` in `build.ps1`, `test.ps1`, `probe.ps1`, `env.ps1`,
+- `-Mode hopacsota` and `SPIRAL_CORE_HOPACSOTA` in `build.ps1`, `test.ps1`, `trial.ps1`, `env.ps1`,
   `projection-hash.ps1` and the core project. Use the same mode plumbing as gpt5parallel.
 - The seam hooks of D10, with single-flight's code moved unchanged as the single-flight side.
   `projection-hash.ps1` proves single-flight's projection hash is unchanged.
@@ -737,7 +737,7 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
   tables, the D4 wait-for server, and the D13 event stream (off by default).
 - **Gate 2:**
   - 0 differences on `-Suite all` at `SPIRAL_HOPACSOTA_WORKERS` = 1, 2, 4 and 8;
-  - `probe.ps1 -Repeat 5` at 8 workers gives identical residual hashes on the five mega roots and every
+  - `trial.ps1 -Repeat 5` at 8 workers gives identical residual hashes on the five mega roots and every
     frontier fixture;
   - 1-worker time ≤ 1.05x single-flight;
   - G1 and G2 pass.
@@ -807,7 +807,7 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
 | G1 size | `scripts/hopacsota-lint.ps1 -Size` | layer + hooks ≤ 5,934 lines (2x PartEval); no section > 1,000 |
 | G2 banned | `scripts/hopacsota-lint.ps1 -Banned` | 0 hits outside the allowlist |
 | G3 oracle | `scripts/test.ps1 -Mode hopacsota -Suite <phase's suites>` | 0 differences |
-| G4 determinism | `scripts/probe.ps1 <root> -Mode hopacsota -Repeat 5` at max workers | identical residual hashes |
+| G4 determinism | `scripts/trial.ps1 <root> -Mode hopacsota -Repeat 5` at max workers | identical residual hashes |
 | G5 speed | `hopac_speed_ab.ps1` (interleaved A/B with single-flight) | phase threshold; table kept in the scoreboard |
 | G6 single-flight untouched | `scripts/projection-hash.ps1` | single-flight projection hash equal before and after |
 
@@ -842,7 +842,7 @@ Scoreboard notes:
   lists and hit markers for the four global-emitting memos, compile-time prints (`PrintStatic`, `PrintRaw`) as markers,
   root drain. D4's first-error rule: a failing deferred body or root leaves a fail marker at its position and the first
   one on the depth-first walk is raised; `frontier_hopacsota_two_errors` failed `random:23` before that rule and passes
-  after it. Deferral is real: a PrintStatic probe printed `first,second,inner` (bfs) and `second,first,inner`
+  after it. Deferral is real: a PrintStatic trial printed `first,second,inner` (bfs) and `second,first,inner`
   (random:23) before prints became markers, `first,inner,second` (single-flight's order) after. Still open in Phase 1's
   structure: D3's Owner/Waiter capability shape and D8's phantom keys, which carry weight only with Phase 2's engine;
   `frontier_hopacsota_globals_order` does not yet pin R4's two concrete cases (apps/spiral does).
@@ -1002,7 +1002,7 @@ Scoreboard notes:
     are skewed (t4 17.8 s, t1 9.0 s, t3 6.6 s, the rest at most 2.5 s each). w2: 70 waits, 1.1 s. Every key is a
     `Tuple`2`, so the type says nothing. READING: D5 time at w8 is a handful of LONG-POLE bodies that many waiters need:
     a critical-path shape, not a synchronization cost. The levers are scheduling (start long-pole bodies first) or
-    granularity (split them), and the next probe must name the keys (join-point name and arity for the 10 longest waits)
+    granularity (split them), and the next gauge must name the keys (join-point name and arity for the 10 longest waits)
     before any decision.
   - **Keys named, 19:4x: the long poles are `!!!!BackendSwitch` VALIDATION.** `apply-hopacsota-wait-keys.ps1`
     (stacked; lint 0 hits) prints `%A` of the key for waits over 50 ms. Box job-1793403051908
@@ -1197,7 +1197,7 @@ Scoreboard notes:
   - **First grain 2b-1:** the full engine at `SPIRAL_HOPACSOTA_WORKERS=1`. Proof: G1/G2, G6 `-Seams`, and G3
     compile-only with `parallel@1`, `inline` and `random:23`, each 0 cells against the baseline; apps/spiral F#/Rust
     byte-identical; and G5 within 1.05x, printing claims, bridge calls and cache hits. **2b-2:** Gate 2 at 2/4/8
-    workers, plus probe `-Repeat 5` at 8 workers, with conflict counts per run.
+    workers, plus trial `-Repeat 5` at 8 workers, with conflict counts per run.
 
 - **2026-10-17, study lane measurements absorbed by main (lab/hopacsota-hopac-depth, lab/hopacsota-lf-scheduling).**
   These were measured under build load and should be rerun on an idle machine before Gate 3 cites them; none
@@ -1327,6 +1327,6 @@ Scoreboard notes:
     whose w8 median wall beats the A/A band. If G2 fails or the A/B doesn't clear the band, fall back to (1) as its own
     phase.
   - **Open before code.** (a) Shard count and hash: start at 64 shards over the key's existing hash, measure contention
-    with the P3 contention probe. (b) The shard+IVar appliers still in apps/compiler/packs
+    with the P3 contention gauge. (b) The shard+IVar appliers still in apps/compiler/packs
     (HOPACSOTA-P3, results lost in the wipe) overlap (2), so measure them first, in the same A/B: if one already removes
     transport, (2) shrinks to what's left.

@@ -13,8 +13,8 @@
 :! replica_d = ()
 :! request_42 = ()
 
-:| request_digest request =
-    | Request42Digest :: string -> request_digest request_42
+:| request_fingerprint request =
+    | Request42Fingerprint :: string -> request_fingerprint request_42
 
 :| prepare_vote replica view epoch request =
     | PrepareA7 :: string -> prepare_vote replica_a view_7 epoch_11 request_42
@@ -46,7 +46,7 @@
 
 :| pbft_op from to result =
     | Prepare :: \* replica view epoch request.
-        request_digest request ->
+        request_fingerprint request ->
         pbft_op cold prepared (prepare_vote replica view epoch request)
     | StartViewChange :: \* replica old_view new_view epoch request.
         prepare_vote replica old_view epoch request ->
@@ -72,7 +72,7 @@
 
 :+ interpret signature_interpreter = \ (signature_interpreter op) =>
     ?= op ?|
-    | Prepare _ => "verify-client-digest"
+    | Prepare _ => "verify-client-fingerprint"
     | StartViewChange _ => "verify-prepare-signature"
     | InstallNewView _ => "verify-distinct-view-change-signatures"
     | Commit _ => "verify-new-view-certificate"
@@ -127,7 +127,7 @@
 
 := build_plan () : pbft_plan cold committed =
     := prepare : pbft_plan cold prepared =
-        PbftStep (\? (Prepare (Request42Digest "request-42"), prepare_vote_a ()))
+        PbftStep (\? (Prepare (Request42Fingerprint "request-42"), prepare_vote_a ()))
     := change : pbft_plan prepared view_change_started =
         PbftStep (\? (StartViewChange (prepare_vote_a ()), change_vote_a ()))
     := install : pbft_plan view_change_started new_view_installed =
@@ -167,7 +167,7 @@
 
 := main () : string =
     := prepare_op : pbft_op cold prepared (prepare_vote replica_a view_7 epoch_11 request_42) =
-        Prepare (Request42Digest "request-42")
+        Prepare (Request42Fingerprint "request-42")
     := commit_op :
         pbft_op new_view_installed committed
             (commit_certificate replica_b replica_c replica_d view_7 view_8 epoch_11 request_42) =

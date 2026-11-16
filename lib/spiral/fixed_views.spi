@@ -18,18 +18,19 @@
 :+ mapped trio = \ g (trio (a, b, c)) => trio (g a, g b, g c)
 :+ mapped band = \ g (band (a, b, c, d, e, f)) => band (g a, g b, g c, g d, g e, g f)
 
-:= tally (holds : bool) : i32 = ? holds ?> 1 |: 0
+:= one_if (holds : bool) : i32 = ? holds ?> 1 |: 0
 
 :? counted f a : (a -> bool) -> f a -> i32
 
-:+ counted one = \ p (one x) => tally (p x)
-:+ counted lanes = \ p (lanes (a, b, c, d)) => tally (p a) + tally (p b) + tally (p c) + tally (p d)
+:+ counted one = \ p (one x) => one_if (p x)
+:+ counted lanes = \ p (lanes (a, b, c, d)) => one_if (p a) + one_if (p b) + one_if (p c) + one_if (p d)
 
-:+ counted duo = \ p (duo (a, b)) => tally (p a) + tally (p b)
-:+ counted trio = \ p (trio (a, b, c)) => tally (p a) + tally (p b) + tally (p c)
+:+ counted duo = \ p (duo (a, b)) => one_if (p a) + one_if (p b)
+:+ counted trio = \ p (trio (a, b, c)) => one_if (p a) + one_if (p b) + one_if (p c)
 
 :+ counted band =
-    \ p (band (a, b, c, d, e, f)) => tally (p a) + tally (p b) + tally (p c) + tally (p d) + tally (p e) + tally (p f)
+    \ p (band (a, b, c, d, e, f)) =>
+        one_if (p a) + one_if (p b) + one_if (p c) + one_if (p d) + one_if (p e) + one_if (p f)
 
 := band_of \* a. (x : a) : band a = band (x, x, x, x, x, x)
 

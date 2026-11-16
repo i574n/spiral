@@ -12,7 +12,7 @@
 :< conversion
 :< export
 
-:== tally = { accepted : i32; refused : i32; skipped : i32; first : list string }
+:== replay_counts = { accepted : i32; refused : i32; skipped : i32; first : list string }
 
 :~ ^ same_names (a : list name) (b : list name) : bool =
     ?= a, b ?|
@@ -81,7 +81,7 @@
     | Group (inds, _, recs) => recs_differ env recs (recs_missing env inds first)
     | _ => first
 
-:~ ^ replayed (env : list decl) (items : list item) (t : tally) : tally =
+:~ ^ replayed (env : list decl) (items : list item) (t : replay_counts) : replay_counts =
     ?= items ?|
     | it :: rest =>
         ?= it ?|
@@ -119,7 +119,7 @@
         sm'::obj_to_string (t::accepted, t::refused, t::skipped)
         ++# "\n"
         ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
-    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-tally.txt") report
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-counts.txt") report
     (t::accepted, t::refused, t::skipped, listm::rev t::first)
     |> _assert_eq (1837i32, 0i32, 0i32, [])
 
@@ -132,7 +132,7 @@
         sm'::obj_to_string (t::accepted, t::refused, t::skipped)
         ++# "\n"
         ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
-    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-core-tally.txt") report
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-core-counts.txt") report
     (t::refused, t::skipped, listm::rev t::first)
     |> _assert_eq (0i32, 0i32, [])
 
@@ -145,7 +145,7 @@
         sm'::obj_to_string (t::accepted, t::refused, t::skipped)
         ++# "\n"
         ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
-    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-nat-tally.txt") report
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-nat-counts.txt") report
     (t::refused, t::skipped, listm::rev t::first)
     |> _assert_eq (0i32, 0i32, [])
 
@@ -158,7 +158,7 @@
         sm'::obj_to_string (t::accepted, t::refused, t::skipped)
         ++# "\n"
         ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
-    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-list-tally.txt") report
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-list-counts.txt") report
     (t::refused, t::skipped, listm::rev t::first)
     |> _assert_eq (0i32, 0i32, [])
 
@@ -171,7 +171,7 @@
         sm'::obj_to_string (t::accepted, t::refused, t::skipped)
         ++# "\n"
         ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
-    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-wf-tally.txt") report
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-wf-counts.txt") report
     (t::refused, t::skipped, listm::rev t::first)
     |> _assert_eq (0i32, 0i32, [])
 
@@ -184,6 +184,6 @@
         sm'::obj_to_string (t::accepted, t::refused, t::skipped)
         ++# "\n"
         ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
-    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-array-tally.txt") report
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-array-counts.txt") report
     (t::refused, t::skipped, listm::rev t::first)
     |> _assert_eq (0i32, 0i32, [])

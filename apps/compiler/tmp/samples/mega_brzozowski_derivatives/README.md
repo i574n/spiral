@@ -43,13 +43,15 @@ a certificate or an `exists` package built under them is built under a compile-t
 (`indexed_dfa_closure`), the minimization and the inventory model's replays are computed during compilation too: they
 use main's `static_*` twins (minimization, bisimulation, distinguishing words, the direct-language oracle, `accepts`,
 `reference_accepts`, the raw closure, the input corpus), because an `inl rec` check over the run-time result of a
-`let rec` join point never terminates. `indexed_closure_certificate`, `indexed_dfa_witness_contracts` and `proof_suite`'s
+`let rec` join point never terminates. `indexed_closure_certificate`, `indexed_dfa_witness_contracts` and
+`proof_suite`'s
 inventory contract compile to no run-time code: every check in them was discharged by the compiler. (Elsewhere an
 `assert_static` whose argument is a run-time value becomes a run-time check: `failwith` in the emitted code.)
 
 ## What runs
 
-`runtime_workload.spi` and `runtime_interned.spi` match inputs generated at run time (an LCG seed, so nothing is known to
+`runtime_workload.spi` and `runtime_interned.spi` match inputs generated at run time
+(an LCG seed, so nothing is known to
 the compiler) with four engines written in the sample:
 
 | engine | how | run-time work per symbol |
@@ -122,8 +124,10 @@ What the numbers say, and what they do not:
 - On the **zero runs** the backtracking matcher explores every split of `0^n` into `0` and `00` (Fibonacci(n) paths)
   before it rejects: 1.5 s in C against 13-22 ms for the three derivative engines. On the easy random workload the
   backtracker is faster than run-time derivatives without memoization (235 ms against 1,350 ms).
-- Earlier passes the same day (lane F, 11:30 and 12:37, at 100% CPU load) ranked the original engines the same way with higher
-  medians (the 11:30 pass: 1.3-3.8x these; the 12:37 pass up to 7x on the short programs); this table replaces them. Every result file is in `<cache>/bench/brzozowski/`.
+- Earlier passes the same day (lane F, 11:30 and 12:37, at 100% CPU load) ranked the original engines the same way with
+  higher
+  medians (the 11:30 pass: 1.3-3.8x these; the 12:37 pass up to 7x on the short programs); this table replaces them.
+  Every result file is in `<cache>/bench/brzozowski/`.
 ## Layout
 
 - `main.spi`: the library: alphabets, regexes, derivatives (run-time and compile-time), canonicalization, finite
@@ -167,7 +171,8 @@ after the interned engine got its nominals, which changed only `runtime_bench`'s
   the Python backend: FOR-D).
 - The Hopac core reproduced F's 68 rows at 13:10 (it needs 37-52 s for `runtime_bench` and `bench_staged`, over the
   contracts suite's 30 s, so `tests/matrix.psd1` `Timeouts` gives the runtime programs 180 s; the new ones get the
-  same). In hopac mode every row changed or added on 2026-10-06 afternoon reproduces the oracle too: `hopac-20261006-153721`
+  same). In hopac mode every row changed or added on 2026-10-06 afternoon reproduces the oracle too:
+  `hopac-20261006-153721`
   (the new programs, 16 rows) and `hopac-20261006-165156` (`runtime_bench` x4, 59-67 s each).
 `runtime_native` exposed a compiler bug on the way: a GADT-indexed union keeps only its inhabited cases
 (`bit_matcher_state matcher_decided` has just `BitMatcherDecided`, tag 1), and the C/C++ backends numbered the emitted
@@ -181,7 +186,7 @@ From `apps/compiler/tmp`:
 # the sample's rows in the suite: every sub-package compiled to F#, runtime_native/runtime_bench also built and run on C, Rust, Pascal
 pwsh scripts/test.ps1 -Mode single-flight -Suite contracts,mega -Filter mega_brzozowski_derivatives -Native
 # one program on one backend (writes main.rs next to main.spi)
-pwsh scripts/probe.ps1 mega_brzozowski_derivatives/runtime_bench -Mode single-flight -Backend Rust
+pwsh scripts/trial.ps1 mega_brzozowski_derivatives/runtime_bench -Mode single-flight -Backend Rust
 rustc -C opt-level=2 --edition 2024 samples/mega_brzozowski_derivatives/runtime_bench/main.rs -o bench.exe; ./bench.exe; $LASTEXITCODE
 # the timings (compiles and builds every bench_* program, then times them round-robin)
 pwsh samples/mega_brzozowski_derivatives/bench.ps1 -Repeat 11 -RegexCrate

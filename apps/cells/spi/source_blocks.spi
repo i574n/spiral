@@ -6,7 +6,7 @@
 
 :== source_row = { input : string; header : string; last : string; header_text : string }
 
-:= row_of (line : string) : option source_row =
+:~ row_of (line : string) : option source_row =
     := t1 = text::find_char line 0i32 '\t'
     := t2 = text::find_char line (t1 + 1i32) '\t'
     := t3 = text::find_char line (t2 + 1i32) '\t'
@@ -19,7 +19,7 @@
         := last = text::slice_len line (t4 + 1i32) (t5 - t4 - 1i32)
         Some { input = text::take line t1; header; last; header_text = text::drop line (t5 + 1i32) }
 
-:= span_row (r : source_row) : string = r::header ++ "\t" ++ r::last ++ "\t" ++ r::header_text
+:~ span_row (r : source_row) : string = r::header ++ "\t" ++ r::last ++ "\t" ++ r::header_text
 
 :~ ^ rows_for (lines : list string) (input : string) (acc : list string) : list string =
     ?= lines ?|
@@ -29,10 +29,10 @@
         | Some r => rows_for rest input (? r::input = input ?> span_row r :: acc |: acc)
         | None => rows_for rest input acc
 
-:= input_rows (tsv : string) (input : string) : string =
+:~ input_rows (tsv : string) (input : string) : string =
     sm'::concat_list "\n" (rows_for (sm'::split_list "\n" tsv) input [])
 
-:= word_byte (b : i32) : bool =
+:~ word_byte (b : i32) : bool =
     (b >= 48i32 && b <= 57i32)
     || (b >= 65i32 && b <= 90i32)
     || (b >= 97i32 && b <= 122i32)
@@ -40,18 +40,18 @@
     || b = 39i32
     || b >= 128i32
 
-:= keyword_alone (h : string) (k : string) : bool =
+:~ keyword_alone (h : string) (k : string) : bool =
     text::starts_with h k && (text::length h = text::length k || not (word_byte (text::byte_at h (text::length k))))
 
-:= test_header (h : string) : bool = keyword_alone h "test" || keyword_alone h ":#"
+:~ test_header (h : string) : bool = keyword_alone h "test" || keyword_alone h ":#"
 
-:= field (tag : string) (s : string) : string = tag ++ text::show_i32 (text::length s) ++ ":" ++ s
+:~ field (tag : string) (s : string) : string = tag ++ text::show_i32 (text::length s) ++ ":" ++ s
 
-:= block_wire (lines : list string) (s : memo::span) : string =
+:~ block_wire (lines : list string) (s : memo::span) : string =
     := body = memo::lines_between lines 1i32 s []
     field "b" s::header_text ++ sm'::concat_list "" (listm::map (field "l") body)
 
-:= split_blocks (program : string) (rows : string) : string =
+:~ split_blocks (program : string) (rows : string) : string =
     := lines = sm'::split_list "\n" (text::replace program "\r\n" "\n")
     := kept = memo::keep (\ (s : memo::span) => not (test_header s::header_text)) (memo::spans_of rows)
     sm'::concat_list "" (listm::map (block_wire lines) kept)

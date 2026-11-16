@@ -1,0 +1,99 @@
+///- --package .
+:# showcase_hkt_one_rule static =
+    :< testing
+    :< rustc_verdict
+
+:< monad
+
+:! audited a = { value : a; trail : list string }
+
+:+ (>>=) audited = \ (audited x) f =>
+    := (audited y) = f x.value
+    audited { value = y.value; trail = listm.append x.trail y.trail }
+
+:+ on_succ audited = \ v => audited { value = v; trail = [] }
+
+:= reserve_and_bill \* (m : * -> *) {(>>=); on_succ}.
+    (stock : i32 -> m i32) (price : i32 -> m i32) (qty : i32)
+    : m i32
+    =
+    stock qty >>= \ q =>
+    price q >>= \ total =>
+    on_succ total
+
+:= billed (on_hand : i32) : i32 =
+    := validated = reserve_and_bill (\ q => ? q <= on_hand ?> Some q |: None) (\ q => Some (q * 100)) 3
+    := scenarios = reserve_and_bill (\ q => [ q ]) (\ q => [ q * 100; q * 120 ]) 3
+    := audited_run =
+        reserve_and_bill
+            (\ q => audited { value = q; trail = [ "stock" ] })
+            (\ q => audited { value = q * 100; trail = [ "price" ] })
+            3
+    := (audited log) = audited_run
+    ?= validated ?|
+    | Some total => total / 100 + listm.length scenarios + listm.length log.trail
+    | None => 0
+
+:= main () : i32 =
+    := on_hand : i32 = $"6"
+    billed on_hand
+
+///> rust
+:# spiral_runs_one_rule_over_three_effects =
+    := ~on_hand = 6i32
+    billed on_hand |> _assert_eq 7i32
+
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+:# rust_rejects_a_type_parameter_of_kind_star_to_star =
+    := source = """
+fn reserve_and_bill<M>(stock: impl Fn(i32) -> M<i32>, price: impl Fn(i32) -> M<i32>, qty: i32) -> M<i32> {
+    todo!()
+}
+
+fn main() {}
+"""
+    := applied = OtherError ("E0109", "type arguments are not allowed on type parameter `M`: type argument not allowed")
+    attempt "showcase-hkt-one-rule" source
+    |> _assert_eq (Rejected [ applied; applied; applied ])
+
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+:# rust_needs_a_gat_trait_and_a_marker_per_effect =
+    := source = """
+trait Effect {
+    type Of<T>;
+    fn bind<A, B>(value: Self::Of<A>, f: impl Fn(A) -> Self::Of<B>) -> Self::Of<B>;
+    fn pure<A>(value: A) -> Self::Of<A>;
+}
+
+struct OptionEffect;
+impl Effect for OptionEffect {
+    type Of<T> = Option<T>;
+    fn bind<A, B>(value: Option<A>, f: impl Fn(A) -> Option<B>) -> Option<B> { value.and_then(f) }
+    fn pure<A>(value: A) -> Option<A> { Some(value) }
+}
+
+struct ListEffect;
+impl Effect for ListEffect {
+    type Of<T> = Vec<T>;
+    fn bind<A, B>(value: Vec<A>, f: impl Fn(A) -> Vec<B>) -> Vec<B> { value.into_iter().flat_map(f).collect() }
+    fn pure<A>(value: A) -> Vec<A> { vec![value] }
+}
+
+fn reserve_and_bill<E: Effect>(
+    stock: impl Fn(i32) -> E::Of<i32>,
+    price: impl Fn(i32) -> E::Of<i32> + Copy,
+    qty: i32
+) -> E::Of<i32> {
+    E::bind(stock(qty), move |q| E::bind(price(q), |total| E::pure(total)))
+}
+
+fn main() {
+    let on_hand: i32 = std::env::args().count() as i32 + 5;
+    let validated =
+        reserve_and_bill::<OptionEffect>(|q| if q <= on_hand { Some(q) } else { None }, |q| Some(q * 100), 3);
+    let scenarios = reserve_and_bill::<ListEffect>(|q| vec![q], |q| vec![q * 100, q * 120], 3);
+    std::process::exit(validated.map_or(0, |total| total / 100) + scenarios.len() as i32 + 2);
+}
+"""
+    attempt "showcase-hkt-gat-emulation" source
+    |> _assert_eq Built

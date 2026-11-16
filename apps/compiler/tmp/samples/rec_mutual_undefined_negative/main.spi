@@ -1,0 +1,5 @@
+:= is_even (n : i32) : bool =
+    ? n = 0 ?> !+ |: is_odd (n - 1)
+
+:= main () : i32 =
+    ? is_even 4 ?> 42 |: 0

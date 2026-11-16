@@ -3,5 +3,6 @@ packages = ['|core-', 'spiral-']
 modules = '''
 oracle
 transformer
+graph
 train_grad
 '''

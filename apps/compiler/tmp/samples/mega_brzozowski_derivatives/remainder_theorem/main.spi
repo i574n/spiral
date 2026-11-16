@@ -30,7 +30,7 @@
         RegexCat (derivative_remainder_proof_source left, derivative_remainder_proof_source right)
     | RemainderProofStar (_, _, inner) => RegexStar (derivative_remainder_proof_source inner)
 
-:~ ^ derivative_remainder_proof_symbol \* alphabet.
+:~ derivative_remainder_proof_symbol \* alphabet.
     (proof : derivative_remainder_proof alphabet) : alphabet =
     ?= proof ?|
     | RemainderProofEmpty (symbol, _) => symbol
@@ -40,7 +40,7 @@
     | RemainderProofCat (symbol, _, _, _, _) => symbol
     | RemainderProofStar (symbol, _, _) => symbol
 
-:~ ^ derivative_remainder_proof_suffix \* alphabet.
+:~ derivative_remainder_proof_suffix \* alphabet.
     (proof : derivative_remainder_proof alphabet) : linear_input alphabet =
     ?= proof ?|
     | RemainderProofEmpty (_, suffix) => suffix

@@ -137,6 +137,62 @@
 
 := text_order (a : string) (b : string) : i32 = text_order_from a b 0i32
 
+:= xml_is_digit (c : string) : bool = sm'::length c = 1i32 && sm'::index_of c "0123456789" >= 0i32
+
+:~ ^ xml_decimal_from (s : string) (i : i32) (point : bool) (digits : i32) : bool =
+    ? i >= sm'::length s
+    ?> digits > 0i32
+    |:
+        := c = code_point_text s i
+        ? c = "."
+        ?> point = !- && xml_decimal_from s (i + 1i32) !+ digits
+        |: xml_is_digit c && xml_decimal_from s (i + 1i32) point (digits + 1i32)
+
+:= xml_sign_width (s : string) : i32 = ? sm'::starts_with "-" s || sm'::starts_with "+" s ?> 1i32 |: 0i32
+
+:= is_decimal_text (s : string) : bool =
+    := t = sm'::trim s
+    xml_decimal_from t (xml_sign_width t) !- 0i32
+
+:= xml_whole_order (a : string) (b : string) : i32 =
+    := a_width = (sm'::length a : i32)
+    := b_width = (sm'::length b : i32)
+    ? a_width < b_width ?> -1i32 |? a_width > b_width ?> 1i32 |: text_order a b
+
+:= xml_magnitude_order (a : string) (b : string) : i32 =
+    := a_whole, a_fraction = xml_digits_parts a
+    := b_whole, b_fraction = xml_digits_parts b
+    := whole = xml_whole_order a_whole b_whole
+    ? whole <> 0i32 ?> whole |: text_order a_fraction b_fraction
+
+:= xml_is_negative (s : string) : bool =
+    := whole, fraction = xml_digits_parts s
+    sm'::starts_with "-" (sm'::trim s) && (whole <> "" || fraction <> "")
+
+:= decimal_order (a : string) (b : string) : i32 =
+    := a_negative = xml_is_negative a
+    := b_negative = xml_is_negative b
+    ? a_negative && b_negative = !-
+    ?> -1i32
+    |? b_negative && a_negative = !-
+    ?> 1i32
+    |? a_negative
+    ?> xml_magnitude_order b a
+    |: xml_magnitude_order a b
+
+:= xml_bound_comparable (s : string) (bound : string) : bool = is_decimal_text bound = !- || is_decimal_text s
+
+:= xml_bound_order (s : string) (bound : string) : i32 =
+    ? is_decimal_text bound ?> decimal_order s bound |: text_order s bound
+
+:= min_inclusive (bound : string) (s : string) : bool = xml_bound_comparable s bound && xml_bound_order s bound >= 0i32
+
+:= max_inclusive (bound : string) (s : string) : bool = xml_bound_comparable s bound && xml_bound_order s bound <= 0i32
+
+:= min_exclusive (bound : string) (s : string) : bool = xml_bound_comparable s bound && xml_bound_order s bound > 0i32
+
+:= max_exclusive (bound : string) (s : string) : bool = xml_bound_comparable s bound && xml_bound_order s bound < 0i32
+
 := read_text_replacing_invalid_utf8 (path : string) : string =
     run_target \|
         | Rust => fun () => $'std::rc::Rc::<str>::from(String::from_utf8_lossy(&std::fs::read(&*!path).unwrap()).as_re\
@@ -359,6 +415,23 @@
     ? total_digits "007" <> 1i32 ?> failwith "leading zeros are not significant"
     ? total_digits "0" <> 1i32 ?> failwith "zero has one digit"
     ? fraction_digits "10" <> 0i32 ?> failwith "an integer has no fraction digits"
+
+///> rust
+:# bound_facets_order_decimals_by_value_and_other_text_lexically =
+    ? min_inclusive "0.000001" "0.0000001" ?> failwith "a smaller fraction is under the bound"
+    ? min_inclusive "0.000001" "0.000001" = !- ?> failwith "the bound itself is inclusive"
+    ? max_inclusive "9999999999999.99999" "10000000000000" ?> failwith "a longer whole part is over the bound"
+    ? max_inclusive "99999999999999999999" "99999999999999999999" = !- ?> failwith "twenty digits compare as text"
+    ? min_exclusive "0" "0.00" ?> failwith "0.00 equals 0"
+    ? min_exclusive "0" "-1" ?> failwith "a negative is under zero"
+    ? max_exclusive "-1" "-0.5" ?> failwith "-0.5 is over -1"
+    ? min_inclusive "-2" "-1.5" = !- ?> failwith "-1.5 is over -2"
+    ? min_inclusive "1" "abc" ?> failwith "a non-decimal never meets a decimal bound"
+    ? min_inclusive "1" "1.2.3" ?> failwith "two points are not a decimal"
+    ? min_inclusive "1970-01-01" "1969-12-31" ?> failwith "dates order as text"
+    ? max_inclusive "2025-01" "2025-01" = !- ?> failwith "a year-month meets itself"
+    ? decimal_order "+007.50" "7.5" <> 0i32 ?> failwith "signs and padding zeros keep the value"
+    ? decimal_order "-0" "0" <> 0i32 ?> failwith "negative zero is zero"
 
 ///> rust
 :# text_order_follows_code_points =

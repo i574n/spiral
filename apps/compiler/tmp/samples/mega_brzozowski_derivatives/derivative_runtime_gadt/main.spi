@@ -1,4 +1,113 @@
-:< main
+:| bit_symbol =
+    | BitZero
+    | BitOne
+
+:! bit_alphabet = bit_symbol
+
+:| tri_symbol =
+    | TriA
+    | TriB
+    | TriC
+
+:! tri_alphabet = tri_symbol
+
+:| symbol_ordering =
+    | SymbolLess
+    | SymbolSame
+    | SymbolGreater
+
+:? symbol_compare alphabet : alphabet -> alphabet -> symbol_ordering
+
+:= symbol_equal \* alphabet {symbol_compare}. (left : alphabet) (right : alphabet) : bool =
+    ?= symbol_compare left right ?|
+    | SymbolSame => !+
+    | _ => !-
+
+:+ symbol_compare bit_alphabet = \ (bit_alphabet left) (bit_alphabet right) =>
+    ?= left, right ?|
+    | BitZero, BitZero => SymbolSame
+    | BitZero, BitOne => SymbolLess
+    | BitOne, BitZero => SymbolGreater
+    | BitOne, BitOne => SymbolSame
+
+:+ symbol_compare tri_alphabet = \ (tri_alphabet left) (tri_alphabet right) =>
+    ?= left, right ?|
+    | TriA, TriA => SymbolSame
+    | TriA, _ => SymbolLess
+    | _, TriA => SymbolGreater
+    | TriB, TriB => SymbolSame
+    | TriB, TriC => SymbolLess
+    | TriC, TriB => SymbolGreater
+    | TriC, TriC => SymbolSame
+
+:| ^ regex alphabet =
+    | RegexEmpty
+    | RegexEpsilon
+    | RegexChar : alphabet
+    | RegexAlt : regex alphabet * regex alphabet
+    | RegexCat : regex alphabet * regex alphabet
+    | RegexStar : regex alphabet
+
+:| ^ linear_input alphabet =
+    | InputEmpty
+    | InputCons : alphabet * linear_input alphabet
+
+:~ ^ nullable \* alphabet. (value : regex alphabet) : bool =
+    ?= value ?|
+    | RegexEmpty => !-
+    | RegexEpsilon => !+
+    | RegexChar _ => !-
+    | RegexAlt (left, right) => nullable left || nullable right
+    | RegexCat (left, right) => nullable left && nullable right
+    | RegexStar _ => !+
+
+:~ ^ derivative \* alphabet {symbol_compare}. (value : regex alphabet) (symbol : alphabet) : regex alphabet =
+    ?= value ?|
+    | RegexEmpty => RegexEmpty
+    | RegexEpsilon => RegexEmpty
+    | RegexChar expected => ? symbol_equal expected symbol ?> RegexEpsilon |: RegexEmpty
+    | RegexAlt (left, right) => RegexAlt (derivative left symbol, derivative right symbol)
+    | RegexCat (left, right) =>
+        ? nullable left
+        ?> RegexAlt (RegexCat (derivative left symbol, right), derivative right symbol)
+        |: RegexCat (derivative left symbol, right)
+    | RegexStar inner => RegexCat (derivative inner symbol, RegexStar inner)
+
+:~ ^ accepts \* alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
+    ?= input ?|
+    | InputEmpty => nullable value
+    | InputCons (symbol, rest) => accepts (derivative value symbol) rest
+
+:= bool_same (left : bool) (right : bool) : bool = ? left ?> right |? right ?> !- |: !+
+
+:= derivative_remainder_candidate_law \* alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (symbol : alphabet)
+    (suffix : linear_input alphabet)
+    (candidate : regex alphabet)
+    : bool =
+    bool_same (accepts candidate suffix) (accepts value (InputCons (symbol, suffix)))
+
+:= zero () : bit_alphabet = bit_alphabet BitZero
+:= one () : bit_alphabet = bit_alphabet BitOne
+:= tri_a () : tri_alphabet = tri_alphabet TriA
+:= tri_b () : tri_alphabet = tri_alphabet TriB
+:= tri_c () : tri_alphabet = tri_alphabet TriC
+
+:= ends_with_zero () : regex bit_alphabet =
+    RegexCat (
+        RegexStar (RegexAlt (RegexChar (zero ()), RegexChar (one ()))),
+        RegexChar (zero ())
+    )
+
+:= input_110 () : linear_input bit_alphabet =
+    InputCons (one (), InputCons (one (), InputCons (zero (), InputEmpty)))
+
+:= tri_ab_star_then_c () : regex tri_alphabet =
+    RegexCat (
+        RegexStar (RegexAlt (RegexChar (tri_a ()), RegexChar (tri_b ()))),
+        RegexChar (tri_c ())
+    )
 
 :! derivative_runtime_raw = ()
 :! derivative_runtime_checked = ()
@@ -22,7 +131,7 @@
                 value
                 symbol
                 suffix
-                (canonical_derivative value symbol))
+                (derivative value symbol))
 
 := derivative_runtime_check \* alphabet.
     (capability : derivative_runtime_check_capability alphabet)

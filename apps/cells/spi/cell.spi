@@ -5,14 +5,14 @@
     | [] => ""
     | s :: rest => ? i = 0i32 ?> s |: nth_line rest (i - 1i32)
 
-:= join_lines (xs : list string) : string = sm'::concat_list "\n" xs
+:~ join_lines (xs : list string) : string = sm'::concat_list "\n" xs
 
 :~ ^ collect (src : string) (i : i32) (acc : list string) : list string =
     ?= text::next_line src i ?|
     | LineDone => listm::rev acc
     | LineGot (line, next) => collect src next (line :: acc)
 
-:= read_lines (text : string) : list string = collect text 0i32 []
+:~ read_lines (text : string) : list string = collect text 0i32 []
 
 :~ declaration (line : string) : bool =
     ? text::starts_with line "open " || text::starts_with line ":< "
@@ -65,7 +65,7 @@
         ?> i
         |: last_block xs (i - 1i32)
 
-:= main_line (line : string) : bool =
+:~ main_line (line : string) : bool =
     ? text::starts_with line "inl main " || text::starts_with line ":= main "
     ?> !+
     |? text::starts_with line "let main " || text::starts_with line ":~ main "
@@ -96,12 +96,12 @@
     | MainFromExpression
     | MainFromDefinitionsOnly
 
-:= from_expression (m : main_source) : bool = ?= m ?| MainFromExpression => !+ | _ => !-
+:~ from_expression (m : main_source) : bool = ?= m ?| MainFromExpression => !+ | _ => !-
 
-:= main_text (m : main_source) : string =
+:~ main_text (m : main_source) : string =
     ?= m ?| OwnMain => "0" | MainFromExpression => "1" | MainFromDefinitionsOnly => "2"
 
-:= wrap (code : string) : string * main_source =
+:~ wrap (code : string) : string * main_source =
     := xs = read_lines code
     := n = listm::length xs
     := block = last_block xs (n - 1i32)
@@ -122,16 +122,16 @@
             && not (text::is_space (text::index line 4i32))
         entry_rows rest (i + 1i32) at (? statement ?> text::trim line :: acc |: acc)
 
-:= constant_row (row : string) : bool = row = "0i32" || row = "0" || row = "()"
+:~ constant_row (row : string) : bool = row = "0i32" || row = "0" || row = "()"
 
-:= continuation_row (row : string) : bool = text::starts_with row ")" || text::starts_with row "|>"
+:~ continuation_row (row : string) : bool = text::starts_with row ")" || text::starts_with row "|>"
 
-:= export_call_row (row : string) : bool =
+:~ export_call_row (row : string) : bool =
     := n = text::length row
     := head = text::take row (n - 3i32)
     n > 3i32 && text::drop row (n - 3i32) = " ()" && text::contains head "export" && not (text::contains head " ")
 
-:= export_row (row : string) : bool = text::starts_with row "export " || export_call_row row
+:~ export_row (row : string) : bool = text::starts_with row "export " || export_call_row row
 
 :~ ^ only_exports (rows : list string) (seen : bool) : bool =
     ?= rows ?|
@@ -143,7 +143,7 @@
         ?> only_exports rest seen
         |: !-
 
-:= backend_entry (rows : list string) : bool =
+:~ backend_entry (rows : list string) : bool =
     ?= rows ?|
     | [] => !-
     | row :: _ =>
@@ -151,7 +151,7 @@
         || text::starts_with row "? is_rust ()"
         || text::starts_with row "$'!main"
 
-:= entry_skipped (has_tests : bool) (code : string) : bool =
+:~ entry_skipped (has_tests : bool) (code : string) : bool =
     := xs = read_lines code
     := block = last_block xs (listm::length xs - 1i32)
     ? block < 0i32 || not (main_line (nth_line xs block))
@@ -162,7 +162,7 @@
         := rows = entry_rows xs 0i32 block []
         only_exports rows !- || backend_entry rows
 
-:= package_project (includes : string) : string =
+:~ package_project (includes : string) : string =
     if includes = "" then """
         packages:
             |core-
@@ -192,7 +192,7 @@ inl show_exit () : string = """
         std::process::exit(0);
     """
 
-:= unit_exit () : string = "let _ = main.join().unwrap();\n    std::process::exit(0);"
+:~ unit_exit () : string = "let _ = main.join().unwrap();\n    std::process::exit(0);"
 
 inl show_join (panic_code : string) : string = """
     match main.join() {
@@ -206,11 +206,11 @@ inl unit_join (panic_code : string) : string = """
             Err(_) => std::process::exit(
     """ ++ panic_code ++ "),\n    }"
 
-:= join_exit_open () : string = "std::process::exit(match main.join() { Ok(code) => code, Err(_) => "
+:~ join_exit_open () : string = "std::process::exit(match main.join() { Ok(code) => code, Err(_) => "
 
-:= join_exit_close () : string = " });"
+:~ join_exit_close () : string = " });"
 
-:= join_pair (left : string) (right : string) : string =
+:~ join_pair (left : string) (right : string) : string =
     ? left = ""
     ?> right
     |? right = ""
@@ -228,9 +228,9 @@ inl unit_join (panic_code : string) : string = """
     | ShowValue
     | UnitValue
 
-:= shown_of (flag : string) : shown = ? flag = "1" ?> ShowValue |: UnitValue
+:~ shown_of (flag : string) : shown = ? flag = "1" ?> ShowValue |: UnitValue
 
-:= patch_join_exit (rust : string) (show : shown) : string =
+:~ patch_join_exit (rust : string) (show : shown) : string =
     := at = text::find_from rust (join_exit_open ()) 0i32
     ? at < 0i32
     ?> rust
@@ -246,19 +246,19 @@ inl unit_join (panic_code : string) : string = """
             := patched = ?= show ?| ShowValue => show_join panic_code | UnitValue => unit_join panic_code
             text::take rust at ++ patched ++ text::drop rust (close_at + text::length (join_exit_close ()))
 
-:= exit_for (show : shown) : string = ?= show ?| ShowValue => show_exit () | UnitValue => unit_exit ()
+:~ exit_for (show : shown) : string = ?= show ?| ShowValue => show_exit () | UnitValue => unit_exit ()
 
-:= patch_rust (rust : string) (show : shown) : string =
+:~ patch_rust (rust : string) (show : shown) : string =
     := textn = text::replace rust "\r\n" "\n"
     := collapsed = text::collapse_newlines (join_lines (read_lines textn))
     := unwrapped = "std::process::exit(main.join().unwrap());"
     patch_join_exit (text::replace collapsed unwrapped (exit_for show)) show
 
-:= panic_thread_open () : string = "thread '"
-:= panic_id_open () : string = "' ("
-:= panic_id_close () : string = ") panicked"
+:~ panic_thread_open () : string = "thread '"
+:~ panic_id_open () : string = "' ("
+:~ panic_id_close () : string = ") panicked"
 
-:= without_panic_thread_id (line : string) : string =
+:~ without_panic_thread_id (line : string) : string =
     ? text::starts_with line (panic_thread_open ()) ?>
         := id_open = text::find_from line (panic_id_open ()) (text::length (panic_thread_open ()))
         := id_from = id_open + text::length (panic_id_open ())
@@ -268,9 +268,9 @@ inl unit_join (panic_code : string) : string = """
         |: line
     |: line
 
-:= panic_location_open () : string = "panicked at "
-:= rust_source_suffix () : string = ".rs:"
-:= cell_run_dir () : string = "spiral_cells"
+:~ panic_location_open () : string = "panicked at "
+:~ rust_source_suffix () : string = ".rs:"
+:~ cell_run_dir () : string = "spiral_cells"
 
 :~ ^ last_separator_before (line : string) (i : i32) (from : i32) : i32 =
     ? i < from
@@ -279,7 +279,7 @@ inl unit_join (panic_code : string) : string = """
     ?> i
     |: last_separator_before line (i - 1i32) from
 
-:= without_cell_run_dir (line : string) : string =
+:~ without_cell_run_dir (line : string) : string =
     := at = text::find_from line (panic_location_open ()) 0i32
     := path_from = at + text::length (panic_location_open ())
     := suffix = ? at >= 0i32 ?> text::find_from line (rust_source_suffix ()) path_from |: -1i32
@@ -292,15 +292,15 @@ inl unit_join (panic_code : string) : string = """
         |: line
     |: line
 
-:= run_stable (line : string) : string = without_cell_run_dir (without_panic_thread_id line)
+:~ run_stable (line : string) : string = without_cell_run_dir (without_panic_thread_id line)
 
 :| run_output =
     | StdoutOnly : string
     | ValueAndStdout : string * string
 
-:= value_marker () : string = "SPIRAL_CELLS_VALUE:"
+:~ value_marker () : string = "SPIRAL_CELLS_VALUE:"
 
-:= value_found (line : string) (before : list string) (rest : list string) : run_output =
+:~ value_found (line : string) (before : list string) (rest : list string) : run_output =
     := value = text::trim_cr (text::drop line (text::length (value_marker ())))
     := stdout = text::trim_trailing_newlines (join_pair (join_lines (listm::rev before)) (join_lines rest))
     ValueAndStdout (value, stdout)
@@ -313,10 +313,10 @@ inl unit_join (panic_code : string) : string = """
         ?> value_found line before rest
         |: found_in rest (line :: before)
 
-:= split_output (output : string) : run_output =
+:~ split_output (output : string) : run_output =
     found_in (listm::map run_stable (read_lines (text::replace output "\r\n" "\n"))) []
 
-:= run_output_text (r : run_output) : string =
+:~ run_output_text (r : run_output) : string =
     ?= r ?| StdoutOnly stdout => "0\n" ++ stdout | ValueAndStdout (value, stdout) => "1\n" ++ value ++ "\n" ++ stdout
 
 :~ ^ skip_ws (src : string) (i : i32) : i32 =
@@ -345,24 +345,24 @@ inl unit_join (panic_code : string) : string = """
         ?> i
         |: line_end src (i + 1i32)
 
-:= cut_quote (ty : string) : string =
+:~ cut_quote (ty : string) : string =
     := q = text::find_char ty 0i32 '"'
     ? q < 0i32 ?> ty |: text::trim (text::take ty q)
 
-:= type_text (src : string) (at : i32) (label : string) : string =
+:~ type_text (src : string) (at : i32) (label : string) : string =
     := j = skip_ws src (at + text::length label)
     := k = line_end src j
     cut_quote (text::trim (text::slice_len src j (k - j)))
 
-:= prefix_before (ty : string) (mark : string) : option string =
+:~ prefix_before (ty : string) (mark : string) : option string =
     := n = text::length mark
     := m = text::length ty
     ? text::starts_at ty (m - n) mark ?> Some (text::slice_len ty 0i32 (m - n)) |: None
 
-:= same_prefix (got : option string) (expected : option string) : bool =
+:~ same_prefix (got : option string) (expected : option string) : bool =
     ?= got, expected ?| Some g, Some e => g = e | _ => !-
 
-:= unit_pair (got : string) (expected : string) : bool =
+:~ unit_pair (got : string) (expected : string) : bool =
     ? got = "()" && expected = "i32"
     ?> !+
     |? got = "i32" && expected = "()"
@@ -383,6 +383,6 @@ inl unit_join (panic_code : string) : string = """
         ?> !+
         |: unit_from src (at + 4i32)
 
-:= unit_result (output : string) : bool = unit_from output 0i32
+:~ unit_result (output : string) : bool = unit_from output 0i32
 
-:= flag_text (b : bool) : string = ? b ?> "1" |: "0"
+:~ flag_text (b : bool) : string = ? b ?> "1" |: "0"

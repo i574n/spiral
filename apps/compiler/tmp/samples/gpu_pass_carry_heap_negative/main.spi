@@ -1,0 +1,7 @@
+:= gpu_carry_in \* s. (x : s) : s = !!!!GpuCarryIn(x)
+:= gpu_carry_out \* s. (x : s) : s = !!!!GpuCarryOut(x)
+
+:= main () : i32 =
+    := ~name = "lane"
+    := s = gpu_carry_out (gpu_carry_in name)
+    ? (sm::length s : i32) =. 4i32 ?> 0i32 |: 1i32

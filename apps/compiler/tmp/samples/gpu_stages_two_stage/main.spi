@@ -1,0 +1,24 @@
+:| ^ stages s t =
+    | StagesDone :: \* s. stages s s
+    | StagesThen :: \* s t. (\? m. (s -> m) * stages m t) -> stages s t
+
+:= ^ run_stages \* s t. (plan : stages s t) (state : s) : t =
+    ?= plan ?|
+    | StagesDone => state
+    | StagesThen packed =>
+        := \? m. pair = packed
+        := stage, rest = pair
+        run_stages rest (stage state)
+
+:== counter = { count : i32; total : i32 }
+
+:~ ^ fill (n : i32) (c : counter) : counter =
+    ? n <= 0i32 ?> c |: fill (n -. 1i32) { c ?| count = c::count +. 1i32; total = c::total +. n }
+
+:= finish (c : counter) : i32 = c::total -. c::count
+
+:= main () : i32 =
+    := ~n = 10i32
+    := plan : stages counter i32 = StagesThen (\? ((\ (c : counter) => fill n c), StagesThen (\? (finish, StagesDone))))
+    := result = run_stages plan { count = 0i32; total = 0i32 }
+    ? result =. 45i32 ?> 0i32 |: 1i32

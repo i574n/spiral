@@ -78,30 +78,31 @@
 
 := sampled_text () : string = sm'::concat_list "\n" [ sampled_line_1 (); sampled_line_2 (); sampled_line_3 () ]
 
-:== probe = { token : i32; logit : f32 }
+:== logit_gauge = { token : i32; logit : f32 }
 
-:= stories260k_step_0 () : list probe =
+:= stories260k_step_0 () : list logit_gauge =
     [
         { token = 403; logit = 17.0235157f32 }; { token = 385; logit = 15.4062128f32 }
         { token = 410; logit = 13.108263f32 }; { token = 0; logit = -6.22291136f32 }
         { token = 511; logit = -4.40551758f32 }
     ]
 
-:= stories260k_step_1 () : list probe =
+:= stories260k_step_1 () : list logit_gauge =
     [
         { token = 407; logit = 18.4599857f32 }; { token = 383; logit = 14.2910614f32 }
         { token = 261; logit = 10.8979673f32 }; { token = 0; logit = -9.58945847f32 }
         { token = 511; logit = -7.43573427f32 }
     ]
 
-:= stories260k_step_2 () : list probe =
+:= stories260k_step_2 () : list logit_gauge =
     [
         { token = 261; logit = 17.1369629f32 }; { token = 407; logit = 11.7102079f32 }
         { token = 383; logit = 11.1694374f32 }; { token = 0; logit = -12.141099f32 }
         { token = 511; logit = -8.97455215f32 }
     ]
 
-:= stories260k_probes () : list (list probe) = [ stories260k_step_0 (); stories260k_step_1 (); stories260k_step_2 () ]
+:= stories260k_gauges () : list (list logit_gauge) =
+    [ stories260k_step_0 (); stories260k_step_1 (); stories260k_step_2 () ]
 
 := spiral_bin () : string =
     := local = env::get_environment_variable "LOCALAPPDATA"

@@ -332,7 +332,7 @@ defmodule Spiral.Cells.FsiSession do
       {at, len} ->
         segment = binary_part(state.buffer, 0, at)
         rest = binary_part(state.buffer, at + len, byte_size(state.buffer) - at - len)
-        rest = rest |> String.replace_prefix("\r\n", "") |> String.replace_prefix("\n", "")
+        rest = Spiral.Cells.Domain.fsi_after_marker(rest)
         if pending.timer, do: Process.cancel_timer(pending.timer)
         state = reply_pending(%{state | buffer: rest}, outcome(segment, state))
         scan(state)
@@ -347,15 +347,13 @@ defmodule Spiral.Cells.FsiSession do
   end
 
   defp outcome(segment, %{token: token, pending: pending}) do
-    segment = String.replace(segment, "\r\n", "\n")
+    text = Spiral.Cells.Domain.fsi_reply_text(segment, token, pending.label)
 
-    {text, value} =
-      case :binary.split(segment, "@@KINO-#{token}-VALUE\n") do
-        [text, value] -> {text, String.trim_trailing(value, "\n")}
-        [text] -> {text, nil}
+    value =
+      case Spiral.Cells.Domain.fsi_reply_value(segment, token) do
+        "=" <> value -> value
+        "" -> nil
       end
-
-    text = text |> relabel(pending) |> String.trim_trailing()
 
     if failed?(text),
       do: {:error, %{output: text, reason: :failed}},
@@ -364,18 +362,8 @@ defmodule Spiral.Cells.FsiSession do
 
   defp cut_output(%{pending: nil}, text), do: String.replace(text, "\r\n", "\n")
 
-  defp cut_output(%{pending: pending}, text) do
-    text |> String.replace("\r\n", "\n") |> relabel(pending) |> String.trim_trailing()
-  end
+  defp cut_output(%{pending: pending}, text), do: Spiral.Cells.Domain.fsi_cut_output(text, pending.label)
 
   @doc false
-  def failed?(text) do
-    Regex.match?(~r/\(\d+,\d+\): error FS\d+/, text) or
-      Regex.match?(~r/^Stopped due to error\s*$/m, text)
-  end
-
-  defp relabel(text, %{label: label}) do
-    label = String.replace(label, ~s("), "'")
-    Regex.replace(~r/ in [^\n]*?[\\\/]#{Regex.escape(label)}:line /, text, " in #{label}:line ")
-  end
+  def failed?(text), do: Spiral.Cells.Domain.fsi_failed(text)
 end

@@ -7,11 +7,11 @@ param(
 $ErrorActionPreference = 'Stop'
 $inv = [Globalization.CultureInfo]::InvariantCulture
 function Format-Inv([string] $format, [object[]] $values) { [string]::Format($inv, $format, $values) }
-function New-Tally { [pscustomobject]@{ Value = [Collections.Generic.Dictionary[string, double]]::new(); Order = [Collections.Generic.List[string]]::new() } }
-function Add-Tally($tally, [string] $key, [double] $amount) {
-    if ($tally.Value.ContainsKey($key)) { $tally.Value[$key] += $amount } else { $tally.Value[$key] = $amount; $tally.Order.Add($key) }
+function New-Sums { [pscustomobject]@{ Value = [Collections.Generic.Dictionary[string, double]]::new(); Order = [Collections.Generic.List[string]]::new() } }
+function Add-Sum($sums, [string] $key, [double] $amount) {
+    if ($sums.Value.ContainsKey($key)) { $sums.Value[$key] += $amount } else { $sums.Value[$key] = $amount; $sums.Order.Add($key) }
 }
-function Get-MostCommon($tally) { [Linq.Enumerable]::OrderByDescending($tally.Order, [Func[string, double]] { param($k) $tally.Value[$k] }) }
+function Get-MostCommon($sums) { [Linq.Enumerable]::OrderByDescending($sums.Order, [Func[string, double]] { param($k) $sums.Value[$k] }) }
 function Get-Short([string] $name, [int] $limit) {
     $n = [regex]::Replace($name, '\(.*$', '')
     $n = $n.Replace('SpiralCompilerCore!Spiral.spiral_compiler+', '').Replace('SpiralCompilerCore!Spiral.spiral_compiler.', '')
@@ -39,7 +39,7 @@ if ($View -eq 'Thread') {
     }
     $results = foreach ($p in $profiles) {
         $stack = [Collections.Generic.List[int]]::new(); $last = $null; $busy = 0.0
-        $depth = [Collections.Generic.Dictionary[int, int]]::new(); $entered = [Collections.Generic.Dictionary[int, double]]::new(); $incl = New-Tally
+        $depth = [Collections.Generic.Dictionary[int, int]]::new(); $entered = [Collections.Generic.Dictionary[int, double]]::new(); $incl = New-Sums
         foreach ($ev in $p.GetProperty('events').EnumerateArray()) {
             $t = $ev.GetProperty('at').GetDouble()
             if ($null -ne $last -and $stack.Count -and -not $isWait[$stack[$stack.Count - 1]]) { $busy += $t - $last }
@@ -53,10 +53,10 @@ if ($View -eq 'Thread') {
             } elseif ($type -eq 'C' -and $stack.Count) {
                 $stack.RemoveAt($stack.Count - 1)
                 $depth[$n] = $(if ($depth.ContainsKey($n)) { $depth[$n] } else { 0 }) - 1
-                if ($depth[$n] -eq 0) { $since = if ($entered.ContainsKey($n)) { $entered[$n] } else { $busy }; [void]$entered.Remove($n); Add-Tally $incl "$n" ($busy - $since) }
+                if ($depth[$n] -eq 0) { $since = if ($entered.ContainsKey($n)) { $entered[$n] } else { $busy }; [void]$entered.Remove($n); Add-Sum $incl "$n" ($busy - $since) }
             }
         }
-        foreach ($kv in $depth.GetEnumerator()) { if ($kv.Value -gt 0) { Add-Tally $incl "$($kv.Key)" ($busy - $(if ($entered.ContainsKey($kv.Key)) { $entered[$kv.Key] } else { $busy })) } }
+        foreach ($kv in $depth.GetEnumerator()) { if ($kv.Value -gt 0) { Add-Sum $incl "$($kv.Key)" ($busy - $(if ($entered.ContainsKey($kv.Key)) { $entered[$kv.Key] } else { $busy })) } }
         [pscustomobject]@{ Busy = $busy; Name = (Get-ProfileName $p); Incl = $incl }
     }
     foreach ($r in @($results | Sort-Object Busy -Descending -Stable | Select-Object -First $Threads)) {
@@ -77,17 +77,17 @@ $wait = [regex]::new('Wait|Sleep|Monitor\.Enter|SpinWait|Poll|UNMANAGED_CODE_TIM
 $names = @(foreach ($f in $frames) { Get-Short $f 150 })
 $isCore = @(foreach ($f in $frames) { $f.Contains('SpiralCompiler') })
 $waitFrame = @(foreach ($f in $frames) { $wait.IsMatch($f) })
-$leaf = New-Tally; $incl = New-Tally; $coreLeaf = New-Tally
+$leaf = New-Sums; $incl = New-Sums; $coreLeaf = New-Sums
 $threadRows = foreach ($p in $profiles) {
     $stack = [Collections.Generic.List[int]]::new(); $last = $null; $busy = 0.0
     foreach ($ev in $p.GetProperty('events').EnumerateArray()) {
         $at = $ev.GetProperty('at').GetDouble()
         if ($stack.Count -and $null -ne $last -and $at -gt $last -and -not $waitFrame[$stack[$stack.Count - 1]]) {
             $dt = $at - $last; $busy += $dt
-            Add-Tally $leaf $names[$stack[$stack.Count - 1]] $dt
-            for ($i = $stack.Count - 1; $i -ge 0; $i--) { if ($isCore[$stack[$i]]) { Add-Tally $coreLeaf $names[$stack[$i]] $dt; break } }
+            Add-Sum $leaf $names[$stack[$stack.Count - 1]] $dt
+            for ($i = $stack.Count - 1; $i -ge 0; $i--) { if ($isCore[$stack[$i]]) { Add-Sum $coreLeaf $names[$stack[$i]] $dt; break } }
             $seen = [Collections.Generic.HashSet[string]]::new()
-            foreach ($idx in $stack) { if ($isCore[$idx] -and $seen.Add($names[$idx])) { Add-Tally $incl $names[$idx] $dt } }
+            foreach ($idx in $stack) { if ($isCore[$idx] -and $seen.Add($names[$idx])) { Add-Sum $incl $names[$idx] $dt } }
         }
         $last = $at
         $frame = $ev.GetProperty('frame').GetInt32()

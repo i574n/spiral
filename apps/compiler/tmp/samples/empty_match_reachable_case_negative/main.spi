@@ -1,0 +1,12 @@
+:! unit_ty = string
+
+:! bool_ty = string
+
+:| value ty =
+    | UnitValue :: value unit_ty
+    | BoolValue :: bool -> value bool_ty
+
+:= absurd \* t. (x : value unit_ty) : t =
+    ?= x ?|
+
+:= main () : i32 = 0i32

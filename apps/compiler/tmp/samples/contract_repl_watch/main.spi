@@ -6,7 +6,7 @@
 :! cancelled = ()
 
 :! nfe_draft = { id : string; issuer : string; recipient : string }
-:! nfe_signed = { xml : string; digest : string }
+:! nfe_signed = { xml : string; fingerprint : string }
 :! nfe_authorized = { xml : string; protocol : string }
 :! nfe_cancelled = { xml : string; reason : string }
 
@@ -23,7 +23,7 @@
 
 := execute \* from to. (transition : transition from to) (document : document from) : document to =
     ?= transition, document ?|
-    | SignTransition, Draft _ => Signed (nfe_signed { xml = "nfe.xml"; digest = "sha256" })
+    | SignTransition, Draft _ => Signed (nfe_signed { xml = "nfe.xml"; fingerprint = "sha256" })
     | AuthorizeTransition, Signed payload =>
         Authorized (nfe_authorized { xml = payload::xml; protocol = "135240000000005" })
     | CancelTransition, Authorized payload => Cancelled (nfe_cancelled { xml = payload::xml; reason = "requested" })

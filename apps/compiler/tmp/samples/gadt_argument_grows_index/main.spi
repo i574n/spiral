@@ -1,0 +1,13 @@
+:! zero = ()
+:! succ n = n
+
+:| ^ transcript n =
+    | Done :: transcript zero
+    | Result :: \* n. string * transcript n -> transcript (succ n)
+    | Call :: \* n. string * transcript (succ n) -> transcript n
+
+:= main () : i32 =
+    := ~t : transcript zero = Call ("ls", Result ("a.spi", Done))
+    ?= t ?|
+    | Call (name, _) => ? name = "ls" ?> 0i32 |: 1i32
+    | _ => 2i32

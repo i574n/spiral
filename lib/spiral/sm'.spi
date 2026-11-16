@@ -772,6 +772,7 @@
             |:
                 := found = gleam_find_trailing search s
                 ? gleam_is_nomatch found ?> -1i32 |: gleam_byte_size s - gleam_byte_size (gleam_dynamic_text found)
+        | TypeScript => \ () => $'(!s).lastIndexOf(!search)' : i32
         | _ => \ () => $'!s.LastIndexOf !search ' : i32
 
 ///> rust
@@ -1025,10 +1026,14 @@
         | Pascal => \ () =>
             := from = start + 1i32
             $'Copy(!str, !from, !len)' : string
+        | TypeScript => \ () =>
+            := until = start + len
+            $'(!str).substring(!start, !until)' : string
         | _ => \ () => $'!str.Substring (!start, !len)'
 
 ///> gleam
 ///> rust
+///> typescript
 :# substring_cuts_by_start_and_length =
     := before_slash (s : string) = s |> substring 0 (s |> index_of "/")
     (
@@ -1039,6 +1044,16 @@
         before_slash "a’😀/b"
     )
     |> _assert_eq ("pir", "", "", "é", "a’😀")
+
+///> typescript
+:# substring_on_typescript_cuts_by_start_and_length =
+    ("000:Enter" |> substring 4i32 5i32, "000:Enter" |> substring 0i32 3i32, "abcdef" |> substring 2i32 3i32)
+    |> _assert_eq ("Enter", "000", "cde")
+
+///> typescript
+:# last_index_of_on_typescript_finds_the_last_match =
+    ("abcabc" |> last_index_of "bc", "a.b.c" |> last_index_of ".", "abc" |> last_index_of "z")
+    |> _assert_eq (4i32, 3i32, 0i32 - 1i32)
 
 :~ ^ ascii_case_runs (upper : bool) (s : string) (n : i32) (start : i32) (i : i32) (acc : list string) : list string =
     ? i >= n
@@ -1117,7 +1132,9 @@
         TypeScript = \ () => $'String.fromCharCode(!input).toUpperCase().charCodeAt(0)' : char
         Zig = \ () => $'std.ascii.toUpper(!input)' : char
         Lean = \ () => $'(!input).toUpper' : char
-        C = \ () => $'((!input >= 97 && !input <= 122) ? (char)(!input - 32) : !input)' : char
+        C = \ () =>
+            global "#include <ctype.h>"
+            $'toupper(!input)' : char
         Pascal = \ () => $'UpCase(!input)' : char
     }
 
@@ -1153,7 +1170,10 @@
         Pascal = \ () => $'LongWord(Ord(!input))' : u32
         Gleam = \ () =>
             global "import gleam/string"
-            $'case string.to_utf_codepoints(!input) { [c, ..] -> string.utf_codepoint_to_int(c) _ -> 0 }' : u32
+            global "import gleam/list"
+            global "import gleam/result"
+            := first = $'string.to_utf_codepoints(!input) |> list.first' : $'Result(string.UtfCodepoint, Nil)'
+            $'!first |> result.map(string.utf_codepoint_to_int) |> result.unwrap(0)' : u32
     }
 
 :| ascii_class =
@@ -1215,6 +1235,10 @@
     char_code 'A' |> _assert_eq 65u32
     char_code 'z' |> _assert_eq 122u32
     of_char 'A' |> _assert_eq "A"
+
+///> gleam
+:# char_code_reads_the_first_codepoint_on_gleam =
+    (char_code 'A', char_code 'é') |> _assert_eq (65u32, 233u32)
 
 ///> gleam
 :# of_char_is_the_one_character_string_on_gleam =
@@ -1495,7 +1519,8 @@
 := trim (input : string) : string =
     run_target \|
         | Rust => \ () =>
-            $'Rc::<str>::from((!input).trim_matches(|c: char| { let n = c as u32; n == 32 || n == 9 || n == 13 || n == 10 }))'
+            $'Rc::<str>::from((!input).trim_matches(|c: char| { let n = c as u32; \
+                n == 32 || n == 9 || n == 13 || n == 10 }))'
             : string
         | _ => \ () => input |> trim_with []
 

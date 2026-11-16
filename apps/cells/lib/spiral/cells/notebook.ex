@@ -131,14 +131,11 @@ defmodule Spiral.Cells.Notebook do
   def with_whole_memo_keys(report, true), do: Map.put(report, "memo_keys", "whole")
   def with_whole_memo_keys(report, _whole), do: report
 
-  @no_agree_reason ~r/^\/\/\/- [^\n]*--no-agree\s+"([^"]*)"/m
-  @bare_no_agree ~r/^\/\/\/- [^\n]*--no-agree(?!\s+")/m
-
   defp with_no_agree_reasons(report, cells) do
     rows =
       Enum.map(report["tests"], fn row ->
-        case Regex.run(@no_agree_reason, cell_text(cells, row["index"])) do
-          [_, reason] -> Map.put(row, "no_agree", reason)
+        case Spiral.Cells.Domain.no_agree_reason(cell_text(cells, row["index"])) do
+          "R" <> reason -> Map.put(row, "no_agree", reason)
           _ -> row
         end
       end)
@@ -153,22 +150,14 @@ defmodule Spiral.Cells.Notebook do
     end
   end
 
-  defp select_tests(_tests, nil), do: {:ok, nil}
-  defp select_tests(_tests, []), do: {:ok, nil}
+  defp select_tests(_tests, names) when names in [nil, []], do: {:ok, nil}
 
   defp select_tests(tests, names) do
-    known = tests |> Enum.map(& &1.name) |> Enum.uniq()
+    wire = &Enum.map_join(tests, "\n", &1)
 
-    symbols = Enum.map(tests, & &1.symbol)
-
-    case Enum.reject(names, &(&1 in known or &1 in symbols)) do
-      [] ->
-        {:ok, selected_indices(tests, names)}
-
-      unknown ->
-        {:error,
-         "unknown test #{Enum.join(unknown, ", ")}; the notebook has: " <>
-           if(known == [], do: "no tests", else: Enum.join(known, ", "))}
+    case Spiral.Cells.Domain.unknown_tests(wire.(& &1.name), wire.(& &1.symbol), Enum.join(names, "\n")) do
+      "" -> {:ok, selected_indices(tests, names)}
+      message -> {:error, message}
     end
   end
 
@@ -178,7 +167,6 @@ defmodule Spiral.Cells.Notebook do
     tests |> Enum.filter(&(&1.name in names or &1.symbol in names)) |> MapSet.new(& &1.index)
   end
 
-  @report_counts ~w(discovered executed passed failed accepted built static preludes skipped unsupported filtered not_run memo_hits)
 
   defp report(tests, selected, %{verdicts: verdicts, unavailable: unavailable, memo: memo} = ran) do
     targets = Map.get(ran, :targets, %{})
@@ -240,14 +228,6 @@ defmodule Spiral.Cells.Notebook do
     row |> Map.put("timeout_ms", budget) |> Map.put("slowest_ms", slowest)
   end
 
-  defp headroom(rows) do
-    timed = for row <- rows, is_integer(row["timeout_ms"]) and row["timeout_ms"] > 0, do: row
-
-    case Enum.max_by(timed, &(&1["slowest_ms"] / &1["timeout_ms"]), fn -> nil end) do
-      nil -> %{}
-      row -> %{"slowest_ms" => row["slowest_ms"], "timeout_ms" => row["timeout_ms"], "headroom" => Float.round(row["slowest_ms"] / row["timeout_ms"], 2)}
-    end
-  end
 
   defp headroom_warn do
     case Float.parse(System.get_env("SPIRAL_CELLS_HEADROOM_WARN") || "") do
@@ -263,96 +243,31 @@ defmodule Spiral.Cells.Notebook do
     Enum.map(targets, fn row -> %{"target" => row.target, "status" => row.status, "ms" => row.ms} end)
   end
 
-  defp test_state(%{mode: "ignore"}, _selected, _verdict), do: {"skipped", nil}
-  defp test_state(%{mode: "static"}, _selected, _verdict), do: {"static", nil}
-  defp test_state(%{mode: "prelude"}, _selected, _verdict), do: {"prelude", nil}
-
   defp test_state(test, selected, verdict) do
-    cond do
-      selected != nil and not MapSet.member?(selected, test.index) -> {"filtered", nil}
-      verdict == :passed -> {"passed", nil}
-      verdict == :built -> {"built", nil}
-      match?({:failed, _}, verdict) -> {"failed", first_line(elem(verdict, 1))}
-      match?({:unsupported, _}, verdict) -> {"unsupported", first_line(elem(verdict, 1))}
-      match?({:timed_out, _}, verdict) -> {"timed_out", first_line(elem(verdict, 1))}
-      true -> {"not_run", nil}
-    end
+    {kind, text} = verdict_kind(verdict)
+    filtered = selected != nil and not MapSet.member?(selected, test.index)
+    state = Spiral.Cells.Domain.test_state(test.mode, filtered, kind)
+    {state, if(state in ~w(failed unsupported timed_out), do: first_line(text))}
   end
+
+  defp verdict_kind({kind, text}), do: {Atom.to_string(kind) <> "!", text}
+  defp verdict_kind(kind), do: {to_string(kind), nil}
 
   defp first_line(text), do: text |> String.split("\n", parts: 2) |> hd()
 
-  defp failed_targets(rows) do
-    for row <- rows,
-        failing = for(target <- row["targets"] || [], target["status"] == "failed", do: target["target"]),
-        failing != [],
-        into: %{},
-        do: {row["name"], failing}
-  end
-
-  @doc false
-  def metrics_rows(reports) do
-    for {path, report} <- reports,
-        test <- report["tests"],
-        test["mode"] == "test",
-        target <- test["targets"] do
-      [Path.basename(path, Path.extname(path)), test["name"], target["target"], target["status"], target["ms"], test["memo"] || ""]
-    end
-  end
 
   @doc false
   def write_metrics(dir, reports) do
     File.mkdir_p!(dir)
-    rows = for row <- metrics_rows(reports), do: Enum.map_join(row, "\t", &to_string/1)
-    File.write!(Path.join(dir, "tests.tsv"), Enum.join(["File\tTest\tTarget\tStatus\tMs\tMemo" | rows], "\n") <> "\n")
+    wire = JSON.encode!(Spiral.Cells.Result.json_safe(Enum.map(reports, fn {path, report} -> %{"stem" => Path.basename(path, Path.extname(path)), "tests" => report["tests"]} end)))
+    File.write!(Path.join(dir, "tests.tsv"), Spiral.Cells.Domain.metrics_tsv(wire))
   end
 
   @spec summary_lines([{String.t(), map()}]) :: [String.t()]
   def summary_lines(reports) do
-    files =
-      Enum.flat_map(reports, fn {path, report} ->
-        report["tests"]
-        |> Enum.group_by(&source_file(path, &1["realm"]))
-        |> Enum.sort()
-        |> Enum.map(fn {file, rows} ->
-          counts(rows)
-          |> Map.put("file", file)
-          |> Map.put("failed_tests", for(row <- rows, row["status"] == "failed", do: row["name"]))
-          |> Map.put("accept_refused", for(row <- rows, row["accept_refused"], into: %{}, do: {row["name"], row["accept_refused"]}))
-          |> Map.put("failed_targets", failed_targets(rows))
-          |> Map.put("failed_messages", for(row <- rows, row["status"] == "failed", row["message"], into: %{}, do: {row["name"], row["message"]}))
-          |> Map.put("mismatches", for(row <- rows, row["status"] == "failed", row["actual"], into: %{}, do: {row["name"], %{"actual" => row["actual"], "expected" => row["expected"]}}))
-          |> Map.put("accepted_sites", for(row <- rows, row["accepted_site"], into: %{}, do: {row["name"], row["accepted_site"]}))
-          |> Map.merge(headroom(rows))
-        end)
-        |> case do
-          [] -> [counts([]) |> Map.put("file", path) |> Map.put("failed_tests", []) |> Map.put("accept_refused", %{}) |> Map.put("failed_targets", %{}) |> Map.put("failed_messages", %{}) |> Map.put("mismatches", %{}) |> Map.put("accepted_sites", %{})]
-          lines -> lines
-        end
-      end)
-
-    total =
-      Enum.reduce(files, Map.new(@report_counts, &{&1, 0}), fn file, acc ->
-        Map.new(acc, fn {key, n} -> {key, n + file[key]} end)
-      end)
-      |> Map.put("files", length(files))
-      |> Map.put("no_agree_reasons", Enum.reduce(files, %{}, &Map.merge(&2, &1["no_agree_reasons"], fn _reason, a, b -> a + b end)))
-
-    warn = headroom_warn()
-
-    warnings =
-      for file <- files, is_number(file["headroom"]) and file["headroom"] >= warn do
-        "spiral-tests headroom " <> JSON.encode!(Map.take(file, ["file", "headroom", "slowest_ms", "timeout_ms"]))
-      end
-
-    Enum.map(files, &("spiral-tests file " <> JSON.encode!(Spiral.Cells.Result.json_safe(&1)))) ++ warnings ++
-      ["spiral-tests total " <> JSON.encode!(total)]
+    wire = JSON.encode!(Spiral.Cells.Result.json_safe(Enum.map(reports, fn {path, report} -> %{"path" => path, "tests" => report["tests"]} end)))
+    wire |> Spiral.Cells.Domain.summary_lines_json(Float.to_string(headroom_warn() * 1.0)) |> String.split("\n")
   end
-
-  defp source_file(path, "real") do
-    if Path.extname(path) == ".spi", do: Path.rootname(path) <> "_real.spir", else: path
-  end
-
-  defp source_file(path, _realm), do: path
 
   defp write_exports(path, doc, opts) do
     {to_spi, to_spir} =
@@ -422,13 +337,13 @@ defmodule Spiral.Cells.Notebook do
 
     File.mkdir_p!(Path.dirname(output_path))
     File.write!(output_path, JSON.encode!(ipynb(doc, outputs, durations, report) |> pool_metadata(pool_before, pool_after) |> Spiral.Cells.Result.json_safe()))
+    if opts[:html], do: write_html(output_path)
 
     result =
       case status do
         :ok ->
           if opts[:tests] in [nil, []], do: write_exports(path, doc, opts)
-
-          if opts[:html], do: write_html(output_path), else: :ok
+          :ok
 
         {:error, message} ->
           {:error, message}
@@ -518,21 +433,12 @@ defmodule Spiral.Cells.Notebook do
         do: name
   end
 
-  @retired_skip ~r/^[ \t]*\/\/\/>[ \t]*_([ \t]|$)/
-
   @doc false
   def refuse_retired_skip!(path, text) do
-    text
-    |> String.split(~r/\r?\n/)
-    |> Enum.with_index(1)
-    |> Enum.filter(fn {line, _} -> Regex.match?(@retired_skip, line) end)
-    |> Enum.each(fn {line, n} ->
-      try do
-        Builders.split(String.trim(line))
-      rescue
-        e in ArgumentError -> reraise ArgumentError, "#{path}:#{n}: #{Exception.message(e)}", __STACKTRACE__
-      end
-    end)
+    case Spiral.Cells.Domain.retired_skip_error(path, text) do
+      "" -> :ok
+      message -> raise ArgumentError, message
+    end
   end
 
   defp parse(path, text, bounded \\ false) do
@@ -694,9 +600,7 @@ defmodule Spiral.Cells.Notebook do
   defp plan(wire, :tests), do: Spiral.Cells.Domain.plan_tests(wire)
   defp plan(wire, _cells), do: Spiral.Cells.Domain.plan(wire)
 
-  @static_prelude ~r/^\/\/\/- [^\n]*--test static\b/m
-
-  defp static_prelude?(source), do: Regex.match?(@static_prelude, source)
+  defp static_prelude?(source), do: Spiral.Cells.Domain.directive_flag(source, "--test static")
 
   @runnable_modes ["test", "fails", "build_only"]
 
@@ -880,15 +784,15 @@ defmodule Spiral.Cells.Notebook do
 
   defp run_step(step, opts, root) do
     started = System.monotonic_time(:millisecond)
-    Process.delete(:spiral_cells_last_phases)
+    Enum.each([:spiral_cells_last_phases, :spiral_cells_ran_at], &Process.delete/1)
     Process.delete(:spiral_cells_last_targets)
-    result = dispatch_step(step, opts, root)
+    result = step |> dispatch_step(opts, root) |> tap(fn _ -> Process.put(:spiral_cells_compared_ms, System.monotonic_time(:millisecond) - Process.get(:spiral_cells_ran_at, System.monotonic_time(:millisecond))) end)
     targets = Spiral.Cells.last_targets()
     remember(step, result, targets)
 
     [
       {step.index, result,
-       {System.monotonic_time(:millisecond) - started, Spiral.Cells.last_phases(), targets}}
+       {System.monotonic_time(:millisecond) - started, then(Spiral.Cells.last_phases(), &if(map_size(&1) > 0, do: Map.put(&1, :compare_ms, Process.get(:spiral_cells_compared_ms, 0)), else: &1)), targets}}
     ]
   end
 
@@ -973,12 +877,12 @@ defmodule Spiral.Cells.Notebook do
         |> Keyword.put(:real, Map.get(step, :real, ""))
         |> Keyword.put(:agree, agreement?(step.cell_source))
         |> Keyword.put(:reference, reference_target(step.cell_source))
-        |> Keyword.put(:test_cell, Regex.match?(~r/^\/\/\/- [^\n]*--test\b/m, step.cell_source))
+        |> Keyword.put(:test_cell, Spiral.Cells.Domain.directive_flag(step.cell_source, "--test"))
         |> Keyword.put(:build_only, build_only?(step.cell_source))
         |> Keyword.put(:test_name, Map.get(step, :test_name))
         |> Keyword.put(:test_source, source_path)
 
-      ran = if Regex.match?(@bare_no_agree, step.cell_source), do: :bare_no_agree, else: step.program |> Spiral.Cells.run(opts) |> in_source(source_path)
+      ran = if Spiral.Cells.Domain.bare_no_agree(step.cell_source), do: :bare_no_agree, else: step.program |> Spiral.Cells.run(opts) |> in_source(source_path) |> tap(fn _ -> Process.put(:spiral_cells_ran_at, System.monotonic_time(:millisecond)) end)
 
       cond do
         ran == :bare_no_agree ->
@@ -1005,16 +909,14 @@ defmodule Spiral.Cells.Notebook do
 
   defp in_source(ran, _path), do: ran
 
-  defp agreement?(source) do
-    Regex.match?(~r/^\/\/\/- [^\n]*--test\b/m, source) and not Regex.match?(~r/^\/\/\/- [^\n]*--no-agree\b/m, source)
-  end
+  defp agreement?(source), do: Spiral.Cells.Domain.directive_flag(source, "--test") and not Spiral.Cells.Domain.directive_flag(source, "--no-agree")
 
-  defp build_only?(source), do: Regex.match?(~r/^\/\/\/- [^\n]*--build-only\b/m, source)
+  defp build_only?(source), do: Spiral.Cells.Domain.directive_flag(source, "--build-only")
 
   defp reference_target(source) do
-    case Regex.run(~r/^\/\/\/- [^\n]*--reference\s+(\w+)/m, source) do
-      [_, target] -> target
-      nil -> nil
+    case Spiral.Cells.Domain.directive_word(source, "--reference") do
+      "" -> nil
+      target -> target
     end
   end
 
@@ -1047,11 +949,8 @@ defmodule Spiral.Cells.Notebook do
 
   @doc false
   def expectation(source) do
-    with [_, clause] <- Regex.run(~r/^\/\/\/- [^\n]*--fails\s+(.*?)\s*$/m, source),
-         [_, code, substring] <- Regex.run(~r/\A(?:(\S+(?:\s+-\s+\S+)*)\s+)?"(.*)"\z/, clause) do
-      code = String.replace(code, ~r/\s+-\s+/, "-")
-      %{code: if(code == "", do: nil, else: code), substring: substring}
-    else
+    case source |> Spiral.Cells.Domain.fails_expectation() |> String.split("\t", parts: 2) do
+      [code, substring] -> %{code: if(code == "", do: nil, else: code), substring: substring}
       _ -> nil
     end
   end
@@ -1059,29 +958,23 @@ defmodule Spiral.Cells.Notebook do
   defp expected_label(%{code: nil, substring: substring}), do: inspect(substring)
   defp expected_label(%{code: code, substring: substring}), do: "#{code} #{inspect(substring)}"
 
-  @diagnostic_code ~r/(?<![\w-])E[A-Z]{2,4}(?:\d{4}|-[A-Za-z]+)(?![\w-])/
-
-  defp collapse_spaces(text), do: String.replace(text, ~r/[ \t]+/, " ")
-
   defp expected_compile_error(expected, {:error, %SpiralError{message: message} = error}) do
-    has_text = String.contains?(collapse_spaces(message), collapse_spaces(expected.substring))
-    has_code = expected.code == nil or Regex.match?(~r/(?<![\w-])#{Regex.escape(expected.code)}(?![\w-])/, message)
     floor = body_floor(error.details, Map.get(expected, :body_head))
 
-    cond do
-      has_text and has_code and not in_body?(message, expected.substring, floor) ->
+    case Spiral.Cells.Domain.compile_error_verdict(message, expected.code || "", expected.substring, floor || -1) do
+      "early" ->
         text = "the expected error #{expected_label(expected)} is reported only before the test body (which starts at program line #{floor + 1}), so it does not prove this test:\n#{message}"
         {:error, error_output(text), text}
 
-      has_text and has_code ->
+      "ok" ->
         text = "failed to compile as expected (#{expected_label(expected)}): #{first_line(message)}\n"
         {:ok, [stream("stdout", text)], []}
 
-      has_text and not Regex.match?(@diagnostic_code, message) ->
+      "nocode" ->
         text = "the diagnostic matches #{inspect(expected.substring)} but carries no error code (expected #{expected.code}):\n#{message}"
         {:error, error_output(text), text}
 
-      true ->
+      _ ->
         text = "expected a compile error #{expected_label(expected)}, got a different one:\n#{message}"
         {:error, error_output(text), text}
     end
@@ -1099,51 +992,23 @@ defmodule Spiral.Cells.Notebook do
     {:error, error_output(text), text}
   end
 
-  @program_location ~r/main\.spi:(\d+):\d+/
-
   @doc false
   def body_head(cell_source) do
-    cell_source
-    |> String.split("\n")
-    |> Enum.drop_while(&String.starts_with?(&1, "///"))
-    |> Enum.map(&String.trim/1)
-    |> Enum.find(&(&1 != ""))
+    case Spiral.Cells.Domain.body_head(cell_source) do
+      "" -> nil
+      head -> head
+    end
   end
 
   @doc false
   def body_floor(program, head) when is_binary(program) and is_binary(head) do
-    program
-    |> String.split("\n")
-    |> Enum.with_index()
-    |> Enum.filter(fn {line, _} -> String.trim(line) == head end)
-    |> List.last()
-    |> case do
-      nil -> nil
-      {_, index} -> index
+    case Spiral.Cells.Domain.body_floor(program, head) do
+      -1 -> nil
+      index -> index
     end
   end
 
   def body_floor(_program, _head), do: nil
-
-  @doc false
-  def in_body?(_message, _substring, nil), do: true
-
-  def in_body?(message, substring, floor) do
-    case Regex.scan(@program_location, message, return: :index) do
-      [] ->
-        true
-
-      found ->
-        starts = Enum.map(found, fn [{at, _} | _] -> at end)
-        lines = Enum.map(found, fn [_, {at, len}] -> message |> binary_part(at, len) |> String.to_integer() end)
-        wanted = collapse_spaces(substring)
-
-        (starts ++ [byte_size(message)])
-        |> Enum.chunk_every(2, 1, :discard)
-        |> Enum.zip(lines)
-        |> Enum.any?(fn {[from, to], line} -> line > floor and String.contains?(collapse_spaces(binary_part(message, from, to - from)), wanted) end)
-    end
-  end
 
   defp unsupported(error) do
     text = "unsupported on this machine: " <> error_text(error)
@@ -1204,38 +1069,13 @@ defmodule Spiral.Cells.Notebook do
   defp canon_cell(cell, _root, _workspace), do: cell
 
   defp canon_source(source, root, workspace) do
-    source
-    |> String.split("\n")
-    |> Enum.map_join("\n", &canon_line(&1, root, workspace))
-  end
+    resolved =
+      source
+      |> Spiral.Cells.Domain.canon_package_paths()
+      |> String.split("\n", trim: true)
+      |> Enum.map_join("\n", &Spiral.Cells.package_path(&1, root, workspace))
 
-  defp canon_line(line, root, workspace) do
-    trimmed = String.trim_leading(line)
-
-    case trimmed do
-      "///- " <> rest ->
-        prefix = String.slice(line, 0, String.length(line) - String.length(trimmed))
-        flags = rest |> String.split() |> canon_flags([], root, workspace) |> Enum.join(" ")
-        prefix <> "///- " <> flags
-
-      _ ->
-        line
-    end
-  end
-
-  defp canon_flags([], acc, _root, _workspace), do: Enum.reverse(acc)
-
-  defp canon_flags(["--package", path | rest], acc, root, workspace) do
-    canon_flags(
-      rest,
-      [Spiral.Cells.package_path(path, root, workspace), "--package" | acc],
-      root,
-      workspace
-    )
-  end
-
-  defp canon_flags([token | rest], acc, root, workspace) do
-    canon_flags(rest, [token | acc], root, workspace)
+    Spiral.Cells.Domain.canon_package_flags(source, resolved)
   end
 
   defp positive_int(nil), do: nil
@@ -1428,8 +1268,8 @@ defmodule Spiral.Cells.Notebook do
     case System.get_env("SPIRAL_CELLS_PHASE_ROWS") do
       path when is_binary(path) and path != "" ->
         source = if test, do: ":# #{test["name"]} =\n" <> source_of(cell), else: source_of(cell)
-        wire = Enum.map_join(phases, "\n", fn {key, value} -> "#{phase_key(key)}=#{value}" end)
-        File.write!(path, Spiral.Cells.Domain.phase_row(source, wire) <> "\n", [:append])
+        wire = Enum.map_join([{:host_ms, System.get_env("SPIRAL_CELLS_HOST") || elem(:inet.gethostname(), 1)} | Map.to_list(phases)], "\n", fn {key, value} -> "#{phase_key(key)}=#{value}" end)
+        File.write!(path, Spiral.Cells.Domain.phase_row(not File.exists?(path), source, wire) <> "\n", [:append])
 
       _ ->
         :ok

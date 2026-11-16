@@ -3,7 +3,7 @@
 
 :== rust_type_switch fs rs =
     {
-        Gleam : fs
+        Gleam : $'Dynamic'
         Lua : fs
         Fsharp : fs
         Python : fs

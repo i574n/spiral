@@ -1,4 +1,42 @@
-:< main
+:| symbol_ordering =
+    | SymbolLess
+    | SymbolSame
+    | SymbolGreater
+
+:? symbol_compare alphabet : alphabet -> alphabet -> symbol_ordering
+
+:| ^ regex alphabet =
+    | RegexEmpty
+    | RegexEpsilon
+    | RegexChar : alphabet
+    | RegexAlt : regex alphabet * regex alphabet
+    | RegexCat : regex alphabet * regex alphabet
+    | RegexStar : regex alphabet
+
+:| ^ regex_list alphabet =
+    | RegexListNil
+    | RegexListCons : regex alphabet * regex_list alphabet
+
+:| ^ symbol_list alphabet =
+    | SymbolListNil
+    | SymbolListCons : alphabet * symbol_list alphabet
+
+:| ^ linear_input alphabet =
+    | InputEmpty
+    | InputCons : alphabet * linear_input alphabet
+
+:? finite_alphabet alphabet : () -> symbol_list alphabet
+
+:| sealed_dfa_surface =
+    | SealedDfaSurface : i32
+
+:= seal_dfa_surface \* alphabet {symbol_compare; finite_alphabet}.
+    (start : regex alphabet)
+    : sealed_dfa_surface =
+    := symbols : symbol_list alphabet = finite_alphabet ()
+    ?= symbols ?|
+    | SymbolListNil => SealedDfaSurface 0i32
+    | SymbolListCons _ => SealedDfaSurface 1i32
 
 :| lone_symbol =
     | Lone

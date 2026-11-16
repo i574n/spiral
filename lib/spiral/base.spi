@@ -272,12 +272,22 @@
             |: $'(!a == !b)' : bool
         Lean = \ () => $'(!a == !b)' : bool
         Kotlin = \ () => $'(!a == !b)' : bool
+        C = \ () =>
+            ? (~> real_core::prim_type_is `t)
+            ?> !!!!EQ(a, b) : bool
+            |: $'backend_switch_has_no_C_arm_in_lib_spiral' : bool
+        Pascal = \ () =>
+            ? (~> real_core::prim_type_is `t)
+            ?> !!!!EQ(a, b) : bool
+            |: $'backend_switch_has_no_Pascal_arm_in_lib_spiral' : bool
     }
 
 ///> gleam
 ///> cuda
 ///> rust
 ///> typescript
+///> c
+///> pascal
 :# join_body_unit_6 =
     (($'-3' : i32) =. ($'-3' : i32))
     |> _assert_eq !+
@@ -299,15 +309,34 @@
             |: $'(!a \!= !b)' : bool
         Lean = \ () => $'(!a \!= !b)' : bool
         Kotlin = \ () => $'(!a \!= !b)' : bool
+        C = \ () =>
+            ? (~> real_core::prim_type_is `t)
+            ?> !!!!NEQ(a, b) : bool
+            |: $'backend_switch_has_no_C_arm_in_lib_spiral' : bool
+        Pascal = \ () =>
+            ? (~> real_core::prim_type_is `t)
+            ?> !!!!NEQ(a, b) : bool
+            |: $'backend_switch_has_no_Pascal_arm_in_lib_spiral' : bool
     }
 
 ///> gleam
 ///> cuda
 ///> rust
 ///> typescript
+///> c
+///> pascal
 :# join_body_unit_7 =
     (($'-3' : i32) <>. ($'3' : i32))
     |> _assert_eq !+
+
+///> c
+///> pascal
+///> rust
+:# structural_equality_compares_runtime_strings =
+    := ~a = "ab"
+    := ~b = "ab"
+    := ~c = "ac"
+    (a =. b, a <>. c, a =. c) |> _assert_eq (!+, !+, !-)
 
 := (<>..) a b =
     \ () => a = b

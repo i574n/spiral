@@ -1,44 +1,44 @@
 :! sample_a = ()
 :! hg38 = ()
 :! chr1 = ()
-:! digest_a = ()
+:! fingerprint_a = ()
 :! app_scope = ()
 :! epoch1 = ()
 :! sealed = ()
 :! live = ()
 :! hydrated = ()
 
-:| chain_authority digest state =
-    | ChainAuthority :: \* digest state. string -> chain_authority digest state
+:| chain_authority fingerprint state =
+    | ChainAuthority :: \* fingerprint state. string -> chain_authority fingerprint state
 
-:| genome_batch sample build contig digest =
-    | GenomeBatch :: \* sample build contig digest. string -> genome_batch sample build contig digest
+:| genome_batch sample build contig fingerprint =
+    | GenomeBatch :: \* sample build contig fingerprint. string -> genome_batch sample build contig fingerprint
 
-:| resource scope epoch sample build contig digest state =
-    | Resource :: \* scope epoch sample build contig digest state.
+:| resource scope epoch sample build contig fingerprint state =
+    | Resource :: \* scope epoch sample build contig fingerprint state.
         string ->
-        resource scope epoch sample build contig digest state
+        resource scope epoch sample build contig fingerprint state
 
-:| view scope epoch digest state =
-    | View :: \* scope epoch digest state. string -> view scope epoch digest state
+:| view scope epoch fingerprint state =
+    | View :: \* scope epoch fingerprint state. string -> view scope epoch fingerprint state
 
-:= publish \* scope epoch sample build contig digest.
-    (authority : chain_authority digest sealed)
-    (batch : genome_batch sample build contig digest)
-    : resource scope epoch sample build contig digest live =
+:= publish \* scope epoch sample build contig fingerprint.
+    (authority : chain_authority fingerprint sealed)
+    (batch : genome_batch sample build contig fingerprint)
+    : resource scope epoch sample build contig fingerprint live =
     ?= authority, batch ?|
     | ChainAuthority _, GenomeBatch label => Resource label
 
-:= mount \* scope epoch sample build contig digest.
-    (resource : resource scope epoch sample build contig digest live)
-    (view : view scope epoch digest hydrated)
+:= mount \* scope epoch sample build contig fingerprint.
+    (resource : resource scope epoch sample build contig fingerprint live)
+    (view : view scope epoch fingerprint hydrated)
     : string =
     ?= resource, view ?|
     | Resource _, View label => label
 
 := main () : string =
-    := authority : chain_authority digest_a sealed = ChainAuthority "chain-ok"
-    := batch : genome_batch sample_a hg38 chr1 digest_a = GenomeBatch "variants"
-    := view : view app_scope epoch1 digest_a hydrated = View "chain-sealed-genome-stream"
-    := resource : resource app_scope epoch1 sample_a hg38 chr1 digest_a live = publish authority batch
+    := authority : chain_authority fingerprint_a sealed = ChainAuthority "chain-ok"
+    := batch : genome_batch sample_a hg38 chr1 fingerprint_a = GenomeBatch "variants"
+    := view : view app_scope epoch1 fingerprint_a hydrated = View "chain-sealed-genome-stream"
+    := resource : resource app_scope epoch1 sample_a hg38 chr1 fingerprint_a live = publish authority batch
     mount resource view

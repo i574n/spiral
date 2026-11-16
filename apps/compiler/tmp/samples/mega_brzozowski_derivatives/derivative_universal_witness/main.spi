@@ -44,7 +44,7 @@
         RegexCat (derivative_equation_proof_source left, derivative_equation_proof_source right)
     | DerivativeEquationProofStar (_, inner) => RegexStar (derivative_equation_proof_source inner)
 
-:~ ^ derivative_equation_proof_symbol \* alphabet. (proof : derivative_equation_proof alphabet) : alphabet =
+:~ derivative_equation_proof_symbol \* alphabet. (proof : derivative_equation_proof alphabet) : alphabet =
     ?= proof ?|
     | DerivativeEquationProofEmpty symbol => symbol
     | DerivativeEquationProofEpsilon symbol => symbol

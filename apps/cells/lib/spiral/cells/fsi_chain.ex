@@ -108,7 +108,7 @@ defmodule Spiral.Cells.FsiChain do
             {:error, %{output: output, reason: :timeout}} ->
               message =
                 join(
-                  "F# cell timed out after #{format_ms(budget)}#{Spiral.Cells.Directives.scale_note()}; the fsi process tree was killed.",
+                  Spiral.Cells.Domain.cell_timeout_text("F#", Spiral.Cells.Targets.budget_ms(budget), Spiral.Cells.Directives.scale_note(), "fsi "),
                   join(acc.stdout, output)
                 )
 
@@ -144,9 +144,9 @@ defmodule Spiral.Cells.FsiChain do
   end
 
   defp directive_timeout(%{kind: :fsharp, source: source}) do
-    case Regex.run(~r/^\s*\/\/\/-[^\n]*--timeout\s+(\d+)/m, source) do
-      [_, ms] -> String.to_integer(ms)
-      nil -> nil
+    case Spiral.Cells.Domain.directive_timeout(source) do
+      "" -> nil
+      ms -> String.to_integer(ms)
     end
   end
 
@@ -196,7 +196,7 @@ defmodule Spiral.Cells.FsiChain do
   defp strip_magic(source) do
     source
     |> String.split("\n")
-    |> Enum.reject(&Regex.match?(~r/^#!(fsharp|f#|fs)\s*$/, String.trim_trailing(&1)))
+    |> Enum.reject(&(String.trim_trailing(&1) in ["#!fsharp", "#!f#", "#!fs"]))
     |> Enum.join("\n")
   end
 
@@ -209,8 +209,4 @@ defmodule Spiral.Cells.FsiChain do
   defp join("", b), do: b
   defp join(a, ""), do: a
   defp join(a, b), do: a <> "\n" <> b
-
-  defp format_ms(:infinity), do: "infinity"
-  defp format_ms(ms) when rem(ms, 1000) == 0, do: "#{div(ms, 1000)}s"
-  defp format_ms(ms), do: "#{ms}ms"
 end

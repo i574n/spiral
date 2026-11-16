@@ -17,7 +17,8 @@ if ($IsLinux -and !(Test-Path /usr/share/vulkan/icd.d/lvp_icd*.json)) {
 }
 
 if (!$fast -or !(Test-Path $wgslRun)) {
-    $manifest = Join-Path $ScriptDir "../apps/compiler/tmp/tests/native-shims/wgsl-run/Cargo.toml"
+    $spiralRoot = git -C $ScriptDir rev-parse --show-toplevel 2>$null
+    $manifest = Join-Path ($LASTEXITCODE -eq 0 -and $spiralRoot ? $spiralRoot : (Join-Path $ScriptDir "..")) "apps/compiler/tmp/tests/native-shims/wgsl-run/Cargo.toml"
     { cargo build --release --manifest-path $manifest --target-dir $TargetDir } | Invoke-Block
 }
 Write-Output "init-wgsl-run.ps1 / wgsl runner: $wgslRun"

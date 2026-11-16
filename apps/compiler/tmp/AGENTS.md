@@ -31,12 +31,12 @@ live side by side in the cache, so the same fixture can be compared across modes
 
 **Iterate on a candidate copy of the core**: `build.ps1 -Configuration Debug -CoreSource <copy>` builds a
 Debug compiler from an edited copy without touching `spiral_compiler.fs` or the Release binaries other lanes
-use; probe it with `SPIRAL_COMPILER_DLL` pointing at that Debug build. Build the Release monolith for timings
+use; trial it with `SPIRAL_COMPILER_DLL` pointing at that Debug build. Build the Release monolith for timings
 and the final suite runs.
 
 ```powershell
 pwsh ../scripts/build.ps1 -Configuration Debug -CoreSource <copy.fs>   # candidate build (add -Mode hopacsota for the layer)
-pwsh ../scripts/probe.ps1 <sample>                                     # probe/test/apps runs use SPIRAL_COMPILER_DLL while it is set
+pwsh ../scripts/trial.ps1 <sample>                                     # trial/test/apps runs use SPIRAL_COMPILER_DLL while it is set
 pwsh ../scripts/build.ps1                                              # the Release monolith: timings, final suites
 pwsh ../scripts/test.ps1 -Suite frontier                               # seconds per fixture, low timeouts
 pwsh ../scripts/test.ps1 -Suite frontier,smoke                         # widen once the frontier is green
@@ -125,7 +125,7 @@ run unless `-AcceptToolchain` is given. On 2026-10-18 the user PATH listed scoop
 differed (SPIRAL-C-UCRT-HEAP, SPIRAL-C-UCRT-ABORT-EXIT). Pin `SPIRAL_CC` for reviews and accepts until the baseline
 moves to UCRT.
 
-For one fixture, skip the suite: `pwsh ../scripts/probe.ps1 <sample> [-Mode single-flight] [-Backend C]`
+For one fixture, skip the suite: `pwsh ../scripts/trial.ps1 <sample> [-Mode single-flight] [-Backend C]`
 compiles `samples/<sample>` directly and prints exit code, time and the first result line per run.
 - `-Repeat 5` exposes races: the outcomes line flags runs that differ.
 - `-Stacks 12` takes a `dotnet-stack` dump if the compiler is still running after 12 s: hangs.
@@ -134,7 +134,7 @@ compiles `samples/<sample>` directly and prints exit code, time and the first re
   `pwsh ../scripts/profile-speedscope.ps1 <run.speedscope.json> -View Thread [-Threads n] [-Rows n]` prints
   inclusive time per frame on the busiest thread(s).
 
-Logs go to `<cache>/probes/<sample>/`. Two DLLs on one sample:
+Logs go to `<cache>/trials/<sample>/`. Two DLLs on one sample:
 `pwsh ../scripts/bench-pair.ps1 -A <dll> -B <dll> -Sample <name> [-Backend C] [-Rounds 5]` compiles in a fresh process
 per run (no warm server, no compile memo) with the order alternating per round, and prints medians, B/A and each side's
 output size; a B/A inside about 4% is noise under suite load. `-Native` (C only) also builds each output with the
@@ -481,7 +481,7 @@ Erlang's `math:pow` raised `badarith`, so it builds for the JavaScript target to
 helpers. Before, `spiralIntegers` bundled `@external(erlang, "math", "pow") pub fn spiral_math_pow` into every program
 that wrapped an integer, and `gleam build --target javascript` rejects a public function without a JavaScript
 implementation. That broke `lib/spiral/near/wallet` in CI ("Unsupported target"). Its regenerated `near_wallet.gleam`
-now builds for JavaScript, and a float `**` probe returns the same values on both targets
+now builds for JavaScript, and a float `**` trial returns the same values on both targets
 (`2 ** 3`, `4 ** 0.5`, `-2 ** 3`). Since pack 7 `spiral_halt` has a JavaScript implementation too
 (`node:process` exit 3) and log, exp and sqrt go through `gleam/float`
 (`float.logarithm`, `float.exponential`, `float.square_root`), so they build for both targets. The Erlang-only externals

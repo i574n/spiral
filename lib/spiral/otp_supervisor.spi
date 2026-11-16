@@ -137,3 +137,28 @@
 ///> gleam
 :# a_crashed_transient_worker_is_restarted_with_fresh_state =
     restart_counts (erlang_process::new_name "org2-restart") |> _assert_eq (2i32, 0i32)
+
+:= supervisor_pid (outcome : otp_actor::start_result supervisor) : erlang_process::pid =
+    otp_supervisor_imports ()
+    $'case !outcome { Ok(started) -> started.pid Error(_) -> panic }' : erlang_process::pid
+
+:= intensity_probe (address : restart_name) (reply : erlang_process::subject erlang_process::pid) : () =
+    := outcome = new OneForOne |> restart_tolerance 1i32 5i32 |> add (named_worker address |> with_restart Transient) |> start
+    erlang_process::send reply (supervisor_pid outcome)
+    pause 10000i32
+
+:= crash_and_check (address : restart_name) (watched : erlang_process::pid) : bool =
+    otp_actor::send (erlang_process::named_subject address) Crash
+    pause 300i32
+    erlang_process::is_alive watched
+
+:= intensity_outcome (address : restart_name) : bool * bool =
+    := reply : erlang_process::subject erlang_process::pid = erlang_process::new_subject ()
+    erlang_process::spawn_unlinked (\ () => intensity_probe address reply) |> ignore
+    := watched = erlang_process::receive_forever reply
+    := after_one = crash_and_check address watched
+    after_one, crash_and_check address watched
+
+///> gleam
+:# a_supervisor_past_its_restart_intensity_shuts_down =
+    intensity_outcome (erlang_process::new_name "org2-intensity") |> _assert_eq (!+, !-)

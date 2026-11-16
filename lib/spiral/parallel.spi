@@ -99,12 +99,22 @@
 := c_for_index (n : i32) (f : i32 -> ()) : () =
     global "#define SPIRAL_THREADS 1"
     $'_Pragma("omp parallel for schedule(static)") for (int32_t i = 0; i < !n; i++){\
-        __atomic_fetch_add(&(!f)->refc, 1, __ATOMIC_RELAXED); (!f)->fptr(!f, i); }' : ()
+        (!f)->fptr(!f, i); }' : ()
 
 := for_index (count : i32) (body : i32 -> ()) : () =
     run_target \|
         | C => \ () => c_for_index count body
         | _ => \ () => each_index count body 0i32
+
+:= c_workers () : i32 =
+    global "#ifdef _OPENMP\n#include <omp.h>\nstatic int spiral_workers(void) { return omp_get_max_threads(); }\n#else\nstatic int spiral_workers(void) { return 1; }\n#endif"
+    $'spiral_workers()' : i32
+
+:= workers () : i32 =
+    run_target \|
+        | C => \ () => c_workers ()
+        | Rust => \ () => rust_available_parallelism () |> convert::convert
+        | _ => \ () => 1i32
 
 := map_index \* a. (count : i32) (fn : i32 -> a) : array a =
     := out : array a = create count

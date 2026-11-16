@@ -8,7 +8,7 @@ defmodule Spiral.Cells.NewProject do
   @spec create(Path.t(), String.t()) :: {:ok, [Path.t()]} | {:error, refusal()}
   def create(path, name) do
     cond do
-      not Regex.match?(~r/\A[a-z][a-z0-9_]*\z/, name) -> {:error, {:invalid_name, name}}
+      not Spiral.Cells.Domain.project_name_ok(name) -> {:error, {:invalid_name, name}}
       File.exists?(path) and not File.dir?(path) -> {:error, {:is_file, path}}
       File.dir?(path) and File.ls!(path) != [] -> {:error, {:not_empty, path}}
       true -> {:ok, write_templates(path, name)}

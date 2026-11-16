@@ -1,0 +1,146 @@
+///- --package .
+:# conduit_error static =
+    :< testing
+
+:< sm'_operators
+
+:| field =
+    | Username
+    | Email
+    | Password
+    | Title
+    | Description
+    | Body
+    | TagList
+
+:| entity =
+    | ArticleEntity
+    | ProfileEntity
+    | CommentEntity
+    | UserEntity
+
+:| conduit_error =
+    | Blank : field
+    | Invalid : field
+    | TooShort : field
+    | Taken : field
+    | TokenMissing
+    | TokenInvalid
+    | CredentialsInvalid
+    | NotFound : entity
+    | Forbidden : entity
+    | NoRoute
+
+:= field_key (f : field) : string =
+    ?= f ?|
+    | Username => "username"
+    | Email => "email"
+    | Password => "password"
+    | Title => "title"
+    | Description => "description"
+    | Body => "body"
+    | TagList => "tagList"
+
+:= entity_key (e : entity) : string =
+    ?= e ?|
+    | ArticleEntity => "article"
+    | ProfileEntity => "profile"
+    | CommentEntity => "comment"
+    | UserEntity => "user"
+
+:= error_status (e : conduit_error) : i32 =
+    ?= e ?|
+    | Blank _ => 422i32
+    | Invalid _ => 422i32
+    | TooShort _ => 422i32
+    | Taken _ => 409i32
+    | TokenMissing => 401i32
+    | TokenInvalid => 401i32
+    | CredentialsInvalid => 401i32
+    | NotFound _ => 404i32
+    | Forbidden _ => 403i32
+    | NoRoute => 404i32
+
+:= error_key (e : conduit_error) : string =
+    ?= e ?|
+    | Blank f => field_key f
+    | Invalid f => field_key f
+    | TooShort f => field_key f
+    | Taken f => field_key f
+    | TokenMissing => "token"
+    | TokenInvalid => "token"
+    | CredentialsInvalid => "credentials"
+    | NotFound x => entity_key x
+    | Forbidden x => entity_key x
+    | NoRoute => "route"
+
+:= error_message (e : conduit_error) : string =
+    ?= e ?|
+    | Blank _ => "can't be blank"
+    | Invalid _ => "is invalid"
+    | TooShort _ => "is too short (minimum is 8 characters)"
+    | Taken _ => "has already been taken"
+    | TokenMissing => "is missing"
+    | TokenInvalid => "is invalid"
+    | CredentialsInvalid => "invalid"
+    | NotFound _ => "not found"
+    | Forbidden _ => "forbidden"
+    | NoRoute => "not found"
+
+:= error_body (e : conduit_error) : string =
+    "{\"errors\":{" ++# json::quote (error_key e) ++# ":[" ++# json::quote (error_message e) ++# "]}}"
+
+:= email_shaped (email : string) : bool =
+    := at = sm'::index_of "@" email
+    := domain = ? at < 0i32 ?> "" |: sm'::substring (at + 1i32) (sm'::length email - at - 1i32) email
+    at > 0i32 && sm'::index_of "." domain > 0i32 && sm'::contains " " email = !- && sm'::contains "@" domain = !-
+
+:== check = bool * conduit_error
+
+:= failed_check ((ok, e) : check) : option conduit_error = ? ok ?> None |: Some e
+
+:= kept_failure (found : option conduit_error) (c : check) : option conduit_error =
+    ?= found ?|
+    | Some _ => found
+    | None => failed_check c
+
+:= first_failed (checks : list check) : option conduit_error = listm::fold kept_failure None checks
+
+:= required (f : field) (value : string) : check = value <> "", Blank f
+
+:= email_checks (email : string) : list check =
+    [ required Email email; (email = "" || email_shaped email, Invalid Email) ]
+
+:= password_long_enough (password : string) : check = sm'::length password >= 8i32, TooShort Password
+
+:= sample_errors () : list conduit_error =
+    [ Blank Username; Taken Email; TokenMissing; CredentialsInvalid; NotFound ProfileEntity; Forbidden CommentEntity ]
+
+:= sample_bodies () : list string =
+    [
+        "{\"errors\":{\"username\":[\"can't be blank\"]}}"
+        "{\"errors\":{\"email\":[\"has already been taken\"]}}"
+        "{\"errors\":{\"token\":[\"is missing\"]}}"
+        "{\"errors\":{\"credentials\":[\"invalid\"]}}"
+        "{\"errors\":{\"profile\":[\"not found\"]}}"
+        "{\"errors\":{\"comment\":[\"forbidden\"]}}"
+    ]
+
+///> rust
+///> gleam
+:# every_error_names_its_key_message_and_status =
+    (sample_errors () |> listm::map error_status, sample_errors () |> listm::map error_body)
+    |> _assert_eq ([ 422i32; 409i32; 401i32; 401i32; 404i32; 403i32 ], sample_bodies ())
+
+///> rust
+///> gleam
+:# an_email_needs_a_local_part_an_at_and_a_dotted_domain =
+    := ~shapes = [ "a@b.c"; "not-an-email"; "@b.c"; "a@bc"; "a b@c.d"; "a@b@c.d" ]
+    shapes |> listm::map email_shaped |> _assert_eq [ !+; !-; !-; !-; !-; !- ]
+
+///> rust
+///> gleam
+:# the_first_failed_check_wins_and_all_passing_is_none =
+    := ~blank = ""
+    (first_failed (required Username blank :: email_checks "x"), first_failed (email_checks "a@b.c"))
+    |> _assert_eq (Some (Blank Username), None)

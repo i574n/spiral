@@ -24,73 +24,20 @@ defmodule Spiral.Cells.CompilerClient do
   """
   @spec live_daemons() :: [map()]
   def live_daemons do
-    Enum.flat_map(0..15, fn offset ->
-      port = base_port() + offset
-
-      case :gen_tcp.connect({127, 0, 0, 1}, port, socket_opts(), 300) do
-        {:ok, sock} ->
-          :gen_tcp.send(sock, "status\n")
-          row =
-            case recv_line(sock, 1_000) do
-              {:ok, line} -> Map.put(status_fields(line), :port, port)
-              _ -> Map.put(status_fields(""), :port, port)
-            end
-
-          :gen_tcp.close(sock)
-          [row]
-
-        {:error, _} ->
-          []
-      end
-    end)
+    for row <- base_port() |> Spiral.Cells.Domain.live_status() |> String.split("\n", trim: true) do
+      [port, line] = String.split(row, "\t", parts: 2)
+      Map.put(status_fields(line), :port, String.to_integer(port))
+    end
   end
 
   @spec pool_stats() :: map() | nil
   def pool_stats do
-    rows = Enum.flat_map(pool_ports(), &pool_row/1)
-
-    if rows == [] do
-      nil
-    else
-      %{
-        served: rows |> Enum.map(& &1.served) |> Enum.sum(),
-        refused_growth: rows |> Enum.map(& &1.refused_growth) |> Enum.sum(),
-        peak_workers: rows |> Enum.map(& &1.peak_workers) |> Enum.max(),
-        last_free_mb: rows |> Enum.map(& &1.last_free_mb) |> Enum.reject(&is_nil/1) |> Enum.min(fn -> nil end)
-      }
-    end
-  end
-
-  defp pool_row(port) do
-    case :gen_tcp.connect({127, 0, 0, 1}, port, socket_opts(), 300) do
-      {:ok, sock} ->
-        :gen_tcp.send(sock, "pool\n")
-
-        row =
-          case recv_line(sock, 1_000) do
-            {:ok, line} -> pool_fields(line)
-            _ -> []
-          end
-
-        :gen_tcp.close(sock)
-        row
-
-      {:error, _} ->
-        []
-    end
-  end
-
-  @doc """
-  One pool reply line as a one-row list of the daemon's pool counters, or an empty list when the line is not a pool reply.
-  """
-  @spec pool_fields(String.t()) :: [map()]
-  def pool_fields(line) do
-    case line |> Spiral.Cells.Domain.pool_reply() |> String.split("\t") do
+    case Spiral.Cells.Domain.pool_summary(base_port(), length(pool_ports())) |> String.split("\t") do
       [served, refused, peak, free] ->
-        [%{served: String.to_integer(served), refused_growth: String.to_integer(refused), peak_workers: String.to_integer(peak), last_free_mb: if(free == "-", do: nil, else: String.to_integer(free))}]
+        %{served: String.to_integer(served), refused_growth: String.to_integer(refused), peak_workers: String.to_integer(peak), last_free_mb: if(free == "-", do: nil, else: String.to_integer(free))}
 
       _ ->
-        []
+        nil
     end
   end
 
@@ -251,16 +198,7 @@ defmodule Spiral.Cells.CompilerClient do
   end
 
   defp retire(port, pid) do
-    case :gen_tcp.connect({127, 0, 0, 1}, port, socket_opts(), 1_000) do
-      {:ok, sock} ->
-        :gen_tcp.send(sock, "retire\n")
-        _ = recv_line(sock, 2_000)
-        :gen_tcp.close(sock)
-
-      _ ->
-        :ok
-    end
-
+    _ = Spiral.Cells.Domain.retire_daemon(port)
     wait_down(port, System.monotonic_time(:millisecond) + 10_000)
 
     case ping(port) do
@@ -319,10 +257,10 @@ defmodule Spiral.Cells.CompilerClient do
     end
   end
 
-  defp connection_lost?("compiler connection failed: " <> _), do: true
+  defp connection_lost?("compiler " <> rest), do: String.starts_with?(rest, ["connection failed: ", "worker failed: {:noproc,", "worker failed: {:normal,"])
 
   defp connection_lost?(%ProcessError{message: message}) do
-    String.contains?(message, "could not connect to the compiler")
+    String.contains?(message, ["could not connect to the compiler", "compiler worker failed: {:noproc,", "compiler worker failed: {:normal,"])
   end
 
   defp connection_lost?(_reason), do: false
@@ -334,70 +272,22 @@ defmodule Spiral.Cells.CompilerClient do
   defp remember_queue(_ms), do: :ok
 
   defp transact(port, req) do
-    with {:ok, sock} <- connect(port, 50) do
-      try do
-        :gen_tcp.send(sock, "hello\n")
+    stamp = Integer.to_string(CompilerDaemon.code_stamp())
 
-        case recv_line(sock, 5_000) do
-          {:ok, line} ->
-            if current_banner?(line) do
-              :gen_tcp.send(sock, request_line(req) <> "\n")
-
-              case recv_line(sock, :infinity) do
-                {:ok, line} -> compile_result(line)
-                {:error, :timeout} -> {:error, :timeout}
-                {:error, reason} -> {:error, "compiler connection failed: #{inspect(reason)}"}
-              end
-            else
-              {:error, :stale}
-            end
-
-          {:error, reason} ->
-            {:error, "compiler connection failed: #{inspect(reason)}"}
-        end
-      after
-        :gen_tcp.close(sock)
-      end
-    end
-  end
-
-  defp connect(port, attempts) do
-    case :gen_tcp.connect({127, 0, 0, 1}, port, socket_opts(), 2_000) do
-      {:ok, sock} ->
-        {:ok, sock}
-
-      {:error, :econnrefused} when attempts > 0 ->
-        Process.sleep(20)
-        connect(port, attempts - 1)
-
-      {:error, reason} ->
-        {:error,
-         process_error("could not connect to the compiler on port #{port}: #{inspect(reason)}")}
+    case apply(Spiral.Cells.Domain, :compile_exchange, [port, stamp | request_fields(req)]) |> String.split("\t", parts: 2) do
+      ["line", line] -> compile_result(line)
+      ["stale"] -> {:error, :stale}
+      ["waited"] -> {:error, :timeout}
+      ["unreachable", why] -> {:error, process_error(why)}
+      ["lost", why] -> {:error, why}
     end
   end
 
   defp ping(port) do
-    case :gen_tcp.connect({127, 0, 0, 1}, port, socket_opts(), 500) do
-      {:ok, sock} ->
-        :gen_tcp.send(sock, "hello\n")
-
-        result =
-          case recv_line(sock, 1_000) do
-            {:ok, line} ->
-              ping_result(line)
-
-            {:error, reason} ->
-              {:occupied, inspect(reason)}
-          end
-
-        :gen_tcp.close(sock)
-        result
-
-      {:error, reason} when reason in [:econnrefused, :timeout, :closed] ->
-        :down
-
-      {:error, reason} ->
-        {:occupied, inspect(reason)}
+    case port |> Spiral.Cells.Domain.ping_wire() |> String.split("\t", parts: 3) do
+      ["down"] -> :down
+      ["ok", stamp, pid] -> {:ok, String.to_integer(stamp), String.to_integer(pid)}
+      ["occupied" | detail] -> {:occupied, Enum.join(detail, "\t")}
     end
   end
 
@@ -455,8 +345,8 @@ defmodule Spiral.Cells.CompilerClient do
     elixir = elixir_bat()
     project = project_dir()
     File.mkdir_p!(runtime_dir())
-    log = Path.join(runtime_dir(), "cells-#{port}.log")
-    err = Path.join(runtime_dir(), "cells-#{port}.err.log")
+    log = Path.join(runtime_dir(), Spiral.Cells.Domain.runtime_file(port, ".log"))
+    err = Path.join(runtime_dir(), Spiral.Cells.Domain.runtime_file(port, ".err.log"))
     Enum.each([log, err], &keep_previous/1)
     path = toolchain_path()
 
@@ -495,14 +385,7 @@ defmodule Spiral.Cells.CompilerClient do
   end
 
   defp spawn_daemon_windows(elixir, project, log, err, path, port) do
-    script =
-      """
-      $env:PATH = '#{String.replace(path, "'", "''")}'
-      $env:MIX_ENV = '#{mix_env()}'
-      $env:SPIRAL_CELLS_COMPILER_PORT = '#{port}'
-      $env:SPIRAL_CELLS_DAEMON_OWNER = '#{daemon_owner()}'
-      #{daemon_start(elixir, project, log, err, port)}
-      """
+    script = Spiral.Cells.Domain.spawn_script(path, mix_env(), port, daemon_owner(), daemon_start(elixir, project, log, err, port))
 
     case System.cmd("powershell.exe", ["-NoProfile", "-Command", script], stderr_to_stdout: true) do
       {_out, 0} ->
@@ -524,12 +407,12 @@ defmodule Spiral.Cells.CompilerClient do
   defp daemon_start(elixir, project, log, err, port) do
     case shell_launcher() do
       nil ->
-        "Start-Process -FilePath $env:ComSpec -WorkingDirectory '#{String.replace(project, "'", "''")}' -WindowStyle Hidden -ArgumentList '#{String.replace(daemon_command_line(elixir, log, err), "'", "''")}'"
+        Spiral.Cells.Domain.start_process_line(project, daemon_command_line(elixir, log, err))
 
       launcher ->
-        start = Path.join(runtime_dir(), "cells-#{port}.start.cmd")
-        File.write!(start, "@cd /d \"#{project}\"\r\n@#{daemon_command(elixir, log, err)}\r\n")
-        "& '#{String.replace(launcher, "'", "''")}' process start-under-shell $env:ComSpec /d /c '#{String.replace(start, "'", "''")}' | Out-Null; exit $LASTEXITCODE"
+        start = Path.join(runtime_dir(), Spiral.Cells.Domain.runtime_file(port, ".start.cmd"))
+        File.write!(start, Spiral.Cells.Domain.start_cmd_text(project, daemon_command(elixir, log, err)))
+        Spiral.Cells.Domain.launcher_line(launcher, start)
     end
   end
 
@@ -557,12 +440,7 @@ defmodule Spiral.Cells.CompilerClient do
   def daemon_command_line(elixir, log, err, ebins \\ compiled_ebins()), do: ~s{/d /c "#{daemon_command(elixir, log, err, ebins)}"}
 
   @doc false
-  def daemon_command(elixir, log, err, ebins \\ compiled_ebins()) do
-    case ebins do
-      nil -> ~s{"#{elixir}" -S mix spiral.compiler_daemon 1>"#{log}" 2>"#{err}"}
-      ebins -> ~s{"#{elixir}" -pa "#{ebins}" -e Spiral.Cells.CompilerDaemon.serve_app() 1>"#{log}" 2>"#{err}"}
-    end
-  end
+  def daemon_command(elixir, log, err, ebins \\ compiled_ebins()), do: Spiral.Cells.Domain.daemon_command(elixir, log, err, ebins || "")
 
   @doc false
   def compiled_ebins do
@@ -617,26 +495,21 @@ defmodule Spiral.Cells.CompilerClient do
   end
 
   defp credit_queue(queue) when is_binary(queue) do
-    case Integer.parse(queue) do
-      {ms, ""} when ms >= 0 -> credit_queue(ms)
+    case Spiral.Cells.Domain.count_or(queue, -1) do
+      ms when ms >= 0 -> credit_queue(ms)
       _ -> :ok
     end
   end
 
 
-  defp request_line(req) do
-    line = "compile\t#{req.backend}\t#{req.spi}\t#{req.rs}\t#{timeout_field(req.timeout)}\t#{req.mtime}\t#{System.pid()}"
-
-    line = case Map.get(req, :pin) do
-      pin when is_binary(pin) and pin != "" -> line <> "\t" <> pin
-      _ -> line
-    end
-
-    case Map.get(req, :test) do
-      name when is_binary(name) and name != "" -> line <> "\ttest\t" <> name
-      _ -> line
-    end
+  defp request_fields(req) do
+    [req.backend, req.spi, req.rs, timeout_field(req.timeout), req.mtime, System.pid(), Map.get(req, :pin), Map.get(req, :test)]
+    |> Enum.map(&wire_field/1)
   end
+
+  defp wire_field(value) when is_binary(value), do: value
+  defp wire_field(value) when is_integer(value), do: Integer.to_string(value)
+  defp wire_field(_value), do: ""
 
   defp timeout_field(:infinity), do: "-1"
   defp timeout_field(ms), do: Integer.to_string(ms)
@@ -713,25 +586,25 @@ defmodule Spiral.Cells.CompilerClient do
   end
 
   @doc false
-  def pick_slot(first, _mine, tries, _probe) when tries >= 12, do: first
+  def pick_slot(first, _mine, tries, _dll_ping) when tries >= 12, do: first
 
-  def pick_slot(first, mine, tries, probe) do
+  def pick_slot(first, mine, tries, dll_ping) do
     port = CompilerDaemon.slot_port(first, tries)
 
-    case probe.(port) do
+    case dll_ping.(port) do
       {:dll, ^mine} -> port
-      {:dll, _other} -> pick_slot(first, mine, tries + 1, probe)
+      {:dll, _other} -> pick_slot(first, mine, tries + 1, dll_ping)
       _ -> port
     end
   end
 
   @doc false
   def root_key(root) do
-    root |> String.replace("\\", "/") |> String.trim_trailing("/") |> String.downcase() |> then(&:crypto.hash(:sha256, &1)) |> Base.encode16() |> binary_part(0, 16)
+    root |> Spiral.Cells.Domain.root_spelling() |> then(&:crypto.hash(:sha256, &1)) |> Base.encode16() |> binary_part(0, 16)
   end
 
   @doc false
-  def warm_port_file(root, dll_tag), do: Path.join(runtime_dir(), "cells-port-#{root_key(root)}-#{dll_tag}.txt")
+  def warm_port_file(root, dll_tag), do: Path.join(runtime_dir(), Spiral.Cells.Domain.warm_port_name(root_key(root), dll_tag))
 
   defp foreign_toolchain?(port) do
     case banner_dll(port) do
@@ -740,66 +613,21 @@ defmodule Spiral.Cells.CompilerClient do
     end
   end
 
-  defp foreign_toolchain_message(port) do
-    "the compiler daemon on port #{port} was started with another toolchain (compiler or bun) than this client's; " <>
-      "stop that daemon or set another SPIRAL_CELLS_COMPILER_PORT"
-  end
-
-  @doc """
-  One hello reply line as its kind (banner, legacy, unreadable or other) with the daemon pid, code stamp and toolchain tag.
-  """
-  @spec banner(String.t()) :: {String.t(), String.t(), String.t(), String.t()}
-  def banner(line) do
-    [kind, pid, stamp, tag] = line |> Spiral.Cells.Domain.hello_reply() |> String.split("\t", parts: 4)
-    {kind, pid, stamp, tag}
-  end
-
-  @doc false
-  def ping_result(line) do
-    case banner(line) do
-      {kind, pid, stamp, _tag} when kind in ["banner", "legacy"] -> {:ok, String.to_integer(stamp), String.to_integer(pid)}
-      {"other", _, _, _} -> {:occupied, String.trim(line)}
-      _ -> {:occupied, "unreadable banner"}
-    end
-  end
-
-  defp current_banner?(line) do
-    case banner(line) do
-      {kind, _pid, stamp, _tag} when kind in ["banner", "legacy"] -> String.to_integer(stamp) == CompilerDaemon.code_stamp()
-      _ -> false
-    end
-  end
+  defp foreign_toolchain_message(port), do: Spiral.Cells.Domain.foreign_toolchain_text(port)
 
   defp banner_dll(port) do
-    case :gen_tcp.connect({127, 0, 0, 1}, port, socket_opts(), 500) do
-      {:ok, sock} ->
-        :gen_tcp.send(sock, "hello\n")
-
-        result =
-          case recv_line(sock, 1_000) do
-            {:ok, line} ->
-              case banner(line) do
-                {"banner", _pid, _stamp, tag} -> {:dll, tag}
-                {"other", _, _, _} -> :other
-                _ -> :legacy
-              end
-
-            _ ->
-              :other
-          end
-
-        :gen_tcp.close(sock)
-        result
-
-      {:error, _} ->
-        :down
+    case port |> Spiral.Cells.Domain.banner_dll_wire() |> String.split("\t", parts: 2) do
+      ["dll", tag] -> {:dll, tag}
+      ["down"] -> :down
+      ["other"] -> :other
+      ["legacy"] -> :legacy
     end
   end
 
-  defp lock_path(port), do: Path.join(runtime_dir(), "cells-#{port}.lock")
+  defp lock_path(port), do: Path.join(runtime_dir(), Spiral.Cells.Domain.runtime_file(port, ".lock"))
 
   defp log_tail(port) do
-    path = Path.join(runtime_dir(), "cells-#{port}.err.log")
+    path = Path.join(runtime_dir(), Spiral.Cells.Domain.runtime_file(port, ".err.log"))
 
     case File.read(path) do
       {:ok, text} ->
@@ -828,16 +656,5 @@ defmodule Spiral.Cells.CompilerClient do
       ["" | _] -> %{pid: nil, stamp: nil, idle_min: nil, queued: nil, retiring: nil, owner: nil}
       [pid, stamp, idle, queued, retiring, owner] -> %{pid: pid, stamp: stamp, idle_min: idle, queued: queued, retiring: retiring, owner: owner}
     end
-  end
-
-  defp recv_line(sock, timeout) do
-    case :gen_tcp.recv(sock, 0, timeout) do
-      {:ok, line} -> {:ok, String.trim(line)}
-      other -> other
-    end
-  end
-
-  defp socket_opts do
-    [:binary, packet: :line, active: false, packet_size: 8_000_000]
   end
 end

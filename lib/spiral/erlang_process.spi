@@ -414,8 +414,8 @@
 := dictionary_put (key : erlang_term::term) (value : erlang_term::term) : erlang_term::term =
     erlang_term::apply "erlang" "put" [ key; value ]
 
-:= probe_key () : erlang_term::term =
-    erlang_term::tuple [ erlang_term::atom "spiral_process_dictionary_probe"; erlang_term::of 7i32 ]
+:= trial_key () : erlang_term::term =
+    erlang_term::tuple [ erlang_term::atom "spiral_process_dictionary_trial"; erlang_term::of 7i32 ]
 
 := is_undefined (t : erlang_term::term) : bool = erlang_term::equal t (erlang_term::atom "undefined")
 
@@ -425,6 +425,6 @@
 
 ///> gleam
 :# the_process_dictionary_keeps_a_value_by_key =
-    := key = probe_key ()
+    := key = trial_key ()
     := before = dictionary_get key
     (is_undefined before, stored_after key 3i32) |> _assert_eq (!+, 3i32)

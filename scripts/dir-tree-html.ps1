@@ -5,7 +5,7 @@ Set-Location $ScriptDir
 $ErrorActionPreference = "Stop"
 . ./core.ps1
 
-$rendererCommit = '4ab01fc231e621ed53c363e1a037e5300959678d'
+$rendererCommit = 'b888658bfcdd07d710f2f7d052a9a925db1bf24c'
 $spiralRoot = ResolveLink (Split-Path $ScriptDir)
 $repo = Join-Path (Split-Path $spiralRoot) "html"
 $exe = Join-Path $repo "dist/html$(_exe)"

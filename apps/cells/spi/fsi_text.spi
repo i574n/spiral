@@ -1,0 +1,86 @@
+///- --package .
+:# fsi_text static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ ^ digits_to (s : string) (i : i32) : i32 = ? i < text::length s && text::digit_val (text::index s i) >= 0i32 ?> digits_to s (i + 1i32) |: i
+
+:~ ^ fs_error_from (s : string) (at : i32) : bool =
+    := k = text::find_from s "(" at
+    := a = ? k >= 0i32 ?> digits_to s (k + 1i32) |: -1i32
+    := b = ? a > k + 1i32 && text::starts_at s a "," ?> digits_to s (a + 1i32) |: -1i32
+    := c = ? b > a + 1i32 && text::starts_at s b "): error FS" ?> digits_to s (b + 11i32) |: -1i32
+    ? k < 0i32 ?> !- |? c > b + 11i32 ?> !+ |: fs_error_from s (k + 1i32)
+
+:~ blank (c : char) : bool = c = ' ' || c = '\t' || c = '\r' || c = '\n'
+
+:~ ^ blank_from (s : string) (i : i32) (stop : i32) : bool = ? i >= stop ?> !+ |? blank (text::index s i) ?> blank_from s (i + 1i32) stop |: !-
+
+:~ ^ stopped_from (s : string) (at : i32) : bool =
+    := nl = text::find_from s "\n" at
+    := stop = ? nl < 0i32 ?> text::length s |: nl
+    := hit = text::starts_at s at "Stopped due to error" && blank_from s (at + 20i32) stop
+    ? hit ?> !+ |? nl < 0i32 ?> !- |: stopped_from s (nl + 1i32)
+
+:~ failed (s : string) : bool = fs_error_from s 0i32 || stopped_from s 0i32
+
+:~ ^ ending_from (s : string) (target : string) (i : i32) (stop : i32) : i32 =
+    := hit = i < stop && (text::byte_at s i = 47i32 || text::byte_at s i = 92i32) && text::starts_at s (i + 1i32) target
+    ? i >= stop ?> -1i32 |? hit ?> i + 1i32 + text::length target |: ending_from s target (i + 1i32) stop
+
+:~ ^ relabel_from (s : string) (label : string) (at : i32) (acc : string) : string =
+    := k = text::find_from s " in " at
+    := nl = ? k >= 0i32 ?> text::find_from s "\n" (k + 4i32) |: -1i32
+    := stop = ? nl < 0i32 ?> text::length s |: nl
+    := e = ? k >= 0i32 ?> ending_from s (label ++ ":line ") (k + 4i32) stop |: -1i32
+    ? k < 0i32
+    ?> acc ++ text::drop s at
+    |? e >= 0i32
+    ?> relabel_from s label e (acc ++ text::slice_len s at (k - at) ++ " in " ++ label ++ ":line ")
+    |: relabel_from s label (k + 1i32) (acc ++ text::slice_len s at (k + 1i32 - at))
+
+:~ relabel (s : string) (label : string) : string = relabel_from s label 0i32 ""
+
+:~ value_marker (token : string) : string = "@@KINO-" ++ token ++ "-VALUE\n"
+
+:~ trim_trailing (s : string) : string = text::slice_len s 0i32 (text::ucontent_end s 0i32 0i32)
+
+:~ lf (s : string) : string = text::replace s "\r\n" "\n"
+
+:~ cut_output (s : string) (label : string) : string = trim_trailing (relabel (lf s) (text::replace label "\"" "'"))
+
+:~ reply_text (segment : string) (token : string) (label : string) : string =
+    := s = lf segment
+    := at = text::find_from s (value_marker token) 0i32
+    cut_output (? at < 0i32 ?> s |: text::take s at) label
+
+:~ reply_value (segment : string) (token : string) : string =
+    := s = lf segment
+    := at = text::find_from s (value_marker token) 0i32
+    ? at < 0i32 ?> "" |: "=" ++ text::trim_trailing_newlines (text::drop s (at + text::length (value_marker token)))
+
+:~ after_marker (rest : string) : string =
+    := s = ? text::starts_with rest "\r\n" ?> text::drop rest 2i32 |: rest
+    ? text::starts_with s "\n" ?> text::drop s 1i32 |: s
+
+///> gleam
+:# fsi_failures_and_relabelled_stack_lines_follow_the_old_regexes =
+    := ~text = "x.fsx(12,4): error FS0039: The value is not defined"
+    (failed text, failed "warning (1,2): error FSx", failed "ok\nStopped due to error \r\nmore", failed "Stopped due to errors") |> _assert_eq (!+, !-, !+, !-)
+    := ~trace = "   at Foo() in C:\\t\\a b\\cell 3.fsx:line 9\n   at Bar() in /x/cell 3.fsx:line 2 and"
+    relabel trace "cell 3.fsx" |> _assert_eq "   at Foo() in cell 3.fsx:line 9\n   at Bar() in cell 3.fsx:line 2 and"
+    (relabel "in x/cell.fsx:line 1" "cell.fsx", relabel " in cell.fsx:line 1" "cell.fsx", relabel " in a\n/cell.fsx:line 1" "cell.fsx") |> _assert_eq ("in x/cell.fsx:line 1", " in cell.fsx:line 1", " in a\n/cell.fsx:line 1")
+
+///> gleam
+:# fsi_replies_cut_the_value_relabel_and_trim_like_the_old_session_code =
+    := ~seg = "out 1\r\nline 2\r\n@@KINO-t1-VALUE\n42\n\n"
+    (reply_text seg "t1" "cell 3.fsx", reply_value seg "t1") |> _assert_eq ("out 1\nline 2", "=42")
+    := ~trace = "   at Foo() in C:\\t\\cell 3.fsx:line 9\n\t \n"
+    (reply_text trace "t1" "cell 3.fsx", reply_value trace "t1") |> _assert_eq ("   at Foo() in cell 3.fsx:line 9", "")
+    := ~twice = "a@@KINO-t1-VALUE\nb@@KINO-t1-VALUE\nc\n"
+    (reply_text twice "t1" "x", reply_value twice "t1", reply_value "x\n@@KINO-t1-VALUE\n" "t1") |> _assert_eq ("a", "=b@@KINO-t1-VALUE\nc", "=")
+    := ~quoted = "   at Bar() in /x/cell 'q'.fsx:line 2\r\n\r\n"
+    cut_output quoted "cell \"q\".fsx" |> _assert_eq "   at Bar() in cell 'q'.fsx:line 2"
+    := ~rest = "\r\n\nx"
+    (after_marker rest, after_marker "\nx", after_marker "\n\nx", after_marker "x") |> _assert_eq ("x", "x", "\nx", "x")

@@ -13,6 +13,7 @@
         Lua = \ () => index a i
         Fsharp = \ () => index a i
         Python = \ () => $'!a[!i]' : el
+        Kotlin = \ () => index a i
         Rust = \ () => index a i
         TypeScript = \ () => index a i
         Zig = \ () => index a i
@@ -494,7 +495,7 @@
     ;[ 1.0f64; 2.0f64; 4.5f64 ] |> average |> _assert_eq 2.5f64
 
 := distinct \* el. (a : array el) : array el =
-    ? is_rust () ?>
+    := rust () =
         := a = $'!a ' : array el
         := r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : array el
         loop::for' { from = 0; nearTo = length a } \ i =>
@@ -505,7 +506,23 @@
                 s <- { j = s::j + 1 }
             ? s::j = n ?> $'!r.borrow_mut().push(!x)' : ()
         $'!r ' : array el
-    |: $'!a |> Array.distinct'
+    := scan () =
+        := r = arraym::map id a
+        := w = mut { k = 0 }
+        loop::for' { from = 0; nearTo = length r } \ i =>
+            := x = index i r
+            := s = mut { j = 0 }
+            loop::while' (\ () => s::j < w::k && index s::j r <> x) \ () =>
+                s <- { j = s::j + 1 }
+            ? s::j = w::k ?>
+                set r w::k x
+                w <- { k = w::k + 1 }
+            |: ()
+        (arraym::init w::k (\ k => index k r) : array el)
+    run_target \|
+        | Fsharp => \ () => $'!a |> Array.distinct' : array el
+        | Rust => rust
+        | _ => scan
 
 := growable \* el. () : array el =
     run_target \|
@@ -522,12 +539,21 @@
         | Rust => fun () => $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as \
             usize).cloned().collect::<Vec<_>>()))' : array el
         | Zig => \ () => $'(spiral_gpa.dupe(`el, (!a)[@@intCast(!n)..]) catch @@panic("out of memory"))' : array el
-        | _ => \ () => $'!a |> Array.skip !n '
+        | Fsharp => \ () => $'!a |> Array.skip !n '
+        | _ => \ () => failwith "am'.skip: no arm for this backend"
 
 := skip_while \* el. (fn : el -> bool) (a : array el) : array el =
-    ? is_rust ()
-    ?> $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'
-    |: $'!a |> Array.skipWhile !fn '
+    := scan () =
+        := s = mut { i = 0 }
+        loop::while' (\ () => s::i < length a && fn (index s::i a)) \ () =>
+            s <- { i = s::i + 1 }
+        := from = s::i
+        (arraym::init (length a - from) (\ k => index (from + k) a) : array el)
+    run_target \|
+        | Fsharp => \ () => $'!a |> Array.skipWhile !fn ' : array el
+        | Rust => \ () =>
+            $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))' : array el
+        | _ => scan
 
 := to_list_base' \* t. (items : array_base t) : listm'::list' t =
     backend_switch {
@@ -603,8 +629,9 @@
 := sort_by \* el key. (fn : el -> key) (a : array el) : array el =
     := fsharp () = $'!a |> Array.sortBy !fn ' : array el
     := insertion_sort () =
-        := r = arraym::map id ($'!a ' : array el)
-        := keys = arraym::map fn ($'!a ' : array el)
+        := ~src = a
+        := r = arraym::map id src
+        := keys = arraym::map fn src
         loop::for' { from = 1; nearTo = length r } \ i =>
             := x = index i r
             := k = index i keys
@@ -616,9 +643,9 @@
                 s <- { j = j - 1 }
             set r s::j x
             set keys s::j k
-        $'!r ' : array el
+        r
     backend_switch {
-        Gleam = \ () => fsharp ()
+        Gleam = insertion_sort
         Lua = insertion_sort
         Fsharp = \ () => fsharp ()
         Python = \ () =>
@@ -637,10 +664,11 @@
             )
             $'!a.map((_x: any, i: number) => i).sort((i: number, j: number) => spiral_compare(!keys[i], \
                 !keys[j])).map((i: number) => !a[i])' : array el
-        Cpp = \ () => fsharp ()
-        CppHost = \ () => fsharp ()
-        Pascal = \ () => fsharp ()
-        Cuda = \ () => fsharp ()
+        Cpp = insertion_sort
+        CppHost = insertion_sort
+        Pascal = insertion_sort
+        Cuda = insertion_sort
+        C = insertion_sort
         Zig = insertion_sort
         Lean = insertion_sort
         Rust = \ () =>
@@ -711,22 +739,44 @@
 := try_item \* el. (i : i32) (a : array el) : option el =
     := fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'::unbox
     := in_bounds_item () : option el =
-        := a = $'!a ' : array el
+        := ~a = a
         ? i >= 0 && i < length a ?> Some (index i a) |: None
     backend_switch {
-        Gleam = fsharp
-        Lua = fsharp
+        Gleam = in_bounds_item
+        Lua = in_bounds_item
         Fsharp = fsharp
-        Python = fsharp
-        TypeScript = fsharp
-        Cpp = fsharp
-        CppHost = fsharp
-        Pascal = fsharp
-        Cuda = fsharp
+        Python = in_bounds_item
+        TypeScript = in_bounds_item
+        Cpp = in_bounds_item
+        CppHost = in_bounds_item
+        Pascal = in_bounds_item
+        Cuda = in_bounds_item
+        C = in_bounds_item
         Zig = in_bounds_item
         Lean = in_bounds_item
         Rust = in_bounds_item
     }
+
+///> pascal
+///> lua
+///> rust
+///> zig
+///> c
+///> gleam
+:# try_item_bounds_on_every_backend =
+    := a = ;[ 10i32; 20i32 ]
+    := code (i : i32) : i32 = ?= try_item i a ?| | Some x => x | None => -1i32
+    (code (-1i32), code 0i32, code 1i32, code 2i32) |> _assert_eq (-1i32, 10i32, 20i32, -1i32)
+
+///> pascal
+///> lua
+///> rust
+///> zig
+///> c
+///> gleam
+:# sort_by_orders_by_the_key_on_every_backend =
+    := s = sort_by (\ (x : i32) => 0i32 - x) ;[ 3i32; 1i32; 2i32; 1i32 ]
+    (length s, index 0 s, index 1 s, index 2 s, index 3 s) |> _assert_eq (4, 3i32, 2i32, 1i32, 1i32)
 
 ///> rust
 ///> zig

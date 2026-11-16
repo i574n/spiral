@@ -15,16 +15,16 @@
     | WaitedOut
     | Lost : string
 
-:= tcp_text (f : erlang_tcp::tcp_failure) : string =
+:~ tcp_text (f : erlang_tcp::tcp_failure) : string =
     ?= f ?|
     | Refused => ":econnrefused"
     | TimedOut => ":timeout"
     | Closed => ":closed"
     | Failed reason => reason
 
-:= lost (f : erlang_tcp::tcp_failure) : client_failure = Lost ("compiler connection failed: " ++ tcp_text f)
+:~ lost (f : erlang_tcp::tcp_failure) : client_failure = Lost ("compiler connection failed: " ++ tcp_text f)
 
-:= pause (ms : i32) : () =
+:~ pause (ms : i32) : () =
     := slept = erlang_term::apply "timer" "sleep" [ erlang_term::of ms ]
     ()
 
@@ -80,7 +80,179 @@
     | Error f => (?= f ?| Unreachable _ => !+ | _ => !-)
     | Ok _ => !-
 
-:= serve_once (l : erlang_tcp::listener) (banner : string) (reply : string) : () =
+:~ failure_wire (f : client_failure) : string =
+    ?= f ?|
+    | Stale => "stale"
+    | WaitedOut => "waited"
+    | Unreachable why => "unreachable\t" ++ why
+    | Lost why => "lost\t" ++ why
+
+:~ exchange_wire (outcome : result daemon::compile_reply client_failure) : string =
+    ?= outcome ?|
+    | Ok reply => "line\t" ++ daemon::compile_text reply
+    | Error f => failure_wire f
+
+:~ compile_exchange
+    (port : i32) (stamp : string) (fields : string * string * string * string * string * string * string * string)
+    : string
+    =
+    exchange_wire (transact port stamp (Compile (daemon::ask_of fields)))
+
+:~ ping_line (port : i32) (line : string) : option string =
+    ?= erlang_tcp::connect_local port 300i32 ?|
+    | Error _ => None
+    | Ok s =>
+        := sent = erlang_tcp::send_line s line
+        := got = erlang_tcp::receive_line s (erlang_tcp::WithinMs 1000i32)
+        erlang_tcp::close s
+        ?= got ?| Ok l => Some l | Error _ => Some ""
+
+:~ ^ live_from (base : i32) (offset : i32) (acc : list string) : list string =
+    ? offset >= 16i32
+    ?> listm::rev acc
+    |:
+        ?= ping_line (base + offset) "status" ?|
+        | Some line => live_from base (offset + 1i32) ((text::show_i32 (base + offset) ++ "\t" ++ line) :: acc)
+        | None => live_from base (offset + 1i32) acc
+
+:~ live_status (base : i32) : string = sm'::concat_list "\n" (live_from base 0i32 [])
+
+:~ pool_reading (line : option string) : option daemon::pool_reply =
+    ?= line ?|
+    | Some l ?& daemon::pool_row l <> "" => Some (daemon::pool_of l)
+    | _ => None
+
+:~ ^ pools_from (base : i32) (i : i32) (size : i32) (acc : list daemon::pool_reply) : list daemon::pool_reply =
+    ? i >= size
+    ?> acc
+    |:
+        ?= pool_reading (ping_line (base + i) "pool") ?|
+        | Some p => pools_from base (i + 1i32) size (p :: acc)
+        | None => pools_from base (i + 1i32) size acc
+
+:~ lower_free (a : option i32) (b : option i32) : option i32 =
+    ?= a, b ?|
+    | Some x, Some y => Some (? x < y ?> x |: y)
+    | Some x, None => Some x
+    | None, y => y
+
+:~ pool_total (ps : list daemon::pool_reply) : string =
+    := served = ps |> listm::fold (\ (n : i32) (p : daemon::pool_reply) => n + p::served) 0i32
+    := refused = ps |> listm::fold (\ (n : i32) (p : daemon::pool_reply) => n + p::refused) 0i32
+    := peak = ps |> listm::fold (\ (n : i32) (p : daemon::pool_reply) => ? p::peak > n ?> p::peak |: n) 0i32
+    := free = ps |> listm::fold (\ (m : option i32) (p : daemon::pool_reply) => lower_free m p::free_mb) None
+    daemon::tabbed [ text::show_i32 served; text::show_i32 refused; text::show_i32 peak; daemon::free_text free ]
+
+:~ pool_summary (base : i32) (size : i32) : string =
+    ?= pools_from base 0i32 size [] ?|
+    | [] => ""
+    | ps => pool_total ps
+
+:~ ^ without_trailing_slash (path : string) : string =
+    := n = text::length path
+    ? n > 0i32 && text::byte_at path (n - 1i32) = 47i32 ?> without_trailing_slash (text::take path (n - 1i32)) |: path
+
+:~ root_spelling (root : string) : string = text::lowercase (without_trailing_slash (text::replace root "\\" "/"))
+
+:~ root_key (root : string) (windows : bool) : string = ? windows ?> root_spelling root |: without_trailing_slash root
+
+:~ runtime_file (port : i32) (suffix : string) : string = "cells-" ++ text::show_i32 port ++ suffix
+
+:~ warm_port_name (key : string) (dll_tag : string) : string = "cells-port-" ++ key ++ "-" ++ dll_tag ++ ".txt"
+
+:~ foreign_toolchain_text (port : i32) : string =
+    := why = " was started with another toolchain (compiler or bun) than this client's; stop that daemon or set another SPIRAL_CELLS_COMPILER_PORT"
+    "the compiler daemon on port " ++ text::show_i32 port ++ why
+
+:~ ps_quoted (s : string) : string = "'" ++ text::replace s "'" "''" ++ "'"
+
+:~ start_process_line (project : string) (command : string) : string =
+    "Start-Process -FilePath $env:ComSpec -WorkingDirectory " ++ ps_quoted project ++ " -WindowStyle Hidden -ArgumentList "
+    ++ ps_quoted command
+
+:~ launcher_line (launcher : string) (start : string) : string =
+    "& " ++ ps_quoted launcher ++ " process start-under-shell $env:ComSpec /d /c " ++ ps_quoted start
+    ++ " | Out-Null; exit $LASTEXITCODE"
+
+:~ start_cmd_text (project : string) (command : string) : string = "@cd /d \"" ++ project ++ "\"\r\n@" ++ command ++ "\r\n"
+
+:~ spawn_script (path : string) (mix_env : string) (port : i32) (owner : string) (start : string) : string =
+    "$env:PATH = " ++ ps_quoted path ++ "\n$env:MIX_ENV = '" ++ mix_env ++ "'\n$env:SPIRAL_CELLS_COMPILER_PORT = '"
+    ++ text::show_i32 port ++ "'\n$env:SPIRAL_CELLS_DAEMON_OWNER = '" ++ owner ++ "'\n" ++ start ++ "\n"
+
+:| hello_probe =
+    | ProbeDown
+    | ProbeRefused : string
+    | ProbeSilent : string
+    | ProbeLine : string
+
+:~ down_failure (f : erlang_tcp::tcp_failure) : bool = f = Refused || f = TimedOut || f = Closed
+
+:~ hello_probe_of (port : i32) (wait_ms : i32) : hello_probe =
+    ?= erlang_tcp::connect_local port 500i32 ?|
+    | Error f ?& down_failure f => ProbeDown
+    | Error f => ProbeRefused (tcp_text f)
+    | Ok s =>
+        := sent = erlang_tcp::send_line s "hello"
+        := got = erlang_tcp::receive_line s (erlang_tcp::WithinMs wait_ms)
+        erlang_tcp::close s
+        ?= got ?|
+        | Ok line => ProbeLine line
+        | Error f => ProbeSilent (tcp_text f)
+
+
+:~ ping_of (probe : hello_probe) : string =
+    ?= probe ?|
+    | ProbeDown => "down"
+    | ProbeRefused why => "occupied\t" ++ why
+    | ProbeSilent why => "occupied\t" ++ why
+    | ProbeLine line =>
+        ?= sm'::split_list "\t" (daemon::hello_row line) ?|
+        | kind :: pid :: stamp :: _ ?& kind = "banner" || kind = "legacy" => "ok\t" ++ stamp ++ "\t" ++ pid
+        | "other" :: _ => "occupied\t" ++ line
+        | _ => "occupied\tunreadable banner"
+
+:~ banner_dll_of (probe : hello_probe) : string =
+    ?= probe ?|
+    | ProbeDown => "down"
+    | ProbeRefused _ => "down"
+    | ProbeSilent _ => "other"
+    | ProbeLine line =>
+        ?= sm'::split_list "\t" (daemon::hello_row line) ?|
+        | "banner" :: _ :: _ :: tag :: _ => "dll\t" ++ tag
+        | "other" :: _ => "other"
+        | _ => "legacy"
+
+:~ ping_wire (port : i32) : string = ping_of (hello_probe_of port 5000i32)
+
+:~ banner_dll_wire (port : i32) : string = banner_dll_of (hello_probe_of port 5000i32)
+
+:~ compiler_session
+    (port : i32) (wait_ms : i32) (backend : string) (input : string) (output : string) (test_name : string)
+    : string
+    =
+    ?= erlang_tcp::connect_local port 5000i32 ?|
+    | Error f => "refused\t" ++ tcp_text f
+    | Ok s =>
+        := sent = erlang_tcp::send_line s (daemon::session_line backend input output test_name)
+        := wait = ? wait_ms < 0i32 ?> erlang_tcp::Forever |: erlang_tcp::WithinMs wait_ms
+        := got = erlang_tcp::receive_line s wait
+        erlang_tcp::close s
+        ?= got ?|
+        | Ok line => daemon::session_reply line
+        | Error f ?& f = TimedOut => "timeout"
+        | Error f => "closed\t" ++ tcp_text f
+
+:~ retire_daemon (port : i32) : string =
+    ?= erlang_tcp::connect_local port 1000i32 ?|
+    | Error _ => "absent"
+    | Ok s =>
+        := sent = erlang_tcp::send_line s "retire"
+        := got = erlang_tcp::receive_line s (erlang_tcp::WithinMs 2000i32)
+        erlang_tcp::close s
+        "asked"
+
+:~ serve_once (l : erlang_tcp::listener) (banner : string) (reply : string) : () =
     ?= erlang_tcp::accept l (erlang_tcp::WithinMs 5000i32) ?|
     | Error _ => ()
     | Ok s =>
@@ -90,7 +262,27 @@
         := answered = erlang_tcp::send_line s reply
         erlang_tcp::close s
 
-:= fake_daemon (banner : string) (reply : string) : erlang_tcp::listener =
+:~ answer_once (l : erlang_tcp::listener) (reply : string) : () =
+    ?= erlang_tcp::accept l (erlang_tcp::WithinMs 5000i32) ?|
+    | Error _ => ()
+    | Ok s =>
+        := request = erlang_tcp::receive_line s (erlang_tcp::WithinMs 5000i32)
+        := answered = erlang_tcp::send_line s reply
+        erlang_tcp::close s
+
+:~ fake_silent () : erlang_tcp::listener =
+    ?= erlang_tcp::listen_local () ?|
+    | Ok l => l
+    | Error _ => failwith "client: could not listen for the silent fake daemon"
+
+:~ fake_status (reply : string) : erlang_tcp::listener =
+    ?= erlang_tcp::listen_local () ?|
+    | Ok l =>
+        := server = erlang_process::spawn (\ () => answer_once l reply)
+        l
+    | Error _ => failwith "client: could not listen for the fake status daemon"
+
+:~ fake_daemon (banner : string) (reply : string) : erlang_tcp::listener =
     ?= erlang_tcp::listen_local () ?|
     | Ok l =>
         := server = erlang_process::spawn (\ () => serve_once l banner reply)
@@ -111,6 +303,27 @@
     | Error _ => failwith "status transact failed"
 
 ///> gleam
+:# a_compile_exchange_hands_back_the_reply_line_or_a_tagged_failure =
+    := fields = ("rust", "a.spi", "a.rs", "-1", "17", "42", "", "t")
+    := ok = compile_exchange (erlang_tcp::listener_port (fake_daemon "spiral-cells\t1\t9\t42" "ok\tr7\t3")) "42" fields
+    := failed = compile_exchange (erlang_tcp::listener_port (fake_daemon "spiral-cells\t1\t9\t42" "error\t5\tno\tmain")) "42" fields
+    := stale = compile_exchange (erlang_tcp::listener_port (fake_daemon "spiral-cells\t1\t9\t41" "ok\tr7")) "42" fields
+    (ok, failed, stale) |> _assert_eq ("line\tok\tr7\t3", "line\terror\t5\tno\tmain", "stale")
+
+///> gleam
+:# pool_totals_sum_served_and_refused_and_keep_the_peak_and_the_lowest_free =
+    := a : daemon::pool_reply = { served = 12i32; refused = 1i32; peak = 3i32; free_mb = Some 2048i32 }
+    := b : daemon::pool_reply = { served = 5i32; refused = 0i32; peak = 4i32; free_mb = None }
+    := c : daemon::pool_reply = { served = 1i32; refused = 2i32; peak = 1i32; free_mb = Some 512i32 }
+    (pool_total [ a; b; c ], pool_total [ b ]) |> _assert_eq ("18\t3\t4\t512", "5\t0\t4\t-")
+
+///> gleam
+:# pings_read_one_reply_line_or_report_no_daemon =
+    := l = fake_status "pool\t12\t1\t3\t2048"
+    := port = erlang_tcp::listener_port l
+    (pool_summary port 1i32, pool_reading (Some "status\t1")) |> _assert_eq ("12\t1\t3\t2048", None)
+
+///> gleam
 :# a_daemon_with_another_code_stamp_is_stale =
     := l = fake_daemon "spiral-cells\t1\t9\t41" "ok\tr7"
     transact (erlang_tcp::listener_port l) "42" (Compile (daemon::sample_ask ())) |> _assert_eq (Error Stale)
@@ -123,3 +336,39 @@
         erlang_tcp::stop_listening l
         transact_with 2i32 port "42" Hello |> unreachable |> _assert_eq !+
     | Error _ => failwith "client: could not listen"
+
+///> gleam
+:# runtime_files_and_the_root_spelling_match_the_elixir_client =
+    (root_spelling "C:\\Work\\Cells\\", root_spelling "c:/work/cells", root_spelling "/srv/x//", root_spelling "") |> _assert_eq ("c:/work/cells", "c:/work/cells", "/srv/x", "")
+    := ~root = "/Srv/Cells/"
+    (root_key root !-, root_key root !+, root_key "C:/Work/Cells" !+) |> _assert_eq ("/Srv/Cells", "/srv/cells", "c:/work/cells")
+    (runtime_file 13905i32 ".lock", runtime_file 13913i32 ".err.log") |> _assert_eq ("cells-13905.lock", "cells-13913.err.log")
+    warm_port_name "0123456789ABCDEF" "1700000000-315392" |> _assert_eq "cells-port-0123456789ABCDEF-1700000000-315392.txt"
+    := ~project = "C:\\Work\\O'Neil\\cells"
+    ps_quoted project |> _assert_eq "'C:\\Work\\O''Neil\\cells'"
+    := proc = "Start-Process -FilePath $env:ComSpec -WorkingDirectory 'C:\\Work\\O''Neil\\cells' -WindowStyle Hidden -ArgumentList '/d /c x'"
+    start_process_line project "/d /c x" |> _assert_eq proc
+    launcher_line "C:\\k\\kit.exe" "C:\\t\\s.cmd" |> _assert_eq "& 'C:\\k\\kit.exe' process start-under-shell $env:ComSpec /d /c 'C:\\t\\s.cmd' | Out-Null; exit $LASTEXITCODE"
+    start_cmd_text project "elixir -S mix" |> _assert_eq "@cd /d \"C:\\Work\\O'Neil\\cells\"\r\n@elixir -S mix\r\n"
+    := script = "$env:PATH = 'C:\\b;D:\\it''s'\n$env:MIX_ENV = 'dev'\n$env:SPIRAL_CELLS_COMPILER_PORT = '13905'\n$env:SPIRAL_CELLS_DAEMON_OWNER = 'os_pid 7'\nGO\n"
+    spawn_script "C:\\b;D:\\it's" "dev" 13905i32 "os_pid 7" "GO" |> _assert_eq script
+    foreign_toolchain_text 13905i32 |> _assert_eq "the compiler daemon on port 13905 was started with another toolchain (compiler or bun) than this client's; stop that daemon or set another SPIRAL_CELLS_COMPILER_PORT"
+
+///> gleam
+:# hello_probes_read_ping_and_dll_replies_like_the_elixir_client =
+    := ping = ping_wire (erlang_tcp::listener_port (fake_daemon "spiral-cells\t1\t77\t5\tbun" ""))
+    := dll = banner_dll_wire (erlang_tcp::listener_port (fake_daemon "spiral-cells\t1\t77\t5\tbun" ""))
+    := other = ping_wire (erlang_tcp::listener_port (fake_daemon "nginx ready" ""))
+    (ping, dll, other) |> _assert_eq ("ok\t5\t77", "dll\tbun", "occupied\tnginx ready")
+    (ping_of (ProbeLine "spiral-cells\t1\t77\tx"), ping_of (ProbeLine "spiral-cells\t1\t77\t5"), ping_of (ProbeSilent ":timeout"), ping_of (ProbeRefused ":eacces"), ping_of ProbeDown)
+    |> _assert_eq ("occupied\tunreadable banner", "ok\t5\t77", "occupied\t:timeout", "occupied\t:eacces", "down")
+    (banner_dll_of (ProbeLine "spiral-cells\t1\t77\t5"), banner_dll_of (ProbeLine "spiral-cells\t1\t77\tx"), banner_dll_of (ProbeLine "nginx"), banner_dll_of (ProbeSilent ":timeout"), banner_dll_of (ProbeRefused ":eacces"))
+    |> _assert_eq ("legacy", "legacy", "other", "other", "down")
+    (down_failure Refused, down_failure TimedOut, down_failure Closed, down_failure (Failed ":eacces")) |> _assert_eq (!+, !+, !+, !-)
+
+///> gleam
+:# a_compiler_session_reads_the_revision_or_names_the_failure =
+    := ok = compiler_session (erlang_tcp::listener_port (fake_status "spiral-session\tok\t9\t120\tb\tr7")) 2000i32 "rust" "a.spi" "a.rs" ""
+    := failed = compiler_session (erlang_tcp::listener_port (fake_status "spiral-session\terror\t9\tno\tmain")) (0i32 - 1i32) "gleam" "a.spi" "a.gleam" "adds"
+    := waited = compiler_session (erlang_tcp::listener_port (fake_silent ())) 50i32 "rust" "a.spi" "a.rs" ""
+    (ok, failed, waited) |> _assert_eq ("ok\tr7", "error\tno main", "timeout")

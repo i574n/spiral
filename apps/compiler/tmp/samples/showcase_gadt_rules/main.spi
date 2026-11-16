@@ -1,0 +1,95 @@
+///- --package .
+:# showcase_gadt_rules static =
+    :< testing
+    :< rustc_verdict
+
+:! money = i32
+
+:! rate = i32
+
+:| ^ rule t =
+    | Base :: rule money
+    | Const :: \* t. t -> rule t
+    | RateBp :: i32 -> rule rate
+    | Apply :: rule money * rule rate -> rule money
+    | Above :: rule money * rule money -> rule bool
+    | When :: \* t. rule bool * rule t * rule t -> rule t
+
+:= ^ eval \* t. (base : money) (r : rule t) : t =
+    ?= r ?|
+    | Base => base
+    | Const v => v
+    | RateBp bp => rate bp
+    | Apply (m, rr) =>
+        := (money a) = eval base m
+        := (rate b) = eval base rr
+        money (a * b / 10000)
+    | Above (l, h) =>
+        := (money a) = eval base l
+        := (money b) = eval base h
+        a > b
+    | When (c, a, b) => ? eval base c ?> eval base a |: eval base b
+
+:= cbs_rule () : rule money =
+    When (Above (Base, Const (money 10000)), Apply (Base, RateBp 90), Apply (Base, RateBp 36))
+
+:= main () : i32 =
+    := amount : i32 = $"12000"
+    := (money tax) = eval (money amount) (cbs_rule ())
+    tax
+
+///> rust
+:# spiral_evaluates_the_rule_at_each_index =
+    := ~amount = 12000i32
+    := (money tax) = eval (money amount) (cbs_rule ())
+    tax |> _assert_eq 108i32
+
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+:# rust_rejects_every_index_refining_arm =
+    := source = """
+#[derive(Clone, Copy)]
+struct Money(i32);
+#[derive(Clone, Copy)]
+struct Rate(i32);
+
+enum Rule<T> {
+    Base,
+    Const(T),
+    RateBp(i32),
+    Apply(Box<Rule<Money>>, Box<Rule<Rate>>),
+    Above(Box<Rule<Money>>, Box<Rule<Money>>),
+    When(Box<Rule<bool>>, Box<Rule<T>>, Box<Rule<T>>),
+}
+
+fn eval<T: Copy>(base: i32, r: &Rule<T>) -> T {
+    match r {
+        Rule::Base => Money(base),
+        Rule::Const(v) => *v,
+        Rule::RateBp(bp) => Rate(*bp),
+        Rule::Apply(m, rr) => {
+            let Money(a) = eval(base, m);
+            let Rate(b) = eval(base, rr);
+            Money(a * b / 10000)
+        }
+        Rule::Above(l, h) => {
+            let Money(a) = eval(base, l);
+            let Money(b) = eval(base, h);
+            a > b
+        }
+        Rule::When(c, a, b) => if eval(base, c) { eval(base, a) } else { eval(base, b) },
+    }
+}
+
+fn main() {
+    let rule: Rule<Money> = Rule::When(
+        Box::new(Rule::Above(Box::new(Rule::Base), Box::new(Rule::Const(Money(10000))))),
+        Box::new(Rule::Apply(Box::new(Rule::Base), Box::new(Rule::RateBp(90)))),
+        Box::new(Rule::Apply(Box::new(Rule::Base), Box::new(Rule::RateBp(36)))),
+    );
+    let Money(tax) = eval(12000, &rule);
+    std::process::exit(tax);
+}
+"""
+    := money = MismatchedTypes ("T", "Money")
+    attempt "showcase-gadt-rules" source
+    |> _assert_eq (Rejected [ money; money; MismatchedTypes ("T", "bool") ])

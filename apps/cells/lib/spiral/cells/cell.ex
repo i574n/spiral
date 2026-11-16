@@ -15,12 +15,8 @@ defmodule Spiral.Cells.Cell do
     Spiral.Cells.Domain.patch_rust(rust, if(show_value, do: "1", else: "0"))
   end
 
-  @python_entry "if __name__ == '__main__': result = main(); None if result is None else print(result)"
-
   @spec patch_python(String.t()) :: String.t()
-  def patch_python(python) do
-    Regex.replace(~r/^if __name__ == '__main__':.*$/m, python, fn _ -> @python_entry end, global: false)
-  end
+  def patch_python(python), do: Spiral.Cells.Domain.python_patched(python)
 
   @spec split_output(String.t()) :: {String.t() | nil, String.t()}
   def split_output(output) do

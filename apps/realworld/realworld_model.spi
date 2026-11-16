@@ -14,13 +14,31 @@
 := id_eq \* t. (a : id t) (b : id t) : bool =
     id_raw a = id_raw b
 
-:== user = { username : string; email : string; bio : string; image : option string; password_hash : string }
+:== user = { username : string; email : string; bio : option string; image : option string; password_hash : string }
 
-:== article = { slug : string; title : string; description : string; body : string; tag_list : list string; author : id user; created_at : string; updated_at : string }
+:== article =
+    {
+        slug : string
+        title : string
+        description : string
+        body : string
+        tag_list : list string
+        author : id user
+        created_at : string
+        updated_at : string
+    }
 
 :== comment = { body : string; author : id user; article : id article; created_at : string; updated_at : string }
 
-:== store = { users : list (id user * user); articles : list (id article * article); comments : list (id comment * comment); follows : list (id user * id user); favorites : list (id user * id article); next_id : i32 }
+:== store =
+    {
+        users : list (id user * user)
+        articles : list (id article * article)
+        comments : list (id comment * comment)
+        follows : list (id user * id user)
+        favorites : list (id user * id article)
+        next_id : i32
+    }
 
 := empty_store () : store =
     { users = []; articles = []; comments = []; follows = []; favorites = []; next_id = 1i32 }
@@ -29,13 +47,22 @@
     { s with users = (Id (s::next_id), u) :: s::users; next_id = s::next_id + 1i32 }
 
 := sample_user () : user =
-    { username = "jake"; email = "jake@jake.jake"; bio = ""; image = None; password_hash = "x" }
+    { username = "jake"; email = "jake@jake.jake"; bio = None; image = None; password_hash = "x" }
 
 := sample_user2 () : user =
-    { username = "neo"; email = "neo@matrix.io"; bio = ""; image = None; password_hash = "y" }
+    { username = "neo"; email = "neo@matrix.io"; bio = None; image = None; password_hash = "y" }
 
 := sample_article () : article =
-    { slug = "hi"; title = "Hi"; description = "d"; body = "b"; tag_list = ["x"]; author = Id 1i32; created_at = ""; updated_at = "" }
+    {
+        slug = "hi"
+        title = "Hi"
+        description = "d"
+        body = "b"
+        tag_list = [ "x" ]
+        author = Id 1i32
+        created_at = ""
+        updated_at = ""
+    }
 
 := pair_key \* k v. (p : k * v) : k =
     ?= p ?|
@@ -48,7 +75,8 @@
 := find_by \* t. (keep : t -> bool) (xs : list t) : option t =
     listm::fold (\ found x => ?= found ?| Some _ => found | None => ? keep x ?> Some x |: None) None xs
 
-:= keep_where \* t. (keep : t -> bool) (xs : list t) : list t = listm::fold (\ acc x => ? keep x ?> x :: acc |: acc) [] xs |> listm::rev
+:= keep_where \* t. (keep : t -> bool) (xs : list t) : list t =
+    listm::fold (\ acc x => ? keep x ?> x :: acc |: acc) [] xs |> listm::rev
 
 := values_of \* k v. (xs : list (k * v)) : list v = listm::fold (\ acc p => pair_val p :: acc) [] xs |> listm::rev
 
@@ -77,10 +105,18 @@
     | None => false
 
 := unfollow (s : store) (follower : id user) (followed : id user) : store =
-    { s with follows = keep_where (\ p => ? id_eq (pair_key p) follower ?> (? id_eq (pair_val p) followed ?> false |: true) |: true) s::follows }
+    { s with
+        follows =
+            keep_where
+                \ p => ? id_eq (pair_key p) follower ?> (? id_eq (pair_val p) followed ?> false |: true) |: true
+                s::follows
+    }
 
 := unfavorite (s : store) (u : id user) (a : id article) : store =
-    { s with favorites = keep_where (\ p => ? id_eq (pair_key p) u ?> (? id_eq (pair_val p) a ?> false |: true) |: true) s::favorites }
+    { s with
+        favorites =
+            keep_where (\ p => ? id_eq (pair_key p) u ?> (? id_eq (pair_val p) a ?> false |: true) |: true) s::favorites
+    }
 
 := delete_user (s : store) (uid : id user) : store =
     { s with users = keep_where (\ p => ? id_eq (pair_key p) uid ?> false |: true) s::users }

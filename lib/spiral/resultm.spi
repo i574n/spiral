@@ -392,7 +392,8 @@
     |:
         run_target \|
             | Rust => \ () => x |> unwrap'
-            | _ => \ () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\'\' / e: {e}"'
+            | Fsharp => \ () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\'\' / e: {e}"'
+            | _ => \ () => failwith "resultm.unwrap'': no arm for this backend"
 
 := unwrap_err' \* t u. (x : result' t u) : u =
     ? result'_union () ?>

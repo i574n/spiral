@@ -166,7 +166,7 @@ function Get-SpiralFastTier([string]$Mode = 'single-flight', [hashtable]$Policy)
     $byKey = @{}
     foreach ($row in $current) { $byKey[$row.Key] = $row }
     $chosen = [Collections.Generic.Dictionary[string, object]]::new()
-    $tally = [pscustomobject]@{ Seconds = 0.0 }
+    $spent = [pscustomobject]@{ Seconds = 0.0 }
     $withOracle = {
         param($row)
         $oracleKey = "$($row.Id)|C"
@@ -177,7 +177,7 @@ function Get-SpiralFastTier([string]$Mode = 'single-flight', [hashtable]$Policy)
     $choose = {
         param($row)
         foreach ($member in & $withOracle $row) {
-            if (-not $chosen.ContainsKey($member.Key)) { $chosen[$member.Key] = $member; $tally.Seconds += $member.Cost }
+            if (-not $chosen.ContainsKey($member.Key)) { $chosen[$member.Key] = $member; $spent.Seconds += $member.Cost }
             if ($member.FlipHistory) { [void]$coveredFlipHistories.Add($member.FlipHistory) }
         }
     }
@@ -193,11 +193,11 @@ function Get-SpiralFastTier([string]$Mode = 'single-flight', [hashtable]$Policy)
     }
     foreach ($row in $current | Where-Object Young | Sort-Object Cost) { & $choose $row }
     foreach ($row in $current | Where-Object FlipHistory | Sort-Object Cost) {
-        if ($coveredFlipHistories.Contains($row.FlipHistory) -or $tally.Seconds + (& $addedCost $row) -gt $budget) { continue }
+        if ($coveredFlipHistories.Contains($row.FlipHistory) -or $spent.Seconds + (& $addedCost $row) -gt $budget) { continue }
         & $choose $row
     }
     foreach ($row in $current | Sort-Object { - ($_.Signal + 0.01) / ($_.Cost + 0.05) }) {
-        if ($row.Signal -le 0 -or $chosen.ContainsKey($row.Key) -or (& $flipTwin $row) -or $tally.Seconds + (& $addedCost $row) -gt $budget) { continue }
+        if ($row.Signal -le 0 -or $chosen.ContainsKey($row.Key) -or (& $flipTwin $row) -or $spent.Seconds + (& $addedCost $row) -gt $budget) { continue }
         & $choose $row
     }
     $allSignal = ($current | Measure-Object Signal -Sum).Sum
@@ -211,7 +211,7 @@ function Get-SpiralFastTier([string]$Mode = 'single-flight', [hashtable]$Policy)
         ReferenceRows = $current.Count
         HistoryRuns = $history.MinedRuns
         TimeoutHeavyRuns = $history.TimeoutHeavyRuns
-        CostSeconds = $tally.Seconds
+        CostSeconds = $spent.Seconds
         AllCostSeconds = $allCost
         Signal = ($picked | Measure-Object Signal -Sum).Sum
         AllSignal = $allSignal

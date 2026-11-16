@@ -1,0 +1,11 @@
+:! amount currency scale = i64
+
+:! brl = ()
+
+:= plus \* c s. ((amount a) : amount c s) ((amount b) : amount c s) : amount c s = amount (a + b)
+
+:= main () : i32 =
+    := cents : amount brl 2i32 = amount 7374i64
+    := fine : amount brl 4i32 = amount 15i64
+    := (amount total) = plus cents fine
+    conv total

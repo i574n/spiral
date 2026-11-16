@@ -13,14 +13,14 @@ defmodule Spiral.Cells.Domain do
   end
 
   @passthrough [
-    prepare: 1, patch_rust: 2, verdict_counts: 1, void_text: 4, source_input_rows: 2, source_split_blocks: 2,
-    result_fields: 1, reached_program: 2, block_shape: 2, cell_weight: 2, status_reply: 1, from_toml: 1, source_remap: 4,
+    prepare: 1, static_opens_sibling: 2, patch_rust: 2, verdict_counts: 1, void_text: 4, source_input_rows: 2, source_split_blocks: 2,
+    result_fields: 1, summary_fields: 1, output_html: 1, cell_head_html: 1, headroom_text: 2, sorted_render: 1, summary_lines_json: 2, metrics_tsv: 1, reached_program: 2, block_shape: 2, cell_weight: 2, cell_budget_lines: 2, cell_budget_over_lines: 1, status_reply: 1, from_toml: 1, source_remap: 4,
     markdown_html: 1, json_canonical: 1, builder_present: 1, builder_failure_trace: 1, builder_split: 1, host_language: 1,
     host_extension: 1, is_cl_compiler: 1, mount_sibling_project: 1, gleam_strip_warnings: 1, split_output: 1, unit_result: 1,
     package_project: 1, parse_dib: 1, to_spi: 1, to_spir: 1, to_spi_tested: 1, to_spir_tested: 1, from_spi_bounded: 4,
-    target_backend: 1, target_extension: 1, from_spi: 2, target_gaps: 1, test_index: 1, plan_tests: 1, plan: 1, compile_reply: 1,
+    target_backend: 1, target_extension: 1, from_spi: 2, target_gaps: 1, test_index: 1, plan_tests: 1, fails_expectation: 1, body_head: 1, body_floor: 2, directive_flag: 2, directive_word: 2, no_agree_reason: 1, bare_no_agree: 1, compile_error_verdict: 4, canonical_unions: 1, canonical_collections: 1, shown_lines: 1, main_span: 1, type_lines: 1, clean_paths: 2, package_dir_of: 1, with_real_main: 1, package_dir_value: 1, mount_name_of: 1, fsi_failed: 1, canon_package_paths: 1, canon_package_flags: 2, unknown_tests: 3, test_state: 3, fsi_reply_text: 3, fsi_reply_value: 2, fsi_cut_output: 2, fsi_after_marker: 1, accept_mismatch: 1, accept_passed_before: 1, accept_rewrite: 5, livemd_cells: 1, livemd_markdown: 1, value_result: 2, plan: 1, compile_reply: 1,
     block_facts: 2, pool_reply: 1, hello_reply: 1, gleam_manifest_facts: 1,
-    opened_names: 1, package_paths: 1, strip_comments: 1, shim_path: 1, phase_row: 2
+    opened_names: 1, package_paths: 1, strip_comments: 1, shim_path: 1, phase_row: 3, module_entries: 1, compile_exchange: 10, compile_request: 1, compile_reply_line: 3, count_or: 2, idle_window: 2, pressure_window: 1, memory_pressed: 2, recycle_why: 4, banner_text: 4, dll_stamp_text: 4, slot_of: 5, prunable: 2, pin_stale: 2, forwarded: 1, status_wire: 6, pool_wire: 4, compiler_session: 6, python_patched: 1, mem_available_mb: 1, directive_timeout: 1, project_name_ok: 1, plot_jsons: 1, html_escape: 1, html_head: 1, highlighted: 2, file_number: 1, cells_module: 1, session_lost: 1, native_path: 2, clock_text: 3, log_tail: 1, tasklist_kb: 2, vm_rss_kb: 1, owner_text: 1, tool_spelling: 2, live_status: 1, pool_summary: 2, root_spelling: 1, root_key: 2, start_process_line: 2, launcher_line: 2, start_cmd_text: 2, spawn_script: 5, runtime_file: 2, warm_port_name: 2, foreign_toolchain_text: 1, ping_wire: 1, shown_text: 1, banner_dll_wire: 1, retire_daemon: 1, builder_route: 2, retired_skip_error: 2, builder_argv: 2, zig_args: 6, c_args: 4, python_warnings: 1, builder_failed_text: 2, c_exe_path: 2, cell_timeout_text: 4, daemon_command: 4
   ]
 
   for {name, arity} <- @passthrough do

@@ -4,7 +4,7 @@
 :! signed = ()
 
 :! nfe_draft = { id : string }
-:! nfe_signed = { xml : string; digest : string }
+:! nfe_signed = { xml : string; fingerprint : string }
 
 :| document state =
     | Draft :: nfe_draft -> document draft
@@ -14,7 +14,7 @@
 
 := sign (document : document draft) : document signed =
     ?= document ?|
-    | Draft _ => Signed (nfe_signed { xml = "nfe.xml"; digest = "sha256" })
+    | Draft _ => Signed (nfe_signed { xml = "nfe.xml"; fingerprint = "sha256" })
 
 := stamp \* state. (document : document state) : stamped state =
     stamped { payload = document; label = "audited" }

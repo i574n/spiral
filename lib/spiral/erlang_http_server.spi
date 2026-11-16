@@ -55,25 +55,16 @@
     := start = head_end r::raw + 4i32
     ? head_end r::raw < 0i32 ?> "" |: sm'::substring start (sm'::length r::raw - start) r::raw
 
-:= url_decoded (s : string) : string = erlang_text::percent_decoded (sm'::replace "+" " " s)
+:= url_decoded (s : string) : string = url_query::url_decoded s
 
-:= pair_value (name : string) (item : string) : option string =
-    := k, v = split_once "=" item
-    ? v <> "" && url_decoded k = name ?> Some (url_decoded v) |: None
-
-:~ ^ first_value (name : string) (items : list string) : string =
-    ?= items ?|
-    | item :: rest => ?= pair_value name item ?| Some v => v | None => first_value name rest
-    | [] => ""
-
-:= query_value (name : string) (query : string) : string = first_value name (pieces "&" query)
+:= query_value (name : string) (query : string) : string = url_query::query_value name query
 
 := query_list (name : string) (query : string) : list string =
     query_value name query |> pieces "," |> listm'::filter (\ s => s <> "")
 
 := client_reasons () : list (i32 * string) =
-    [ (200i32, "OK"); (201i32, "Created"); (400i32, "Bad Request"); (401i32, "Unauthorized");
-        (402i32, "Payment Required"); (403i32, "Forbidden"); (404i32, "Not Found") ]
+    [ (200i32, "OK"); (201i32, "Created"); (204i32, "No Content"); (400i32, "Bad Request"); (401i32, "Unauthorized");
+        (402i32, "Payment Required"); (403i32, "Forbidden"); (404i32, "Not Found"); (409i32, "Conflict") ]
 
 := server_reasons () : list (i32 * string) =
     [ (422i32, "Unprocessable Entity"); (429i32, "Too Many Requests"); (500i32, "Internal Server Error");
@@ -84,6 +75,13 @@
     ?= known |> listm'::filter (\ (s, _) => s = status) ?| (_, r) :: _ => r | [] => "Status"
 
 := status_line (status : i32) : string = "HTTP/1.1 " ++# sm'::obj_to_string status ++# " " ++# reason status
+
+///> gleam
+:# no_content_and_conflict_have_their_reason_phrases =
+    := ~codes = [ 204i32; 409i32; 299i32 ]
+    codes
+    |> listm::map status_line
+    |> _assert_eq [ "HTTP/1.1 204 No Content"; "HTTP/1.1 409 Conflict"; "HTTP/1.1 299 Status" ]
 
 := headers_text (kind : string) (body : string) : string =
     := length = "\r\nContent-Length: " ++# sm'::obj_to_string (erlang_term::byte_size_of body)

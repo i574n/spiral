@@ -4,7 +4,7 @@ Development-stage Spiral language support for [Zed](https://zed.dev).
 
 > [!IMPORTANT]
 > This is not yet a verified end-to-end editor integration. The native helper
-> passes its unit and compiler-probe tests, but the latest observed Zed startup
+> passes its unit and compiler-trial tests, but the latest observed Zed startup
 > still used a stale `extension.wasm` and failed to locate `spiral-zed.exe`.
 > Rebuild the dev extension in Zed and complete the manual checklist below
 > before treating diagnostics, hover, semantic tokens, or build actions as
@@ -21,7 +21,7 @@ known gaps, failed approaches, and continuation checklist.
 | `.spiproj` association | Implemented, parsed with the same line grammar |
 | Tree-sitter grammar | `tree-sitter-spiral` line grammar (exact test headers, directives, comments); expressions are not parsed |
 | Highlighting/outline/runnables queries | From the grammar; brackets and indents queries are empty; expression highlighting comes from semantic tokens |
-| Native `spiral-zed` helper | Unit-tested and compiler-probed on Windows |
+| Native `spiral-zed` helper | Unit-tested and compiler-trialed on Windows |
 | Zed-to-helper launch | Blocked pending a dev-extension rebuild and manual verification |
 | Diagnostics, hover, semantic tokens, build actions | Implemented in the helper, not currently verified in Zed |
 | Format document | `textDocument/formatting` answers one whole-document edit from `SpiralCompiler format --stdin --path`; `spiral-zed --format FILE` prints the edited file; not yet verified in Zed |
@@ -89,7 +89,7 @@ This command:
 4. verifies that `fixtures/ok/main.spi` succeeds; and
 5. verifies that `fixtures/bad/main.spi` fails.
 
-The latest recorded run passed 21 Rust tests and both compiler probes. That
+The latest recorded run passed 21 Rust tests and both compiler trials. That
 proves the native helper path, not the Zed integration.
 
 ## Install or rebuild the dev extension

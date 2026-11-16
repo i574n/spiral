@@ -1,0 +1,23 @@
+:! unit_ty = string
+
+:! bool_ty = string
+
+:! false_ty = string
+
+:| value ty =
+    | UnitValue :: value unit_ty
+    | BoolValue :: bool -> value bool_ty
+
+:= absurd \* t. (x : value false_ty) : t =
+    ?= x ?|
+
+:= describe \* ty. (x : value ty) : i32 =
+    ?= x ?|
+    | UnitValue => 1i32
+    | BoolValue b => ? b ?> 2i32 |: 3i32
+
+:= main () : i32 =
+    := ~never = fun (x : value false_ty) => (absurd x : i32)
+    := ~flag = true
+    := total = describe UnitValue +. describe (BoolValue flag)
+    ? !!!!EQ(total, 3i32) ?> 0i32 |: 1i32
