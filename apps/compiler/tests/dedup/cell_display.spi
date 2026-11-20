@@ -1,0 +1,62 @@
+///- --package .
+:# cell_display static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:== trm = erlang_term::term
+
+:~ d_begin () : string = "SPIRAL_CELLS_DISPLAY_BEGIN"
+
+:~ d_finish () : string = "SPIRAL_CELLS_DISPLAY_END"
+
+:| dstate =
+    | DNormal
+    | DMime
+    | DOpen : string * list string
+
+:== dacc = (list trm) * (list string) * dstate
+
+:~ dkv (k : string) (v : string) : trm = erlang_term::tuple [ erlang_term::atom k; erlang_term::of v ]
+
+:~ dmap (mime : string) (data : string) : trm =
+    erlang_term::apply "maps" "from_list" [ erlang_term::list_term [ dkv "mime" mime; dkv "data" data ] ]
+
+:~ join_lines (xs : list string) : string = sm'::concat_list "\n" xs
+
+:~ dclose (displays : list trm) (kept : list string) (mime : string) (lines : list string) : dacc =
+    (dmap mime (join_lines (listm::rev lines)) :: displays, kept, DNormal)
+
+:~ dnormal (displays : list trm) (kept : list string) (line : string) : dacc =
+    ? line = d_begin () ?> (displays, kept, DMime) |: (displays, line :: kept, DNormal)
+
+:~ dopen (displays : list trm) (kept : list string) (mime : string) (lines : list string) (line : string) : dacc =
+    ? line = d_finish () ?> dclose displays kept mime lines |: (displays, kept, DOpen (mime, line :: lines))
+
+:~ dcollect (acc : dacc) (line : string) : dacc =
+    := (displays, kept, st) = acc
+    ?= st ?|
+    | DNormal => dnormal displays kept line
+    | DMime => (displays, kept, DOpen (text::trim line, []))
+    | DOpen (mime, lines) => dopen displays kept mime lines line
+
+:~ unclosed (kept : list string) (st : dstate) : list string =
+    ?= st ?|
+    | DNormal => kept
+    | DMime => d_begin () :: kept
+    | DOpen (mime, lines) => listm::append lines (mime :: d_begin () :: kept)
+
+:~ extract_result (displays : list trm) (kept : string) : trm =
+    erlang_term::tuple [ erlang_term::list_term displays; erlang_term::of kept ]
+
+:~ kept_text (kept : list string) (st : dstate) : string = join_lines (listm::rev (unclosed kept st))
+
+:~ extract_marked (stdout : string) : trm =
+    := lines = sm'::split_list "\n" (text::replace stdout "\r\n" "\n")
+    := (displays, kept, st) = listm::fold dcollect ([], [], DNormal) lines
+    extract_result (listm::rev displays) (kept_text kept st)
+
+:~ extract (stdout : string) : trm =
+    ? text::contains stdout (d_begin ())
+    ?> extract_marked stdout
+    |: extract_result [] stdout

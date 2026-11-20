@@ -1,0 +1,20 @@
+:< sm'_operators
+
+:! settled = ()
+:! owed n = ()
+
+:| ^ saga state =
+    | Done :: saga settled
+    | Reserve :: \* n. string * saga (owed n) -> saga n
+    | Release :: \* n. string * saga n -> saga (owed n)
+
+:= ^ steps \* n. (s : saga n) : i32 =
+    ?= s ?|
+    | Done => 0i32
+    | Reserve (_, rest) => 1i32 + steps rest
+    | Release (_, rest) => 1i32 + steps rest
+
+:= main () : i32 =
+    := ~item = "seat-7"
+    := s : saga settled = Reserve (item, Reserve ("seat-8", Release ("seat-8", Release (item, Done))))
+    steps s

@@ -1,0 +1,264 @@
+///- --package .
+:# canonical static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ at (s : string) (i : i32) : char = text::index s i
+
+:~ word (c : char) : bool = text::is_letter c || text::digit_val c >= 0i32 || c = '_'
+
+:~ upper (c : char) : bool = text::has_char "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 0i32 c
+
+:~ one (s : string) (i : i32) : string = text::slice_len s i 1i32
+
+:~ boundary (s : string) (i : i32) : bool = i <= 0i32 || not (word (at s (i - 1i32)))
+
+:~ after_open (s : string) (i : i32) : bool =
+    i >= 1i32 && (at s (i - 1i32) = '(' || at s (i - 1i32) = ',' || (i >= 2i32 && at s (i - 1i32) = ' ' && at s (i - 2i32) = ','))
+
+:~ ^ digits_to (s : string) (i : i32) : i32 = ? i < text::length s && text::digit_val (at s i) >= 0i32 ?> digits_to s (i + 1i32) |: i
+
+:~ ^ words_to (s : string) (i : i32) : i32 = ? i < text::length s && word (at s i) ?> words_to s (i + 1i32) |: i
+
+:~ ^ find_char (s : string) (i : i32) (c : char) : i32 = ? i >= text::length s ?> -1i32 |? at s i = c ?> i |: find_char s (i + 1i32) c
+
+:~ ^ vnames (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |:
+        := d = digits_to s (i + 1i32)
+        := hit = after_open s i && at s i = 'v' && d > i + 1i32 && d < text::length s && at s d = '='
+        ? hit ?> vnames s (d + 1i32) acc |: vnames s (i + 1i32) (acc ++ one s i)
+
+:~ ^ quotes (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |:
+        := close = ? after_open s i && at s i = '\'' ?> find_char s (i + 1i32) '\'' |: -1i32
+        ? close > i ?> quotes s (close + 1i32) (acc ++ text::slice_len s (i + 1i32) (close - i - 1i32)) |: quotes s (i + 1i32) (acc ++ one s i)
+
+:~ union_name_end (s : string) (i : i32) : i32 =
+    := n = text::length s
+    := tagged = i + 1i32 < n && at s i = 'U' && text::has_char "SsHh" 0i32 (at s (i + 1i32))
+    := d = ? tagged ?> digits_to s (i + 2i32) |: i
+    := u = ? d < n && at s d = '_' ?> d + 1i32 |: d
+    ? tagged && boundary s i && d > i + 2i32 && u < n && upper (at s u) ?> words_to s u |: -1i32
+
+:~ union_name_start (s : string) (i : i32) : i32 =
+    := d = digits_to s (i + 2i32)
+    ? d < text::length s && at s d = '_' ?> d + 1i32 |: d
+
+:| union_mode =
+    | EmptyArgs
+    | SpaceParen
+    | SpaceToken
+    | Bare
+
+:~ ^ token_to (s : string) (i : i32) : i32 =
+    ? i < text::length s && not (text::is_space (at s i)) && not (text::has_char "(),{}" 0i32 (at s i)) ?> token_to s (i + 1i32) |: i
+
+:~ ^ union_pass (s : string) (mode : union_mode) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |:
+        := e = union_name_end s i
+        := name = ? e > i ?> text::slice_len s (union_name_start s i) (e - union_name_start s i) |: ""
+        := n = text::length s
+        ?= mode ?|
+        | EmptyArgs =>
+            ? e > i && e + 1i32 < n && at s e = '(' && at s (e + 1i32) = ')' ?> union_pass s mode (e + 2i32) (acc ++ name) |: union_pass s mode (i + 1i32) (acc ++ one s i)
+        | SpaceParen =>
+            ? e > i && e + 1i32 < n && at s e = ' ' && at s (e + 1i32) = '(' ?> union_pass s mode (e + 2i32) (acc ++ name ++ "(") |: union_pass s mode (i + 1i32) (acc ++ one s i)
+        | SpaceToken =>
+            := t = token_to s (e + 1i32)
+            ? e > i && e < n && at s e = ' ' && t > e + 1i32
+            ?> union_pass s mode t (acc ++ name ++ "(" ++ text::slice_len s (e + 1i32) (t - e - 1i32) ++ ")")
+            |: union_pass s mode (i + 1i32) (acc ++ one s i)
+        | Bare => ? e > i ?> union_pass s mode e (acc ++ name) |: union_pass s mode (i + 1i32) (acc ++ one s i)
+
+:~ ^ empty_ctor (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |:
+        := e = words_to s i
+        := hit = boundary s i && upper (at s i) && e + 1i32 < text::length s && at s e = '(' && at s (e + 1i32) = ')'
+        ? hit ?> empty_ctor s (e + 2i32) (acc ++ text::slice_len s i (e - i)) |: empty_ctor s (i + 1i32) (acc ++ one s i)
+
+:~ canonical_unions (line : string) : string =
+    := a = quotes (vnames line 0i32 "") 0i32 ""
+    := b = union_pass (union_pass (union_pass (union_pass a EmptyArgs 0i32 "") SpaceParen 0i32 "") SpaceToken 0i32 "") Bare 0i32 ""
+    empty_ctor b 0i32 ""
+
+:~ ^ struct_open (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |? boundary s i && text::starts_at s i "struct ("
+    ?> struct_open s (i + 8i32) (acc ++ "(")
+    |? text::starts_at s i "#("
+    ?> struct_open s (i + 2i32) (acc ++ "(")
+    |: struct_open s (i + 1i32) (acc ++ one s i)
+
+:~ ^ blank_to (s : string) (i : i32) : i32 = ? i < text::length s && text::is_space (at s i) ?> blank_to s (i + 1i32) |: i
+
+:~ ^ empty_array (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |:
+        := b = blank_to s (i + 2i32)
+        ? text::starts_at s i "[|" && text::starts_at s b "|]" ?> empty_array s (b + 2i32) (acc ++ "[]") |: empty_array s (i + 1i32) (acc ++ one s i)
+
+:~ joined (parts : list string) : string = sm'::concat_list ", " (listm::map (\ (p : string) => text::utrim p) parts)
+
+:~ ^ bar_array (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |:
+        := close = ? text::starts_at s i "[|" ?> text::find_from s "|]" (i + 2i32) |: -1i32
+        ? close >= 0i32
+        ?> bar_array s (close + 2i32) (acc ++ "[" ++ joined (sm'::split_list ";" (text::slice_len s (i + 2i32) (close - i - 2i32))) ++ "]")
+        |: bar_array s (i + 1i32) (acc ++ one s i)
+
+:~ ^ plain_to (s : string) (i : i32) : i32 = ? i < text::length s && not (text::has_char "[],();|" 0i32 (at s i)) ?> plain_to s (i + 1i32) |: i
+
+:~ ^ spaced_words (s : string) (i : i32) (cur : string) (acc : list string) : list string =
+    ? i >= text::length s
+    ?> listm::rev (? cur = "" ?> acc |: cur :: acc)
+    |? text::is_space (at s i)
+    ?> spaced_words s (i + 1i32) "" (? cur = "" ?> acc |: cur :: acc)
+    |: spaced_words s (i + 1i32) (cur ++ one s i) acc
+
+:~ ^ space_array (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |:
+        := e = plain_to s (i + 1i32)
+        ? at s i = '[' && e < text::length s && at s e = ']'
+        ?> space_array s (e + 1i32) (acc ++ "[" ++ sm'::concat_list ", " (spaced_words (text::slice_len s (i + 1i32) (e - i - 1i32)) 0i32 "" []) ++ "]")
+        |: space_array s (i + 1i32) (acc ++ one s i)
+
+:~ canonical_collections (line : string) : string = space_array (bar_array (empty_array (struct_open line 0i32 "") 0i32 "") 0i32 "") 0i32 ""
+
+:~ ^ ansi_end (s : string) (i : i32) : i32 =
+    ? i < text::length s && (text::digit_val (at s i) >= 0i32 || at s i = ';') ?> ansi_end s (i + 1i32) |: i
+
+:~ ^ without_ansi (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |:
+        := e = ansi_end s (i + 2i32)
+        ? text::byte_at s i = 27i32 && i + 1i32 < text::length s && at s (i + 1i32) = '[' && e < text::length s && at s e = 'm'
+        ?> without_ansi s (e + 1i32) acc
+        |: without_ansi s (i + 1i32) (acc ++ one s i)
+
+:~ unwrapped (line : string) : string =
+    := n = text::length line
+    ? n >= 10i32 && text::starts_with line "String(\"" && text::starts_at line (n - 2i32) "\")"
+    ?> text::replace (text::replace (text::slice_len line 8i32 (n - 10i32)) "\\\"" "\"") "\\\\" "\\"
+    |: line
+
+:~ two_digits_at (s : string) (i : i32) : bool = i + 1i32 < text::length s && text::digit_val (at s i) >= 0i32 && text::digit_val (at s (i + 1i32)) >= 0i32
+
+:~ clock_line (s : string) : bool =
+    := d = digits_to s 9i32
+    two_digits_at s 0i32 && text::starts_at s 2i32 ":" && two_digits_at s 3i32 && text::starts_at s 5i32 ":" && two_digits_at s 6i32
+    && text::starts_at s 8i32 " " && d > 9i32 && d < text::length s && text::is_letter (at s d) && text::starts_at s (d + 1i32) " "
+
+:~ ^ fs_warning_from (s : string) (at_i : i32) : bool =
+    := k = text::find_from s ".fs" at_i
+    := p = ? k >= 0i32 && text::starts_at s (k + 3i32) "x(" ?> k + 5i32 |? k >= 0i32 && text::starts_at s (k + 3i32) "(" ?> k + 4i32 |: -1i32
+    := a = ? p >= 0i32 ?> digits_to s p |: -1i32
+    := b = ? a > p && text::starts_at s a "," ?> digits_to s (a + 1i32) |: -1i32
+    := c = ? b > a + 1i32 && text::starts_at s b "): warning FS" ?> digits_to s (b + 13i32) |: -1i32
+    ? k < 0i32 ?> !- |? c > b + 13i32 && text::starts_at s c ":" ?> !+ |: fs_warning_from s (k + 1i32)
+
+:~ trace_line (s : string) : bool = clock_line s || text::starts_with s "at " || fs_warning_from s 0i32
+
+:~ ^ kept_lines (lines : list string) (acc : list string) : list string =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | raw :: rest =>
+        := line = unwrapped (text::utrim (without_ansi raw 0i32 ""))
+        kept_lines rest (? line = "" || trace_line line ?> acc |: line :: acc)
+
+:~ ^ without_last_zero (lines : list string) : list string =
+    ?= lines ?|
+    | [] => []
+    | "0" :: [] => []
+    | x :: rest => x :: without_last_zero rest
+
+:~ shown_lines (stdout : string) : string =
+    := lines = without_last_zero (kept_lines (sm'::split_list "\n" (text::replace stdout "\r\n" "\n")) [])
+    := tidy = \ (line : string) => canonical_collections (canonical_unions (text::replace (text::replace line "\\\"" "") "\"" ""))
+    sm'::concat_list "\n" (listm::map tidy lines)
+
+:~ ^ last_at (s : string) (pat : string) (at : i32) (best : i32) : i32 =
+    := k = text::find_from s pat at
+    ? k < 0i32 ?> best |: last_at s pat (k + 1i32) k
+
+:~ type_line (line : string) : string =
+    := g = text::find_from line "Got:" 0i32
+    := e = ? g >= 0i32 ?> last_at line " Expected:" (g + 4i32) -1i32 |: -1i32
+    ? e < 0i32 ?> line |: text::take line e ++ "\nExpected:" ++ text::drop line (e + 10i32)
+
+:~ type_lines (output : string) : string = sm'::concat_list "\n" (listm::map type_line (sm'::split_list "\n" output))
+
+:~ folded (b : i32) : i32 = ? b >= 65i32 && b <= 90i32 ?> b + 32i32 |: b
+
+:~ ^ prefix_end (s : string) (p : string) (i : i32) (j : i32) : i32 =
+    ? j >= text::length p
+    ?> i
+    |? i >= text::length s
+    ?> -1i32
+    |:
+        := sb = text::byte_at s i
+        := pb = text::byte_at p j
+        := ok = ? pb = 47i32 ?> sb = 47i32 || sb = 92i32 |: folded sb = folded pb
+        ? ok ?> prefix_end s p (i + 1i32) (j + 1i32) |: -1i32
+
+:~ slash_after (s : string) (e : i32) : i32 =
+    ? e < text::length s && (text::byte_at s e = 47i32 || text::byte_at s e = 92i32) ?> e + 1i32 |: e
+
+:~ ^ cleaned_from (s : string) (p : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |:
+        := with_scheme = ? prefix_end s "file:///" i 0i32 >= 0i32 ?> prefix_end s p (i + 8i32) 0i32 |: -1i32
+        := bare = prefix_end s p i 0i32
+        := e = ? with_scheme >= 0i32 ?> with_scheme |: bare
+        ? p <> "" && e >= 0i32 ?> cleaned_from s p (slash_after s e) acc |: cleaned_from s p (i + 1i32) (acc ++ one s i)
+
+:~ clean_paths (output : string) (dir : string) : string = text::utrim (cleaned_from output dir 0i32 "")
+
+///> gleam
+:# union_constructors_reach_one_canonical_form_like_the_elixir_regexes =
+    := ~python = "__assert_eq { expected = UH0_Cons(v0='a', v1=UH0_Cons(v0='b', v1=UH0_Nil())) }"
+    := ~fsharp = "__assert_eq { expected = UH0_Cons (a, UH0_Cons (b, UH0_Nil)) }"
+    (canonical_unions python, canonical_unions fsharp) |> _assert_eq ("__assert_eq { expected = Cons(a, Cons(b, Nil)) }", "__assert_eq { expected = Cons(a, Cons(b, Nil)) }")
+    (canonical_unions "US0_Some(v0=1.0)", canonical_unions "US1_Some 1.0", canonical_unions "Us0Some(1.0)") |> _assert_eq ("Some(1.0)", "Some(1.0)", "Some(1.0)")
+    (canonical_unions "US0_None()", canonical_unions "US0_None", canonical_unions "Us0None", canonical_unions "Some()") |> _assert_eq ("None", "None", "None", "Some")
+    (canonical_unions "US0_Some(v0='')", canonical_unions "Us0Some()", canonical_unions "XUS0_Some 1", canonical_unions "US0_some 1") |> _assert_eq ("Some", "Some", "XUS0_Some 1", "US0_some 1")
+
+///> gleam
+:# arrays_and_tuples_reach_one_canonical_form_like_the_elixir_regexes =
+    := ~bars = "[|0; 2; 4|]"
+    (canonical_collections bars, canonical_collections "[0 2 4]", canonical_collections "[0, 2, 4]", canonical_collections "[||]") |> _assert_eq ("[0, 2, 4]", "[0, 2, 4]", "[0, 2, 4]", "[]")
+    (canonical_collections "[1 -2]", canonical_collections "a, #(1, b)", canonical_collections "[|struct (0, 0); struct (1, 2)|]") |> _assert_eq ("[1, -2]", "a, (1, b)", "[(0, 0), (1, 2)]")
+    (canonical_collections "[| |]", canonical_collections "[]", canonical_collections "x[a(b]", canonical_collections "mystruct (1)") |> _assert_eq ("[]", "[]", "x[a(b]", "mystruct (1)")
+
+///> gleam
+:# shown_lines_drop_traces_unwrap_strings_and_canonicalize =
+    := ~out = "String(\"a \\\"q\\\" b\")\r\n12:01:02 15I fsi says hi\r\nat Foo.Bar\r\nc:\\x\\main.fsx(436,54): warning FS3884: fn\r\n  US0_Some(v0=1)  \r\n\r\n0\r\n"
+    shown_lines out |> _assert_eq "a q b\nSome(1)"
+    (shown_lines "", shown_lines "\n", shown_lines "0", shown_lines "1\n0\n0") |> _assert_eq ("", "", "", "1\n0")
+    (shown_lines "String(\"x\") tail", shown_lines "12:01:02 x not a trace", shown_lines "a.fs(1,2): warning FS9: w") |> _assert_eq ("String(x) tail", "12:01:02 x not a trace", "")
+    := nbsp = unicode::char_of 160i32
+    := wide = unicode::char_of 12288i32
+    (shown_lines (nbsp ++ "value" ++ nbsp ++ "\n" ++ wide ++ "next" ++ wide), clean_paths (wide ++ "/w/x.spi ok" ++ nbsp) "/w") |> _assert_eq ("value\nnext", "x.spi ok")
+
+///> gleam
+:# type_lines_split_got_and_expected_and_clean_paths_drop_the_work_dir =
+    := ~out = "x Got: i32 Expected: ()\nGot:Expected: a Expected: b\nplain Expected: c"
+    type_lines out |> _assert_eq "x Got: i32\nExpected: ()\nGot:Expected: a\nExpected: b\nplain Expected: c"
+    := ~dir = "C:/Work/Cells"
+    (clean_paths "  file:///c:/work/cells/main.spi:3:1: x " dir, clean_paths "C:\\Work\\Cells\\a.spi and C:/WORK/cells" dir, clean_paths "D:/Work/Cells2" dir) |> _assert_eq ("main.spi:3:1: x", "a.spi and", "D:/Work/Cells2")

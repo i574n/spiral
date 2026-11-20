@@ -1,0 +1,297 @@
+///- --package .
+:# mount_text static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ patch_first (body : string) (old : string) (new : string) : string =
+    := at = text::find_from body old 0i32
+    ? at < 0i32 ?> "E" |: "K" ++ text::take body at ++ new ++ text::drop body (at + text::length old)
+
+:~ separator (ch : string) : bool = ch = "/" || ch = "\\"
+
+:~ ^ has_separator (s : string) (i : i32) : bool =
+    ? i >= text::length s ?> !- |? separator (text::slice_len s i 1i32) ?> !+ |: has_separator s (i + 1i32)
+
+:~ without_dot_slash (name : string) : string =
+    ? text::starts_with name "./" || text::starts_with name ".\\" ?> text::drop name 2i32 |: name
+
+:~ nested (name : string) : bool = has_separator (without_dot_slash name) 0i32
+
+:~ ^ first_nested (names : list string) : string =
+    ?= names ?|
+    | [] => ""
+    | name :: rest => ? nested name ?> name |: first_nested rest
+
+:~ ^ lines_of (src : string) (i : i32) (acc : list string) : list string =
+    := nl = text::find_from src "\n" i
+    ? nl < 0i32
+    ?> listm::rev (text::drop src i :: acc)
+    |: lines_of src (nl + 1i32) (text::slice_len src i (nl - i) :: acc)
+
+:~ nested_name (names : string) : string = first_nested (? names = "" ?> [] |: lines_of names 0i32 [])
+
+:~ blank_char (ch : string) : bool = ch = " " || ch = "\t" || ch = "\r" || ch = "\n"
+
+:~ ^ lead_blank (s : string) (i : i32) : i32 =
+    ? i < text::length s && blank_char (text::slice_len s i 1i32)
+    ?> lead_blank s (i + 1i32)
+    |: i
+
+:~ ^ trail_blank (s : string) (n : i32) : i32 =
+    ? n > 0i32 && blank_char (text::slice_len s (n - 1i32) 1i32)
+    ?> trail_blank s (n - 1i32)
+    |: n
+
+:~ package_dir_line (line : string) : bool =
+    := prefix = "packageDir:"
+    := rest = text::drop line (text::length prefix)
+    text::starts_with line prefix && trail_blank rest (text::length rest) > lead_blank rest 0i32
+
+:~ ^ trimmed_end (s : string) (suffix : string) : string =
+    ? text::length s >= text::length suffix && text::drop s (text::length s - text::length suffix) = suffix
+    ?> trimmed_end (text::take s (text::length s - text::length suffix)) suffix
+    |: s
+
+:~ entry_item (declared : string) : string = trimmed_end (trimmed_end declared "-") "*"
+
+:~ relative_item (item : string) : bool =
+    text::starts_with item "./"
+    || text::starts_with item "../"
+    || text::starts_with item ".\\"
+    || text::starts_with item "..\\"
+
+:~ ^ last_separator (s : string) (i : i32) : i32 =
+    ? i < 0i32 ?> -1i32 |? separator (text::slice_len s i 1i32) ?> i |: last_separator s (i - 1i32)
+
+:~ ^ without_trailing_separators (s : string) : string =
+    ? text::length s > 1i32 && separator (text::drop s (text::length s - 1i32))
+    ?> without_trailing_separators (text::take s (text::length s - 1i32))
+    |: s
+
+:~ basename (path : string) : string =
+    := p = without_trailing_separators path
+    text::drop p (last_separator p (text::length p - 1i32) + 1i32)
+
+:~ starts_blank (line : string) : bool = text::starts_with line " " || text::starts_with line "\t"
+
+:~ declared_of (line : string) : string =
+    := a = lead_blank line 0i32
+    text::slice_len line a (trail_blank line (text::length line) - a)
+
+:~ ^ package_lines (lines : list string) (inside : bool) (acc : list string) : list string =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | line :: rest =>
+        := bare = trimmed_end line "\r"
+        ? text::starts_with bare "packages:"
+        ?> package_lines rest !+ acc
+        |? text::starts_with bare "modules:"
+        ?> package_lines rest !- acc
+        |? bare <> "" && not (starts_blank bare)
+        ?> package_lines rest !- acc
+        |? inside && declared_of line <> "" && not (text::starts_with (declared_of line) "|")
+        ?> package_lines rest inside (declared_of line :: acc)
+        |: package_lines rest inside acc
+
+:~ sibling_line (declared : string) (line : string) : string =
+    := item = entry_item declared
+    := a = lead_blank line 0i32
+    ? starts_blank line && relative_item item && declared_of line = declared
+    ?> text::take line a ++ basename item ++ text::drop declared (text::length item)
+    |: line
+
+:~ rewrite_line (declareds : list string) (line : string) : string =
+    := dir = ? package_dir_line line ?> "packageDir: .." |: line
+    listm::fold (\ acc declared => sibling_line declared acc) dir declareds
+
+:~ join_lines (lines : list string) : string = sm'::concat_list "\n" lines
+
+:~ rewrite_dir_only (line : string) : string = ? package_dir_line line ?> "packageDir: .." |: line
+
+:~ ^ first_dir (lines : list string) : string =
+    ?= lines ?|
+    | [] => ""
+    | line :: rest =>
+        := value = text::drop line 11i32
+        := a = lead_blank value 0i32
+        ? package_dir_line line ?> text::slice_len value a (trail_blank value (text::length value) - a) |: first_dir rest
+
+:~ package_dir_value (src : string) : string = first_dir (lines_of src 0i32 [])
+
+:~ name_byte (b : i32) : bool = (b >= 97i32 && b <= 122i32) || (b >= 48i32 && b <= 57i32) || b = 95i32
+
+:~ ^ named_from (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s ?> acc |: named_from s (i + 1i32) (acc ++ (? name_byte (text::byte_at s i) ?> text::slice_len s i 1i32 |: "_"))
+
+:~ mount_name_of (lowered : string) : string =
+    := name = named_from lowered 0i32 ""
+    ? name <> "" && text::byte_at name 0i32 >= 48i32 && text::byte_at name 0i32 <= 57i32 ?> "_" ++ name |: name
+
+:~ sibling_project (src : string) : string =
+    := lines = lines_of src 0i32 []
+    := declareds = package_lines (listm::map rewrite_dir_only lines) !- []
+    join_lines (listm::map (rewrite_line declareds) lines)
+
+///> gleam
+:# a_patch_replaces_only_the_first_occurrence =
+    (patch_first "a b a" "a" "x", patch_first "abc" "z" "y") |> _assert_eq ("Kx b a", "E")
+
+///> gleam
+:# nested_patch_targets_are_named_and_top_level_ones_pass =
+    (nested_name "a.spi\n./b.spi\nsub/c.spi", nested_name "a.spi", nested_name "") |> _assert_eq ("sub/c.spi", "", "")
+
+///> gleam
+:# sibling_projects_point_package_dir_up_and_shorten_relative_entries =
+    := src = "packageDir: ../../lib\npackages:\n    |core-\n    ../client-\n    spiral-\nmodules:\n    main"
+    sibling_project src
+    |> _assert_eq "packageDir: ..\npackages:\n    |core-\n    client-\n    spiral-\nmodules:\n    main"
+
+///> gleam
+:# package_dir_values_and_mount_names_follow_the_old_regexes =
+    := ~manifest = "packages:\n    |core-\npackageDir:   ../../lib  \r\nmodules:\n    main\n"
+    (package_dir_value manifest, package_dir_value "a\npackageDir: x", package_dir_value "modules:\n    a") |> _assert_eq ("../../lib", "x", "")
+    := ~base = "my-app.v2"
+    (mount_name_of base, mount_name_of "2fast", mount_name_of "", mount_name_of "ok_name9") |> _assert_eq ("my_app_v2", "_2fast", "", "ok_name9")
+
+///> gleam
+:# sibling_projects_keep_the_old_elixir_rewrites_on_crlf_repeats_and_windows_entries =
+    (sibling_project "packageDir: ../lib\r\npackages:\r\n    ../a-\r\n    ./b*-\r\nmodules:\r\n    main\r\n", sibling_project "packages:\n    ../x/y/\n    |core-\n    ../x/y/\nmodules:\n    ../x/y/\n    main\n")
+    |> _assert_eq ("packageDir: ..\npackages:\r\n    a-\n    b*-\nmodules:\r\n    main\r\n", "packages:\n    y\n    |core-\n    y\nmodules:\n    y\n    main\n")
+    (sibling_project "packageDir:   ../../far  \npackages:\n\t..\\win\\pkg-\nmodules:\n    main\n", sibling_project "packages:\n    ../x/y/\n", sibling_project "packages:\n\t..\\win\\pkg-\n")
+    |> _assert_eq ("packageDir: ..\npackages:\n\tpkg-\nmodules:\n    main\n", "packages:\n    y\n", "packages:\n\tpkg-\n")
+
+///> gleam
+:# nested_names_and_first_patches_keep_the_old_elixir_answers =
+    (nested_name "a.spi\n./b.spi\nsub/c.spi", nested_name "x\\y.spi", nested_name "c.spi\nd/e.spi\nf/g.spi", nested_name "a.spi", nested_name "")
+    |> _assert_eq ("sub/c.spi", "x\\y.spi", "d/e.spi", "", "")
+    (patch_first "a b a" "a" "x", patch_first "abc" "z" "y", patch_first "" "" "n", patch_first "aaa" "aa" "b") |> _assert_eq ("Kx b a", "E", "Kn", "Kba")
+
+:~ declareds (src : string) : list string = package_lines (lines_of src 0i32 []) !- []
+
+:~ package_items (src : string) : list string = listm::map entry_item (declareds src)
+
+///> gleam
+:# package_items_skip_bars_and_stop_at_modules =
+    package_items "packages:\n    |core-\n    ../lib/a-\n    b*\nmodules:\n    c" |> _assert_eq [ "../lib/a"; "b" ]
+
+:~ popped (acc : list string) : list string = ?= acc ?| _ :: up :: more => up :: more | _ => acc
+
+:~ stepped (acc : list string) (p : string) : list string = ? p = "." ?> acc |? p = ".." ?> popped acc |: p :: acc
+
+:~ normal_parts (parts : list string) : list string = listm::fold stepped [] parts |> listm::rev
+
+:~ split_path (path : string) : list string =
+    erlang_term::apply "filename" "split" [ erlang_term::of path ] |> erlang_term::items_of |> listm::map erlang_file::text_of
+
+:~ joined_parts (parts : list string) : string =
+    erlang_file::text_of_call "filename" "join" [ erlang_term::list_term (listm::map (\ (p : string) => erlang_term::of p) parts) ]
+
+:~ expanded (path : string) (base : string) : string =
+    := absolute = erlang_file::text_of_call "filename" "absname" [ erlang_term::of path; erlang_term::of base ]
+    joined_parts (normal_parts (split_path absolute))
+
+///> gleam
+:# expanded_paths_resolve_dot_and_dot_dot_like_path_expand =
+    (expanded "../lib/a" "/r/apps/x", expanded "./b" "/r", expanded "../../.." "/r") |> _assert_eq ("/r/apps/lib/a", "/r/b", "/")
+
+:~ package_base (dir : string) (src : string) : string =
+    := value = package_dir_value src
+    ? value = "" ?> expanded ".." dir |: expanded value dir
+
+:~ strs (xs : list string) : erlang_term::term = erlang_term::tuple (listm::map (\ (s : string) => erlang_term::of s) xs)
+
+:~ entry_target (dir : string) (base : string) (item : string) : string = expanded item (? relative_item item ?> dir |: base)
+
+:~ dependency_row (dir : string) (base : string) (declared : string) : erlang_term::term =
+    := item = entry_item declared
+    := name = basename item
+    strs [ name; entry_target dir base item; name ++ text::drop declared (text::length item) ]
+
+:~ dependencies_in (dir : string) (src : string) : list erlang_term::term = listm::map (dependency_row dir (package_base dir src)) (declareds src)
+
+:~ one_row (dir : string) (src : string) (wanted : list string) : bool =
+    erlang_term::equal (erlang_term::list_term (dependencies_in dir src)) (erlang_term::list_term [ strs wanted ])
+
+///> gleam
+:# a_relative_entry_resolves_from_the_project =
+    one_row "/r/apps/x" "packages:\n    ./near-\n" [ "near"; "/r/apps/x/near"; "near-" ] |> _assert_eq !+
+
+///> gleam
+:# a_bare_entry_resolves_from_the_package_dir =
+    one_row "/r/apps/x" "packageDir: ../../lib\npackages:\n    far*\n" [ "far"; "/r/lib/far"; "far*" ] |> _assert_eq !+
+
+:~ manifest_text (dir : string) (dotnet : string) (dll : string) : string =
+    manifest::manifest_read dir dotnet dll (toolchain::host_has dotnet dll "resolve-manifest")
+
+:~ declared_dependencies (dir : string) (dotnet : string) (dll : string) : list erlang_term::term =
+    ?= manifest::manifest_path dir ?|
+    | Some _ => dependencies_in dir (manifest_text dir dotnet dll)
+    | None => []
+
+:~ cwd () : string = erlang_file::text_of (erlang_term::element_at 2i32 (erlang_term::apply "file" "get_cwd" []))
+
+:~ tab_rest (line : string) : string = text::drop line (text::find_char line 0i32 '\t' + 1i32)
+
+:~ candidates (dir : string) (name : string) : list string =
+    memo::keep erlang_file::regular_file [ erlang_file::joined_path dir (name ++ ".spi"); erlang_file::joined_path dir (name ++ ".spir") ]
+
+:~ module_files (dir : string) (project : string) : list string =
+    := lines = memo::keep (\ (l : string) => l <> "") (lines_of (memo::module_entries project) 0i32 [])
+    listm::fold (\ acc l => listm::append acc (candidates dir (tab_rest l))) [] lines
+
+:~ sha256 (t : erlang_term::term) : erlang_term::term = erlang_term::apply "crypto" "hash" [ erlang_term::atom "sha256"; t ]
+
+:~ is_ok_tuple (r : erlang_term::term) : bool = erlang_term::is_tuple r && erlang_term::equal (erlang_term::element_at 1i32 r) (erlang_term::atom "ok")
+
+:~ rows_for (text : string) (bounds : erlang_term::term) : erlang_term::term =
+    ? erlang_term::equal bounds (erlang_term::atom "unavailable") ?> erlang_term::atom "error" |: erlang_term::apply "maps" "find" [ erlang_term::of text; bounds ]
+
+:~ printed_text (text : string) (bounds : erlang_term::term) : string =
+    := found = rows_for text bounds
+    ? is_ok_tuple found ?> source_blocks::split_blocks text (erlang_term::element_at 2i32 found |> erlang_term::cast) |: text
+
+:~ text_print (text : string) (bounds : erlang_term::term) : erlang_term::term = sha256 (erlang_term::of (printed_text text bounds))
+
+:~ read_print (r : erlang_term::term) (bounds : erlang_term::term) : erlang_term::term =
+    ? is_ok_tuple r ?> text_print (erlang_term::element_at 2i32 r |> erlang_term::cast) bounds |: erlang_term::atom "missing"
+
+:~ content_print (path : string) (bounds : erlang_term::term) : erlang_term::term = read_print (erlang_term::apply "file" "read_file" [ erlang_term::of path ]) bounds
+
+:~ file_rows (dir : string) (project : string) (bounds : erlang_term::term) : erlang_term::term =
+    erlang_term::list_term (listm::map (\ (f : string) => erlang_term::tuple [ erlang_term::of f; content_print f bounds ]) (module_files dir project))
+
+:~ term_hash (t : erlang_term::term) : erlang_term::term = sha256 (erlang_term::apply "erlang" "term_to_binary" [ t ])
+
+:== tree_ctx = { bounds : erlang_term::term; dotnet : string; dll : string }
+
+:~ seen_has (seen : list string) (d : string) : bool = listm::fold (\ hit s => hit || s = d) !- seen
+
+:~ has_manifest (d : string) : bool = ?= manifest::manifest_path d ?| Some _ => !+ | None => !-
+
+:~ ^ package_print (c : tree_ctx) (seen : list string) (dir : string) : erlang_term::term =
+    := d = expanded dir (cwd ())
+    ? seen_has seen d ?> erlang_term::atom "seen"
+    |? has_manifest d ?> printed_package c (d :: seen) d
+    |: erlang_term::atom "missing"
+
+:& :~ dep_print (c : tree_ctx) (seen : list string) (row : erlang_term::term) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::element_at 1i32 row; package_print c seen (erlang_term::element_at 2i32 row |> erlang_term::cast) ]
+
+:& :~ deps_print (c : tree_ctx) (seen : list string) (d : string) : erlang_term::term =
+    erlang_term::list_term (listm::map (dep_print c seen) (declared_dependencies d c::dotnet c::dll))
+
+:& :~ printed_package (c : tree_ctx) (seen : list string) (d : string) : erlang_term::term =
+    := project = manifest_text d c::dotnet c::dll
+    term_hash (erlang_term::tuple [ erlang_term::of project; file_rows d project c::bounds; deps_print c seen d ])
+
+:~ tree_print (dir : string) (bounds : erlang_term::term) (dotnet : string) (dll : string) : erlang_term::term =
+    package_print { bounds = bounds; dotnet = dotnet; dll = dll } [] dir
+
+///> gleam
+:# a_package_without_a_manifest_prints_missing =
+    erlang_term::equal (tree_print "/no/such/dir" (erlang_term::atom "unavailable") "" "") (erlang_term::atom "missing") |> _assert_eq !+
+
+///> gleam
+:# a_text_without_bounds_hashes_as_it_is =
+    printed_text "inl a = 1" (erlang_term::atom "unavailable") |> _assert_eq "inl a = 1"

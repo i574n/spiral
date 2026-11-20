@@ -1,0 +1,6 @@
+{
+  "bad_arity": "ETY-TermError: Unification failure",
+  "bad_payload": "ETY-TermError: Unification failure",
+  "chain_bad": "ETY-UnboundVariable: Unbound term variable: Stop",
+  "nested_wrong": "ETY-TermError: Unification failure"
+}

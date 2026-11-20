@@ -6,7 +6,7 @@
 
 :== tok = ast::range * tokens::spiral_token
 
-:== cursor = { rest : list tok; at : i32; last : ast::range; firsts : list (i32 * i32) }
+:== cursor = { rest : list tok; at : i32; last : ast::range; firsts : list (i32 * i32); comments : list (i32 * string) }
 
 :== failure = list (ast::range * ast::parser_error)
 
@@ -30,7 +30,35 @@
     | ((span, _) :: _) :: more => firsts_from (line + 1i32) more ((line, span::from) :: acc)
     | [] :: more => firsts_from (line + 1i32) more acc
 
-:~ of_lines (first_line : i32) (lines : list (list tokens::token_row)) : cursor = { rest = lines_from first_line lines []; at = 0i32; last = origin (); firsts = firsts_from first_line lines [] }
+:~ split_comment (rows : list tokens::token_row) : list tokens::token_row * option string =
+    ?= listm::rev rows ?|
+    | (_, tokens::TokComment text) :: before => listm::rev before, Some text
+    | _ => rows, None
+
+:~ ^ comments_from (line : i32) (lines : list (list tokens::token_row)) (acc : list (i32 * string)) : list (i32 * string) =
+    ?= lines ?|
+    | [] => acc
+    | rows :: more =>
+        := (_, comment) = split_comment rows
+        comments_from (line + 1i32) more (?= comment ?| | Some text => (line, text) :: acc | None => acc)
+
+:~ of_lines (first_line : i32) (lines : list (list tokens::token_row)) : cursor =
+    := clean = listm::map (\ (rows : list tokens::token_row) => fst (split_comment rows)) lines
+    { rest = lines_from first_line clean []; at = 0i32; last = origin (); firsts = firsts_from first_line clean []; comments = comments_from first_line lines [] }
+
+:~ ^ comment_on (line : i32) (xs : list (i32 * string)) : option string =
+    ?= xs ?|
+    | [] => None
+    | (l, text) :: more => ? l = line ?> Some text |: comment_on line more
+
+:~ ^ comments_above (xs : list (i32 * string)) (line : i32) (acc : list string) : list string =
+    ? line < 0i32 ?> acc
+    |:
+        ?= comment_on line xs ?|
+        | Some text =>
+            := trimmed = sm'::trim_end [ ' ' ] text
+            comments_above xs (line - 1i32) ((? trimmed = "" ?> "\n" |: trimmed ++# " ") :: acc)
+        | None => acc
 
 :~ ^ first_column_of_line (line : i32) (firsts : list (i32 * i32)) : i32 =
     ?= firsts ?|
@@ -45,12 +73,16 @@
 :~ advance (c : cursor) : cursor =
     ?= c::rest ?|
     | [] => c
-    | (r, _) :: more => { rest = more; at = c::at + 1i32; last = r; firsts = c::firsts }
+    | (r, _) :: more => { rest = more; at = c::at + 1i32; last = r; firsts = c::firsts; comments = c::comments }
 
 :~ line_of (c : cursor) : i32 =
     ?= c::rest ?|
     | [] => -1i32
     | ((from, _), _) :: _ => from::line
+
+:~ read_comments (c : cursor) : step string =
+    := pieces = comments_above c::comments (line_of c - 1i32) []
+    Took (sm'::trim_end [ ' '; '\n' ] (sm'::concat_list "" pieces), c)
 
 :~ take \* t. (c : cursor) (pick : ast::range -> tokens::spiral_token -> option t) (error : ast::parser_error) : step t =
     ?= c::rest ?|
@@ -71,6 +103,9 @@
 :~ skip_macro_open (c : cursor) : step ast::range = take c (\ r t => ?= t ?| | tokens::TokMacroOpen => Some r | _ => None) ast::ExpectedMacroOpen
 
 :~ skip_macro_close (c : cursor) : step ast::range = take c (\ r t => ?= t ?| | tokens::TokMacroClose => Some r | _ => None) ast::ExpectedMacroClose
+
+:~ skip_macro_expression (kind : tokens::macro_kind) (state : tokens::parenthesis_state) (c : cursor) : step () =
+    take c (\ _ t => ?= t ?| | tokens::TokMacroExpression (k, s) ?& k = kind && s = state => Some () | _ => None) (ast::ExpectedMacroExpression (kind, state))
 
 :~ skip_keyword (k : tokens::token_keyword) (c : cursor) : step tokens::token_keyword =
     take c (\ _ t => ?= t ?| | tokens::TokKeyword k' ?& k' = k => Some k' | _ => None) (ast::ExpectedKeyword k)
@@ -165,6 +200,12 @@
         ?= p c ?|
         | Took (v, next) => Took (v, next)
         | Failed (e, _) => Failed (e, c)
+
+:= restore_p \* a. (n : i32) (p : cursor -> step a) : cursor -> step a =
+    \ c =>
+        ?= p c ?|
+        | Took (v, next) => Took (v, next)
+        | Failed (e, at) => ? at::at <= c::at + n ?> Failed (e, c) |: Failed (e, at)
 
 := alt_p \* a. (p : cursor -> step a) (q : cursor -> step a) : cursor -> step a =
     \ c =>
@@ -288,3 +329,15 @@
     := inside = took_value (rounds_p (map_p snd read_var) (line_cursor "(x)"))
     := open_only = took_value (rounds_p (map_p snd read_var) (line_cursor "(x"))
     (r, inside, open_only) |> _assert_eq (Some (at0 0i32 5i32), Some "x", None)
+
+:~ comment_row (text : string) : list tokens::token_row = [ ({ from = 0i32; near_to = 3i32 }, tokens::TokComment text) ]
+
+:~ value_row () : list tokens::token_row = [ ({ from = 0i32; near_to = 1i32 }, tokens::TokDefaultValue "1") ]
+
+///> rust
+///> fsharp
+///> gleam
+:# comment_rows_leave_the_stream_and_join_above_the_next_statement =
+    := c = of_lines 0i32 [ comment_row "first"; comment_row "second"; value_row () ]
+    := text = ?= read_comments c ?| | Took (t, _) => t | Failed _ => "failed"
+    (text, (listm::length c::rest : i32), (listm::length c::comments : i32), line_of c) |> _assert_eq ("first second", 1i32, 2i32, 2i32)

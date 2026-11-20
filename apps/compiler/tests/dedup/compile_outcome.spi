@@ -1,0 +1,68 @@
+///- --package .
+:# compile_outcome static =
+    :< testing
+
+:== term = erlang_term::term
+
+:~ atom (s : string) : term = erlang_term::atom s
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ field (m : term) (k : string) : term = erlang_term::apply "maps" "get" [ atom k; m; atom "nil" ]
+
+:~ text_or_empty (t : term) : string = ? erlang_term::is_binary t ?> erlang_term::cast t |: ""
+
+:~ code_of (expected : term) : string = text_or_empty (field expected "code")
+
+:~ substring_of (expected : term) : string = erlang_term::cast (field expected "substring")
+
+:~ both_text (a : term) (b : term) : bool = erlang_term::is_binary a && erlang_term::is_binary b
+
+:~ floor_of (error : term) (expected : term) : i32 =
+    := program = field error "details"
+    := head = field expected "body_head"
+    ? both_text program head ?> notebook::body_floor (erlang_term::cast program) (erlang_term::cast head) |: -1i32
+
+:~ failed_with (text : string) : term = erlang_term::tuple [ atom "error"; erlang_term::tuple [ atom "error"; str text ]; str text ]
+
+:~ passed_with (text : string) : term =
+    erlang_term::tuple [ atom "ok"; erlang_term::list_term [ ipynb::ipy_stream_t "stdout" text ]; erlang_term::list_term [] ]
+
+:~ label_of (expected : term) : string = verdict_text::expected_label (code_of expected) (substring_of expected)
+
+:~ nocode_text (expected : term) (message : string) : string = verdict_text::cet_nocode (substring_of expected) (code_of expected) message
+
+:~ early_text (expected : term) (floor : i32) (message : string) : string = verdict_text::cet_early (label_of expected) floor message
+
+:~ late_outcome (verdict : string) (expected : term) (message : string) : term =
+    ? verdict = "nocode" ?> failed_with (nocode_text expected message) |: failed_with (verdict_text::cet_other (label_of expected) message)
+
+:~ ok_outcome (expected : term) (message : string) : term = passed_with (verdict_text::cet_ok (label_of expected) message)
+
+:~ outcome_of (verdict : string) (expected : term) (floor : i32) (message : string) : term =
+    ? verdict = "early" ?> failed_with (early_text expected floor message)
+    |: ? verdict = "ok" ?> ok_outcome expected message |: late_outcome verdict expected message
+
+:~ verdict_of (expected : term) (floor : i32) (message : string) : string =
+    notebook::compile_error_verdict message (code_of expected) (substring_of expected) floor
+
+:~ compile_outcome (expected : term) (error : term) : term =
+    := message = erlang_term::cast (field error "message")
+    := floor = floor_of error expected
+    outcome_of (verdict_of expected floor message) expected floor message
+
+:~ pairs (items : list term) : term = erlang_term::apply "maps" "from_list" [ erlang_term::list_term items ]
+
+:~ no_code () : term = pairs [ erlang_term::tuple [ atom "code"; atom "nil" ]; erlang_term::tuple [ atom "substring"; str "x" ] ]
+
+///> gleam
+:# a_missing_code_reads_as_empty =
+    code_of (no_code ()) |> _assert_eq ""
+
+///> gleam
+:# a_floor_without_both_program_and_head_is_minus_one =
+    floor_of (pairs []) (no_code ()) |> _assert_eq -1i32
+
+///> gleam
+:# a_failed_outcome_carries_the_text_twice =
+    erlang_term::equal (failed_with "t") (erlang_term::tuple [ atom "error"; erlang_term::tuple [ atom "error"; str "t" ]; str "t" ]) |> _assert_eq !+

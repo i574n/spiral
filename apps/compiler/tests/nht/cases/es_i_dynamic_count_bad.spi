@@ -1,0 +1,22 @@
+:< sm'_operators
+
+:| compensation =
+    | Refund : f64
+    | Release : i32
+    | Cancel : string
+
+:~ ^ reserve_items (n : i32) (log : list compensation) : list compensation =
+    ? n = 0i32 ?> log |: reserve_items (n - 1i32) (Release n :: log)
+
+:~ ^ compensate_all (pending : list compensation) (undone : i32) : i32 =
+    ?= pending ?|
+    | [] => undone
+    | c :: rest =>
+        ?= c ?|
+        | Refund _ => compensate_all rest (undone + 1i32)
+        | Release _ => compensate_all rest (undone + 1i32)
+
+:= main () : i32 =
+    := ~items = 3i32
+    := log = Cancel "order-1" :: Refund 12.5f64 :: reserve_items items []
+    compensate_all log 0i32

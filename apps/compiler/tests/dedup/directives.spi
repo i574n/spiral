@@ -1,0 +1,269 @@
+///- --package .
+:# directives static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ ^ take_token (src : string) (i : i32) : i32 =
+    ? i >= text::length src
+    ?> i
+    |:
+        := ch = text::index src i
+        ? ch = ' '
+        ?> i
+        |? ch = '\t'
+        ?> i
+        |: take_token src (i + 1i32)
+
+:~ ^ skip_ws (src : string) (i : i32) : i32 =
+    ? i >= text::length src
+    ?> i
+    |:
+        := ch = text::index src i
+        ? ch = ' '
+        ?> skip_ws src (i + 1i32)
+        |? ch = '\t'
+        ?> skip_ws src (i + 1i32)
+        |: i
+
+:~ ^ tokens_from (src : string) (i : i32) (acc : list string) : list string =
+    := j = skip_ws src i
+    ? j >= text::length src
+    ?> listm::rev acc
+    |:
+        := k = take_token src j
+        tokens_from src k (text::slice_len src j (k - j) :: acc)
+
+:| directive_error =
+    | ShebangLine
+    | UnknownDirective : string
+    | UnknownFlag : string
+    | BadTimeout : string
+    | UnknownBackend : string
+
+:| outcome t =
+    | Ready : t
+    | Refused : directive_error
+
+:| timeout =
+    | NoTimeout
+    | TimeoutMs : i32
+
+:| backend_line =
+    | RustCell
+
+:== flags = { print_code : bool; timeout : timeout; packages : list string }
+
+:== prepared = { code : string; flags : flags; main : cell::main_source }
+
+:== scan_state = { kept : string; flags : flags; seen : bool; started : bool }
+
+:~ no_flags () : flags = { print_code = !-; timeout = NoTimeout; packages = [] }
+
+:~ positive_timeout (ms : string) : outcome timeout =
+    := n = text::parse_i32 ms
+    ? n > 0i32 ?> Ready (TimeoutMs n) |: Refused (BadTimeout ms)
+
+:~ ^ merged (xs : list string) (f : flags) : outcome flags =
+    ?= xs ?|
+    | [] => Ready f
+    | "--print-code" :: rest => merged rest { f ?| print_code = !+ }
+    | "--timeout" :: ms :: rest =>
+        ?= positive_timeout ms ?|
+        | Ready t => merged rest { f ?| timeout = t }
+        | Refused e => Refused e
+    | "--package" :: path :: rest => merged rest { f ?| packages = path :: f::packages }
+    | "--test" :: "static" :: rest => merged rest f
+    | "--test" :: rest => merged rest f
+    | "--symbol" :: rest => merged rest f
+    | "--name" :: _ :: rest => merged rest f
+    | flag :: _ => Refused (UnknownFlag flag)
+
+:~ backend_of (rest : string) : outcome backend_line =
+    := trimmed = text::trim rest
+    ? trimmed = "rust" || text::starts_with trimmed "rust "
+    ?> Ready RustCell
+    |: Refused (UnknownBackend trimmed)
+
+:~ ready_of (s : scan_state) : outcome prepared =
+    := wrapped, generated = cell::wrap s::kept
+    Ready { code = wrapped; flags = s::flags; main = generated }
+
+:~ finished (s : scan_state) : outcome prepared =
+    ? text::contains s::kept "\n#!" || text::starts_with s::kept "#!"
+    ?> Refused ShebangLine
+    |: ready_of s
+
+:~ kept_line (s : scan_state) (line : string) : scan_state =
+    { s ?| kept = (? s::started ?> s::kept ++ "\n" ++ line |: line); started = !+ }
+
+:~ flags_line (s : scan_state) (line : string) : outcome flags =
+    merged (tokens_from (text::drop line (text::length "///- ")) 0i32 []) s::flags
+
+:~ ^ scanned (src : string) (i : i32) (s : scan_state) : outcome prepared =
+    ?= text::next_line src i ?|
+    | LineDone => finished s
+    | LineGot (line, next) =>
+        ? text::starts_with line "////" ?> scanned src next s
+        |? text::starts_with line "///- " ?>
+            ? s::seen
+            ?> scanned src next s
+            |:
+                ?= flags_line s line ?|
+                | Ready f => scanned src next { s ?| flags = f; seen = !+ }
+                | Refused e => Refused e
+        |? text::starts_with line "///> " ?>
+            ?= backend_of (text::drop line (text::length "///> ")) ?|
+            | Ready _ => scanned src next s
+            | Refused e => Refused e
+        |? text::starts_with line "///" ?> Refused (UnknownDirective line)
+        |: scanned src next (kept_line s line)
+
+:~ flag_text (b : bool) : string = ? b ?> "1" |: "0"
+
+:~ timeout_text (t : timeout) : string = ?= t ?| NoTimeout => "-" | TimeoutMs n => text::show_i32 n
+
+:~ error_text (e : directive_error) : string =
+    ?= e ?|
+    | ShebangLine => text::err "dib" ""
+    | UnknownDirective line => text::err "directive" line
+    | UnknownFlag flag => text::err "flag" flag
+    | BadTimeout ms => text::err "timeout" ms
+    | UnknownBackend backend => text::err "backend" backend
+
+:~ prepared_text (p : prepared) : string =
+    := f = p::flags
+    := head = "ok\n" ++ flag_text f::print_code ++ "\n" ++ timeout_text f::timeout ++ "\n" ++ cell::main_text p::main
+    head ++ "\n" ++ sm'::concat_list "\t" (listm::rev f::packages) ++ "\n" ++ p::code
+
+:~ encoded (o : outcome prepared) : string = ?= o ?| Ready p => prepared_text p | Refused e => error_text e
+
+:~ initial () : scan_state = { kept = ""; flags = no_flags (); seen = !-; started = !- }
+
+:~ prepare (code : string) : string = encoded (scanned (text::replace code "\r\n" "\n") 0i32 (initial ()))
+
+:~ ^ static_opens_from (src : string) (at : i32) (inside : bool) (acc : list string) : list string =
+    ? at >= text::length src
+    ?> acc
+    |:
+        := nl = text::find_from src "\n" at
+        := stop = ? nl < 0i32 ?> text::length src |: nl
+        := line = text::trim_cr (text::slice_len src at (stop - at))
+        := size = text::length line
+        := header = text::starts_with line ":# " && size >= 9i32 && text::drop line (size - 9i32) = " static ="
+        := opened = ? inside && text::starts_with line "    :< " ?> text::trim (text::drop line 7i32) :: acc |: acc
+        static_opens_from src (stop + 1i32) (header || (inside && text::starts_with line "    ")) opened
+
+:~ ^ any_listed (opens : list string) (wire : string) : bool =
+    ?= opens ?|
+    | [] => !-
+    | name :: rest => text::contains ("\n" ++ wire ++ "\n") ("\n" ++ name ++ "\n") || any_listed rest wire
+
+:~ static_opens_sibling (src : string) (siblings : string) : bool = any_listed (static_opens_from src 0i32 !- []) siblings
+
+:~ space_at (s : string) (i : i32) : i32 = ? text::byte_or s i = 10i32 ?> 0i32 |: text::elixir_space_width s i
+
+:~ split_space_at (s : string) (i : i32) : i32 =
+    := w = space_at s i
+    := b1 = text::byte_or s (i + 1i32)
+    := b2 = text::byte_or s (i + 2i32)
+    ? w = 2i32 && b1 = 160i32 ?> 0i32
+    |? w = 3i32 && b1 = 128i32 && (b2 = 135i32 || b2 = 175i32) ?> 0i32
+    |: w
+
+:~ ^ lead_end (s : string) (i : i32) : i32 = ? space_at s i > 0i32 ?> lead_end s (i + space_at s i) |: i
+
+:~ ^ flag_start (s : string) (i : i32) : i32 = ? split_space_at s i > 0i32 ?> flag_start s (i + split_space_at s i) |: i
+
+:~ ^ flag_end (s : string) (i : i32) : i32 =
+    ? i >= text::length s || text::byte_at s i = 10i32 || split_space_at s i > 0i32 ?> i
+    |: flag_end s (i + text::utf8_width (text::byte_at s i))
+
+:~ ^ nth_line (lines : string) (k : i32) (at : i32) : string =
+    := nl = text::find_from lines "\n" at
+    ? k > 0i32 && nl < 0i32 ?> ""
+    |? k > 0i32 ?> nth_line lines (k - 1i32) (nl + 1i32)
+    |? nl < 0i32 ?> text::drop lines at
+    |: text::slice_len lines at (nl - at)
+
+:~ ^ canon_walk (s : string) (collect : bool) (resolved : string) (i : i32) (flags : bool) (first : bool) (after : bool) (k : i32) (acc : string) : string =
+    := n = text::length s
+    ? i >= n ?> acc
+    |? flags ?>
+        := j = flag_start s i
+        ? j >= n ?> acc
+        |? text::byte_at s j = 10i32 ?> canon_walk s collect resolved (j + 1i32) !- !+ !- k (? collect ?> acc |: acc ++ "\n")
+        |:
+            := e = flag_end s j
+            := token = text::slice_len s j (e - j)
+            := out = ? after ?> nth_line resolved k 0i32 |: token
+            := next = ? collect ?> (? after ?> acc ++ token ++ "\n" |: acc) |: acc ++ (? first ?> "" |: " ") ++ out
+            canon_walk s collect resolved e !+ !- (? after ?> !- |: token = "--package") (? after ?> k + 1i32 |: k) next
+    |:
+        := a = lead_end s i
+        := nl = text::find_from s "\n" i
+        := stop = ? nl < 0i32 ?> n |: nl + 1i32
+        ? a < stop && text::starts_at s a "///- "
+        ?> canon_walk s collect resolved (a + 5i32) !+ !+ !- k (? collect ?> acc |: acc ++ text::slice_len s i (a - i) ++ "///- ")
+        |: canon_walk s collect resolved stop !- !+ !- k (? collect ?> acc |: acc ++ text::slice_len s i (stop - i))
+
+:~ canon_package_paths (source : string) : string = canon_walk source !+ "" 0i32 !- !+ !- 0i32 ""
+
+:~ canon_package_flags (source : string) (resolved : string) : string = canon_walk source !- resolved 0i32 !- !+ !- 0i32 ""
+
+///> gleam
+:# a_static_block_opening_a_sibling_falls_back_from_the_per_test_compile =
+    := lib_file = ":# f32_grads static =\n    :< testing\n\n:== floats = array f32\n"
+    := app_file = "///- --package .\n:# daemon static =\n    :< testing\n\n:= x = 1\n"
+    := plain = ":= y = 2\n///> gleam\n:# t =\n    testing::_assert_eq 1 1\n"
+    (static_opens_sibling lib_file "f32_grads\ntesting\nxml", static_opens_sibling app_file "daemon\nclient", static_opens_sibling plain "testing")
+    |> _assert_eq (!+, !-, !-)
+    (static_opens_sibling ":# m static =\r\n    :< sm'_operators\r\n    :< unsupported\r\n:= z = 3\r\n" "unsupported", static_opens_sibling "" "a") |> _assert_eq (!+, !-)
+
+///> gleam
+:# package_flags_resolve_in_order_and_flag_lines_respace_like_the_old_notebook_code =
+    := ~src = "  ///- --package  ../lib\t--x\r\n:= f = 1\n///- --package\n///- --package --package b\n///-x --package c\n///- "
+    canon_package_paths src |> _assert_eq "../lib\n--package\n"
+    canon_package_flags src "/abs/lib\n/abs/pkg" |> _assert_eq "  ///- --package /abs/lib --x\n:= f = 1\n///- --package\n///- --package /abs/pkg b\n///-x --package c\n///- "
+    := ~plain = "///- --package"
+    (canon_package_paths plain, canon_package_flags "x\n" "", nth_line "a\nb\nc" 2i32 0i32, nth_line "a\nb" 0i32 0i32) |> _assert_eq ("", "x\n", "c", "a")
+
+:~ getenv_or (name : string) (default : string) : erlang_term::term = erlang_term::apply "os" "getenv" [ erlang_term::charlist name; erlang_term::charlist default ]
+
+:~ ea (f : string) (args : list erlang_term::term) : erlang_term::term = erlang_term::apply "erlang" f args
+
+:~ el1 (t : erlang_term::term) : erlang_term::term = erlang_term::element_at 1i32 t
+
+:~ isc (f : string) (t : erlang_term::term) : bool = ea f [ t ] |> erlang_term::cast
+
+:~ str_num (m : string) (s : string) : erlang_term::term = erlang_term::apply "string" m [ erlang_term::charlist s ]
+
+:~ parse_scale (s : string) : f64 =
+    := pf = el1 (str_num "to_float" s)
+    := pi = el1 (str_num "to_integer" s)
+    ? isc "is_float" pf ?> (erlang_term::cast pf : f64)
+    |? isc "is_integer" pi ?> (erlang_term::cast (ea "float" [ pi ]) : f64)
+    |: 0.0
+
+:~ timeout_scale () : f64 =
+    := s = parse_scale (erlang_term::cast (getenv_or "SPIRAL_CELLS_TIMEOUT_SCALE" "") : string)
+    ? s > 0.0 ?> s |: 1.0
+
+:~ scale_budget (ms : erlang_term::term) : erlang_term::term =
+    ? isc "is_integer" ms ?> ea "max" [ erlang_term::of 1i32; ea "round" [ ea "*" [ ms; erlang_term::of (timeout_scale ()) ] ] ] |: ms
+
+:~ float_str (f : f64) : string = erlang_term::cast (erlang_term::apply "erlang" "float_to_binary" [ erlang_term::of f; erlang_term::list_term [ erlang_term::atom "short" ] ]) : string
+
+:~ scale_note () : string =
+    := s = timeout_scale ()
+    ? s =. 1.0 ?> "" |: " (header and default budgets scaled by SPIRAL_CELLS_TIMEOUT_SCALE=" ++ float_str s ++ ")"
+
+:~ per_test_compile () : bool = not (erlang_term::equal (erlang_term::apply "os" "getenv" [ erlang_term::charlist "SPIRAL_CELLS_PER_TEST" ]) (erlang_term::charlist "0"))
+
+///> gleam
+:# parse_scale_reads_float_then_int_else_zero =
+    (parse_scale "1.5", parse_scale "2", parse_scale "x", parse_scale "") |> _assert_eq (1.5, 2.0, 0.0, 0.0)
+
+///> gleam
+:# scale_budget_identity_at_default_scale_and_passes_non_ints =
+    (erlang_term::cast (scale_budget (erlang_term::of 5000i32)) : i32, erlang_term::equal (scale_budget (erlang_term::atom "nil")) (erlang_term::atom "nil")) |> _assert_eq (5000i32, !+)

@@ -21,7 +21,7 @@ function Get-Class($left, $right) {
     'behavior'
 }
 $platformBound = @{}
-$matrix = Import-PowerShellDataFile (Join-Path $PSScriptRoot '../tmp/tests/matrix.psd1') -SkipLimitCheck
+$matrix = Import-PowerShellDataFile (Join-Path $PSScriptRoot '../tests/matrix.psd1') -SkipLimitCheck
 foreach ($entry in @($matrix.Known) | Where-Object { $_.Platform }) { $platformBound["$($entry.Id)|$($entry.Backend)"] = $entry.Reason }
 $left = Import-Csv (Resolve-Results $Local) -Delimiter "`t"
 $right = Import-Csv (Resolve-Results $Ci) -Delimiter "`t"

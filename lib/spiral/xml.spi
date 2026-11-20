@@ -84,12 +84,12 @@
 := xml_digits_unsigned (t : string) : string =
     ? sm'::starts_with "-" t || sm'::starts_with "+" t ?> sm'::substring 1i32 (sm'::length t - 1i32) t |: t
 
-:= xml_digits_split (u : string) (point : i32) : string * string =
+:~ xml_digits_split (u : string) (point : i32) : string * string =
     := whole = sm'::substring 0i32 point u
     := fraction = sm'::substring (point + 1i32) (sm'::length u - point - 1i32) u
     sm'::trim_start [ '0' ] whole, sm'::trim_end [ '0' ] fraction
 
-:= xml_digits_parts (s : string) : string * string =
+:~ xml_digits_parts (s : string) : string * string =
     := unsigned = xml_digits_unsigned (sm'::trim s)
     := point = sm'::index_of "." unsigned
     ? point < 0i32 ?> sm'::trim_start [ '0' ] unsigned, "" |: xml_digits_split unsigned point

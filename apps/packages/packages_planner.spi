@@ -1,0 +1,400 @@
+///- --package .
+:# packages_planner static =
+    :< testing
+
+:< packages_model
+
+:== nodes = list lock_node
+
+:== ids = list package_id
+
+:== blobs = list blob_id
+
+:== lock_check = outcome () lock_error
+
+:== vetted = outcome (locked validated) lock_error
+
+:== plan_result = outcome install_plan install_error
+
+:~ ^ contains_id (id : package_id) (xs : ids) : bool =
+    ?= xs ?|
+    | [] => !-
+    | x :: rest => x = id || contains_id id rest
+
+:~ ^ lookup_node (id : package_id) (ns : nodes) : option lock_node =
+    ?= ns ?|
+    | [] => None
+    | n :: rest => ? n::node_id = id ?> Some n |: lookup_node id rest
+
+:~ deps_of (n : lock_node) : ids = listm::map (\ (q : exact_requirement) => q::required_id) n::release::requires
+
+:~ graph_failed (e : graph_error) : lock_check = Rejected (GraphError e)
+
+:= names_match (found : release_manifest) (q : exact_requirement) : bool =
+    found::identity::name = q::required_name && found::identity::version = q::required_version
+
+:~ matched (owner : package_id) (q : exact_requirement) (n : lock_node) : lock_check =
+    ? names_match n::release q ?> Accepted () |: graph_failed (RequirementIdMismatch (owner, q))
+
+:~ requirement_found (owner : package_id) (q : exact_requirement) (found : option lock_node) : lock_check =
+    ?= found ?|
+    | None => graph_failed (MissingDependency q::required_id)
+    | Some n => matched owner q n
+
+:~ ^ check_requires (ns : nodes) (owner : package_id) (qs : list exact_requirement) : lock_check =
+    ?= qs ?|
+    | [] => Accepted ()
+    | q :: rest => requires_then ns owner q rest
+
+:& :~ requires_then (ns : nodes) (owner : package_id) (q : exact_requirement) (rest : list exact_requirement) : lock_check =
+    ?= requirement_found owner q (lookup_node q::required_id ns) ?|
+    | Accepted () => check_requires ns owner rest
+    | failed => failed
+
+:~ ^ check_nodes (ns : nodes) (remaining : nodes) : lock_check =
+    ?= remaining ?|
+    | [] => Accepted ()
+    | n :: rest => nodes_then ns n rest
+
+:& :~ nodes_then (ns : nodes) (n : lock_node) (rest : nodes) : lock_check =
+    ?= check_requires ns n::node_id n::release::requires ?|
+    | Accepted () => check_nodes ns rest
+    | failed => failed
+
+:| walk =
+    | Walked : ids
+    | WalkFailed : graph_error
+
+:~ ^ visit_list (ns : nodes) (p : ids) (xs : ids) (d : ids) : walk =
+    ?= xs ?|
+    | [] => Walked d
+    | id :: rest => visit_one ns p id rest d
+
+:& :~ visit_one (ns : nodes) (p : ids) (id : package_id) (rest : ids) (d : ids) : walk =
+    ? contains_id id p ?> WalkFailed (DependencyCycle (listm::rev (id :: p)))
+    |? contains_id id d ?> visit_list ns p rest d
+    |: visit_new ns p id rest d
+
+:& :~ visit_new (ns : nodes) (p : ids) (id : package_id) (rest : ids) (d : ids) : walk =
+    ?= lookup_node id ns ?|
+    | None => WalkFailed (MissingDependency id)
+    | Some n => visit_after ns p id rest (visit_list ns (id :: p) (deps_of n) d)
+
+:& :~ visit_after (ns : nodes) (p : ids) (id : package_id) (rest : ids) (inner : walk) : walk =
+    ?= inner ?|
+    | WalkFailed e => WalkFailed e
+    | Walked finished => visit_list ns p rest (id :: finished)
+
+:~ ^ unvisited (ns : nodes) (done : ids) : ids =
+    ?= ns ?|
+    | [] => []
+    | n :: rest => ? contains_id n::node_id done ?> unvisited rest done |: n::node_id :: unvisited rest done
+
+:~ checked_reach (body : lock_body) (done : ids) : vetted =
+    ?= unvisited body::nodes done ?|
+    | [] => Accepted (Checked (body, listm::rev done))
+    | stray => Rejected (GraphError (UnreachablePackages stray))
+
+:~ walked_lock (body : lock_body) : vetted =
+    ?= visit_list body::nodes [] [ body::root ] [] ?|
+    | WalkFailed e => Rejected (GraphError e)
+    | Walked done => checked_reach body done
+
+:~ nodes_vetted (body : lock_body) : vetted =
+    ?= check_nodes body::nodes body::nodes ?|
+    | Rejected e => Rejected e
+    | Accepted () => walked_lock body
+
+:~ validate (trusted : package_id) (lock : locked unvalidated) : vetted =
+    := body = lock_body_of lock
+    ? body::root <> trusted ?> Rejected (RootDiffersFromCallerPin (trusted, body::root)) |: nodes_vetted body
+
+:== ungranted = list (package_id * capability)
+
+:~ granted_has (gs : list capability) (c : capability) : bool = listm::exists' (\ (g : capability) => g = c) gs
+
+:~ ^ ungranted_of (o : package_id) (cs : list capability) (gs : list capability) (acc : ungranted) : ungranted =
+    ?= cs ?|
+    | [] => acc
+    | c :: rest => ungranted_of o rest gs (? granted_has gs c ?> acc |: (o, c) :: acc)
+
+:~ ^ ungranted_nodes (ns : nodes) (gs : list capability) (acc : ungranted) : ungranted =
+    ?= ns ?|
+    | [] => acc
+    | n :: rest => ungranted_nodes rest gs (ungranted_of n::node_id n::release::capabilities gs acc)
+
+:~ check_granted (lock : locked validated) (gs : list capability) : outcome () install_error =
+    := body = lock_body_of lock
+    ?= ungranted_nodes body::nodes gs [] ?|
+    | [] => Accepted ()
+    | missing => Rejected (CapabilitiesNotGranted missing)
+
+:= modules_of (layout : source_layout) : list module_entry =
+    ?= layout ?|
+    | SingleModule entry => [ entry ]
+    | ModuleDirectory entries => entries
+
+:~ ^ lookup_cache (id : blob_id) (cache : list cached_blob) : option cached_blob =
+    ?= cache ?|
+    | [] => None
+    | b :: rest => ? b::cached_id = id ?> Some b |: lookup_cache id rest
+
+:| blob_scan =
+    | Scanned : bool * blobs
+    | ScanFailed : install_error
+
+:~ blob_failed (e : blob_error) : blob_scan = ScanFailed (BlobError e)
+
+:~ cached_entry (m : module_entry) (b : cached_blob) (present : bool) (missing : blobs) : blob_scan =
+    ? b::cached_bytes = m::content_bytes ?> Scanned (present, missing)
+    |: blob_failed (BlobSizeMismatch (m::content, m::content_bytes, b::cached_bytes))
+
+:~ uncached_entry (m : module_entry) (missing : blobs) : blob_scan =
+    := known = listm::exists' (\ (b : blob_id) => b = m::content) missing
+    Scanned (!-, ? known ?> missing |: m::content :: missing)
+
+:~ entry_scan (rq : install_request) (m : module_entry) (present : bool) (missing : blobs) : blob_scan =
+    ?= lookup_cache m::content rq::cache ?|
+    | Some b => cached_entry m b present missing
+    | None => uncached_entry m missing
+
+:~ revoked (rq : install_request) (m : module_entry) : bool =
+    listm::exists' (\ (b : blob_id) => b = m::content) rq::known_revoked
+
+:~ ^ scan_modules (rq : install_request) (es : list module_entry) (ok : bool) (miss : blobs) : blob_scan =
+    ?= es ?|
+    | [] => Scanned (ok, miss)
+    | m :: rest => ? revoked rq m ?> blob_failed (BlobRevoked m::content) |: scan_next rq m rest ok miss
+
+:& :~ scan_next (rq : install_request) (m : module_entry) (rest : list module_entry) (ok : bool) (miss : blobs) : blob_scan =
+    ?= entry_scan rq m ok miss ?|
+    | Scanned (p, ms) => scan_modules rq rest p ms
+    | failed => failed
+
+:== scanned = outcome (ids * blobs) install_error
+
+:== scan_ctx = install_request * nodes
+
+:== progress = ids * blobs
+
+:~ finished (st : progress) : ids * blobs =
+    := verified, miss = st
+    listm::rev verified, miss
+
+:~ package_scan (x : scan_ctx) (n : lock_node) (miss : blobs) : blob_scan =
+    := rq, _ = x
+    scan_modules rq (modules_of n::release::layout) !+ miss
+
+:~ ^ scan_packages (x : scan_ctx) (order : ids) (st : progress) : scanned =
+    ?= order ?|
+    | [] => Accepted (finished st)
+    | id :: rest => scan_one x id rest st
+
+:& :~ scan_one (x : scan_ctx) (id : package_id) (rest : ids) (st : progress) : scanned =
+    := _, ns = x
+    := verified, miss = st
+    ?= lookup_node id ns ?|
+    | None => scan_packages x rest st
+    | Some n => scan_after x id rest verified (package_scan x n miss)
+
+:& :~ scan_after (x : scan_ctx) (id : package_id) (rest : ids) (verified : ids) (r : blob_scan) : scanned =
+    ?= r ?|
+    | ScanFailed e => Rejected e
+    | Scanned (ok, miss) => scan_packages x rest ((? ok ?> id :: verified |: verified), miss)
+
+:~ ^ count_blobs (xs : blobs) (n : u64) : u64 =
+    ?= xs ?|
+    | [] => n
+    | _ :: rest => count_blobs rest (n + 1u64)
+
+:= micros ((usd_micros n) : usd_micros) : u64 = n
+
+:~ budget_refusal (rq : install_request) (e : u64) : option install_error =
+    ? e > micros rq::fetch_budget ?> Some (BlobError (BudgetExceeded (usd_micros e, rq::fetch_budget))) |: None
+
+:~ fetch_refusal (rq : install_request) (m : blobs) (e : u64) : option install_error =
+    ? rq::offline && count_blobs m 0u64 > 0u64 ?> Some (BlobError (MissingWhileOffline m)) |: budget_refusal rq e
+
+:~ plan_record (rq : install_request) (v : ids) (m : blobs) (e : u64) : install_plan =
+    {
+        package_order = validated_order rq::lock; verified_from_cache = v; to_fetch = m
+        estimated_cost = usd_micros e; links = []; compile_units = []
+    }
+
+:~ plan_with_fetches (rq : install_request) (v : ids) (m : blobs) (cost : usd_micros) : plan_result =
+    := e = count_blobs m 0u64 * micros cost
+    ?= fetch_refusal rq m e ?|
+    | Some x => Rejected x
+    | None => Accepted (plan_record rq v m e)
+
+:~ granted_then (rq : install_request) (v : ids) (m : blobs) (cost : usd_micros) : plan_result =
+    ?= check_granted rq::lock rq::granted ?|
+    | Rejected x => Rejected x
+    | Accepted () => plan_with_fetches rq v m cost
+
+:~ plan (cost : usd_micros) (rq : install_request) : plan_result =
+    := body = lock_body_of rq::lock
+    ?= scan_packages (rq, body::nodes) (validated_order rq::lock) ([], []) ?|
+    | Rejected x => Rejected x
+    | Accepted (v, m) => granted_then rq v m cost
+
+:= id_of (s : string) : package_id = package_id (sha256_hex s)
+
+:= blob_of (s : string) : blob_id = blob_id (sha256_hex s)
+
+:= v1 () : exact_version = { major = 1u32; minor = 0u32; patch = 0u32 }
+
+:= needs (s : string) : exact_requirement = { required_name = package_name s; required_version = v1 (); required_id = id_of s }
+
+:= one_module (s : string) : source_layout =
+    SingleModule { module_path = relative_path s; content = blob_of s; content_bytes = 10u64 }
+
+:= identity_of (s : string) : release_identity = { name = package_name s; version = v1 (); author = author_id 1u64 }
+
+:= build_of () : release_build =
+    { edition = ForkEdition3; numerics = { default_int = DefaultI32; default_float = DefaultF64 }; targets = [ TargetRust ] }
+
+:= release_of (s : string) (requires : list exact_requirement) (cs : list capability) : release_manifest =
+    {
+        identity = identity_of s; build = build_of (); requires = requires
+        rust_crates = []; capabilities = cs; layout = one_module s
+    }
+
+:= node_of (s : string) (requires : list string) (cs : list capability) : lock_node =
+    { node_id = id_of s; release = release_of s (listm::map needs requires) cs }
+
+:= lock_of (root : string) (ns : nodes) : locked unvalidated = Unchecked { schema = SpiralLockV1; root = id_of root; nodes = ns }
+
+:= net_access () : capability = NetworkTo (host_pattern "*.example")
+
+:= app_lock () : locked unvalidated = lock_of "app" [ node_of "app" [ "net" ] []; node_of "net" [] [ net_access () ] ]
+
+:= order_of (r : vetted) : outcome ids lock_error =
+    ?= r ?|
+    | Accepted l => Accepted (validated_order l)
+    | Rejected e => Rejected e
+
+:= cache_of (s : string) : cached_blob = { cached_id = blob_of s; cached_at = store_path s; cached_bytes = 10u64 }
+
+:= request_of (l : locked validated) (gs : list capability) (cache : list cached_blob) : install_request =
+    {
+        trusted_root = id_of "app"; lock = l; granted = gs; cache = cache
+        known_revoked = []; offline = !+; fetch_budget = usd_micros 0u64
+    }
+
+:= planned (gs : list capability) (cache : list cached_blob) : plan_result =
+    ?= validate (id_of "app") (app_lock ()) ?|
+    | Accepted l => plan (usd_micros 1u64) (request_of l gs cache)
+    | Rejected _ => Rejected (SignatureInvalid (id_of "app"))
+
+:= plan_summary (r : plan_result) : outcome (ids * blobs) install_error =
+    ?= r ?|
+    | Accepted p => Accepted (p::verified_from_cache, p::to_fetch)
+    | Rejected e => Rejected e
+
+:= key (s : string) : public_key_text = public_key_text s
+
+:= signature_of (k : string) : detached_signature = { algorithm = Ed25519; signer_key = key k; signature = signature_text "sig" }
+
+:= signed_by (s : string) (k : string) : index_entry =
+    Released { manifest = release_of s [] []; id = id_of s; author_signature = signature_of k }
+
+:= author () : author_id = author_id 1u64
+
+:= x_release () : signed_release = { manifest = release_of "x" [] []; id = id_of "x"; author_signature = signature_of "a" }
+
+:= added (k : string) : index_entry = KeyAdded (author (), key k, ForgeVouched)
+
+:= added_by (k : string) (by : string) : index_entry = KeyAdded (author (), key k, SignedBy (key by))
+
+:= revoked_by (k : string) (by : string) : index_entry = KeyRevoked (author (), key k, SignedBy (key by))
+
+:= full_cache () : list cached_blob = [ cache_of "app"; cache_of "net" ]
+
+:= cycle_lock () : locked unvalidated = lock_of "a" [ node_of "a" [ "b" ] []; node_of "b" [ "a" ] [] ]
+
+:= cycle_path () : ids = [ id_of "a"; id_of "b"; id_of "a" ]
+
+///> rust
+:# a_release_signed_by_a_live_key_passes =
+    check_signers [ added "a"; signed_by "x" "a" ] [] |> _assert_eq (Accepted ())
+
+///> rust
+:# a_release_signed_by_a_revoked_key_is_refused =
+    check_signers [ added "a"; revoked_by "a" "a"; signed_by "y" "a" ] [] |> _assert_eq (Rejected (SignerError (SignerKeyNotLive (id_of "y"))))
+
+///> rust
+:# a_rotated_key_signs_after_the_old_one_is_revoked =
+    check_signers [ added "a"; added_by "b" "a"; revoked_by "a" "b"; signed_by "z" "b" ] [] |> _assert_eq (Accepted ())
+
+///> rust
+:# a_valid_lock_orders_dependencies_before_their_dependents =
+    order_of (validate (id_of "app") (app_lock ())) |> _assert_eq (Accepted [ id_of "net"; id_of "app" ])
+
+///> rust
+:# a_lock_rooted_elsewhere_than_the_caller_pin_is_rejected =
+    order_of (validate (id_of "other") (app_lock ()))
+    |> _assert_eq (Rejected (RootDiffersFromCallerPin (id_of "other", id_of "app")))
+
+///> rust
+:# a_dependency_cycle_is_named_along_its_path =
+    order_of (validate (id_of "a") (cycle_lock ())) |> _assert_eq (Rejected (GraphError (DependencyCycle (cycle_path ()))))
+
+///> rust
+:# a_node_nothing_requires_is_unreachable =
+    := l = lock_of "a" [ node_of "a" [] []; node_of "stray" [] [] ]
+    order_of (validate (id_of "a") l) |> _assert_eq (Rejected (GraphError (UnreachablePackages [ id_of "stray" ])))
+
+///> rust
+:# a_declared_capability_that_was_not_granted_blocks_the_plan =
+    plan_summary (planned [] (full_cache ()))
+    |> _assert_eq (Rejected (CapabilitiesNotGranted [ (id_of "net", net_access ()) ]))
+
+///> rust
+:# offline_with_a_missing_blob_is_rejected =
+    plan_summary (planned [ net_access () ] [ cache_of "app" ])
+    |> _assert_eq (Rejected (BlobError (MissingWhileOffline [ blob_of "net" ])))
+
+///> rust
+:# a_full_cache_plans_no_fetch =
+    plan_summary (planned [ net_access () ] (full_cache ())) |> _assert_eq (Accepted ([ id_of "net"; id_of "app" ], []))
+
+///> rust
+:# a_reach_the_release_did_not_declare_blocks_publishing =
+    (reach_covered (x_release ()) [], reach_covered (x_release ()) [ net_access () ])
+    |> _assert_eq (Accepted (), Rejected (DeclarationError (CapabilityUndeclared (id_of "x", net_access ()))))
+
+///> rust
+:# a_second_forge_vouched_key_is_refused_once_the_author_has_one =
+    check_signers [ added "a"; added "b" ] [] |> _assert_eq (Rejected (SignerError (KeyChangeNotAuthorized (author ()))))
+
+:= html_lower () : list string = [ "html_model"; "html_inline"; "html_table"; "html_parse"; "html_render" ]
+
+:= html_core () : nodes =
+    [ node_of "html_model" [] []; node_of "html_inline" [ "html_model" ] []; node_of "html_table" [ "html_model" ] [] ]
+
+:= html_mid () : nodes =
+    := parse = node_of "html_parse" [ "html_model"; "html_inline"; "html_table" ] []
+    [ parse; node_of "html_render" [ "html_model"; "html_inline"; "html_table"; "html_parse" ] [] ]
+
+:= html_top () : nodes =
+    := pages = node_of "html_pages" (html_lower ()) []
+    [ pages; node_of "html_walk" (listm::append (html_lower ()) [ "html_pages" ]) [] ]
+
+:= html_cli () : lock_node = node_of "cli" (listm::append (html_lower ()) [ "html_pages"; "html_walk" ]) []
+
+:= html_nodes () : nodes = html_cli () :: listm::append (html_core ()) (listm::append (html_mid ()) (html_top ()))
+
+:= html_order () : ids =
+    listm::map id_of [ "html_model"; "html_inline"; "html_table"; "html_parse"; "html_render"; "html_pages"; "html_walk"; "cli" ]
+
+:= markdown () : lock_node = node_of "markdown" (listm::append (html_lower ()) [ "html_pages" ]) []
+
+///> rust
+:# html_s_real_unit_graph_validates_in_dependency_order =
+    order_of (validate (id_of "cli") (lock_of "cli" (html_nodes ()))) |> _assert_eq (Accepted (html_order ()))
+
+///> rust
+:# a_unit_the_root_never_reaches_is_refused_from_its_lock =
+    := l = lock_of "cli" (listm::append (html_nodes ()) [ markdown () ])
+    order_of (validate (id_of "cli") l) |> _assert_eq (Rejected (GraphError (UnreachablePackages [ id_of "markdown" ])))

@@ -1,5 +1,5 @@
 param(
-    [string] $Samples = (Join-Path $PSScriptRoot '../tmp/samples'),
+    [string] $Samples = (Join-Path $PSScriptRoot '../samples'),
     [string] $Work = (Join-Path ([IO.Path]::GetTempPath()) "ebpf-kernel-load-$PID")
 )
 $ErrorActionPreference = 'Stop'

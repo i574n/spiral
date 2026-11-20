@@ -1,0 +1,283 @@
+///- --package .
+:# display_value static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:| ^ dv =
+    | DText : string
+    | DList : list dv
+    | DTuple : list dv
+    | DInt : string
+    | DFloat : string
+    | DSpecial : string
+    | DVariant : string * list dv
+
+:~ len (s : string) : i32 = text::length s
+
+:~ byte (s : string) (i : i32) : i32 = ? i >= 0i32 && i < len s ?> text::byte_at s i |: -1i32
+
+:~ digit (b : i32) : bool = b >= 48i32 && b <= 57i32
+
+:~ name_start (b : i32) : bool = (b >= 65i32 && b <= 90i32) || (b >= 97i32 && b <= 122i32) || b = 95i32
+
+:~ name_byte (b : i32) : bool = name_start b || digit b
+
+:~ ws (b : i32) : bool = b = 32i32 || b = 9i32 || b = 10i32 || b = 13i32
+
+:~ ^ skip (s : string) (i : i32) : i32 = ? ws (byte s i) ?> skip s (i + 1i32) |: i
+
+:~ ^ digits_end (s : string) (i : i32) : i32 = ? digit (byte s i) ?> digits_end s (i + 1i32) |: i
+
+:~ ^ name_end (s : string) (i : i32) : i32 = ? name_byte (byte s i) ?> name_end s (i + 1i32) |: i
+
+:~ failed () : dv * i32 = DText "", -1i32
+
+:~ number_end (s : string) (i : i32) : i32 =
+    := d = ? byte s i = 45i32 ?> i + 1i32 |: i
+    := n = digits_end s d
+    := f = ? n > d && byte s n = 46i32 && digit (byte s (n + 1i32)) ?> digits_end s (n + 1i32) |: n
+    := q = ? byte s (f + 1i32) = 45i32 || byte s (f + 1i32) = 43i32 ?> f + 2i32 |: f + 1i32
+    := e = ? byte s f = 101i32 && digit (byte s q) ?> digits_end s q |: f
+    ? n > d ?> e |? text::starts_at s d "inf" || text::starts_at s d "NaN" ?> d + 3i32 |: -1i32
+
+:~ float_text (t : string) : string =
+    := dotted = ? text::find_from t "." 0i32 >= 0i32 ?> t |: text::replace t "e" ".0e"
+    ? text::find_from dotted "e" 0i32 >= 0i32 || text::find_from dotted "." 0i32 >= 0i32 ?> dotted |: dotted ++ ".0"
+
+:~ number_of (t : string) : dv =
+    := body = ? text::starts_with t "-" ?> text::drop t 1i32 |: t
+    ? body = "inf" || body = "NaN"
+    ?> DSpecial t
+    |? text::find_from t "." 0i32 < 0i32 && text::find_from t "e" 0i32 < 0i32
+    ?> DInt t
+    |: DFloat (float_text t)
+
+:~ hex_value (b : i32) : i32 =
+    ? digit b ?> b - 48i32 |? b >= 97i32 && b <= 102i32 ?> b - 87i32 |? b >= 65i32 && b <= 70i32 ?> b - 55i32 |: -1i32
+
+:~ ^ hex_from (s : string) (i : i32) (stop : i32) (acc : i32) : i32 =
+    ? i >= stop ?> acc |? hex_value (byte s i) < 0i32 || acc > 1114111i32 ?> -1i32 |: hex_from s (i + 1i32) stop (acc * 16i32 + hex_value (byte s i))
+
+:~ code_text (code : i32) : string =
+    := encoded = erlang_term::apply "unicode" "characters_to_binary" [ erlang_term::list_term [ erlang_term::of code ] ]
+    := ok : bool = erlang_term::apply "erlang" "is_binary" [ encoded ] |> erlang_term::cast
+    ? ok ?> erlang_term::cast encoded |: ""
+
+:~ escaped (b : i32) : string =
+    ? b = 110i32 ?> "\n" |? b = 114i32 ?> "\r" |? b = 116i32 ?> "\t" |? b = 48i32 ?> code_text 0i32 |: ""
+
+:~ ^ string_from (s : string) (i : i32) (acc : string) : dv * i32 =
+    := b = byte s i
+    ? b < 0i32
+    ?> failed ()
+    |? b = 34i32
+    ?> DText acc, i + 1i32
+    |? b = 92i32 && byte s (i + 1i32) = 117i32 && byte s (i + 2i32) = 123i32
+    ?>
+        := close = text::find_from s "}" (i + 3i32)
+        := plus = byte s (i + 3i32) = 43i32
+        := start = ? plus ?> i + 4i32 |: i + 3i32
+        := code = ? close > start ?> hex_from s start close 0i32 |: -1i32
+        := piece = ? code >= 0i32 ?> code_text code |: ""
+        ? piece <> "" ?> string_from s (close + 1i32) (acc ++ piece) |: failed ()
+    |? b = 92i32 && byte s (i + 1i32) >= 0i32
+    ?>
+        := c = byte s (i + 1i32)
+        := piece = escaped c
+        ? piece <> "" ?> string_from s (i + 2i32) (acc ++ piece) |? c < 128i32 ?> string_from s (i + 2i32) (acc ++ text::slice_len s (i + 1i32) 1i32) |: failed ()
+    |? b = 92i32
+    ?> failed ()
+    |:
+        := width = ? b < 128i32 ?> 1i32 |? b >= 240i32 ?> 4i32 |? b >= 224i32 ?> 3i32 |? b >= 192i32 ?> 2i32 |: 0i32
+        ? width = 0i32 || i + width > len s ?> failed () |: string_from s (i + width) (acc ++ text::slice_len s i width)
+
+:~ ^ value_at (s : string) (i : i32) : dv * i32 =
+    := b = byte s i
+    ? b = 34i32
+    ?> string_from s (i + 1i32) ""
+    |? b = 91i32
+    ?> items_from s (skip s (i + 1i32)) 93i32 [] (\ (xs : list dv) => DList xs)
+    |? b = 40i32
+    ?> items_from s (skip s (i + 1i32)) 41i32 [] (\ (xs : list dv) => DTuple xs)
+    |:
+        := e = number_end s i
+        ? e > i ?> number_of (text::slice_len s i (e - i)), e |: named_at s i
+
+:& :~ items_from (s : string) (i : i32) (close : i32) (acc : list dv) (wrap : list dv -> dv) : dv * i32 =
+    ? byte s i = close
+    ?> wrap (listm::rev acc), i + 1i32
+    |:
+        := item, next = value_at s i
+        := after = ? next < 0i32 ?> -1i32 |: skip s next
+        ? next < 0i32
+        ?> failed ()
+        |? byte s after = 44i32
+        ?> items_from s (skip s (after + 1i32)) close (item :: acc) wrap
+        |? byte s after = close
+        ?> wrap (listm::rev (item :: acc)), after + 1i32
+        |: failed ()
+
+:& :~ named_at (s : string) (i : i32) : dv * i32 =
+    := e = ? name_start (byte s i) ?> name_end s i |: -1i32
+    := name = ? e > i ?> text::slice_len s i (e - i) |: ""
+    := rest = ? e > i ?> skip s e |: -1i32
+    ? e < 0i32
+    ?> failed ()
+    |? name = "RefCell" && byte s rest = 123i32
+    ?>
+        := v = skip s (rest + 1i32)
+        := inner, next = ? text::starts_at s v "value:" ?> value_at s (skip s (v + 6i32)) |: failed ()
+        := after = ? next < 0i32 ?> -1i32 |: skip s next
+        ? next >= 0i32 && byte s after = 125i32 ?> inner, after + 1i32 |: failed ()
+    |? byte s rest = 40i32
+    ?> items_from s (skip s (rest + 1i32)) 41i32 [] (\ (xs : list dv) => DVariant (name, xs))
+    |: DVariant (name, []), rest
+
+:= parse_debug (s : string) : option dv =
+    := v, next = value_at s (skip s 0i32)
+    ? next >= 0i32 && skip s next = len s ?> Some v |: None
+
+:~ number (v : dv) : bool = ?= v ?| DInt _ => !+ | DFloat _ => !+ | _ => !-
+
+:~ all_numbers (xs : list dv) : bool = listm::fold (\ (ok : bool) (x : dv) => ok && number x) !+ xs
+
+:~ series (v : dv) : bool =
+    ?= v ?|
+    | DTuple [ DText _; DList xs; DList ys ] => all_numbers xs && all_numbers ys
+    | _ => !-
+
+:~ line_plot (v : dv) : bool =
+    ?= v ?|
+    | DTuple [ DText _; DText _; DText _; DList ss ] => listm::fold (\ (ok : bool) (x : dv) => ok && series x) !+ ss
+    | _ => !-
+
+:= line_plots (v : dv) : list dv =
+    ?= v ?|
+    | DList (x :: xs) ?& listm::fold (\ (ok : bool) (p : dv) => ok && line_plot p) !+ (x :: xs) => x :: xs
+    | _ => ? line_plot v ?> [ v ] |: []
+
+:~ number_term (v : dv) : erlang_term::term =
+    ?= v ?|
+    | DInt t => erlang_term::apply "erlang" "binary_to_integer" [ erlang_term::of t ]
+    | DFloat t => erlang_term::apply "erlang" "binary_to_float" [ erlang_term::of t ]
+    | _ => erlang_term::of 0i32
+
+:~ text_of (v : dv) : string = ?= v ?| DText t => t | _ => ""
+
+:~ list_of (v : dv) : list dv = ?= v ?| DList xs => xs | DTuple xs => xs | _ => []
+
+:~ numbers_term (v : dv) : erlang_term::term = erlang_term::list_term (listm::map number_term (list_of v))
+
+:~ series_term (v : dv) : erlang_term::term =
+    ?= list_of v ?|
+    | [ label; xs; ys ] => erlang_term::list_term [ erlang_term::of (text_of label); numbers_term xs; numbers_term ys ]
+    | _ => erlang_term::list_term []
+
+:~ plot_term (v : dv) : erlang_term::term =
+    ?= list_of v ?|
+    | [ caption; x_desc; y_desc; ss ] =>
+        erlang_term::list_term [ erlang_term::of (text_of caption); erlang_term::of (text_of x_desc); erlang_term::of (text_of y_desc); erlang_term::list_term (listm::map series_term (list_of ss)) ]
+    | _ => erlang_term::list_term []
+
+:= plot_json (v : dv) : string =
+    erlang_term::apply "erlang" "iolist_to_binary" [ erlang_term::apply "json" "encode" [ plot_term v ] ] |> erlang_term::cast
+
+:~ float_ok (t : string) : bool =
+    := parsed = erlang_term::apply "string" "to_float" [ erlang_term::charlist t ]
+    erlang_term::apply "erlang" "is_float" [ erlang_term::element_at 1i32 parsed ] |> erlang_term::cast
+
+:~ value_ok (x : dv) : bool = ?= x ?| DFloat t => float_ok t | _ => !+
+
+:~ series_ok (s : dv) : bool =
+    ?= list_of s ?|
+    | [ _; xs; ys ] => listm::fold (\ (a : bool) (x : dv) => a && value_ok x) !+ (listm::append (list_of xs) (list_of ys))
+    | _ => !+
+
+:~ finite_floats (v : dv) : bool =
+    ?= list_of v ?|
+    | [ _; _; _; ss ] => listm::fold (\ (a : bool) (s : dv) => a && series_ok s) !+ (list_of ss)
+    | _ => !+
+
+:= plot_jsons (value : string) : string =
+    ?= parse_debug value ?|
+    | Some v =>
+        := plots = line_plots v
+        ? listm::fold (\ (a : bool) (p : dv) => a && finite_floats p) !+ plots ?> sm'::concat_list "\n" (listm::map plot_json plots) |: ""
+    | None => ""
+
+///> gleam
+:# debug_values_parse_like_the_elixir_parser =
+    := ~a = "(\"a\\\"b\\n\", 1, -2.5, [1e-7, 1.5e2])"
+    parse_debug a |> _assert_eq (Some (DTuple [ DText "a\"b\n"; DInt "1"; DFloat "-2.5"; DList [ DFloat "1.0e-7"; DFloat "1.5e2" ] ]))
+    parse_debug "RefCell { value: [(\"\\u{e9}\",)] }" |> _assert_eq (Some (DList [ DTuple [ DText "é" ] ]))
+    (parse_debug "Some(3)", parse_debug "[NaN, inf, -inf]", parse_debug "(1, 2", parse_debug "[1] trailing", parse_debug "None")
+    |> _assert_eq (Some (DVariant ("Some", [ DInt "3" ])), Some (DList [ DSpecial "NaN"; DSpecial "inf"; DSpecial "-inf" ]), None, None, Some (DVariant ("None", [])))
+
+///> gleam
+:# line_plots_become_json_and_other_values_stay =
+    := ~plot = "(\"square\", \"x\", \"y\", [(\"square\", [-1.0, 0.0, 1e-7], [1.0, 0.0, 1.5e2])])"
+    plot_jsons plot |> _assert_eq "[\"square\",\"x\",\"y\",[[\"square\",[-1.0,0.0,1.0e-7],[1.0,0.0,150.0]]]]"
+    (plot_jsons ("[" ++ plot ++ ", " ++ plot ++ "]") |> sm'::split_list "\n" |> listm::length : i32) |> _assert_eq 2i32
+    (plot_jsons "(1, 2)", plot_jsons "[]", plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [0.0], [NaN])])") |> _assert_eq ("", "", "")
+
+///> gleam
+:# plot_json_keeps_the_old_elixir_answers_on_the_edges =
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [1, -2.5, 1e-7], [1.5e2, 0.0, 3])])"
+    |> _assert_eq "[\"c\",\"x\",\"y\",[[\"s\",[1,-2.5,1.0e-7],[150.0,0.0,3]]]]"
+    plot_jsons "(\"c\",\"x\",\"y\",[(\"s\",[1],[2])],)"
+    |> _assert_eq "[\"c\",\"x\",\"y\",[[\"s\",[1],[2]]]]"
+    plot_jsons "(\"c\", \"x\", [(\"s\", [1, 2], [3, 4])])"
+    |> _assert_eq ""
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"a\", [1], [2]), (\"b\", [3, 4], [5, 6])])"
+    |> _assert_eq "[\"c\",\"x\",\"y\",[[\"a\",[1],[2]],[\"b\",[3,4],[5,6]]]]"
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [1, 2], [3])])"
+    |> _assert_eq "[\"c\",\"x\",\"y\",[[\"s\",[1,2],[3]]]]"
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [], [])])"
+    |> _assert_eq "[\"c\",\"x\",\"y\",[[\"s\",[],[]]]]"
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [-0], [2e3])])"
+    |> _assert_eq "[\"c\",\"x\",\"y\",[[\"s\",[0],[2.0e3]]]]"
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [inf], [1])])"
+    |> _assert_eq ""
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [1], [-inf])])"
+    |> _assert_eq ""
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [1.], [1])])"
+    |> _assert_eq ""
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [1e], [1])])"
+    |> _assert_eq ""
+    plot_jsons "(\"c\\\"q\", \"x\\n\", \"\\u{e9}\", [(\"s\\\\\", [1], [2])])"
+    |> _assert_eq "[\"c\\\"q\",\"x\\n\",\"é\",[[\"s\\\\\",[1],[2]]]]"
+    plot_jsons "(\"日本\", \"x\", \"y\", [(\"é\", [1], [2])])"
+    |> _assert_eq "[\"日本\",\"x\",\"y\",[[\"é\",[1],[2]]]]"
+    plot_jsons "Some((\"c\", \"x\", \"y\", [(\"s\", [1], [2])]))"
+    |> _assert_eq ""
+    plot_jsons "[(\"c\", \"x\", \"y\", [(\"s\", [1], [2])]), 3, (\"d\", \"x\", \"y\", [(\"t\", [4], [5])])]"
+    |> _assert_eq ""
+    plot_jsons "((\"c\", \"x\", \"y\", [(\"s\", [1], [2])]),)"
+    |> _assert_eq ""
+    plot_jsons "RefCell { value: (\"c\", \"x\", \"y\", [(\"s\", [1], [2])]) }"
+    |> _assert_eq "[\"c\",\"x\",\"y\",[[\"s\",[1],[2]]]]"
+    plot_jsons "RefCell { valu: (\"c\", \"x\", \"y\", [(\"s\", [1], [2])]) }"
+    |> _assert_eq ""
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [1], [2])]) trailing"
+    |> _assert_eq ""
+    plot_jsons "  (\"c\", \"x\", \"y\", [(\"s\", [1], [2])])  \n"
+    |> _assert_eq "[\"c\",\"x\",\"y\",[[\"s\",[1],[2]]]]"
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [1], [2])])  )"
+    |> _assert_eq ""
+    plot_jsons "(\"c\", 1, \"y\", [(\"s\", [1], [2])])"
+    |> _assert_eq ""
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [\"1\"], [2])])"
+    |> _assert_eq ""
+    plot_jsons "(\"c\", \"x\", \"y\", [(\"s\", [Some(1)], [2])])"
+    |> _assert_eq ""
+    plot_jsons "(\"c\", \"x\", \"y\", [])"
+    |> _assert_eq "[\"c\",\"x\",\"y\",[]]"
+    plot_jsons "\"\\u{+41}\""
+    |> _assert_eq ""
+    plot_jsons "\"\\u{zz}\""
+    |> _assert_eq ""
+    plot_jsons "[1, 2, 3]"
+    |> _assert_eq ""
+    plot_jsons "x_1"
+    |> _assert_eq ""

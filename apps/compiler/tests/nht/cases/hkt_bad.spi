@@ -1,0 +1,5 @@
+:< sm'_operators
+
+:= main () : i32 =
+    fixed_views::mapped (\ x => x + 1i32) (fixed_views::unmapped 3i32) |> ignore
+    0i32

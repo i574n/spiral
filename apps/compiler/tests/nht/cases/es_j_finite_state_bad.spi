@@ -1,0 +1,23 @@
+:< sm'_operators
+
+:| fresh =
+    | Fresh
+
+:| reserved =
+    | Reserved
+
+:! saga s = list string
+
+:~ start () : saga fresh = saga []
+
+:~ reserve \* s. ((saga xs) : saga s) (item : i32) : saga reserved = saga (("reserve " ++# sm'::format item) :: xs)
+
+:~ charge ((saga xs) : saga reserved) : saga reserved = saga ("charge" :: xs)
+
+:~ ^ reserve_all (n : i32) (sg : saga reserved) : saga reserved = ? n = 0i32 ?> sg |: reserve_all (n - 1i32) (reserve sg n)
+
+:~ steps_of \* s. ((saga xs) : saga s) : i32 = listm::length xs
+
+:= main () : i32 =
+    := ~n = 3i32
+    steps_of (reserve_all n (reserve (charge (start ())) 0i32))

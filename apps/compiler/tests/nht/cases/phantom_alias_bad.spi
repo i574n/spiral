@@ -1,0 +1,17 @@
+:< sm'_operators
+
+:| in_generated =
+    | InGenerated
+
+:| in_source =
+    | InSource
+
+:== position p = { line : i32; column : i32 }
+
+:~ generated_at (line : i32) (column : i32) : position in_generated = { line; column }
+
+:~ source_at (line : i32) (column : i32) : position in_source = { line; column }
+
+:~ needs_generated (p : position in_generated) : i32 = p::line
+
+:= main () : i32 = needs_generated (source_at 1i32 2i32)

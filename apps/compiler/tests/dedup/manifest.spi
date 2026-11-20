@@ -1,0 +1,336 @@
+///- --package .
+:# manifest static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ ends_with (s : string) (p : string) : bool =
+    text::length s >= text::length p && text::starts_at s (text::length s - text::length p) p
+
+:~ ^ trim_leading_all (s : string) (p : string) : string =
+    ? p <> "" && text::starts_with s p ?> trim_leading_all (text::drop s (text::length p)) p |: s
+
+:~ ^ trim_trailing_all (s : string) (p : string) : string =
+    ? p <> "" && ends_with s p ?> trim_trailing_all (text::take s (text::length s - text::length p)) p |: s
+
+:~ trim_right (s : string) : string = text::take s (text::trim_end s (text::length s))
+
+:~ unquoted (value : string) : string =
+    := v = text::trim value
+    := n = text::length v
+    := first = text::one v 0i32
+    := wrapped = (first = "\"" || first = "'") && text::one v (n - 1i32) = first
+    ? n >= 2i32 && wrapped ?> text::slice_len v 1i32 (n - 2i32) |: v
+
+:~ before_quotes (line : string) : string =
+    := k = text::find_from line "'''" 0i32
+    ? k < 0i32 ?> line |: text::take line k
+
+:| toml_line =
+    | Blank
+    | Raw : string
+    | Scalar : string * string
+    | Block : string * string
+    | ListStart : string * string
+
+:~ line_of (line : string) : toml_line =
+    := trimmed = text::trim line
+    := eq = text::find_from trimmed "=" 0i32
+    ? trimmed = "" || text::starts_with trimmed "#"
+    ?> Blank
+    |? eq <= 0i32
+    ?> Raw line
+    |:
+        := key = text::trim (text::take trimmed eq)
+        := value = text::trim (text::drop trimmed (eq + 1i32))
+        ? text::starts_with value "'''"
+        ?> Block (key, text::drop value 3i32)
+        |? text::starts_with value "["
+        ?> ListStart (key, value)
+        |: Scalar (key, value)
+
+:~ indented (line : string) : string = "    " ++ line
+
+:~ ^ block_body (lines : list string) (acc : list string) : list string * list string =
+    ?= lines ?|
+    | [] => acc, []
+    | line :: rest =>
+        ? ends_with (text::trim line) "'''"
+        ?> acc, lines
+        |: block_body rest ((? text::trim line = "" ?> "" |: indented line) :: acc)
+
+:~ ^ collect (value : string) (lines : list string) : string * list string =
+    ?= lines ?|
+    | [] => value, []
+    | next :: rest =>
+        ? ends_with (trim_right value) "]" ?> value, lines |: collect (value ++ " " ++ text::trim next) rest
+
+:~ ^ non_empty (xs : list string) : list string =
+    ?= xs ?|
+    | [] => []
+    | x :: rest => ? x = "" ?> non_empty rest |: x :: non_empty rest
+
+:~ list_items (collected : string) : list string =
+    := inner = trim_trailing_all (trim_leading_all (text::trim collected) "[") "]"
+    non_empty (listm::map unquoted (sm'::split_list "," inner))
+
+:~ ^ convert (lines : list string) (acc : list string) : list string =
+    ?= lines ?|
+    | [] => acc
+    | line :: rest =>
+        ?= line_of line ?|
+        | Blank => convert rest ("" :: acc)
+        | Raw raw => convert rest (raw :: acc)
+        | Scalar (key, value) => convert rest ((key ++ ": " ++ unquoted value) :: acc)
+        | Block (key, first) =>
+            := opened = (key ++ ":") :: acc
+            := head = ? text::trim first <> "" ?> indented first :: opened |: opened
+            := body, tail_lines = block_body rest head
+            ?= tail_lines ?|
+            | [] => body
+            | last :: remaining =>
+                := before = before_quotes last
+                convert remaining (? text::trim before <> "" ?> indented before :: body |: body)
+        | ListStart (key, value) =>
+            := collected, remaining = collect value rest
+            := items = list_items collected
+            convert remaining (listm::fold (\ xs item => indented item :: xs) ((key ++ ":") :: acc) items)
+
+:~ from_toml (text_in : string) : string =
+    := lines = sm'::split_list "\n" (text::replace text_in "\r\n" "\n")
+    sm'::concat_list "\n" (listm::rev (convert lines []))
+
+:~ manifest_names () : list string = [ "spiral.toml"; "package.spiproj" ]
+
+:~ joined (dir : string) (name : string) : string =
+    := cut = ends_with dir "/" || ends_with dir "\\"
+    ? dir = ""
+    ?> name
+    |? dir = "/"
+    ?> "/" ++ name
+    |? cut
+    ?> text::take dir (text::length dir - 1i32) ++ "/" ++ name
+    |: dir ++ "/" ++ name
+
+:~ ^ first_regular (paths : list string) : option string =
+    ?= paths ?|
+    | [] => None
+    | path :: rest => ? erlang_file::regular_file path ?> Some path |: first_regular rest
+
+:~ manifest_path (dir : string) : option string = first_regular (listm::map (joined dir) (manifest_names ()))
+
+:~ manifest_path_text (dir : string) : string =
+    ?= manifest_path dir ?|
+    | Some path => path
+    | None => ""
+
+:~ ascii_space (b : i32) : bool = b = 32i32 || (b >= 9i32 && b <= 13i32)
+
+:~ ^ spaces_end (s : string) (i : i32) : i32 =
+    ? i < text::length s && ascii_space (text::byte_at s i)
+    ?> spaces_end s (i + 1i32)
+    |: i
+
+:~ declares_at (s : string) (line : i32) : bool =
+    := k = spaces_end s line
+    text::starts_at s k "modules" && text::one s (spaces_end s (k + 7i32)) = "="
+
+:~ ^ declares_from (s : string) (line : i32) : bool =
+    := nl = text::find_from s "\n" line
+    ? declares_at s line ?> !+ |? nl < 0i32 ?> !- |: declares_from s (nl + 1i32)
+
+:~ declares_modules (s : string) : bool = declares_from s 0i32
+
+:~ value_of (key : string) (line : string) : option string =
+    := t = text::trim line
+    := head = key ++ ":"
+    ? text::starts_with t head ?> Some (text::trim (text::drop t (text::length head))) |: None
+
+:~ ^ first_value (key : string) (lines : list string) : option string =
+    ?= lines ?|
+    | [] => None
+    | line :: rest => ?= value_of key line ?| Some v => Some v | None => first_value key rest
+
+:~ legacy_upstream (edition : string) : bool = edition = "2" || edition = "upstream"
+
+:~ ^ package_dir_from (lines : list string) : string =
+    ?= lines ?|
+    | [] => ""
+    | line :: rest =>
+        := value = text::drop line 11i32
+        ? text::starts_with line "packageDir:" && text::length value > 0i32 ?> text::trim value |: package_dir_from rest
+
+:~ package_dir_of (text_in : string) : string = package_dir_from (sm'::split_list "\n" text_in)
+
+:~ ^ real_main_from (lines : list string) (acc : list string) : list string =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | "    main" :: rest => listm::append (listm::rev ("    main" :: "    main_real*-" :: acc)) rest
+    | line :: rest => real_main_from rest (line :: acc)
+
+:~ with_real_main (text_in : string) : string = sm'::concat_list "\n" (real_main_from (sm'::split_list "\n" text_in) [])
+
+:~ i574n_dialect (text_in : string) : bool =
+    := lines = sm'::split_list "\n" (from_toml text_in)
+    ?= first_value "dialect" lines ?|
+    | Some dialect => dialect <> "upstream"
+    | None => ?= first_value "edition" lines ?| Some edition => not (legacy_upstream edition) | None => !+
+
+:~ manifest_exists (dir : string) : bool =
+    ?= manifest_path dir ?| Some _ => !+ | None => !-
+
+:~ manifest_read_choice (file : string) (text_in : string) (resolved : option string) : string =
+    ? not (ends_with file ".toml")
+    ?> text_in
+    |? declares_modules text_in
+    ?> from_toml text_in
+    |: (?= resolved ?| Some r => r | None => from_toml text_in)
+
+:~ run_resolve (dir : string) (dotnet : string) (dll : string) (has_cap : bool) : option string =
+    ? has_cap = !-
+    ?> None
+    |:
+        := out = process::captured_by dotnet [ dll; "--resolve-manifest"; dir ] !-
+        ? out::ran && out::code = 0i32 && out::stdout <> "" ?> Some out::stdout |: None
+
+:~ stat_fields (name : string) (info : erlang_term::term) : erlang_term::term =
+    erlang_term::tuple
+        [
+            erlang_term::of name
+            erlang_term::apply "erlang" "element" [ erlang_term::of 3i32; info ]
+            erlang_term::apply "erlang" "element" [ erlang_term::of 2i32; info ]
+            erlang_term::apply "erlang" "element" [ erlang_term::of 6i32; info ]
+        ]
+
+:~ posix_time_opts () : erlang_term::term =
+    erlang_term::list_term [ erlang_term::tuple [ erlang_term::atom "time"; erlang_term::atom "posix" ] ]
+
+:~ stat_tuple (dir : string) (name : string) : erlang_term::term =
+    := r = erlang_term::apply "file" "read_file_info" [ erlang_term::of (erlang_file::joined_path dir name); posix_time_opts () ]
+    ? erlang_term::equal (erlang_term::apply "erlang" "element" [ erlang_term::of 1i32; r ]) (erlang_term::atom "ok")
+    ?> stat_fields name (erlang_term::apply "erlang" "element" [ erlang_term::of 2i32; r ])
+    |: erlang_term::tuple [ erlang_term::of name; erlang_term::atom "missing" ]
+
+:~ stamp_of_names (dir : string) (names : list string) : erlang_term::term =
+    := tuples = listm::map (\ name => stat_tuple dir name) names
+    erlang_term::apply "erlang" "phash2" [ erlang_term::apply "lists" "sort" [ erlang_term::list_term tuples ] ]
+
+:~ dir_stamp (dir : string) : erlang_term::term =
+    := r = erlang_term::apply "file" "list_dir" [ erlang_term::of dir ]
+    ? erlang_term::equal (erlang_term::apply "erlang" "element" [ erlang_term::of 1i32; r ]) (erlang_term::atom "ok")
+    ?> stamp_of_names dir (erlang_term::apply "erlang" "element" [ erlang_term::of 2i32; r ] |> erlang_term::items_of |> listm::map erlang_file::text_of)
+    |: erlang_term::atom "unlisted"
+
+:~ cache_key (dir : string) : erlang_term::term =
+    erlang_term::tuple
+        [
+            erlang_term::atom "spiral_cells_manifest"
+            erlang_term::atom "resolved"
+            erlang_term::of (erlang_file::absolute_path dir)
+            dir_stamp dir
+        ]
+
+:~ cached_resolve (dir : string) (dotnet : string) (dll : string) (has_cap : bool) : option string =
+    := key = cache_key dir
+    := miss = erlang_term::atom "spiral_cells_manifest_miss"
+    := hit = erlang_term::apply "persistent_term" "get" [ key; miss ]
+    ? erlang_term::equal hit miss
+    ?>
+        ?= run_resolve dir dotnet dll has_cap ?|
+        | Some r =>
+            := _ = erlang_term::apply "persistent_term" "put" [ key; erlang_term::of r ]
+            Some r
+        | None => None
+    |: Some (hit |> erlang_term::cast : string)
+
+:~ manifest_read (dir : string) (dotnet : string) (dll : string) (has_cap : bool) : string =
+    ?= manifest_path dir ?|
+    | None => ""
+    | Some file =>
+        := text = erlang_file::file_text file
+        := needs_resolve = ends_with file ".toml" && not (declares_modules text)
+        := resolved = ? needs_resolve ?> cached_resolve dir dotnet dll has_cap |: None
+        manifest_read_choice file text resolved
+
+///> gleam
+:# scalars_lists_and_blocks_convert_like_the_elixir_reader =
+    := toml = "edition = 3\npackageDir = '../lib'\npackages = ['|core-', \"spiral-\"]\nmodules = '''\nmain\n'''"
+    := expected = "edition: 3\npackageDir: ../lib\npackages:\n    |core-\n    spiral-\nmodules:\n    main"
+    from_toml toml |> _assert_eq expected
+
+///> gleam
+:# a_list_may_span_lines_and_a_comment_stays_blank =
+    from_toml "# note\npackages = [\n  'a',\n  'b'\n]\nx = 1" |> _assert_eq "\npackages:\n    a\n    b\nx: 1"
+
+///> gleam
+:# modules_is_declared_only_as_a_line_leading_key =
+    declares_modules "edition = 3\n  modules =\n'''main'''" |> _assert_eq !+
+    declares_modules "x = 1\nmodules\n  = 'a'" |> _assert_eq !+
+    declares_modules "submodules = 1\n# modules = 2\nmodules_x = 3" |> _assert_eq !-
+
+///> gleam
+:# the_i574n_dialect_is_the_default_with_or_without_a_key =
+    := keyless = i574n_dialect "packageDir = '../lib'\nmodules = '''\nmain\n'''"
+    := compat = i574n_dialect "edition = 3", i574n_dialect "edition: 3"
+    (keyless, compat, i574n_dialect "dialect = \"i574n\"", i574n_dialect "dialect: i574n")
+    |> _assert_eq (!+, (!+, !+), !+, !+)
+
+///> gleam
+:# only_the_upstream_dialect_opts_out_in_either_spelling =
+    (i574n_dialect "dialect = 'upstream'", i574n_dialect "  dialect:   upstream\r\nmodules:\n    main")
+    |> _assert_eq (!-, !-)
+
+///> gleam
+:# a_dialect_only_manifest_decides_by_its_dialect =
+    (i574n_dialect "dialect = \"i574n\"\nmodules = '''\nmain\n'''", i574n_dialect "dialect = \"upstream\"\nmodules = '''\nmain\n'''")
+    |> _assert_eq (!+, !-)
+
+///> gleam
+:# legacy_editions_map_to_a_dialect_and_a_year_is_not_one =
+    := legacy = i574n_dialect "edition = 3", i574n_dialect "edition = 2", i574n_dialect "edition = 'upstream'"
+    (legacy, i574n_dialect "edition = 2026", i574n_dialect "dialect = \"upstream\"\nedition = 2026")
+    |> _assert_eq ((!+, !-, !-), !+, !-)
+
+///> gleam
+:# the_dialect_wins_over_a_legacy_edition =
+    (i574n_dialect "dialect = \"i574n\"\nedition = 2", i574n_dialect "edition = 3\ndialect = \"upstream\"") |> _assert_eq (!+, !-)
+
+///> gleam
+:# a_name_joins_a_dir_like_elixir_path_join =
+    (joined "" "a", joined "/" "a", joined "d/" "a", joined "d\\" "a", joined "d" "a")
+    |> _assert_eq ("a", "/a", "d/a", "d/a", "d/a")
+
+///> gleam
+:# a_dir_s_manifest_is_its_first_regular_name =
+    (manifest_path_text ".", manifest_path_text "no_such_dir") |> _assert_eq ("./package.spiproj", "")
+
+///> gleam
+:# a_dir_with_a_manifest_exists_and_a_bare_dir_does_not =
+    (manifest_exists ".", manifest_exists "no_such_dir") |> _assert_eq (!+, !-)
+
+///> gleam
+:# read_choice_follows_the_elixir_read_cond =
+    := nontoml = manifest_read_choice "pkg.spiproj" "raw text" None
+    := picked = manifest_read_choice "x.toml" "edition = 3" (Some "RESOLVED")
+    := fell_back = manifest_read_choice "x.toml" "edition = 3" None
+    (nontoml, picked, fell_back) |> _assert_eq ("raw text", "RESOLVED", from_toml "edition = 3")
+
+///> gleam
+:# package_dir_and_the_real_main_link_follow_the_manifest_lines =
+    := ~text = "packages:\n    |core-\npackageDir:  C:/lib/spiral  \r\nmodules:\n    a\n    main\n    main\n"
+    (package_dir_of text, package_dir_of "a\npackageDir: x", package_dir_of "x packageDir: y") |> _assert_eq ("C:/lib/spiral", "x", "")
+    with_real_main text |> _assert_eq "packages:\n    |core-\npackageDir:  C:/lib/spiral  \r\nmodules:\n    a\n    main_real*-\n    main\n    main\n"
+    with_real_main "modules:\n    main_x\n" |> _assert_eq "modules:\n    main_x\n"
+
+///> gleam
+:# declares_modules_keeps_the_old_line_regex_answers_on_the_edges =
+    := yes = [ "modules="; "  modules ="; "\tmodules\n="; "x\n\n  \nmodules ="; "\r\nmodules ="; "x = 1\r\n  modules\r\n  ="; "modules =\n"; "edition = 3\nmodules = '''\nmain\n'''" ]
+    := no = [ "submodules = 1"; "modules_x = 1"; " modules : a"; "# modules = a"; "modules"; "a modules ="; "MODULES ="; "modules" ^^ unicode::char_of 160i32 ^^ "="; unicode::char_of 160i32 ^^ "modules ="; ""; "\n" ]
+    (listm::map declares_modules yes, listm::map declares_modules no)
+    |> _assert_eq (listm::map (\ (_ : string) => !+) yes, listm::map (\ (_ : string) => !-) no)
+
+///> gleam
+:# manifest_paths_keep_the_old_first_regular_name_answers_on_the_edges =
+    := dirs = [ ""; "."; "/"; "no_such_dir"; "spi"; "spi/"; "spi//"; "spi\\"; "mix.exs"; "../spi"; "../../cells/spi"; ".."; "../spi/"; "../test"; "../spi\\" ]
+    listm::map manifest_path_text dirs
+    |> _assert_eq [ "package.spiproj"; "./package.spiproj"; ""; ""; ""; ""; ""; ""; ""; "../spi/package.spiproj"; "../../cells/spi/package.spiproj"; ""; "../spi/package.spiproj"; ""; "../spi/package.spiproj" ]

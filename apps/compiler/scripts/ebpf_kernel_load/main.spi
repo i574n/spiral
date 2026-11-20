@@ -93,7 +93,7 @@
     xs |> listm::fold (\ (acc : string) (s : string) => ? acc = "" ?> s |: acc ++# sep ++# s) ""
 
 := main () : i32 =
-    := samples = env::try_get_environment_variable "SPIRAL_EBPF_SAMPLES" |> optionm'::default_value "apps/compiler/tmp/samples"
+    := samples = env::try_get_environment_variable "SPIRAL_EBPF_SAMPLES" |> optionm'::default_value "apps/compiler/samples"
     := work = sm'::trim (run "mktemp" [ "-d" ]).stdout
     := packet = work ++# "/packet.bin"
     run "sh" [ "-c"; "head -c 64 /dev/zero > " ++# packet ] |> ignore

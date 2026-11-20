@@ -21,22 +21,22 @@
 
 :~ ^ digits_end (s : string) (i : i32) : i32 = ? is_digit (at s i) ?> digits_end s (i + 1i32) |: i
 
-:~ some_digits_end (s : string) (i : i32) : i32 =
+:= some_digits_end (s : string) (i : i32) : i32 =
     := j = digits_end s i
     ? j = i ?> -1i32 |: j
 
-:~ int_end (s : string) (i : i32) : i32 = ? at s i = 48i32 ?> i + 1i32 |: some_digits_end s i
+:= int_end (s : string) (i : i32) : i32 = ? at s i = 48i32 ?> i + 1i32 |: some_digits_end s i
 
-:~ frac_end (s : string) (i : i32) : i32 = ? i >= 0i32 && at s i = 46i32 ?> some_digits_end s (i + 1i32) |: i
+:= frac_end (s : string) (i : i32) : i32 = ? i >= 0i32 && at s i = 46i32 ?> some_digits_end s (i + 1i32) |: i
 
-:~ exp_end (s : string) (i : i32) : i32 =
+:= exp_end (s : string) (i : i32) : i32 =
     := e = at s i
     ? i >= 0i32 && (e = 101i32 || e = 69i32) ?>
         := sign = at s (i + 1i32)
         some_digits_end s (? sign = 43i32 || sign = 45i32 ?> i + 2i32 |: i + 1i32)
     |: i
 
-:~ number_end (s : string) (i : i32) : i32 = exp_end s (frac_end s (int_end s (? at s i = 45i32 ?> i + 1i32 |: i)))
+:= number_end (s : string) (i : i32) : i32 = exp_end s (frac_end s (int_end s (? at s i = 45i32 ?> i + 1i32 |: i)))
 
 :~ hex_val (b : i32) : i32 =
     ? is_digit b
@@ -47,14 +47,14 @@
     ?> b - 87i32
     |: -1i32
 
-:~ hex4 (s : string) (i : i32) : i32 =
+:= hex4 (s : string) (i : i32) : i32 =
     := a = hex_val (at s i)
     := b = hex_val (at s (i + 1i32))
     := c = hex_val (at s (i + 2i32))
     := d = hex_val (at s (i + 3i32))
     ? a < 0i32 || b < 0i32 || c < 0i32 || d < 0i32 ?> -1i32 |: ((a * 16i32 + b) * 16i32 + c) * 16i32 + d
 
-:~ letter_escape (e : i32) : string =
+:= letter_escape (e : i32) : string =
     ? e = 98i32
     ?> unicode::char_of 8i32
     |? e = 102i32
@@ -67,7 +67,7 @@
     ?> "\t"
     |: ""
 
-:~ simple_escape (e : i32) : string =
+:= simple_escape (e : i32) : string =
     ? e = 34i32
     ?> "\""
     |? e = 92i32
@@ -76,7 +76,7 @@
     ?> "/"
     |: letter_escape e
 
-:~ low_after (s : string) (i : i32) : i32 = ? at s i = 92i32 && at s (i + 1i32) = 117i32 ?> hex4 s (i + 2i32) |: -1i32
+:= low_after (s : string) (i : i32) : i32 = ? at s i = 92i32 && at s (i + 1i32) = 117i32 ?> hex4 s (i + 2i32) |: -1i32
 
 :~ paired (high : i32) (low : i32) : string =
     unicode::char_of (65536i32 + (high - 55296i32) * 1024i32 + (low - 56320i32))
@@ -85,20 +85,20 @@
     := b = at s i
     b >= lo && b <= hi
 
-:~ tail_ok (s : string) (i : i32) (n : i32) : bool =
+:= tail_ok (s : string) (i : i32) (n : i32) : bool =
     within s i 128i32 191i32 && (n < 2i32 || within s (i + 1i32) 128i32 191i32)
 
-:~ utf8_width3 (s : string) (i : i32) (b : i32) : i32 =
+:= utf8_width3 (s : string) (i : i32) (b : i32) : i32 =
     := lo = ? b = 224i32 ?> 160i32 |: 128i32
     := hi = ? b = 237i32 ?> 159i32 |: 191i32
     ? within s (i + 1i32) lo hi && tail_ok s (i + 2i32) 1i32 ?> 3i32 |: 0i32
 
-:~ utf8_width4 (s : string) (i : i32) (b : i32) : i32 =
+:= utf8_width4 (s : string) (i : i32) (b : i32) : i32 =
     := lo = ? b = 240i32 ?> 144i32 |: 128i32
     := hi = ? b = 244i32 ?> 143i32 |: 191i32
     ? within s (i + 1i32) lo hi && tail_ok s (i + 2i32) 2i32 ?> 4i32 |: 0i32
 
-:~ utf8_width_at (s : string) (i : i32) : i32 =
+:= utf8_width_at (s : string) (i : i32) : i32 =
     := b = at s i
     ? b >= 194i32 && b <= 223i32
     ?> ? within s (i + 1i32) 128i32 191i32 ?> 2i32 |: 0i32
@@ -147,22 +147,22 @@
     := low = low_after s (slash + 6i32)
     ? json_scan::is_low_surrogate low ?> string_from s (slash + 12i32) (slash + 12i32) (acc ++# paired high low) |: None
 
-:~ string_at (s : string) (q_at : i32) : option (string * i32) = string_from s (q_at + 1i32) (q_at + 1i32) ""
+:= string_at (s : string) (q_at : i32) : option (string * i32) = string_from s (q_at + 1i32) (q_at + 1i32) ""
 
-:~ word (s : string) (i : i32) (w : string) (v : json) : option (json * i32) =
+:= word (s : string) (i : i32) (w : string) (v : json) : option (json * i32) =
     := n = unicode::byte_count w
     ? unicode::byte_part s i n = w ?> Some (v, i + n) |: None
 
-:~ number_at (s : string) (i : i32) : option (json * i32) =
+:= number_at (s : string) (i : i32) : option (json * i32) =
     := stop = number_end s i
     ? stop <= i ?> None |: Some (JNum (unicode::byte_part s i (stop - i)), stop)
 
-:~ text_value (s : string) (i : i32) : option (json * i32) =
+:= text_value (s : string) (i : i32) : option (json * i32) =
     ?= string_at s i ?|
     | Some (t, next) => Some (JStr t, next)
     | None => None
 
-:~ word_value (s : string) (i : i32) (c : i32) : option (json * i32) =
+:= word_value (s : string) (i : i32) (c : i32) : option (json * i32) =
     ? c = 116i32
     ?> word s i "true" (JBool !+)
     |? c = 102i32
@@ -241,12 +241,12 @@
     | (name, v) :: rest => ? name = key ?> Some v |: member key rest
     | [] => None
 
-:~ field (key : string) (v : json) : option json =
+:= field (key : string) (v : json) : option json =
     ?= v ?|
     | JObj members => member key members
     | _ => None
 
-:~ escaped_byte (s : string) (i : i32) (c : i32) : string =
+:= escaped_byte (s : string) (i : i32) (c : i32) : string =
     ? c = 34i32 || c = 92i32 ?> "\\" ++# unicode::byte_part s i 1i32 |: json::unicode_escape c
 
 :~ ^ quoted_from (s : string) (i : i32) (start : i32) (acc : string) : string =
@@ -257,7 +257,7 @@
     ?> quoted_from s (i + 1i32) (i + 1i32) (acc ++# span_text s start i ++# escaped_byte s i c)
     |: quoted_from s (i + 1i32) start acc
 
-:~ quoted (s : string) : string = "\"" ++# quoted_from s 0i32 0i32 "" ++# "\""
+:= quoted (s : string) : string = "\"" ++# quoted_from s 0i32 0i32 "" ++# "\""
 
 :~ ^ render (v : json) : string =
     ?= v ?|
@@ -278,17 +278,17 @@
 
 :~ to_text (v : json) : string = render v
 
-:~ field_string (key : string) (v : json) : string =
+:= field_string (key : string) (v : json) : string =
     ?= field key v ?|
     | Some x => (?= str_of x ?| Some s => s | None => "")
     | None => ""
 
-:~ field_array (key : string) (v : json) : list json =
+:= field_array (key : string) (v : json) : list json =
     ?= field key v ?|
     | Some x => arr_of x
     | None => []
 
-:~ field_text (key : string) (v : json) (fallback : string) : string =
+:= field_text (key : string) (v : json) (fallback : string) : string =
     ?= field key v ?|
     | Some x => render x
     | None => fallback

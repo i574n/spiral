@@ -1,0 +1,5 @@
+{
+  "eps_as_no": "ETY-TermError: Unification failure",
+  "node_bad": "ETY-UnboundVariable: Unbound term variable: Nope",
+  "not_no_bad": "ETY-TermError: Unification failure"
+}

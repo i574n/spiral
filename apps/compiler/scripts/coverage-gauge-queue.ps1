@@ -4,7 +4,7 @@ param(
     [string] $Out = (Join-Path ([IO.Path]::GetTempPath()) "gauge-queue-$PID")
 )
 $scripts = $PSScriptRoot
-$matrix = Import-PowerShellDataFile (Join-Path $PSScriptRoot '../tmp/tests/matrix.psd1') -SkipLimitCheck
+$matrix = Import-PowerShellDataFile (Join-Path $PSScriptRoot '../tests/matrix.psd1') -SkipLimitCheck
 $env:SPIRAL_BIN_CACHE_DIR = $null
 $env:SPIRAL_COMPILER_DLL = $null
 $env:SPIRAL_CC = 'C:\Users\i574n\scoop\apps\gcc\current\bin\gcc.exe'

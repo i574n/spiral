@@ -21,7 +21,6 @@
     | Dcc
     | Fpc
     | Plot
-    | Spl2spi
 
 :| step =
     | FromEnv : string
@@ -71,7 +70,6 @@
     | Dcc => [ FromEnv "SPIRAL_DCC"; OnPath [ "dcc32"; "dcc64" ] ]
     | Fpc => [ FromEnv "SPIRAL_FPC"; OnPath [ "fpc" ]; Bundled (scoop_fpc p) ]
     | Plot => [ FromEnv "SPIRAL_CELLS_PLOT"; Bundled (release_bin p "plot") ]
-    | Spl2spi => [ FromEnv "SPIRAL_SPL2SPI"; Bundled (exe_pair (joined p::root "target/build/lisp/spl2spi/spl2spi")); OnPath [ "spl2spi" ] ]
 
 :~ ^ first_where (f : string -> string) (xs : list string) : string =
     ?= xs ?|
@@ -99,7 +97,7 @@
     first_set [ override; p::env "SPIRAL_COMPILER_PACKAGE_DIR"; joined p::root "deps/The-Spiral-Language/VS Code Plugin" ]
 
 :~ workspace (p : probe) (override : string) : string =
-    first_set [ override; p::env "SPIRAL_WORKSPACE_ROOT"; joined p::root "apps/compiler/tmp" ]
+    first_set [ override; p::env "SPIRAL_WORKSPACE_ROOT"; joined p::root "apps/compiler" ]
 
 :~ lean_flag () : string = "+leanprover/lean4:v4.35.0"
 
@@ -116,7 +114,7 @@
     |: p::on_path "lean" ++# "\t" ++# lean_flag ()
 
 :~ tool_names () : list (string * tool) =
-    [ ("dotnet", Dotnet); ("rustc", Rustc); ("spiral", SpiralExe); ("python", Python); ("lua", Lua); ("erl", Erl); ("gleam", Gleam); ("zig", Zig); ("wgsl_run", WgslRun); ("naga", Naga); ("bun", Bun); ("pwsh", Pwsh); ("cc", Cc); ("dcc", Dcc); ("fpc", Fpc); ("plot", Plot); ("spl2spi", Spl2spi) ]
+    [ ("dotnet", Dotnet); ("rustc", Rustc); ("spiral", SpiralExe); ("python", Python); ("lua", Lua); ("erl", Erl); ("gleam", Gleam); ("zig", Zig); ("wgsl_run", WgslRun); ("naga", Naga); ("bun", Bun); ("pwsh", Pwsh); ("cc", Cc); ("dcc", Dcc); ("fpc", Fpc); ("plot", Plot) ]
 
 :~ tool_named (name : string) : option tool =
     listm::fold (\ found (k, t) => ?= found ?| Some _ => found | None => ? k = name ?> Some t |: None) None (tool_names ())
@@ -273,13 +271,6 @@
 
 ///> gleam
 ///> rust
-:# spl2spi_resolves_from_env_bundled_or_path =
-    := p = fake_probe [ ("SPIRAL_SPL2SPI", "/env/spl2spi") ] [ "spl2spi" ] []
-    (path_for p "spl2spi" "/opt/spl2spi", path_for p "spl2spi" "", path_for (fake_probe [] [ "spl2spi" ] []) "spl2spi" "", path_for (fake_probe [] [] []) "spl2spi" "")
-    |> _assert_eq ("/opt/spl2spi", "/env/spl2spi", "/bin/spl2spi", "")
-
-///> gleam
-///> rust
 :# the_compiler_dll_and_package_dir_follow_the_cache_and_the_root =
     := p = fake_probe [ ("SPIRAL_BIN_CACHE_DIR", "/c") ] [] []
     (path_for p "compiler_dll" "", path_for p "package_dir" "")
@@ -288,7 +279,7 @@
 ///> gleam
 ///> rust
 :# the_workspace_and_cache_dir_fall_back_to_the_root_and_home =
-    (path_for (fake_probe [] [] []) "workspace" "", path_for (fake_probe [] [] []) "cache_dir" "") |> _assert_eq ("/r/apps/compiler/tmp", "/h/.cache/spiral-bin")
+    (path_for (fake_probe [] [] []) "workspace" "", path_for (fake_probe [] [] []) "cache_dir" "") |> _assert_eq ("/r/apps/compiler", "/h/.cache/spiral-bin")
 
 :~ pinned_lean_path () : string = "/h/.elan/toolchains/leanprover--lean4---v4.35.0/bin/lean"
 

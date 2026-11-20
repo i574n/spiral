@@ -1,0 +1,84 @@
+///- --package .
+:# packages_cli static =
+    :< testing
+
+:< packages_model
+:< packages_manifest
+:< packages_publish
+:< packages_dry_run
+:< sm'_operators
+
+:| route =
+    | PublishDryRun : string * string
+    | Usage
+
+:= route_of (args : list string) : route =
+    ?= args ?|
+    | verb :: flag :: dir :: out :: [] => ? verb = "publish" && flag = "--dry-run" ?> PublishDryRun (dir, out) |: Usage
+    | _ => Usage
+
+:= toml_error_text (e : toml_flat::toml_error) : string =
+    ?= e ?|
+    | toml_flat::UnreadableLine (line, text) =>
+        "spiral.toml line " ++# sm'::show line ++# " is not key = value: " ++# text
+    | toml_flat::UnclosedBlock key => "spiral.toml block " ++# key ++# " is never closed"
+
+:= manifest_error_text (e : manifest_error) : string =
+    ?= e ?|
+    | TomlRefused t => toml_error_text t
+    | MissingKey key => "spiral.toml has no " ++# key
+    | BadValue (key, text) => "spiral.toml " ++# key ++# " has a bad value: " ++# text
+
+:= prepare_error_text (e : prepare_error) : string =
+    ?= e ?|
+    | CrlfInModule path => path ++# " has CRLF line endings; publish takes LF text only"
+    | DuplicateModulePath path => path ++# " is listed twice"
+    | NoModules => "the package lists no modules"
+
+:= dry_run_error_text (e : dry_run_error) : string =
+    ?= e ?|
+    | ManifestMissing path => "no manifest at " ++# path
+    | ManifestRefused m => manifest_error_text m
+    | ModuleMissing path => "module file missing: " ++# path
+    | PrepareRefused p => prepare_error_text p
+
+:~ published (dir : string) (out : string) : i32 =
+    ?= dry_run dir out ?|
+    | Accepted o =>
+        console::write_line o::index_line
+        0
+    | Rejected e =>
+        console::write_error_line ("packages: " ++# dry_run_error_text e)
+        1
+
+:~ usage () : i32 =
+    console::write_error_line "usage: packages publish --dry-run <package dir> <out dir>"
+    2
+
+///> rust
+///> gleam
+:# the_route_takes_publish_dry_run_and_two_dirs =
+    (
+        route_of [ "publish"; "--dry-run"; "a"; "b" ],
+        route_of [ "publish"; "a"; "b" ],
+        route_of [ "publish"; "--dry-run"; "a" ]
+    )
+    |> _assert_eq (PublishDryRun ("a", "b"), Usage, Usage)
+
+///> rust
+///> gleam
+:# every_refusal_names_its_cause =
+    (dry_run_error_text (ModuleMissing "x.spi"), dry_run_error_text (PrepareRefused NoModules))
+    |> _assert_eq ("module file missing: x.spi", "the package lists no modules")
+    dry_run_error_text (ManifestRefused (BadValue ("version", "1.2")))
+    |> _assert_eq "spiral.toml version has a bad value: 1.2"
+
+///> rust -d chrono sha2
+:# a_dry_run_exits_zero_and_a_missing_module_exits_one =
+    := root, disposable = file_system::create_temp_directory ()
+    := dir = package_dir root ":= parser = 2\n"
+    := ok = published dir (root ++# "/out")
+    file_system::file_delete (dir ++# "/pdf_objects.spi")
+    := missing = published dir (root ++# "/out2")
+    (ok, missing, file_system::file_exists (root ++# "/out/index/pdf2md")) |> _assert_eq (0i32, 1i32, !+)
+    disposable |> use |> ignore

@@ -5,8 +5,8 @@ FROM ${DOTNET_SDK_IMAGE} AS build
 WORKDIR /src
 COPY spiral_compiler.fs ./
 COPY runtime ./runtime
-COPY tmp/compiler ./tmp/compiler
-RUN dotnet publish tmp/compiler/host/SpiralCompiler.fsproj -c Release -p:SpiralCore=single-flight -o /app \
+COPY dotnet ./dotnet
+RUN dotnet publish dotnet/host/SpiralCompiler.fsproj -c Release -p:SpiralCore=single-flight -o /app \
     && dotnet /app/SpiralCompiler.dll --capabilities | grep -qw server-tcp
 
 FROM ${DOTNET_RUNTIME_IMAGE}

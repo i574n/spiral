@@ -1,0 +1,775 @@
+///- --package .
+:# memo static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ ^ keep \* t. (ok : t -> bool) (xs : list t) : list t =
+    ?= xs ?|
+    | [] => []
+    | x :: rest => ? ok x ?> x :: keep ok rest |: keep ok rest
+
+:~ ^ nth \* t. (i : i32) (xs : list t) : option t =
+    ?= xs ?|
+    | [] => None
+    | x :: rest => ? i = 0i32 ?> Some x |: nth (i - 1i32) rest
+
+:~ ^ rows_from (first : i32) (last : i32) (acc : list i32) : list i32 =
+    ? last < first ?> acc |: rows_from first (last - 1i32) (last :: acc)
+
+:~ ^ any \* t. (ok : t -> bool) (xs : list t) : bool =
+    ?= xs ?|
+    | [] => !-
+    | x :: rest => ? ok x ?> !+ |: any ok rest
+
+:~ has_text (xs : list string) (s : string) : bool = any (\ x => x = s) xs
+
+:~ has_i32 (xs : list i32) (n : i32) : bool = any (\ x => x = n) xs
+
+:~ ^ strip_from (line : string) (i : i32) (in_string : bool) (acc : string) : string =
+    ? i >= text::length line
+    ?> acc
+    |:
+        := ch = text::one line i
+        ? in_string && ch = "\\" && i + 1i32 < text::length line
+        ?> strip_from line (i + 2i32) !+ (acc ++ text::slice_len line i 2i32)
+        |? ch = "\""
+        ?> strip_from line (i + 1i32) (in_string = !-) (acc ++ ch)
+        |? in_string = !- && text::starts_at line i "//" ?> acc
+        |: strip_from line (i + 1i32) in_string (acc ++ ch)
+
+:~ strip_line_comment (line : string) : string = strip_from line 0i32 !- ""
+
+:~ latin1_number (cp : i32) : bool = cp = 178i32 || cp = 179i32 || cp = 185i32 || (cp >= 188i32 && cp <= 190i32)
+
+:~ latin1_symbol (cp : i32) : bool =
+    cp >= 128i32 && cp < 192i32 && cp <> 170i32 && cp <> 181i32 && cp <> 186i32 && (latin1_number cp = !-)
+
+:~ symbol_point (cp : i32) : bool =
+    latin1_symbol cp
+    || cp = 215i32
+    || cp = 247i32
+    || (cp >= 8192i32 && cp < 11264i32)
+    || (cp >= 12288i32 && cp < 12352i32)
+    || (cp >= 65280i32 && cp < 65296i32)
+    || cp >= 126976i32
+
+:~ upper_byte (b : i32) : bool = b >= 65i32 && b <= 90i32
+
+:~ ident_start_byte (b : i32) : bool = upper_byte b || (b >= 97i32 && b <= 122i32) || b = 95i32
+
+:~ word_byte (b : i32) : bool = ident_start_byte b || (b >= 48i32 && b <= 57i32) || b = 39i32
+
+:~ char_width (s : string) (i : i32) : i32 = text::utf8_width (text::byte_at s i)
+
+:~ word_at (s : string) (i : i32) : bool =
+    ? text::byte_at s i < 128i32 ?> word_byte (text::byte_at s i) |: symbol_point (text::code_point s i) = !-
+
+:~ ^ word_end (s : string) (i : i32) : i32 =
+    ? i < text::length s && word_at s i ?> word_end s (i + char_width s i) |: i
+
+:~ ^ identifiers_from (s : string) (i : i32) (acc : list string) : list string =
+    ? i >= text::length s
+    ?> listm::rev acc
+    |? ident_start_byte (text::byte_at s i) ?>
+        := stop = word_end s (i + 1i32)
+        identifiers_from s stop (text::slice_len s i (stop - i) :: acc)
+    |: identifiers_from s (i + char_width s i) acc
+
+:~ identifiers (s : string) : list string = identifiers_from s 0i32 []
+
+:| block_kind =
+    | Definition
+    | OtherBlock
+
+:== shape = { kind : block_kind; names : list string; operators : list string }
+
+:~ other_shape () : shape = { kind = OtherBlock; names = []; operators = [] }
+
+:~ named_shape (names : list string) : shape = { kind = Definition; names; operators = [] }
+
+:~ ^ spaces_end (s : string) (i : i32) : i32 =
+    ? i < text::length s && text::is_space (text::index s i) ?> spaces_end s (i + 1i32) |: i
+
+:~ stops_at (s : string) (i : i32) (stops : string) : bool =
+    text::is_space (text::index s i) || text::contains stops (text::one s i)
+
+:~ ^ until_any (s : string) (i : i32) (stops : string) : i32 =
+    ? i < text::length s && stops_at s i stops = !- ?> until_any s (i + 1i32) stops |: i
+
+:~ word_then_space (s : string) (i : i32) (w : string) : i32 =
+    := after = i + text::length w
+    := spaced = after < text::length s && text::is_space (text::index s after)
+    ? text::starts_at s i w && spaced ?> spaces_end s after |: -1i32
+
+:~ ^ first_keyword (s : string) (i : i32) (ws : list string) : i32 =
+    ?= ws ?|
+    | [] => -1i32
+    | w :: rest =>
+        := k = word_then_space s i w
+        ? k >= 0i32 ?> k |: first_keyword s i rest
+
+:~ or_zero (n : i32) : i32 = ? n >= 0i32 ?> n |: 0i32
+
+:~ after_rec (s : string) (k : i32) : i32 =
+    := r = first_keyword s k [ "rec"; "^" ]
+    ? r >= 0i32 ?> r |: k
+
+:~ name_start (s : string) (keys : list string) : i32 =
+    := k = first_keyword s (or_zero (first_keyword s 0i32 [ "and"; ":&" ])) keys
+    ? k < 0i32 ?> -1i32 |: after_rec s k
+
+:~ value_keys () : list string = [ "inl"; "let"; "inm"; "inb"; ":="; ":~" ]
+
+:~ type_keys () : list string = [ "type"; "union"; "nominal"; "prototype"; ":=="; ":|"; ":!"; ":?" ]
+
+:~ ^ cases_from (code : string) (i : i32) (acc : list string) : list string =
+    := bar = text::find_from code "|" i
+    ? bar < 0i32
+    ?> listm::rev acc
+    |:
+        := at = spaces_end code (bar + 1i32)
+        ? at < text::length code && upper_byte (text::byte_at code at) ?>
+            := stop = word_end code (at + 1i32)
+            cases_from code stop (text::slice_len code at (stop - at) :: acc)
+        |: cases_from code (bar + 1i32) acc
+
+:~ operator_shape (header : string) (at : i32) : option shape =
+    := stop = until_any header (at + 1i32) ")"
+    ? text::one header at = "(" && stop > at + 1i32 && text::one header stop = ")" ?>
+        := op = text::slice_len header (at + 1i32) (stop - at - 1i32)
+        Some { kind = Definition; names = [ "(" ++ op ++ ")" ]; operators = [ op ] }
+    |: None
+
+:~ value_shape (header : string) (v : i32) : shape =
+    ?= operator_shape header v ?|
+    | Some s => s
+    | None =>
+        := stop = until_any header v "(:="
+        := name = text::slice_len header v (stop - v)
+        ? stop = v || name = "_" ?> other_shape () |: named_shape [ name ]
+
+:~ type_shape (header : string) (code : string) (t : i32) : shape =
+    := stop = until_any header t "="
+    ? stop = t ?> other_shape () |: named_shape (text::slice_len header t (stop - t) :: cases_from code 0i32 [])
+
+:~ instance_shape (header : string) (at : i32) : shape =
+    := stop = until_any header at ""
+    ? stop = at ?> other_shape () |: named_shape [ text::slice_len header at (stop - at) ]
+
+:~ block_shape (header : string) (code : string) : shape =
+    := v = name_start header (value_keys ())
+    := t = name_start header (type_keys ())
+    := inst = first_keyword header 0i32 [ "instance"; ":+" ]
+    ? v >= 0i32
+    ?> value_shape header v
+    |? t >= 0i32
+    ?> type_shape header code t
+    |? inst >= 0i32
+    ?> instance_shape header inst
+    |: other_shape ()
+
+:~ ^ spaced (xs : list string) (acc : string) : string =
+    ?= xs ?|
+    | x :: rest => spaced rest (? acc = "" ?> x |: acc ++ " " ++ x)
+    | [] => acc
+
+:~ kind_word (k : block_kind) : string = ?= k ?| Definition => "definition" | OtherBlock => "other"
+
+:~ shape_row (header : string) (code : string) : string =
+    := s = block_shape header code
+    kind_word s::kind ++ "\t" ++ spaced s::names "" ++ "\t" ++ spaced s::operators ""
+
+:== span = { header : i32; last : i32; header_text : string }
+
+:== src_block = { code : string; shape : shape; tokens : list string; is_inst : bool }
+
+:~ ^ lines_between (lines : list string) (row : i32) (s : span) (acc : list string) : list string =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | l :: rest =>
+        ? row > s::last
+        ?> listm::rev acc
+        |? row >= s::header
+        ?> lines_between rest (row + 1i32) s (l :: acc)
+        |: lines_between rest (row + 1i32) s acc
+
+:~ is_instance (header : string) : bool =
+    word_then_space header 0i32 "instance" >= 0i32 || word_then_space header 0i32 ":+" >= 0i32
+
+:~ ^ uniq_from (xs : list string) (seen : dict::dict string ()) (acc : list string) : list string =
+    ?= xs ?|
+    | x :: rest => ? dict::has x seen ?> uniq_from rest seen acc |: uniq_from rest (dict::insert x () seen) (x :: acc)
+    | [] => listm::rev acc
+
+:~ ident_at (s : string) (i : i32) : bool = i < text::length s && ident_start_byte (text::byte_at s i)
+
+:~ sep_width (s : string) (i : i32) : i32 =
+    ? text::starts_at s i "::" && ident_at s (i + 2i32) ?> 2i32 |? text::starts_at s i "." && ident_at s (i + 1i32) ?> 1i32 |: 0i32
+
+:~ ^ chain_end (s : string) (i : i32) : i32 =
+    := w = sep_width s i
+    ? w = 0i32 ?> i |: chain_end s (word_end s (i + w + 1i32))
+
+:~ ^ char_start (s : string) (i : i32) : i32 =
+    ? i > 0i32 && text::byte_at s i >= 128i32 && text::byte_at s i < 192i32 ?> char_start s (i - 1i32) |: i
+
+:~ word_before (s : string) (i : i32) : bool =
+    ? i <= 0i32
+    ?> !-
+    |:
+        := j = char_start s (i - 1i32)
+        word_at s j && text::byte_at s j <> 39i32
+
+:~ keyword_end (s : string) (i : i32) : i32 =
+    ? text::starts_at s i ":<" ?> i + 2i32
+    |? text::starts_at s i "open" && word_before s i = !- ?> i + 4i32
+    |: -1i32
+
+:~ open_name_at (s : string) (k : i32) : i32 = ? k < 0i32 ?> -1i32 |: (? spaces_end s k > k && ident_at s (spaces_end s k) ?> spaces_end s k |: -1i32)
+
+:~ ^ opens_from (s : string) (i : i32) (acc : list string) : list string =
+    ? i >= text::length s
+    ?> listm::rev acc
+    |:
+        := j = open_name_at s (keyword_end s i)
+        ? j >= 0i32 ?>
+            := stop = chain_end s (word_end s (j + 1i32))
+            opens_from s stop (text::replace (text::slice_len s j (stop - j)) "::" "." :: acc)
+        |: opens_from s (i + char_width s i) acc
+
+:~ opened_wire (code : string) : string = spaced (uniq_from (opens_from code 0i32 []) (dict::empty ()) []) ""
+
+:~ line_end (s : string) (i : i32) : i32 =
+    := n = text::find_from s "\n" i
+    ? n < 0i32 ?> text::length s |: n
+
+:~ escape_at (s : string) (i : i32) : bool =
+    text::byte_at s i = 92i32 && i + 1i32 < text::length s && text::byte_at s (i + 1i32) <> 10i32
+
+:~ comment_at (s : string) (i : i32) : bool =
+    text::byte_at s i = 47i32 && i + 1i32 < text::length s && text::byte_at s (i + 1i32) = 47i32
+
+:~ ^ strip_run (s : string) (from : i32) (i : i32) (in_string : bool) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc ++ text::slice_len s from (i - from)
+    |? text::byte_at s i = 10i32 ?> strip_run s from (i + 1i32) !- acc
+    |? in_string && escape_at s i ?> strip_run s from (i + 2i32) !+ acc
+    |? text::byte_at s i = 34i32 ?> strip_run s from (i + 1i32) (in_string = !-) acc
+    |? in_string = !- && comment_at s i ?>
+        := e = line_end s i
+        strip_run s e e !- (acc ++ text::slice_len s from (i - from))
+    |: strip_run s from (i + 1i32) in_string acc
+
+:~ strip_comments (s : string) : string = strip_run s 0i32 0i32 !- ""
+
+:~ ^ token_end (s : string) (i : i32) (e : i32) : i32 =
+    ? i < e && text::is_space (text::index s i) = !- ?> token_end s (i + 1i32) e |: i
+
+:~ ^ package_args (s : string) (i : i32) (e : i32) (acc : list string) : list string =
+    := k = text::find_from s "--package" i
+    ? k < 0i32 || k >= e
+    ?> acc
+    |:
+        := p = spaces_end s (k + 9i32)
+        ? p > k + 9i32 && p < e ?>
+            := q = token_end s p e
+            package_args s q e (text::slice_len s p (q - p) :: acc)
+        |: package_args s (k + 1i32) e acc
+
+:~ ^ flags_from (s : string) (i : i32) (acc : list string) : list string =
+    ? i >= text::length s
+    ?> listm::rev acc
+    |:
+        := e = line_end s i
+        flags_from s (e + 1i32) (? text::starts_at s i "///- " ?> package_args s (i + 5i32) e acc |: acc)
+
+:~ package_wire (program : string) : string = spaced (flags_from program 0i32 []) ""
+
+:~ ws_byte (b : i32) : bool = b = 32i32 || (b >= 9i32 && b <= 13i32)
+
+:~ ^ ws_end (s : string) (i : i32) (e : i32) : i32 = ? i < e && ws_byte (text::byte_at s i) ?> ws_end s (i + 1i32) e |: i
+
+:~ ^ value_end (s : string) (i : i32) (e : i32) : i32 =
+    := b = ? i < e ?> text::byte_at s i |: 34i32
+    ? b <> 34i32 && b <> 13i32 ?> value_end s (i + 1i32) e |: i
+
+:~ quote_skip (s : string) (i : i32) (e : i32) : i32 = ? i < e && text::byte_at s i = 34i32 ?> i + 1i32 |: i
+
+:~ value_start (s : string) (b : i32) (e : i32) : i32 =
+    := j = ws_end s b e
+    := k = ws_end s (j + 4i32) e
+    ? text::starts_at s j "path" && k < e && text::byte_at s k = 61i32 ?> quote_skip s (ws_end s (k + 1i32) e) e |: -1i32
+
+:~ shim_line (s : string) (b : i32) (e : i32) : option string =
+    := v = value_start s b e
+    := w = ? v < 0i32 ?> v |: value_end s v e
+    ? v >= 0i32 && w > v && ws_end s (quote_skip s w e) e = e ?> Some (text::slice_len s v (w - v)) |: None
+
+:~ ^ shim_from (s : string) (b : i32) : string =
+    ? b > text::length s
+    ?> "0\t"
+    |:
+        := e = line_end s b
+        ?= shim_line s b e ?|
+        | Some v => "1\t" ++ v
+        | None => shim_from s (e + 1i32)
+
+:~ shim_path (text : string) : string = shim_from text 0i32
+
+:~ posix_info (path : string) : erlang_term::term = erlang_term::apply "file" "read_file_info" [ erlang_term::of path; memo_store::posix_opts () ]
+
+:~ is_ok (r : erlang_term::term) : bool = memo_store::tagged "ok" r
+
+:~ info_field (n : i32) (r : erlang_term::term) : erlang_term::term = erlang_term::element_at n (memo_store::second_of r)
+
+:~ sha256 (data : erlang_term::term) : erlang_term::term = erlang_term::apply "crypto" "hash" [ erlang_term::atom "sha256"; data ]
+
+:~ same (a : erlang_term::term) (b : erlang_term::term) : bool = erlang_term::equal a b
+
+:~ shim_file (path : string) : string = erlang_file::text_of_call "filename" "rootname" [ erlang_term::of path ] ++ ".shim"
+
+:~ shim_wire (shim : string) : string = ? erlang_file::regular_file shim ?> shim_path (erlang_file::file_text shim) |: "0\t"
+
+:~ shim_target (path : string) : string =
+    := wire = shim_wire (shim_file path)
+    ? text::starts_with wire "1\t" ?> text::drop wire 2i32 |: ""
+
+:~ resolved_tool (path : string) : string =
+    := shimmed = shim_target path
+    ? shimmed <> "" ?> shimmed |: path
+
+:~ stat_of (resolved : string) : erlang_term::term =
+    := r = posix_info resolved
+    := name = erlang_term::of resolved
+    ? is_ok r ?> erlang_term::tuple [ name; info_field 2i32 r; info_field 6i32 r ] |: erlang_term::tuple [ name; erlang_term::atom "missing" ]
+
+:~ tool_stamp (path : string) : erlang_term::term = ? path = "" ?> erlang_term::atom "nil" |: stat_of (resolved_tool path)
+
+:~ read_opts () : erlang_term::term = erlang_term::list_term [ erlang_term::atom "read"; erlang_term::atom "binary" ]
+
+:~ read_closed (fd : erlang_term::term) : erlang_term::term =
+    := got = erlang_term::apply "file" "read" [ fd; erlang_term::of 65536i32 ]
+    erlang_term::apply "file" "close" [ fd ] |> ignore
+    got
+
+:~ head_bytes (path : string) : erlang_term::term =
+    := opened = erlang_term::apply "file" "open" [ erlang_term::of path; read_opts () ]
+    ? is_ok opened ?> read_closed (memo_store::second_of opened) |: erlang_term::atom "error"
+
+:~ stamp_of (r : erlang_term::term) (head : erlang_term::term) : erlang_term::term =
+    erlang_term::tuple [ info_field 2i32 r; info_field 6i32 r; sha256 (memo_store::second_of head) ]
+
+:~ file_stamp (path : string) : erlang_term::term =
+    := r = posix_info path
+    := head = ? is_ok r ?> head_bytes path |: erlang_term::atom "error"
+    ? is_ok head ?> stamp_of r head |: erlang_term::atom "missing"
+
+:~ content_hash (path : string) : erlang_term::term =
+    := r = erlang_term::apply "file" "read_file" [ erlang_term::of path ]
+    ? is_ok r ?> sha256 (memo_store::second_of r) |: erlang_term::atom "missing"
+
+:~ written_in (dir : string) (name : string) (content : string) : () = erlang_file::file_written (erlang_file::joined_path dir name) content |> ignore
+
+:~ shimmed_tool () : string =
+    := dir = memo_store::test_dir "memo_prints_stamps"
+    written_in dir "real-tool" "abc"
+    written_in dir "tool.shim" ("path = \"" ++ erlang_file::joined_path dir "real-tool" ++ "\"\n")
+    erlang_file::joined_path dir "tool.exe"
+
+:~ missing_tool () : erlang_term::term = erlang_term::tuple [ erlang_term::of "/no/tool"; erlang_term::atom "missing" ]
+
+///> gleam
+:# no_tool_stamps_nil_and_a_missing_tool_stamps_missing =
+    (same (tool_stamp "") (erlang_term::atom "nil"), same (tool_stamp "/no/tool") (missing_tool ())) |> _assert_eq (!+, !+)
+
+///> gleam
+:# a_tool_stamp_names_the_shim_target =
+    := target = erlang_file::joined_path (memo_store::test_dir "memo_prints_stamps") "real-tool"
+    same (erlang_term::element_at 1i32 (tool_stamp (shimmed_tool ()))) (erlang_term::of target) |> _assert_eq !+
+
+///> gleam
+:# a_tool_stamp_carries_the_target_size =
+    same (memo_store::second_of (tool_stamp (shimmed_tool ()))) (erlang_term::of 3i32) |> _assert_eq !+
+
+:~ hashes_dir () : string =
+    := dir = memo_store::test_dir "memo_prints_hashes"
+    written_in dir "empty" ""
+    written_in dir "abc" "abc"
+    dir
+
+///> gleam
+:# a_file_stamp_needs_bytes =
+    same (file_stamp (erlang_file::joined_path (hashes_dir ()) "empty")) (erlang_term::atom "missing") |> _assert_eq !+
+
+///> gleam
+:# a_content_hash_is_the_sha256_of_the_bytes =
+    same (content_hash (erlang_file::joined_path (hashes_dir ()) "abc")) (sha256 (erlang_term::of "abc")) |> _assert_eq !+
+
+:~ base_name (p : string) : string = erlang_file::text_of_call "filename" "basename" [ erlang_term::of p ]
+
+:~ lowered (s : string) : string = erlang_file::text_of_call "string" "lowercase" [ erlang_term::of s ]
+
+:~ seen_lower (seen : list string) (n : string) : bool = listm::fold (\ hit s => hit || lowered s = lowered n) !- seen
+
+:~ first_spellings (names : list string) : list string = listm::fold (\ (seen : list string) n => ? seen_lower seen n ?> seen |: n :: seen) [] names
+
+:~ dll_names (dll : string) : list string = base_name dll :: listm::map base_name (memo_store::glob (erlang_file::dir_name dll) "SpiralCompiler*.dll")
+
+:~ entry_row (dir : string) (n : string) : erlang_term::term = erlang_term::tuple [ erlang_term::of (lowered n); erlang_term::of (erlang_file::joined_path dir n) ]
+
+:~ entry_terms (dll : string) : list erlang_term::term =
+    := rows = listm::map (entry_row (erlang_file::dir_name dll)) (first_spellings (dll_names dll))
+    erlang_term::apply "lists" "sort" [ erlang_term::list_term rows ] |> erlang_term::items_of
+
+:~ entry_print (f : string -> erlang_term::term) (e : erlang_term::term) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::element_at 1i32 e; f (memo_store::second_of e |> erlang_term::cast) ]
+
+:~ prints_of (f : string -> erlang_term::term) (entries : list erlang_term::term) : erlang_term::term = erlang_term::list_term (listm::map (entry_print f) entries)
+
+:~ put_back (key : erlang_term::term) (value : erlang_term::term) : erlang_term::term =
+    erlang_term::apply "persistent_term" "put" [ key; value ] |> ignore
+    value
+
+:~ memo_miss () : erlang_term::term = erlang_term::atom "spiral_cells_memo_miss"
+
+:~ cached (key : erlang_term::term) : erlang_term::term = erlang_term::apply "persistent_term" "get" [ key; memo_miss () ]
+
+:~ cached_or (key : erlang_term::term) (make : () -> erlang_term::term) : erlang_term::term =
+    := hit = cached key
+    ? same hit (memo_miss ()) ?> put_back key (make ()) |: hit
+
+:~ memo_key (kind : string) (parts : list erlang_term::term) : erlang_term::term =
+    erlang_term::tuple (erlang_term::atom "spiral_cells_memo" :: erlang_term::atom kind :: parts)
+
+:~ binaries_key (dll : string) (entries : list erlang_term::term) : erlang_term::term =
+    memo_key "compiler_binaries" [ erlang_term::of (erlang_file::dir_name dll); prints_of file_stamp entries ]
+
+:~ compiler_binaries_print (dll : string) : erlang_term::term =
+    := entries = entry_terms dll
+    := key = binaries_key dll entries
+    cached_or key (\ () => prints_of content_hash entries)
+
+:~ binaries_dll () : string =
+    := dir = memo_store::test_dir "memo_prints_binaries"
+    written_in dir "SpiralCompiler.dll" "main"
+    written_in dir "SpiralCompilerCore.dll" "core"
+    erlang_file::joined_path dir "SpiralCompiler.dll"
+
+:~ hashed_row (name : string) (content : string) : erlang_term::term = erlang_term::tuple [ erlang_term::of name; sha256 (erlang_term::of content) ]
+
+:~ wanted_binaries () : erlang_term::term = erlang_term::list_term [ hashed_row "spiralcompiler.dll" "main"; hashed_row "spiralcompilercore.dll" "core" ]
+
+///> gleam
+:# compiler_binaries_print_lists_each_lowercased_dll_once_with_its_hash =
+    same (compiler_binaries_print (binaries_dll ())) (wanted_binaries ()) |> _assert_eq !+
+
+///> gleam
+:# a_compiler_binaries_print_is_reused_while_the_stamps_hold =
+    := dll = binaries_dll ()
+    same (compiler_binaries_print dll) (compiler_binaries_print dll) |> _assert_eq !+
+
+:~ md5_call (m : erlang_term::term) : erlang_term::term = erlang_term::apply "erlang" "apply" [ m; erlang_term::atom "module_info"; erlang_term::list_term [ erlang_term::atom "md5" ] ]
+
+:~ module_md5 (m : erlang_term::term) : erlang_term::term = erlang_term::tuple [ m; md5_call m ]
+
+:~ loaded (m : erlang_term::term) : bool = erlang_term::equal (erlang_term::element_at 1i32 (erlang_term::apply "code" "ensure_loaded" [ m ])) (erlang_term::atom "module")
+
+:~ md5_print (modules : erlang_term::term) : erlang_term::term =
+    := pairs = erlang_term::items_of modules |> keep loaded |> listm::map module_md5
+    sha256 (erlang_term::apply "erlang" "term_to_binary" [ erlang_term::list_term pairs ])
+
+:~ kino_identity (modules : erlang_term::term) : erlang_term::term = cached_or (memo_key "kino" [ modules ]) (\ () => md5_print modules)
+
+:~ atoms (names : list string) : erlang_term::term = erlang_term::list_term (listm::map erlang_term::atom names)
+
+///> gleam
+:# kino_identity_hashes_only_the_loaded_modules_and_is_stable =
+    := some = atoms [ "lists"; "no_such_module_1116" ]
+    (same (kino_identity some) (kino_identity (atoms [ "lists" ])), same (kino_identity some) (kino_identity some)) |> _assert_eq (!+, !+)
+
+:== folder = { level : i32; name : string }
+
+:== module_walk = { folders : list folder; rows : list string }
+
+:~ no_cr (line : string) : string =
+    := n = text::length line
+    ? n > 0i32 && text::byte_at line (n - 1i32) = 13i32 ?> text::slice_len line 0i32 (n - 1i32) |: line
+
+:~ ^ strip_end (s : string) (b : i32) : string =
+    := n = text::length s
+    ? n > 0i32 && text::byte_at s (n - 1i32) = b ?> strip_end (text::slice_len s 0i32 (n - 1i32)) b |: s
+
+:~ ends_byte (s : string) (b : i32) : bool = text::length s > 0i32 && text::byte_at s (text::length s - 1i32) = b
+
+:~ ^ section_from (s : string) (b : i32) (header : string) : i32 =
+    ? b > text::length s
+    ?> -1i32
+    |:
+        := e = line_end s b
+        ? text::trim (text::slice_len s b (e - b)) = header ?> e + 1i32 |: section_from s (e + 1i32) header
+
+:~ ^ drop_deeper (l : list folder) (indent : i32) : list folder =
+    ?= l ?|
+    | f :: rest => ? f::level >= indent ?> drop_deeper rest indent |: l
+    | [] => []
+
+:~ folder_path (l : list folder) : string = l |> listm::fold (\ (acc : string) (f : folder) => f::name ++ "/" ++ acc) ""
+
+:~ entry_row (folders : list folder) (entry : string) : string =
+    := name = strip_end (strip_end entry 45i32) 42i32
+    := opened = ends_byte entry 45i32 || ends_byte entry 42i32
+    (? opened ?> "1\t" |: "0\t") ++ folder_path folders ++ name
+
+:~ walked (w : module_walk) (indent : i32) (entry : string) : module_walk =
+    := folders = drop_deeper w::folders indent
+    ? ends_byte entry 47i32
+    ?> { folders = { level = indent; name = strip_end entry 47i32 } :: folders; rows = w::rows }
+    |: { folders = folders; rows = entry_row folders entry :: w::rows }
+
+:~ ^ module_lines (s : string) (b : i32) (w : module_walk) : module_walk =
+    := line = ? b > text::length s ?> "x" |: no_cr (text::slice_len s b (line_end s b - b))
+    := entry = text::trim line
+    ? b > text::length s || ((line = "" || text::starts_at line 0i32 " ") = !-)
+    ?> w
+    |? entry = ""
+    ?> module_lines s (line_end s b + 1i32) w
+    |: module_lines s (line_end s b + 1i32) (walked w (text::trim_start line 0i32) entry)
+
+:~ ^ lined (xs : list string) (acc : string) : string =
+    ?= xs ?|
+    | x :: rest => lined rest (? acc = "" ?> x |: acc ++ "\n" ++ x)
+    | [] => acc
+
+:~ module_rows (project : string) (start : i32) : list string =
+    := w = module_lines project start { folders = []; rows = [] }
+    listm::rev w::rows
+
+:~ module_entries (project : string) : string =
+    := start = section_from project 0i32 "modules:"
+    ? start < 0i32 ?> "" |: lined (module_rows project start) ""
+
+:== refs = { unq : list string; quals : list string }
+
+:~ ^ refs_from (s : string) (i : i32) (unq : list string) (quals : list string) : refs =
+    ? i >= text::length s
+    ?> { unq = listm::rev unq; quals = listm::rev quals }
+    |? ident_at s i ?>
+        := stop = word_end s (i + 1i32)
+        := last = chain_end s stop
+        := head = text::slice_len s i (stop - i)
+        ? last = stop ?> refs_from s stop (head :: unq) quals |: refs_from s last (head :: unq) (text::slice_len s i (last - i) :: quals)
+    |: refs_from s (i + char_width s i) unq quals
+
+:~ ^ dotted_init (parts : list string) (acc : string) : string =
+    ?= parts ?|
+    | _ :: [] => acc
+    | p :: rest => dotted_init rest (? acc = "" ?> p |: acc ++ "." ++ p)
+    | [] => acc
+
+:~ ^ last_part (parts : list string) : string = ?= parts ?| p :: [] => p | _ :: rest => last_part rest | [] => ""
+
+:~ qual_pair (token : string) : string =
+    := parts = sm'::split_list "." (text::replace token "::" ".")
+    dotted_init parts "" ++ "|" ++ last_part parts
+
+:~ facts_row (header : string) (code : string) : string =
+    := names = (block_shape header code)::names
+    := tokens = uniq_from (identifiers code |> keep (\ t => has_text names t = !-)) (dict::empty ()) []
+    := r = refs_from code 0i32 [] []
+    := unq = uniq_from (r::unq |> keep (\ t => has_text names t = !-)) (dict::empty ()) []
+    := quals = listm::map qual_pair (uniq_from r::quals (dict::empty ()) [])
+    shape_row header code ++ "\t" ++ spaced tokens "" ++ "\t" ++ (? is_instance header ?> "instance" |: "")
+    ++ "\t" ++ spaced unq "" ++ "\t" ++ spaced quals ""
+
+:~ block_of (lines : list string) (s : span) : src_block =
+    := code = sm'::concat_list "\n" (listm::map strip_line_comment (lines_between lines 1i32 s []))
+    := sh = block_shape s::header_text code
+    := tokens = identifiers code |> keep (\ tok => has_text sh::names tok = !-)
+    { code; shape = sh; tokens; is_inst = is_instance s::header_text }
+
+:== by_name = dict::dict string (list i32)
+
+:~ names_of (d : by_name) (n : string) : list i32 = ?= dict::find n d ?| Some xs => xs | None => []
+
+:~ with_name (i : i32) (d : by_name) (n : string) : by_name =
+    dict::insert n (i :: names_of d n) d
+
+:~ ^ index_names (blocks : list src_block) (i : i32) (acc : by_name) : by_name =
+    ?= blocks ?|
+    | [] => acc
+    | b :: rest =>
+        := sh = b::shape
+        index_names rest (i + 1i32) (listm::fold (with_name i) acc sh::names)
+
+:~ ^ operator_pairs (blocks : list src_block) (i : i32) (acc : list (string * i32)) : list (string * i32) =
+    ?= blocks ?|
+    | [] => acc
+    | b :: rest =>
+        := sh = b::shape
+        operator_pairs rest (i + 1i32) (listm::fold (\ xs op => (op, i) :: xs) acc sh::operators)
+
+:~ is_root (b : src_block) : bool =
+    := sh = b::shape
+    sh::kind = OtherBlock || b::is_inst || has_text sh::names "main"
+
+:~ ^ roots_from (blocks : list src_block) (i : i32) (acc : list i32) : list i32 =
+    ?= blocks ?|
+    | [] => acc
+    | b :: rest => roots_from rest (i + 1i32) (? is_root b ?> i :: acc |: acc)
+
+:== graph = { blocks : list src_block; names : by_name; ops : list (string * i32) }
+
+:~ named_by (g : graph) (tok : string) : list i32 = names_of g::names tok
+
+:~ op_in (b : src_block) (p : string * i32) : bool =
+    := op, j = p
+    text::contains b::code op
+
+:~ pair_block (p : string * i32) : i32 =
+    := op, j = p
+    j
+
+:~ next_of (g : graph) (b : src_block) : list i32 =
+    := named = listm::concat (listm::map (named_by g) b::tokens)
+    := by_op = g::ops |> keep (op_in b) |> listm::map pair_block
+    listm::append named by_op
+
+:~ ^ reach (g : graph) (todo : list i32) (seen : dict::dict i32 ()) : dict::dict i32 () =
+    ?= todo ?|
+    | [] => seen
+    | i :: rest =>
+        ? dict::has i seen
+        ?> reach g rest seen
+        |:
+            ?= nth i g::blocks ?|
+            | Some b => reach g (listm::append (next_of g b) rest) (dict::insert i () seen)
+            | None => reach g rest (dict::insert i () seen)
+
+:~ ^ unreached_from (blocks : list src_block) (i : i32) (seen : dict::dict i32 ()) (acc : list i32) : list i32 =
+    ?= blocks ?|
+    | [] => acc
+    | b :: rest =>
+        := sh = b::shape
+        := gone = sh::kind = Definition && dict::has i seen = !-
+        unreached_from rest (i + 1i32) seen (? gone ?> i :: acc |: acc)
+
+:~ unreached (blocks : list src_block) : list i32 =
+    := g = { blocks; names = index_names blocks 0i32 (dict::empty ()); ops = operator_pairs blocks 0i32 [] }
+    unreached_from blocks 0i32 (reach g (roots_from blocks 0i32 []) (dict::empty ())) []
+
+:~ drop_span (acc : dict::dict i32 ()) (s : span) : dict::dict i32 () =
+    listm::fold (\ d r => dict::insert r () d) acc (rows_from s::header s::last [])
+
+:~ ^ dropped_rows (spans : list span) (i : i32) (gone : list i32) (acc : dict::dict i32 ()) : dict::dict i32 () =
+    ?= spans ?|
+    | [] => acc
+    | s :: rest => dropped_rows rest (i + 1i32) gone (? has_i32 gone i ?> drop_span acc s |: acc)
+
+:~ ^ kept_lines (lines : list string) (row : i32) (dropped : dict::dict i32 ()) (acc : list string) : list string =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | l :: rest => kept_lines rest (row + 1i32) dropped (? dict::has row dropped ?> acc |: l :: acc)
+
+:~ reached_program (program : string) (spans : list span) : string =
+    := lines = sm'::split_list "\n" (text::replace program "\r\n" "\n")
+    := blocks = listm::map (block_of lines) spans
+    := dropped = dropped_rows spans 0i32 (unreached blocks) (dict::empty ())
+    sm'::concat_list "\n" (kept_lines lines 1i32 dropped [])
+
+:~ span_of (line : string) : span =
+    := a = text::find_char line 0i32 '\t'
+    := b = text::find_char line (a + 1i32) '\t'
+    := last = text::parse_i32 (text::slice_len line (a + 1i32) (b - a - 1i32))
+    { header = text::parse_i32 (text::take line a); last; header_text = text::drop line (b + 1i32) }
+
+:~ spans_of (rows : string) : list span = ? rows = "" ?> [] |: listm::map span_of (sm'::split_list "\n" rows)
+
+:~ reached_program_wire (program : string) (rows : string) : string = reached_program program (spans_of rows)
+
+///> gleam
+:# a_comment_outside_a_string_is_stripped_and_one_inside_is_kept =
+    := kept = strip_line_comment "s = \"a // b\" // c"
+    (strip_line_comment "x = 1 // note", kept) |> _assert_eq ("x = 1 ", "s = \"a // b\" ")
+
+///> gleam
+:# identifiers_follow_the_ascii_start_rule =
+    identifiers "9abc f' x→y _z" |> _assert_eq [ "abc"; "f'"; "x"; "y"; "_z" ]
+
+///> gleam
+:# latin_one_digits_continue_an_identifier_but_never_start_one =
+    identifiers "x² y³ a¼ ¾b" |> _assert_eq [ "x²"; "y³"; "a¼"; "b" ]
+
+///> gleam
+:# headers_shape_like_the_elixir_regexes =
+    := op = block_shape ":= (</>) (a : string) (b : string) : string =" ""
+    := fn = block_shape ":~ ^ walk (src : string) : cells =" ""
+    := ty = block_shape ":| test_mode =" "    | IgnoredTest\n    | PlainTest"
+    := no = block_shape ":= _ = 1" ""
+    (op::names, fn::names, ty::names, no::kind)
+    |> _assert_eq ([ "(</>)" ], [ "walk" ], [ "test_mode"; "IgnoredTest"; "PlainTest" ], OtherBlock)
+
+///> gleam
+:# shape_rows_carry_kind_names_and_operators =
+    := op = shape_row ":= (</>) (a : string) (b : string) : string =" ""
+    := ty = shape_row ":| test_mode =" "    | IgnoredTest\n    | PlainTest"
+    := no = shape_row ":= _ = 1" ""
+    (op, ty, no) |> _assert_eq ("definition\t(</>)\t</>", "definition\ttest_mode IgnoredTest PlainTest\t", "other\t\t")
+
+///> gleam
+:# an_unreached_definition_is_dropped_and_main_keeps_what_it_calls =
+    := program = ":= used () = 1\n:= unused () = 2\n:= main () = used ()"
+    := rows = "1\t1\t:= used () = 1\n2\t2\t:= unused () = 2\n3\t3\t:= main () = used ()"
+    reached_program_wire program rows |> _assert_eq ":= used () = 1\n:= main () = used ()"
+
+///> gleam
+:# facts_rows_add_deduped_tokens_without_names_and_the_instance_flag =
+    := f = facts_row ":= walk (src : string) : cells =" ":= walk (src : string) : cells =\n    walk src src"
+    := i = facts_row "instance show list" "instance show list = show_list"
+    := q = facts_row ":= f () = x" ":= f () = text::length s + a.b.c 1 + m.n"
+    (f, i)
+    |> _assert_eq (
+        "definition\twalk\t\tsrc string cells\t\tsrc string cells\t",
+        "definition\tshow\t\tinstance list show_list\tinstance\tinstance list show_list\t"
+    )
+    q |> _assert_eq "definition\tf\t\ttext length s a b c m n\t\ttext s a m\ttext|length a.b|c m|n"
+
+///> gleam
+:# opened_names_read_open_and_module_imports_once =
+    := code = ":< testing\nopen sm'_operators\n:< a::b.c\nreopen x\nopened y\n:< testing\nx.open z\n'open q"
+    opened_wire code |> _assert_eq "testing sm'_operators a.b.c z q"
+
+///> gleam
+:# strip_comments_drop_line_comments_outside_strings_only =
+    := text = "a // x\n\"b // in\" // y\nc \\\" // z\n\"d \\\" // e\" f"
+    strip_comments text |> _assert_eq "a \n\"b // in\" \nc \\\" // z\n\"d \\\" // e\" f"
+
+///> gleam
+:# package_paths_read_every_flag_line =
+    := program = "///- --package .. --package\t../lib\n:# x =\n///- --package\n///-  --package a\r\n//- --package no"
+    package_wire program |> _assert_eq ".. ../lib a"
+
+///> gleam
+:# shim_path_reads_the_first_path_line =
+    := shims = [ "x = 1\npath = \"C:/a b/c\"\n"; "  path=plain  \n"; "path = \"x\" # no\npath = y"; "nopath = z" ]
+    listm::map shim_path shims |> _assert_eq [ "1\tC:/a b/c"; "1\tplain  "; "1\ty"; "0\t" ]
+
+///> gleam
+:# module_entries_walk_folders_and_open_marks_until_the_next_section =
+    := project = "packages:\n    |core-\nmodules:\n    a\n    b-\n\n    lib/\n        c*\n        d\n    e\nother:\n    z\n"
+    module_entries project |> _assert_eq "0\ta\n1\tb\n1\tlib/c\n0\tlib/d\n0\te"
+
+///> gleam
+:# module_entries_read_crlf_and_a_missing_section =
+    (module_entries "modules:\r\n  x/\r\n    y--\r\n", module_entries "packages:\n    a\n") |> _assert_eq ("1\tx/y", "")
+
+:~ memo_enabled (memo_true : bool) (memo_false : bool) (env_on : bool) (any_stub : bool) : bool =
+    ? memo_true ?> !+ |? memo_false ?> !- |: env_on && not any_stub
+
+///> gleam
+:# memo_enabled_honors_the_explicit_flag_first =
+    (memo_enabled !+ !- !- !+, memo_enabled !- !+ !+ !-) |> _assert_eq (!+, !-)
+
+///> gleam
+:# memo_enabled_falls_to_env_and_stubs_when_unset =
+    (memo_enabled !- !- !+ !-, memo_enabled !- !- !+ !+, memo_enabled !- !- !- !-) |> _assert_eq (!+, !-, !-)

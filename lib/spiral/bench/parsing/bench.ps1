@@ -52,7 +52,7 @@ function Invoke-BundleCompiler([string] $backend, [string] $in, [string] $out) {
     $dotnetRoot = $env:DOTNET_ROOT
     try { $spiral = Ensure-SpiralCompiler | Select-Object -Last 1 } finally { $env:DOTNET_ROOT = $dotnetRoot }
     if (!$env:SPIRAL_COMPILER_PACKAGE_DIR) {
-        $env:SPIRAL_COMPILER_PACKAGE_DIR = & { . (Join-Path $spiral.Bundle '../scripts/env.ps1'); Get-SpiralPackageDir }
+        $env:SPIRAL_COMPILER_PACKAGE_DIR = & { . (Join-Path $spiral.Bundle 'scripts/env.ps1'); Get-SpiralPackageDir }
     }
     Push-Location (Split-Path $in)
     try { & $spiral.Dotnet $spiral.Compiler --backend $backend (Split-Path $in -Leaf) $out 2>&1 } finally { Pop-Location }

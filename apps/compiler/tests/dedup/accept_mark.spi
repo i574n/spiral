@@ -1,0 +1,104 @@
+///- --package .
+:# accept_mark static =
+    :< testing
+
+:== term = erlang_term::term
+
+:~ atom (s : string) : term = erlang_term::atom s
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ maps (f : string) (args : list term) : term = erlang_term::apply "maps" f args
+
+:~ at (n : i32) (t : term) : term = erlang_term::element_at n t
+
+:~ is (name : string) (t : term) : bool = erlang_term::equal t (atom name)
+
+:~ text (t : term) : string = erlang_term::cast t
+
+:~ size_of (t : term) : i32 = erlang_term::apply "erlang" "tuple_size" [ t ] |> erlang_term::cast
+
+:~ tagged (name : string) (n : i32) (t : term) : bool = erlang_term::is_tuple t && size_of t = n && is name (at 1i32 t)
+
+:~ field (row : term) (k : string) : term = maps "get" [ str k; row; atom "nil" ]
+
+:~ put (k : string) (v : term) (m : term) : term = maps "put" [ str k; v; m ]
+
+:~ has (m : term) (k : term) : bool = maps "is_key" [ k; m ] |> erlang_term::cast
+
+:~ entries (outcome : term) : list term = erlang_term::items_of (maps "to_list" [ outcome ])
+
+:~ site (step : term) : term = maps "from_list" [ erlang_term::list_term [ erlang_term::tuple [ str "before"; at 2i32 step ]; erlang_term::tuple [ str "after"; at 3i32 step ] ] ]
+
+:~ add_site (sites : term) (entry : term) : term = ? tagged "accepted" 3i32 (at 2i32 entry) ?> maps "put" [ at 1i32 entry; site (at 2i32 entry); sites ] |: sites
+
+:~ add_refusal (refused : term) (entry : term) : term = ? tagged "refused" 2i32 (at 2i32 entry) ?> maps "put" [ at 1i32 entry; at 2i32 (at 2i32 entry); refused ] |: refused
+
+:~ sites_of (outcome : term) : term = listm::fold add_site (maps "new" []) (entries outcome)
+
+:~ refusals_of (outcome : term) : term = listm::fold add_refusal (maps "new" []) (entries outcome)
+
+:~ accepted_row (sites : term) (row : term) : term = put "accepted_site" (maps "get" [ field row "name"; sites ]) (put "status" (str "accepted") row)
+
+:~ refused_row (refused : term) (row : term) : term = put "accept_refused" (maps "get" [ field row "name"; refused ]) (put "status" (str "failed") row)
+
+:~ newly_accepted (sites : term) (row : term) : bool = has sites (field row "name") && erlang_term::equal (field row "status") (str "failed")
+
+:~ marked_row (sites : term) (refused : term) (row : term) : term =
+    ? newly_accepted sites row ?> accepted_row sites row |: ? has refused (field row "name") ?> refused_row refused row |: row
+
+:~ or_empty (t : term) : string = ? is "nil" t ?> "" |: text t
+
+:~ count_line (row : term) : string = or_empty (field row "status") ^^ "\t" ^^ or_empty (field row "memo") ^^ "\t" ^^ or_empty (field row "no_agree")
+
+:~ counts_of (rows : list term) : term = verdicts::counts_map (sm'::concat_list "\n" (listm::map count_line rows))
+
+:~ accepted_indices (rows : list term) : list term =
+    listm::fold (\ (acc : list term) (row : term) => ? erlang_term::equal (field row "status") (str "accepted") ?> field row "index" :: acc |: acc) [] rows
+
+:~ ^ member (x : term) (xs : list term) : bool = ?= xs ?| [] => !- | h :: t => erlang_term::equal h x || member x t
+
+:~ still_failed (accepted : list term) (entry : term) : bool = tagged "failed" 2i32 (at 2i32 entry) && not (member (at 1i32 entry) accepted)
+
+:~ settled (evaluation : term) (accepted : list term) : bool =
+    ?= accepted ?| [] => !- | _ => not (listm::exists' (still_failed accepted) (erlang_term::items_of (maps "to_list" [ maps "get" [ atom "verdicts"; evaluation ] ])))
+
+:~ report_with (report : term) (rows : list term) : term = put "tests" (erlang_term::list_term rows) (maps "merge" [ report; counts_of rows ])
+
+:~ status_after (evaluation : term) (rows : list term) : term =
+    ? settled evaluation (accepted_indices rows) ?> atom "ok" |: maps "get" [ atom "status"; evaluation ]
+
+:~ marked_rows (evaluation : term) (outcome : term) : list term =
+    := report = maps "get" [ atom "report"; evaluation ]
+    listm::map (marked_row (sites_of outcome) (refusals_of outcome)) (erlang_term::items_of (maps "get" [ str "tests"; report ]))
+
+:~ with_rows (evaluation : term) (rows : list term) : term =
+    maps "put" [ atom "report"; report_with (maps "get" [ atom "report"; evaluation ]) rows; evaluation ]
+
+:~ mark_accepted (evaluation : term) (outcome : term) : term =
+    := rows = marked_rows evaluation outcome
+    maps "put" [ atom "status"; status_after evaluation rows; with_rows evaluation rows ]
+
+:~ row (name : string) (status : string) : term = maps "from_list" [ erlang_term::list_term [ erlang_term::tuple [ str "name"; str name ]; erlang_term::tuple [ str "status"; str status ] ] ]
+
+:~ accepted_entry () : term = erlang_term::tuple [ str "a"; erlang_term::tuple [ atom "accepted"; erlang_term::of 3i32; erlang_term::of 4i32 ] ]
+
+:~ accept_outcome () : term = maps "from_list" [ erlang_term::list_term [ accepted_entry (); erlang_term::tuple [ str "b"; erlang_term::tuple [ atom "refused"; str "why" ] ] ] ]
+
+:~ marked (name : string) (status : string) : term = marked_row (sites_of (accept_outcome ())) (refusals_of (accept_outcome ())) (row name status)
+
+///> gleam
+:# a_failed_row_named_in_an_accepted_outcome_becomes_accepted =
+    field (marked "a" "failed") "status" |> text |> _assert_eq "accepted"
+
+///> gleam
+:# a_passed_row_named_in_an_accepted_outcome_is_left_alone =
+    field (marked "a" "passed") "status" |> text |> _assert_eq "passed"
+
+///> gleam
+:# a_refused_row_fails_and_carries_the_reason =
+    (text (field (marked "b" "passed") "status"), text (field (marked "b" "passed") "accept_refused")) |> _assert_eq ("failed", "why")
+
+///> gleam
+:# a_count_line_tabs_status_memo_and_no_agree_with_blanks_for_nil =
+    count_line (row "a" "passed") |> _assert_eq "passed\t\t"

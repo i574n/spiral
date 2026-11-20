@@ -100,10 +100,10 @@ jobs:
         run: pwsh scripts/workflow.ps1 -K3s
 
       - if: always()
-        run: git diff --no-color -- apps/compiler/tmp/samples > "$SPIRAL_BIN_CACHE_DIR/samples-output.diff"
+        run: git diff --no-color -- apps/compiler/samples > "$SPIRAL_BIN_CACHE_DIR/samples-output.diff"
 
       - if: always()
-        run: sudo apt-get update -q && sudo apt-get install -y -q linux-tools-common "linux-tools-$(uname -r)" gcc-multilib && (cd apps/compiler/scripts/ebpf_kernel_load && "$SPIRAL_BIN_CACHE_DIR/toolchains/dotnet/dotnet" "$SPIRAL_BIN_CACHE_DIR/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll" --backend Rust main.spi "$RUNNER_TEMP/ebpf_port.rs" && cd "$GITHUB_WORKSPACE" && rustc -O --edition 2021 "$RUNNER_TEMP/ebpf_port.rs" -o "$RUNNER_TEMP/ebpf_port" && SPIRAL_EBPF_SAMPLES=apps/compiler/tmp/samples "$RUNNER_TEMP/ebpf_port") > "$SPIRAL_BIN_CACHE_DIR/ebpf-kernel-load.txt" 2>&1 || true
+        run: sudo apt-get update -q && sudo apt-get install -y -q linux-tools-common "linux-tools-$(uname -r)" gcc-multilib && (cd apps/compiler/scripts/ebpf_kernel_load && "$SPIRAL_BIN_CACHE_DIR/toolchains/dotnet/dotnet" "$SPIRAL_BIN_CACHE_DIR/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll" --backend Rust main.spi "$RUNNER_TEMP/ebpf_port.rs" && cd "$GITHUB_WORKSPACE" && rustc -O --edition 2021 "$RUNNER_TEMP/ebpf_port.rs" -o "$RUNNER_TEMP/ebpf_port" && SPIRAL_EBPF_SAMPLES=apps/compiler/samples "$RUNNER_TEMP/ebpf_port") > "$SPIRAL_BIN_CACHE_DIR/ebpf-kernel-load.txt" 2>&1 || true
 
       - uses: actions/upload-artifact@v7.0.2
         if: always()
@@ -164,7 +164,7 @@ jobs:
 
       - env:
           SPIRAL_CELLS_OPTIONAL_TARGETS: "cuda,wgsl,lua"
-        run: pwsh apps/cells/spi/ci_gate.ps1 -Out "${{ runner.temp }}/cells-gate" -Roots lib/spiral,apps/transformer,apps/compiler/tmp/samples/mega_zeta_structural_laboratory,apps/compiler/tmp/samples/mega_spiral_proves_spiral_relative_consistency,apps/compiler/tmp/samples/mega_omniledger_erp_kernel,apps/compiler/tmp/samples/mega_brzozowski_derivatives
+        run: pwsh apps/cells/spi/ci_gate.ps1 -Out "${{ runner.temp }}/cells-gate" -Roots lib/spiral,apps/transformer,apps/compiler/samples/mega_zeta_structural_laboratory,apps/compiler/samples/mega_spiral_proves_spiral_relative_consistency,apps/compiler/samples/mega_omniledger_erp_kernel,apps/compiler/samples/mega_brzozowski_derivatives
 
       - name: publish cells-gate metrics to the job summary
         if: always()

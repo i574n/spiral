@@ -1,0 +1,197 @@
+///- --package .
+:# shown_text static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ len (s : string) : i32 = text::length s
+
+:~ byte (s : string) (i : i32) : i32 = ? i >= 0i32 && i < len s ?> text::byte_at s i |: -1i32
+
+:~ digit (b : i32) : bool = b >= 48i32 && b <= 57i32
+
+:~ letter (b : i32) : bool = (b >= 65i32 && b <= 90i32) || (b >= 97i32 && b <= 122i32)
+
+:~ word (b : i32) : bool = digit b || letter b || b = 95i32
+
+:~ sign (b : i32) : bool = b = 43i32 || b = 45i32
+
+:~ ^ digits_end (s : string) (i : i32) : i32 = ? digit (byte s i) ?> digits_end s (i + 1i32) |: i
+
+:~ suffixes () : list string = [ "un"; "uy"; "us"; "ul"; "UL"; "L"; "l"; "y"; "s"; "u"; "n"; "f"; "m"; "" ]
+
+:~ ^ tail_from (s : string) (at : i32) (sufs : list string) : i32 =
+    ?= sufs ?|
+    | [] => -1i32
+    | x :: rest => ? text::starts_at s at x && not (word (byte s (at + len x))) ?> at + len x |: tail_from s at rest
+
+:~ ^ exp_down (s : string) (q : i32) (j : i32) : i32 =
+    ? j <= q
+    ?> -1i32
+    |:
+        := r = tail_from s j (suffixes ())
+        ? r >= 0i32 ?> r |: exp_down s q (j - 1i32)
+
+:~ with_exp (s : string) (p : i32) : i32 =
+    := q = ? sign (byte s (p + 1i32)) ?> p + 2i32 |: p + 1i32
+    ? byte s p = 101i32 || byte s p = 69i32 ?> exp_down s q (digits_end s q) |: -1i32
+
+:~ after_frac (s : string) (p : i32) : i32 =
+    := e = with_exp s p
+    ? e >= 0i32 ?> e |: tail_from s p (suffixes ())
+
+:~ ^ frac_down (s : string) (k : i32) (m : i32) : i32 =
+    ? m < k + 1i32
+    ?> -1i32
+    |:
+        := r = ? byte s m <> 46i32 ?> after_frac s m |: -1i32
+        ? r >= 0i32 ?> r |: frac_down s k (m - 1i32)
+
+:~ after_int (s : string) (k : i32) : i32 =
+    := f = ? byte s k = 46i32 ?> frac_down s k (digits_end s (k + 1i32)) |: -1i32
+    ? f >= 0i32 ?> f |: after_frac s k
+
+:~ ^ int_down (s : string) (d : i32) (k : i32) : i32 =
+    ? k <= d
+    ?> -1i32
+    |:
+        := r = after_int s k
+        ? r >= 0i32 ?> r |: int_down s d (k - 1i32)
+
+:= number_end (s : string) (i : i32) : i32 =
+    := before = byte s (i - 1i32)
+    := free = i = 0i32 || not (word before || before = 46i32)
+    := d = ? sign (byte s i) ?> i + 1i32 |: i
+    ? free && digit (byte s d) ?> int_down s d (digits_end s d) |: -1i32
+
+:~ ^ strip_letters (s : string) : string =
+    ? len s > 0i32 && letter (byte s (len s - 1i32)) ?> strip_letters (text::take s (len s - 1i32)) |: s
+
+:~ ^ all_digits_from (s : string) (i : i32) : bool = ? i >= len s ?> !+ |: digit (byte s i) && all_digits_from s (i + 1i32)
+
+:~ integer_text (s : string) : bool =
+    := d = ? sign (byte s 0i32) ?> 1i32 |: 0i32
+    len s > d && all_digits_from s d
+
+:~ f64_exact_limit () : erlang_term::term = erlang_term::apply "erlang" "binary_to_integer" [ erlang_term::of "9007199254740992" ]
+
+:~ beyond_limit (value : erlang_term::term) : bool =
+    erlang_term::apply "erlang" ">" [ erlang_term::apply "erlang" "abs" [ value ]; f64_exact_limit () ] |> erlang_term::cast
+
+:~ integer_of (value : erlang_term::term) : string = erlang_term::apply "erlang" "integer_to_binary" [ value ] |> erlang_term::cast
+
+:~ float_shape (s : string) : string * string =
+    := d = ? sign (byte s 0i32) ?> 1i32 |: 0i32
+    := k = digits_end s d
+    := frac_end = ? byte s k = 46i32 && digit (byte s (k + 1i32)) ?> digits_end s (k + 1i32) |: k
+    := frac = ? frac_end > k ?> text::slice_len s (k + 1i32) (frac_end - k - 1i32) |: "0"
+    := q = ? sign (byte s (frac_end + 1i32)) ?> frac_end + 2i32 |: frac_end + 1i32
+    := has_exp = (byte s frac_end = 101i32 || byte s frac_end = 69i32) && digit (byte s q)
+    := exp_sign = ? has_exp && byte s (frac_end + 1i32) = 45i32 ?> "-" |: ""
+    := exponent = ? has_exp ?> "e" ++ exp_sign ++ text::slice_len s q (digits_end s q - q) |: ""
+    text::take s k ++ "." ++ frac ++ exponent, exp_sign
+
+:~ float_options () : erlang_term::term =
+    erlang_term::list_term [ erlang_term::tuple [ erlang_term::atom "decimals"; erlang_term::of 6i32 ]; erlang_term::atom "compact" ]
+
+:~ float_text (value : erlang_term::term) : string =
+    ? beyond_limit value
+    ?> integer_of (erlang_term::apply "erlang" "trunc" [ value ])
+    |: erlang_term::apply "erlang" "float_to_binary" [ value; float_options () ] |> erlang_term::cast
+
+:~ same_float (number : string) (digits : string) : string =
+    := shape, exp_sign = float_shape digits
+    := parsed = erlang_term::apply "string" "to_float" [ erlang_term::charlist shape ]
+    := value = erlang_term::element_at 1i32 parsed
+    := is_float : bool = erlang_term::apply "erlang" "is_float" [ value ] |> erlang_term::cast
+    ? is_float
+    ?> float_text value
+    |? exp_sign = "-"
+    ?> (? byte digits 0i32 = 45i32 ?> "-0.0" |: "0.0")
+    |: number
+
+:= same_number (number : string) : string =
+    := digits = strip_letters number
+    ? integer_text digits && beyond_limit (erlang_term::apply "erlang" "binary_to_integer" [ erlang_term::of digits ])
+    ?> integer_of (erlang_term::apply "erlang" "binary_to_integer" [ erlang_term::of digits ])
+    |: same_float number digits
+
+:~ ^ numbers_from (s : string) (i : i32) (start : i32) (acc : string) : string =
+    ? i >= len s
+    ?> acc ++ text::drop s start
+    |:
+        := e = number_end s i
+        ? e > i
+        ?> numbers_from s e e (acc ++ text::slice_len s start (i - start) ++ same_number (text::slice_len s i (e - i)))
+        |: numbers_from s (i + 1i32) start acc
+
+:~ blank (b : i32) : bool = b = 32i32 || b = 9i32 || b = 10i32 || b = 11i32 || b = 12i32 || b = 13i32
+
+:~ ^ blank_end (s : string) (i : i32) : i32 = ? blank (byte s i) ?> blank_end s (i + 1i32) |: i
+
+:~ ^ collapsed_from (s : string) (i : i32) (start : i32) (acc : string) : string =
+    ? i >= len s
+    ?> acc ++ text::drop s start
+    |? blank (byte s i)
+    ?>
+        := stop = blank_end s i
+        collapsed_from s stop stop (acc ++ text::slice_len s start (i - start) ++ " ")
+    |: collapsed_from s (i + 1i32) start acc
+
+:= shown_line (line : string) : string = collapsed_from (numbers_from line 0i32 0i32 "") 0i32 0i32 ""
+
+:= shown_text (lines : string) : string = sm'::concat_list "\n" (listm::map shown_line (sm'::split_list "\n" lines))
+
+///> gleam
+:# numbers_match_like_the_elixir_number_regex =
+    (number_end "1.2.3" 0i32, number_end "x-5" 1i32, number_end "x-5" 2i32, number_end "123abc" 0i32, number_end "1.5f;" 0i32, number_end "2e10UL" 0i32)
+    |> _assert_eq (1i32, -1i32, 3i32, -1i32, 4i32, 6i32)
+    (number_end "-3.25e-2 " 0i32, number_end "1.e5" 0i32, number_end "7un" 0i32, number_end "a.5" 2i32, number_end "12...67" 0i32)
+    |> _assert_eq (8i32, 4i32, 3i32, -1i32, 2i32)
+
+///> gleam
+:# numbers_normalize_like_same_number =
+    (same_number "1.", same_number "1.0", same_number "0.1", same_number "1.5f", same_number "+3", same_number "007")
+    |> _assert_eq ("1.0", "1.0", "0.1", "1.5", "3.0", "7.0")
+    (same_number "123456789012345678901", same_number "-9007199254740993", same_number "1e20", same_number "2e308", same_number "1e-400", same_number "-1e-400")
+    |> _assert_eq ("123456789012345678901", "-9007199254740993", "100000000000000000000", "2e308", "0.0", "-0.0")
+    (same_number "0.3333333333", same_number "1e-7", same_number "-0", same_number "1.e5") |> _assert_eq ("0.333333", "0.0", "-0.0", "1.0")
+    shown_text "a  =  1.50\tb\n x=2e3 y" |> _assert_eq "a = 1.5 b\n x=2000.0 y"
+
+///> gleam
+:# shown_lines_keep_the_old_elixir_regex_answers_on_the_edges =
+    shown_line "x = 1.50" |> _assert_eq "x = 1.5"
+    shown_line "a  =  -2.5e-2" |> _assert_eq "a = -0.025"
+    shown_line "1.2.3" |> _assert_eq "1.0.2.3"
+    shown_line "12...67" |> _assert_eq "12.0...67"
+    shown_line "1.e5" |> _assert_eq "1.0"
+    shown_line "1." |> _assert_eq "1.0"
+    shown_line "+3 007" |> _assert_eq "3.0 7.0"
+    shown_line "7un 8uy 9us 10ul 11UL 12L 13l" |> _assert_eq "7.0 8.0 9.0 10.0 11.0 12.0 13.0"
+    shown_line "14y 15s 16u 17n 18f 19m" |> _assert_eq "14.0 15.0 16.0 17.0 18.0 19.0"
+    shown_line "20x 21_ a1 1a a.5 .5 5." |> _assert_eq "20x 21_ a1 1a a.5 .5 5.0"
+    shown_line "-.5 1e 1e+ 1e+5" |> _assert_eq "-.5 1e 1e+ 100000.0"
+    shown_line "123456789012345678901" |> _assert_eq "123456789012345678901"
+    shown_line "-9007199254740993" |> _assert_eq "-9007199254740993"
+    shown_line "9007199254740992" |> _assert_eq "9007199254740992.0"
+    shown_line "1e20 2e308" |> _assert_eq "100000000000000000000 2e308"
+    shown_line "1e-400 -1e-400" |> _assert_eq "0.0 -0.0"
+    shown_line "0.3333333333 1e-7 -0" |> _assert_eq "0.333333 0.0 -0.0"
+    shown_line "4.9e-324" |> _assert_eq "0.0"
+    shown_line "1.7976931348623157e308" |> _assert_eq "179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368"
+    shown_line "1234567890123456789.5" |> _assert_eq "1234567890123456768"
+    shown_line "0x1F" |> _assert_eq "0x1F"
+    shown_line "3.14159265358979 100.0f 1_000" |> _assert_eq "3.141593 100.0 1_000"
+    shown_line "__assert_eq { expected = 2.50 }" |> _assert_eq "__assert_eq { expected = 2.5 }"
+    shown_line "Some 1.0;None" |> _assert_eq "Some 1.0;None"
+    shown_line " \t lead\tand  trail \t" |> _assert_eq " lead and trail "
+    shown_line "\r1\r" |> _assert_eq " 1.0 "
+    shown_line "é 1.0 λ 日本 2.0" |> _assert_eq "é 1.0 λ 日本 2.0"
+    shown_line "(1.0, [2.50, 3])" |> _assert_eq "(1.0, [2.5, 3.0])"
+    shown_line "a=1,b=2.0e0" |> _assert_eq "a=1.0,b=2.0"
+    shown_line "1.5f.x" |> _assert_eq "1.5.x"
+    shown_line "x.1.5" |> _assert_eq "x.1.5"
+    shown_line "-" |> _assert_eq "-"
+    shown_line "+" |> _assert_eq "+"
+    shown_line "e5" |> _assert_eq "e5"
+    shown_line "1e5e5" |> _assert_eq "1e5e5"

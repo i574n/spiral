@@ -112,7 +112,7 @@ function Get-StoreInstall([string] $Core, [string] $HostSource, [string] $Projec
 }
 $compiler = Split-Path $PSScriptRoot
 $liveCore = Join-Path $compiler 'spiral_compiler.fs'
-$liveHost = Join-Path $compiler 'tmp/compiler/host/Program.fs'
+$liveHost = Join-Path $compiler 'dotnet/host/Program.fs'
 $cacheRoot = $env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')
 $kitExe = if ($IsWindows) { Join-Path $cacheRoot 'kit/bin/kit.exe' } else { $env:KIT_BIN ?? 'kit' }
 $candidate = Join-Path $cacheRoot "spiral-bin-candidates/$Name"
@@ -122,7 +122,7 @@ foreach ($required in $candidateCore, $candidateHost) { if (-not (Test-Path -Lit
 if ($MintUrls) {
     if (-not $UrlsOut) { throw '-MintUrls needs -UrlsOut <file>' }
     if (-not $TargetSdk) { . (Join-Path $PSScriptRoot 'env.ps1'); $TargetSdk = (& (Resolve-SpiralDotnet) --version | Select-Object -Last 1).Trim() }
-    $keys = Get-StoreKeys $candidateCore $candidateHost (Join-Path $compiler 'tmp/compiler') $TargetSdk $TargetRid
+    $keys = Get-StoreKeys $candidateCore $candidateHost (Join-Path $compiler 'dotnet') $TargetSdk $TargetRid
     $rows = Use-OortKeys {
         $pairJson = (rclone cat --s3-no-check-bucket (Get-OortPath "$($keys.Pair)/manifest.json") 2>$null) -join "`n"
         if (-not $pairJson) { throw "store miss: no pair manifest at $($keys.Pair)" }
@@ -143,7 +143,7 @@ if ($Put) {
     $identity = Get-Content -Raw -LiteralPath (Join-Path $FromDir 'build-identity.json') | ConvertFrom-Json
     if ($identity.sourceSha16 -ne (Get-Short $candidateCore)) { throw "-FromDir was built from core $($identity.sourceSha16), not the reviewed candidate $(Get-Short $candidateCore)" }
     foreach ($dll in $pairDlls) { if (-not (Test-ReadyToRunImage (Join-Path $FromDir $dll))) { throw "$dll in $FromDir is IL only: build.ps1 has not finished its in-place ReadyToRun step (wait for the build job to EXIT); refusing to put an immutable store entry" } }
-    $keys = Get-StoreKeys $candidateCore $candidateHost (Join-Path $compiler 'tmp/compiler') $TargetSdk $TargetRid
+    $keys = Get-StoreKeys $candidateCore $candidateHost (Join-Path $compiler 'dotnet') $TargetSdk $TargetRid
     $baseRows = Get-BaseRows $FromDir
     $baseKey = Get-BaseKeyV2 $baseRows $TargetRid
     $putStage = Join-Path ([IO.Path]::GetTempPath()) "install-pack-put-$PID"
@@ -180,7 +180,7 @@ if ((Get-Short $stageCore) -ne (Get-Short $candidateCore) -or (Get-Short $stageH
 $fetched = $null
 if ($FromStore -or $FromUrls) {
     if ($Modes -ne @('single-flight')) { throw '-FromStore/-FromUrls install single-flight only' }
-    $fetched = Get-StoreInstall -Core $candidateCore -HostSource $candidateHost -Projects (Join-Path $compiler 'tmp/compiler') -Into (Join-Path $stage 'store') -UrlFile $FromUrls
+    $fetched = Get-StoreInstall -Core $candidateCore -HostSource $candidateHost -Projects (Join-Path $compiler 'dotnet') -Into (Join-Path $stage 'store') -UrlFile $FromUrls
 }
 if ($FromDir) {
     if ($Modes -ne @('single-flight')) { throw '-FromDir installs single-flight only' }

@@ -1,0 +1,17 @@
+:< sm'_operators
+
+:== saga = { reserves : i32; steps : list string }
+
+:= start () : saga = { reserves = 0i32; steps = [] }
+
+:= reserve (s : saga) (item : string) : saga = { reserves = s::reserves + 1i32; steps = item :: s::steps }
+
+:= ^ reserve_n (n : i32) (s : saga) : saga = ? n = 0i32 ?> s |: reserve_n (n - 1i32) (reserve s "seat")
+
+:= charge (s : saga) : saga = ? s::reserves > 0i32 ?> { s ?| steps = "charge" :: s::steps } |: error_type "zero-or-more: charge needs at least one reserve"
+
+:= steps_of (s : saga) : i32 = listm::length s::steps
+
+:= main () : i32 =
+    := n = 2i32
+    steps_of (charge (reserve_n n (start ())))

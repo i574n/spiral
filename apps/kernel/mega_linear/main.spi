@@ -1,0 +1,97 @@
+///- --package .
+
+:< syntax
+:< scope
+:< subst
+:< universes
+:< linear_types
+:< linear_terms
+:< linear_renaming
+:< linear_substitution
+:< linear_strengthening
+:< linear_variable_strengthening
+:< linear_reduction
+:< linear_lambda_substitution
+:< linear_term_strengthening
+:< linear_open_substitution
+:< linear_values
+:< linear_open_betas
+:< linear_closed_reduction
+:< linear_general_reduction
+:< linear_bool_normalization
+:< linear_bool_literals
+:< linear_weakened
+:< linear_fused_substitution
+
+:~ scope_check () : bool =
+    := body = sample_body ()
+    := opened = open_with body (name "x")
+    (is_closed opened, same_as (abstract_fvar opened (name "x")) body) = (!+, !+)
+
+:~ subst_check () : bool = every (samples ()) (\ t => same_as (instantiate (lift t 1i32) (value ())) t)
+
+:~ universes_check () : bool =
+    (eq_upto (pi_level (u ()) Zero) Zero 4i32, eq_upto (pi_level (u ()) (Succ Zero)) (Max (u (), Succ Zero)) 4i32) = (!+, !+)
+
+:~ types_check () : bool =
+    (rule_of (add_one_zero ()), add_steps (add_one_zero ()), rule_of (add_zero_right () : meta_add zero one one))
+    = (SuccessorCase, 1i32, ZeroCase)
+
+:~ terms_check () : bool = (term_label (identity_term ()), term_label (closed_unit_conditional ())) = ("intro", "elim")
+
+:~ renaming_check () : bool = term_label (weakened_unit ()) = "variable"
+
+:~ substitution_check () : bool =
+    := t = identity_term ()
+    (size t, size (idsub t), term_label (idsub t)) = (2i32, 2i32, "intro")
+
+:~ strengthening_check () : bool = (removed_depth (tail_plan ()), removed_depth (context_plan ())) = (0i32, 1i32)
+
+:~ variable_strengthening_check () : bool = (slot (vsource (remove_plan ())), slot (vtarget (remove_plan ()))) = (1i32, 0i32)
+
+:~ reduction_check () : bool =
+    := step = true_unit_step ()
+    (guard_note (step_source step), constant_note (step_target step))
+    = ("the-True-step-source-guard", "the-True-then-branch-is-the-target")
+
+:~ lambda_substitution_check () : bool = shape (nested_source ()) (nested_target ()) = (1i32, 6i32, 7i32, 4i32)
+
+:~ term_strengthening_check () : bool =
+    (term_label (tsource (unit_plan ())), term_label (ttarget (unit_plan ()))) = ("constant", "constant")
+
+:~ open_substitution_check () : bool =
+    (term_label (osource (var_plan ())), term_label (otarget (var_plan ()))) = ("variable", "constant")
+
+:~ values_check () : bool =
+    (size (value_term (linear_values::pair_value ())), size (value_term (linear_values::lambda_value ()))) = (3i32, 2i32)
+
+:~ open_betas_check () : bool =
+    (term_label (ibeta_source (unit_beta ())), term_label (ibeta_target (unit_beta ()))) = ("elim", "variable")
+
+:~ closed_reduction_check () : bool =
+    (triple (Bound (unit_of "u", "b")), triple (left_unit ()), triple (right_unit ()), triple (deep ()))
+    = ((1i32, 4i32, 1i32), (3i32, 6i32, 3i32), (3i32, 6i32, 3i32), (7i32, 10i32, 7i32))
+
+:~ general_reduction_check () : bool =
+    (sizes (identity_step ()), sizes (tensor_step ()), sizes (apply_step ())) = ((4i32, 1i32), (6i32, 3i32), (7i32, 4i32))
+
+:~ bool_normalization_check () : bool =
+    := norm = outer_normal ()
+    (size (normal_source norm), normal_truth norm, normal_steps norm) = (7i32, !-, 2i32)
+
+:~ bool_literals_check () : bool = rewritten falsy (mixed_pair ()) = (["true"; "false"], ["false"; "false"], 3i32, 3i32)
+
+:~ weakened_check () : bool =
+    (pair_slots (linear_weakened::closed_pair ()), size (linear_weakened::closed_pair ())) = ((1i32, 0i32), 3i32)
+
+:~ fused_substitution_check () : bool = (fused_steps (fused_var ()), fused_steps (fused_left ())) = (0i32, 1i32)
+
+:= main () : i32 =
+    [
+        scope_check (); subst_check (); universes_check (); types_check (); terms_check (); renaming_check ();
+        substitution_check (); strengthening_check (); variable_strengthening_check (); reduction_check ();
+        lambda_substitution_check (); term_strengthening_check (); open_substitution_check (); values_check ();
+        open_betas_check (); closed_reduction_check (); general_reduction_check (); bool_normalization_check ();
+        bool_literals_check (); weakened_check (); fused_substitution_check ()
+    ]
+    |> listm::fold (\ n ok => ? ok ?> n + 1i32 |: n) 0i32

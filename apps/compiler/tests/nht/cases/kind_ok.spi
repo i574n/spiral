@@ -1,0 +1,5 @@
+:< sm'_operators
+
+:= sized \* d {int}. (x : d) : d = x
+
+:= main () : i32 = sized 3i32

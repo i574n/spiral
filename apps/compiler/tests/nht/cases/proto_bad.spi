@@ -1,0 +1,10 @@
+:< sm'_operators
+
+:| shape =
+    | Dot
+
+:? area t : t -> i32
+
+:+ area shape = \ _ => 1i32
+
+:= main () : i32 = area 3i32

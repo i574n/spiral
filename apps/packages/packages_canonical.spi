@@ -1,0 +1,198 @@
+///- --package .
+:# packages_canonical static =
+    :< testing
+
+:< packages_model
+:< packages_planner
+:< sm'_operators
+
+:= hex_text ((sha256_hex h) : sha256_hex) : string = h
+
+:= id_text ((package_id h) : package_id) : string = hex_text h
+
+:= blob_text ((blob_id h) : blob_id) : string = hex_text h
+
+:= name_text ((package_name n) : package_name) : string = n
+
+:= path_text ((relative_path p) : relative_path) : string = p
+
+:= host_text ((host_pattern h) : host_pattern) : string = h
+
+:= program_text ((program_name n) : program_name) : string = n
+
+:= env_text ((env_var_name n) : env_var_name) : string = n
+
+:= library_text ((library_name n) : library_name) : string = n
+
+:= crate_text ((crate_name n) : crate_name) : string = n
+
+:= feature_text ((cargo_feature f) : cargo_feature) : string = f
+
+:= author_text ((author_id a) : author_id) : string = sm'::show a
+
+:= version_text (v : exact_version) : string =
+    sm'::show v::major ++# "." ++# sm'::show v::minor ++# "." ++# sm'::show v::patch
+
+:= edition_text (e : edition) : string =
+    ?= e ?|
+    | UpstreamEdition2 => "2"
+    | ForkEdition3 => "3"
+
+:= int_text (d : default_int) : string =
+    ?= d ?|
+    | DefaultI8 => "i8"
+    | DefaultI16 => "i16"
+    | DefaultI32 => "i32"
+    | DefaultI64 => "i64"
+    | DefaultU8 => "u8"
+    | DefaultU16 => "u16"
+    | DefaultU32 => "u32"
+    | DefaultU64 => "u64"
+
+:= float_text (d : default_float) : string =
+    ?= d ?|
+    | DefaultF32 => "f32"
+    | DefaultF64 => "f64"
+
+:= target_text (t : backend_target) : string =
+    ?= t ?|
+    | TargetC => "c"
+    | TargetRust => "rust"
+    | TargetFsharp => "fsharp"
+    | TargetPython => "python"
+    | TargetCuda => "cuda"
+    | TargetGleam => "gleam"
+    | TargetLua => "lua"
+    | TargetZig => "zig"
+    | TargetWasm => "wasm"
+    | TargetWgsl => "wgsl"
+    | TargetTypeScript => "typescript"
+
+:= scope_text (s : path_scope) : string =
+    ?= s ?|
+    | OwnPackageDirectory => "own"
+    | CallerWorkspace => "caller"
+    | UnderRelativePath p => "path " ++# path_text p
+
+:= capability_line (c : capability) : string =
+    ?= c ?|
+    | ReadFiles s => "capability read-files " ++# scope_text s
+    | WriteFiles s => "capability write-files " ++# scope_text s
+    | NetworkTo h => "capability network " ++# host_text h
+    | SpawnProcess p => "capability spawn " ++# program_text p
+    | ReadEnvironment v => "capability env " ++# env_text v
+    | ForeignLibrary (t, l) => "capability foreign " ++# target_text t ++# " " ++# library_text l
+    | GpuDevice => "capability gpu"
+    | WallClock => "capability clock"
+
+:= module_line (m : module_entry) : string =
+    "module " ++# path_text m::module_path ++# " " ++# blob_text m::content ++# " " ++# sm'::show m::content_bytes
+
+:= requirement_line (q : exact_requirement) : string =
+    "requires "
+    ++# name_text q::required_name
+    ++# " "
+    ++# version_text q::required_version
+    ++# " "
+    ++# id_text q::required_id
+
+:= features_text (fs : list cargo_feature) : string =
+    ?= fs ?|
+    | [] => "-"
+    | _ => fs |> listm::map feature_text |> file_manifest::sorted |> sm'::concat_list ","
+
+:= crate_line (c : cargo_crate) : string =
+    "crate " ++# crate_text c::crate ++# " " ++# version_text c::crate_version ++# " " ++# features_text c::features
+
+:= layout_lines (l : source_layout) : list string =
+    ?= l ?|
+    | SingleModule m => [ "layout single"; module_line m ]
+    | ModuleDirectory ms => "layout directory" :: file_manifest::sorted (listm::map module_line ms)
+
+:= head_lines (m : release_manifest) : list string =
+    [
+        "spiral-release 1"
+        "name " ++# name_text m::identity::name
+        "version " ++# version_text m::identity::version
+        "author " ++# author_text m::identity::author
+        "edition " ++# edition_text m::build::edition
+        "default-int " ++# int_text m::build::numerics::default_int
+        "default-float " ++# float_text m::build::numerics::default_float
+    ]
+
+:= release_lines (m : release_manifest) : list string =
+    := targets = m::build::targets |> listm::map (\ t => "target " ++# target_text t) |> file_manifest::sorted
+    := requires = m::requires |> listm::map requirement_line |> file_manifest::sorted
+    := crates = m::rust_crates |> listm::map crate_line |> file_manifest::sorted
+    := capabilities = m::capabilities |> listm::map capability_line |> file_manifest::sorted
+    := tail = listm::append crates (listm::append capabilities (layout_lines m::layout))
+    listm::append (head_lines m) (listm::append targets (listm::append requires tail))
+
+:= release_text (m : release_manifest) : string = (release_lines m |> sm'::concat_list "\n") ++# "\n"
+
+:= text_digest (text : string) : sha256_hex =
+    sha256_hex (crypto::hash_text text)
+
+:= release_digest (m : release_manifest) : package_id = package_id (text_digest (release_text m))
+
+:= two_modules (first : string) (second : string) : source_layout =
+    := entry (s : string) : module_entry = { module_path = relative_path s; content = blob_of s; content_bytes = 10u64 }
+    ModuleDirectory [ entry first; entry second ]
+
+:= with_parts
+    (ts : list backend_target) (qs : list exact_requirement) (cs : list capability) (l : source_layout)
+    : release_manifest
+    =
+    := b = build_of ()
+    {
+        identity = identity_of "pdf2md"
+        build = { b with targets = ts }
+        requires = qs
+        rust_crates = []
+        capabilities = cs
+        layout = l
+    }
+
+///> rust
+:# a_version_prints_major_minor_patch =
+    version_text { major = 1u32; minor = 12u32; patch = 0u32 } |> _assert_eq "1.12.0"
+
+///> rust -d sha2
+:# the_digest_of_empty_text_is_the_sha256_of_nothing =
+    text_digest "" |> _assert_eq (sha256_hex (crypto::sha256_of_empty ()))
+
+///> rust -d sha2
+:# list_order_does_not_change_the_digest =
+    := caps = [ WallClock; ReadFiles OwnPackageDirectory ]
+    := a = with_parts [ TargetRust; TargetC ] [ needs "core"; needs "lib" ] caps (two_modules "a.spi" "b.spi")
+    := b =
+        with_parts [ TargetC; TargetRust ] [ needs "lib"; needs "core" ] (listm::rev caps) (two_modules "b.spi" "a.spi")
+    release_digest a |> _assert_eq (release_digest b)
+
+///> rust -d sha2
+:# a_changed_module_changes_the_digest =
+    := a = with_parts [ TargetRust ] [] [] (two_modules "a.spi" "b.spi")
+    := b = with_parts [ TargetRust ] [] [] (two_modules "a.spi" "c.spi")
+    (release_digest a = release_digest b) |> _assert_eq !-
+
+///> rust
+:# the_release_text_is_one_sorted_fact_per_line =
+    := m = with_parts [ TargetRust; TargetC ] [] [ WallClock; GpuDevice ] (two_modules "b.spi" "a.spi")
+    release_lines m
+    |> _assert_eq
+        [
+            "spiral-release 1"
+            "name pdf2md"
+            "version 1.0.0"
+            "author 1"
+            "edition 3"
+            "default-int i32"
+            "default-float f64"
+            "target c"
+            "target rust"
+            "capability clock"
+            "capability gpu"
+            "layout directory"
+            "module a.spi " ++# blob_text (blob_of "a.spi") ++# " 10"
+            "module b.spi " ++# blob_text (blob_of "b.spi") ++# " 10"
+        ]

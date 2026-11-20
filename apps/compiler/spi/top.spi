@@ -1,0 +1,134 @@
+///- --package .
+:< sm'_operators
+
+:# top static =
+    :< testing
+
+:~ private_marker_text () : string = sm'::of_char (convert::convert 1u8) ++# "private "
+
+:~ mark_private (is_private : bool) ((r, name) : ast::named) : ast::named = r, (? is_private ?> private_marker_text () ++# name |: name)
+
+:~ private_marker (c : cursor::cursor) : cursor::step bool =
+    ?= cursor::current c ?|
+    | Some (_, tokens::TokVar ("private", _)) => cursor::Took (!+, cursor::advance c)
+    | _ => cursor::Took (!-, c)
+
+:~ hovar_name ((_, (name, _)) : ast::hovar) : string = name
+
+:~ ^ apply_hovars (r : ast::range) (s : ast::raw_texpr) (xs : list ast::hovar) : ast::raw_texpr =
+    ?= xs ?|
+    | [] => s
+    | x :: rest => apply_hovars r (ast::RawTApply (r, s, ast::RawTVar (r, hovar_name x))) rest
+
+:~ ^ global_function_error (r : ast::range) (x : ast::raw_expr) : option ast::range =
+    ?= x ?|
+    | ast::RawAnnot (r2, body, _) => global_function_error r2 body
+    | ast::RawForall _ => None
+    | ast::RawFun _ => None
+    | _ => Some r
+
+:~ top_inl_process (comments : string) (top_down : bool) (((r, name, body), is_rec) : terms::bound) (after : cursor::cursor) : cursor::step ast::top_statement =
+    ?= name ?|
+    | ast::PatVar (r2, n) =>
+        ?= global_function_error r body ?|
+        | None => cursor::Took ((? is_rec ?> ast::TopRecInl (comments, r, (r2, n), body, top_down) |: ast::TopInl (comments, r, (r2, n), body, top_down)), after)
+        | Some er => cursor::Failed ([ (er, ast::ExpectedGlobalFunction) ], after)
+    | x => cursor::Failed ([ (ast::range_of_pattern x, ast::ExpectedVarOrOpAsNameOfGlobalStatement) ], after)
+
+:~ process_union (r : ast::range) ((layout, is_private) : ast::union_layout * bool) (n : ast::named) (a : list ast::hovar) ((r2, b) : parse_types::union_cases) (after : cursor::cursor) : cursor::step ast::top_statement =
+    := (_, plain) = n
+    := this = apply_hovars r2 (ast::RawTVar (r2, plain)) a
+    := marked = mark_private is_private n
+    := union_type = ast::RawTUnion (r2, b, layout, this)
+    ?= layout ?|
+    | ast::UHeap => cursor::Took (ast::TopNominalRec (r, marked, a, union_type), after)
+    | ast::UStack => cursor::Took (ast::TopNominal (r, marked, a, union_type), after)
+
+:~ union_head (c : cursor::cursor) : cursor::step (ast::union_layout * bool) =
+    := layout = cursor::alt_p (cursor::map_p (\ _ => ast::UHeap) (cursor::skip_keyword tokens::SpecRec)) (terms::pure_p ast::UStack)
+    cursor::right_p (cursor::skip_keyword tokens::SpecUnion) (cursor::pair_p layout private_marker) c
+
+:~ union_rest (head : cursor::cursor -> cursor::step (ast::union_layout * bool)) (c : cursor::cursor) : cursor::step ast::top_statement =
+    := params = cursor::left_p (cursor::many_p parse_types::ho_var) (cursor::skip_op "=")
+    := parts = cursor::pair_p head (cursor::pair_p parse_types::read_small_var (cursor::pair_p params (parse_types::root_type_union (parse_types::type_defaults ()))))
+    ?= cursor::ranged_p parts c ?|
+    | cursor::Took ((r, (h, (n, (a, cases)))), after) => process_union r h n a cases after
+    | cursor::Failed (er, at) => cursor::Failed (er, at)
+
+:~ ^ type_foralls (vars : list ast::type_var) (body : ast::raw_texpr) : ast::raw_texpr =
+    ?= vars ?|
+    | [] => body
+    | x :: rest =>
+        := inner = type_foralls rest body
+        ast::RawTForall (ast::joined (ast::range_of_type_var x) (ast::range_of_texpr inner), x, inner)
+
+:~ prototype_name (c : cursor::cursor) : cursor::step ast::named = cursor::alt_p parse_types::read_small_var (cursor::rounds_p cursor::read_op) c
+
+:~ top_statement (e : terms::term_env) (c : cursor::cursor) : cursor::step ast::top_statement =
+    := top_down = e::top_down
+    := top_inl = \ (c : cursor::cursor) =>
+        ?= cursor::pair_p cursor::read_comments (terms::binding_p e terms::first_head) c ?|
+        | cursor::Took ((comments, x), after) => top_inl_process comments top_down x after
+        | cursor::Failed (er, at) => cursor::Failed (er, at)
+    := top_union = union_rest union_head
+    := top_nominal = \ (c : cursor::cursor) =>
+        := head = cursor::right_p (cursor::skip_keyword tokens::SpecNominal) (cursor::pair_p private_marker parse_types::read_small_var)
+        := parts = cursor::pair_p head (cursor::pair_p (cursor::left_p (cursor::many_p parse_types::ho_var) (cursor::skip_op "=")) (parse_types::root_type { allow_wildcard = !-; allow_typecase_metavars = !-; allow_term = !+ }))
+        cursor::map_p (\ ((r, ((is_private, n), (a, b))) : ast::range * ((bool * ast::named) * (list ast::hovar * ast::raw_texpr))) => ast::TopNominal (r, mark_private is_private n, a, b)) (cursor::ranged_p parts) c
+    := top_prototype = \ (c : cursor::cursor) =>
+        := signature = cursor::right_p (cursor::skip_op ":") (cursor::bind_p (cursor::alt_p parse_types::forall_p (terms::pure_p [])) (\ (vars : list ast::type_var) => cursor::map_p (type_foralls vars) (parse_types::root_type (parse_types::type_defaults ()))))
+        := parts = cursor::pair_p cursor::read_comments (cursor::pair_p (cursor::right_p (cursor::skip_keyword tokens::SpecPrototype) prototype_name) (cursor::pair_p parse_types::read_small_var (cursor::pair_p (cursor::many_p parse_types::forall_var) signature)))
+        cursor::map_p (\ ((r, (com, (a, (b, (vars, d))))) : ast::range * (string * (ast::named * (ast::named * (list ast::type_var * ast::raw_texpr))))) => ast::TopPrototype (com, r, a, b, vars, d)) (cursor::ranged_p parts) c
+    := top_type = \ (c : cursor::cursor) =>
+        := parts = cursor::pair_p (cursor::right_p (cursor::skip_keyword tokens::SpecType) parse_types::read_small_var) (cursor::pair_p (cursor::many_p parse_types::ho_var) (cursor::right_p (cursor::skip_op "=") (parse_types::root_type (parse_types::type_defaults ()))))
+        cursor::map_p (\ ((r, (a, (b, d))) : ast::range * (ast::named * (list ast::hovar * ast::raw_texpr))) => ast::TopType (r, a, b, d)) (cursor::ranged_p parts) c
+    := top_instance = \ (c : cursor::cursor) =>
+        := parts = cursor::pair_p (cursor::right_p (cursor::skip_keyword tokens::SpecInstance) prototype_name) (cursor::pair_p parse_types::read_small_var (cursor::pair_p (cursor::many_p parse_types::forall_var) (cursor::right_p (cursor::skip_op "=") (terms::root_term e))))
+        cursor::map_p (\ ((r, (a, (b, (vars, body)))) : ast::range * (ast::named * (ast::named * (list ast::type_var * ast::raw_expr)))) => ast::TopInstance (r, a, b, vars, body)) (cursor::ranged_p parts) c
+    := top_and_inl = \ (c : cursor::cursor) =>
+        ?= cursor::pair_p cursor::read_comments (cursor::restore_p 1i32 (cursor::ranged_p (terms::binding_p e terms::and_head))) c ?|
+        | cursor::Took ((comments, (r, x)), after) =>
+            ?= top_inl_process comments top_down x after ?|
+            | cursor::Took (s, after2) => cursor::Took (ast::TopAnd (r, s), after2)
+            | cursor::Failed (er, at) => cursor::Failed (er, at)
+        | cursor::Failed (er, at) => cursor::Failed (er, at)
+    := top_and_union = \ (c : cursor::cursor) =>
+        := and_head = cursor::map_p (\ _ => ast::UHeap, !-) (cursor::skip_keyword tokens::SpecUnion)
+        := inner = cursor::ranged_p (cursor::right_p (cursor::skip_keyword tokens::SpecAnd) (union_rest and_head))
+        cursor::map_p (\ ((r, s) : ast::range * ast::top_statement) => ast::TopAnd (r, s)) (cursor::restore_p 1i32 inner) c
+    := top_open = \ (c : cursor::cursor) =>
+        := parts = cursor::pair_p (cursor::right_p (cursor::skip_keyword tokens::SpecOpen) parse_types::read_small_var) (cursor::many_p parse_types::read_symbol)
+        cursor::map_p (\ ((r, (n, symbols)) : ast::range * (ast::named * list ast::named)) => ast::TopOpen (r, n, symbols)) (cursor::ranged_p parts) c
+    cursor::alt_p top_inl (cursor::alt_p top_union (cursor::alt_p top_nominal (cursor::alt_p top_prototype (cursor::alt_p top_type (cursor::alt_p top_instance (cursor::alt_p top_and_inl (cursor::alt_p top_and_union top_open))))))) c
+
+:~ top_text_inner (s : ast::top_statement) : string =
+    ?= s ?|
+    | ast::TopInl (com, _, (_, n), b, _) => "inl[" ++# com ++# "] " ++# n ++# " = " ++# terms::expr_text b
+    | ast::TopRecInl (com, _, (_, n), b, _) => "rec[" ++# com ++# "] " ++# n ++# " = " ++# terms::expr_text b
+    | ast::TopNominal (_, (_, n), a, b) => "nominal " ++# n ++# "/" ++# sm'::format (listm::length a : i32) ++# " = " ++# parse_types::type_text b
+    | ast::TopNominalRec (_, (_, n), a, _) => "nominal_rec " ++# n ++# "/" ++# sm'::format (listm::length a : i32)
+    | ast::TopType (_, (_, n), _, b) => "type " ++# n ++# " = " ++# parse_types::type_text b
+    | ast::TopPrototype (com, _, (_, a), (_, b), _, d) => "prototype[" ++# com ++# "] " ++# a ++# " " ++# b ++# " : " ++# parse_types::type_text d
+    | ast::TopInstance (_, (_, a), (_, b), _, body) => "instance " ++# a ++# " " ++# b ++# " = " ++# terms::expr_text body
+    | ast::TopOpen (_, (_, n), symbols) => "open " ++# n ++# sm'::concat_list "" (listm::map (\ ((_, x) : ast::named) => " ." ++# x) symbols)
+    | ast::TopAnd _ => "and"
+    | ast::TopStatic _ => "static"
+
+:~ top_text (s : ast::top_statement) : string =
+    ?= s ?|
+    | ast::TopAnd (_, x) => "and " ++# top_text_inner x
+    | _ => top_text_inner s
+
+
+:~ shown_top (xs : list string) : string =
+    := c = cursor::of_lines 0i32 (listm::map (\ (x : string) => (tokens::tokenize_line (tokens::lex_state_init ()) x)::tokens) xs)
+    ?= top_statement (terms::top_env ()) c ?|
+    | cursor::Took (s, next) => ? (listm::length next::rest : i32) = 0i32 ?> top_text s |: top_text s ++# " +rest"
+    | cursor::Failed (er, _) => "fail " ++# sm'::format (listm::length er : i32)
+
+///> rust
+///> fsharp
+///> gleam
+:# top_statements_follow_the_reference =
+    (shown_top [ "inl f x = x" ], shown_top [ "inl y = 1" ], shown_top [ "type t = i32" ], shown_top [ "nominal n a = a" ], shown_top [ "union option a = | Some : a | None" ], shown_top [ "open sm .a .b" ], shown_top [ "and inl h x = x" ])
+    |> _assert_eq ("inl[] f = fun(x => x)", "fail 1", "type t = i32", "nominal n/1 = a", "nominal option/1 = ?", "open sm .a .b", "and rec[] h = fun(x => x)")

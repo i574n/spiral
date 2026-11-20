@@ -127,7 +127,7 @@
         Lua = \ () => n |> $'math.floor' : t
         Fsharp = \ () => n |> $'floor' : t
         Python = \ () => (python_floor n : t)
-        Rust = \ () => $'!n.floor()' : t
+        Rust = \ () => $'(!n).floor()' : t
         Zig = \ () => $'@@floor(!n)' : t
         Lean = \ () => $'(!n).floor' : t
         C = \ () => (c_floor n : t)
@@ -170,7 +170,7 @@
         Lua = \ () => n |> $'math.ceil' : t
         Fsharp = \ () => n |> $'ceil' : t
         Python = \ () => (python_ceil n : t)
-        Rust = \ () => $'!n.ceil()' : t
+        Rust = \ () => $'(!n).ceil()' : t
         Zig = \ () => $'@@ceil(!n)' : t
         Lean = \ () => $'(!n).ceil' : t
         C = \ () => (c_ceil n : t)
@@ -258,3 +258,81 @@
 :# log_base =
     100 |> log_base 10
     |> _assert_eq 2
+
+:= is_negative (x : f64) : bool = x < 0f64 || (x = 0f64 && 1f64 / x < 0f64)
+
+:= copysign (magnitude : f64) (sign : f64) : f64 =
+    := m = ? is_negative magnitude ?> -magnitude |: magnitude
+    ? is_negative sign ?> -m |: m
+
+:= round_half_even (x : f64) : f64 =
+    := r = floor x
+    := d = x - r
+    ? d > 0.5f64 ?> r + 1f64 |: (? d < 0.5f64 ?> r |: (? floor (r / 2f64) * 2f64 = r ?> r |: r + 1f64))
+
+:= remainder_nearest (x : f64) (y : f64) : f64 = x - y * round_half_even (x / y)
+
+:= hypot (x : f64) (y : f64) : f64 =
+    := ax = abs x
+    := ay = abs y
+    := big = max ax ay
+    := small = min ax ay
+    ? big = 0f64 ?> 0f64 |: big * sqrt (1f64 + (small / big) * (small / big))
+
+:= cbrt (x : f64) : f64 = ? x < 0f64 ?> -((-x) ** (1f64 / 3f64)) |: x ** (1f64 / 3f64)
+
+:= two_sum (u : f64) (v : f64) : f64 * f64 =
+    := s = u + v
+    := up = s - v
+    := vpp = s - up
+    s, -((up - u) + (vpp - v))
+
+:= sine_series (sinx : f64) (cosx : f64) (highest_first : list f64) : f64 =
+    := ar = 2f64 * (cosx - sinx) * (cosx + sinx)
+    := b1, _ = listm::fold (\ (y0, y1) c => (ar * y0 - y1 + c, y0)) (0f64, 0f64) highest_first
+    2f64 * sinx * cosx * b1
+
+///> rust
+///> zig
+:# copysign_keeps_the_sign_of_zero =
+    (copysign 3f64 -0f64, copysign -2f64 1f64, copysign 0f64 -1f64 < 0f64 || 1f64 / copysign 0f64 -1f64 < 0f64)
+    |> _assert_eq (-3f64, 2f64, !+)
+
+///> rust
+///> zig
+:# round_half_even_breaks_ties_to_even =
+    (round_half_even 2.5f64, round_half_even 3.5f64, round_half_even -2.5f64, round_half_even 0.49999999999999994f64)
+    |> _assert_eq (2f64, 4f64, -2f64, 0f64)
+
+///> rust
+///> zig
+:# remainder_nearest_is_the_ieee_remainder =
+    (remainder_nearest 190f64 360f64, remainder_nearest 540f64 360f64, remainder_nearest -190f64 360f64)
+    |> _assert_eq (-170f64, -180f64, 170f64)
+
+///> rust
+:# hypot_neither_overflows_nor_underflows =
+    hypot 3f64 4f64 |> _assert_eq 5f64
+    hypot (10f64 ** 200f64) (10f64 ** 200f64) / (10f64 ** 200f64) |> _assert_approx_eq None 1.4142135623730951f64
+    hypot (10f64 ** -200f64) 0f64 / (10f64 ** -200f64) |> _assert_approx_eq None 1f64
+
+///> rust
+:# cbrt_takes_negative_numbers =
+    cbrt -27f64 |> _assert_approx_eq None -3f64
+    cbrt 8f64 |> _assert_approx_eq None 2f64
+
+///> rust
+///> zig
+:# floor_and_ceil_of_a_negative_constant_round_away_from_truncation =
+    (floor -0.5f64, ceil -1.5f64, floor (-190f64 / 360f64)) |> _assert_eq (-1f64, -1f64, -1f64)
+
+///> rust
+///> zig
+:# two_sum_returns_the_rounding_error =
+    two_sum 1f64 (2f64 ** -60f64) |> _assert_eq (1f64, 2f64 ** -60f64)
+
+///> rust
+:# sine_series_sums_by_clenshaw =
+    := x = pi / 8f64
+    sine_series (sin x) (cos x) [ 0.25f64; 2f64 ]
+    |> _assert_approx_eq None (2f64 * sin (2f64 * x) + 0.25f64 * sin (4f64 * x))

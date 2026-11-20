@@ -1,0 +1,95 @@
+///- --package .
+:# tool_lookup static =
+    :< testing
+
+:== term = erlang_term::term
+
+:~ atom (name : string) : term = erlang_term::atom name
+
+:~ is_nil (t : term) : bool = erlang_term::equal t (atom "nil") || erlang_term::equal t (atom "false")
+
+:~ fname (f : string) (args : list term) : string = erlang_term::cast (erlang_term::apply "filename" f args)
+
+:~ parent (dir : string) : string = fname "dirname" [ erlang_term::of dir ]
+
+:~ joined (dir : string) (rel : string) : string = fname "join" [ erlang_term::of dir; erlang_term::of rel ]
+
+:~ is_root (dir : string) : bool = erlang_file::is_directory (joined dir "apps/cells") && erlang_file::is_directory (joined dir "lib/spiral")
+
+:~ root_above (dir : string) : string =
+    ? is_root dir ?> dir
+    |? parent dir = dir ?> ""
+    |: root_above (parent dir)
+
+:~ beam_path () : term = erlang_term::apply "code" "which" [ atom "spiral_cells@domain" ]
+
+:~ is_list (t : term) : bool = erlang_term::cast (erlang_term::apply "erlang" "is_list" [ t ])
+
+:~ as_text (t : term) : string = erlang_term::cast (erlang_term::apply "unicode" "characters_to_binary" [ t ])
+
+:~ cells_root () : string =
+    := b = beam_path ()
+    ? is_list b ?> root_above (parent (as_text b)) |: ""
+
+:~ opt_key (name : string) : string =
+    ? name = "cache_dir" ?> "bin_cache_dir"
+    |? name = "rustc" ?> "rustc_bin"
+    |: name
+
+:~ raw_opt (opts : term) (key : term) : term =
+    ? erlang_term::is_map opts ?> erlang_term::apply "maps" "get" [ key; opts; atom "nil" ]
+    |? is_list opts ?> erlang_term::apply "proplists" "get_value" [ key; opts; atom "nil" ]
+    |: atom "nil"
+
+:~ override (opts : term) (name : string) : string =
+    := v = raw_opt opts (atom (opt_key name))
+    ? is_nil v ?> "" |: erlang_term::cast v
+
+:~ path_or_nil (found : string) : term = ? found = "" ?> atom "nil" |: erlang_term::of found
+
+:~ found (name : string) (opts : term) : string = toolchain::tool_path_wire name (override opts name) (cells_root ())
+
+:~ tool (name : string) (opts : term) : term = path_or_nil (found name opts)
+
+:~ tab () : term = erlang_term::apply "erlang" "list_to_binary" [ erlang_term::list_term [ erlang_term::of 9i32 ] ]
+
+:~ flag_list (flag : string) : term = erlang_term::list_term (? flag = "" ?> [] |: [ erlang_term::of flag ])
+
+:~ split_tab (wire : string) : list term = erlang_term::items_of (erlang_term::apply "binary" "split" [ erlang_term::of wire; tab () ])
+
+:~ lean_pair (exe : string) (flag : string) : term = erlang_term::tuple [ path_or_nil exe; flag_list flag ]
+
+:~ lean_of (wire : string) : term =
+    ?= split_tab wire ?|
+    | exe :: flag :: _ => lean_pair (erlang_term::cast exe) (erlang_term::cast flag)
+    | _ => lean_pair wire ""
+
+:~ tool_lean (opts : term) : term = lean_of (found "lean" opts)
+
+:~ kv (key : string) (v : term) : term = erlang_term::tuple [ atom key; v ]
+
+:~ listed () : term = erlang_term::list_term [ kv "rustc_bin" (erlang_term::of "/r"); kv "dotnet" (atom "nil") ]
+
+:~ mapped () : term = erlang_term::apply "maps" "from_list" [ erlang_term::list_term [ kv "zig" (erlang_term::of "/z") ] ]
+
+:~ tab_text () : string = erlang_term::cast (tab ())
+
+:~ with_tab (a : string) (b : string) : string = a ^^ tab_text () ^^ b
+
+:~ pair_is (wire : string) (exe : term) (flag : string) : bool = erlang_term::equal (lean_of wire) (erlang_term::tuple [ exe; flag_list flag ])
+
+///> gleam
+:# option_keys_follow_the_elixir_names =
+    (opt_key "cache_dir", opt_key "rustc", opt_key "dotnet") |> _assert_eq ("bin_cache_dir", "rustc_bin", "dotnet")
+
+///> gleam
+:# overrides_read_from_lists_and_maps_and_blank_when_unset =
+    (override (listed ()) "rustc", override (listed ()) "dotnet", override (mapped ()) "zig", override (mapped ()) "gleam") |> _assert_eq ("/r", "", "/z", "")
+
+///> gleam
+:# a_lean_wire_splits_into_exe_and_flags =
+    (pair_is (with_tab "/l" "--x") (erlang_term::of "/l") "--x", pair_is "" (atom "nil") "") |> _assert_eq (!+, !+)
+
+///> gleam
+:# a_missing_directory_has_no_root_above_it =
+    (root_above "/surely/missing/spiral/root/1118", is_root "/surely/missing", override (atom "nil") "zig") |> _assert_eq ("", !-, "")

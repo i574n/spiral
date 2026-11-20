@@ -130,10 +130,10 @@
 
 := ^ encode_value \* t. q (x : t) : string =
     ?: t ?|
-    | i32 => json_emit::number_text `i32 x
-    | u32 => json_emit::number_text `u32 x
-    | i64 => json_emit::number_text `i64 x
-    | f64 => json_emit::number_text `f64 x
+    | i32 => sm'::obj_to_string `i32 x
+    | u32 => sm'::obj_to_string `u32 x
+    | i64 => sm'::obj_to_string `i64 x
+    | f64 => sm'::obj_to_string `f64 x
     | bool => json_emit::bool_text x
     | string => q x
     | option ~el => json_emit::nullable `el (\ v => encode_value `el q v) x

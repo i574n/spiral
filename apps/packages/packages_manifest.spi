@@ -1,0 +1,109 @@
+///- --package .
+:# packages_manifest static =
+    :< testing
+
+:< packages_model
+:< packages_canonical
+:< packages_lock
+:< sm'_operators
+
+:| manifest_error =
+    | TomlRefused : toml_flat::toml_error
+    | MissingKey : string
+    | BadValue : string * string
+
+:== publish_input = { identity : release_identity; build : release_build; modules : list string }
+
+:= value_as \* t. (key : string) (read : string -> option t) (es : list toml_flat::entry) : outcome t manifest_error =
+    ?= toml_flat::text_at key es ?|
+    | None => Rejected (MissingKey key)
+    | Some text =>
+        ?= read text ?|
+        | Some x => Accepted x
+        | None => Rejected (BadValue (key, text))
+
+:~ ^ all_read \* t. (read : string -> option t) (texts : list string) (acc : list t) : option (list t) =
+    ?= texts ?|
+    | [] => Some (listm::rev acc)
+    | x :: rest =>
+        ?= read x ?|
+        | Some v => all_read read rest (v :: acc)
+        | None => None
+
+:= targets_of (es : list toml_flat::entry) : outcome (list backend_target) manifest_error =
+    ?= toml_flat::list_at "targets" es ?|
+    | None => Rejected (MissingKey "targets")
+    | Some [] => Rejected (BadValue ("targets", "[]"))
+    | Some texts =>
+        ?= all_read (\ t => printed_as target_text t (all_targets ())) texts [] ?|
+        | Some ts => Accepted ts
+        | None => Rejected (BadValue ("targets", sm'::concat_list "," texts))
+
+:= modules_of (es : list toml_flat::entry) : outcome (list string) manifest_error =
+    ?= toml_flat::text_at "modules" es ?|
+    | None => Rejected (MissingKey "modules")
+    | Some block =>
+        sm'::split_list "\n" block
+        |> listm::map sm'::trim
+        |> listm'::filter (\ (m : string) => m <> "")
+        |> Accepted
+
+:= name_of (s : string) : option package_name = ? s = "" ?> None |: Some (package_name s)
+
+:= author_of (s : string) : option author_id = u64_of s |> optionm::map author_id
+
+:= edition_of (s : string) : option edition = printed_as edition_text s [ UpstreamEdition2; ForkEdition3 ]
+
+:= int_of (s : string) : option default_int = printed_as int_text s (all_ints ())
+
+:= float_of (s : string) : option default_float = printed_as float_text s [ DefaultF32; DefaultF64 ]
+
+:= build_from (es : list toml_flat::entry) : outcome release_build manifest_error =
+    ?= value_as "edition" edition_of es, value_as "int" int_of es, value_as "float" float_of es, targets_of es ?|
+    | Accepted e, Accepted i, Accepted f, Accepted ts =>
+        Accepted { edition = e; numerics = { default_int = i; default_float = f }; targets = ts }
+    | Rejected x, _, _, _ => Rejected x
+    | _, Rejected x, _, _ => Rejected x
+    | _, _, Rejected x, _ => Rejected x
+    | _, _, _, Rejected x => Rejected x
+
+:= identity_from (es : list toml_flat::entry) : outcome release_identity manifest_error =
+    ?= value_as "name" name_of es, value_as "version" version_of es, value_as "author" author_of es ?|
+    | Accepted n, Accepted v, Accepted a => Accepted { name = n; version = v; author = a }
+    | Rejected x, _, _ => Rejected x
+    | _, Rejected x, _ => Rejected x
+    | _, _, Rejected x => Rejected x
+
+:= input_of_text (text : string) : outcome publish_input manifest_error =
+    ?= toml_flat::parse text ?|
+    | Error e => Rejected (TomlRefused e)
+    | Ok es =>
+        ?= identity_from es, build_from es, modules_of es ?|
+        | Accepted i, Accepted b, Accepted ms => Accepted { identity = i; build = b; modules = ms }
+        | Rejected x, _, _ => Rejected x
+        | _, Rejected x, _ => Rejected x
+        | _, _, Rejected x => Rejected x
+
+:= package_text () : string =
+    := head = "name = 'pdf2md'\nversion = '1.2.3'\nauthor = '7'\nedition = '3'\nint = 'i32'\nfloat = 'f64'\n"
+    head ^^ "targets = ['rust', 'c']\npackageDir = '../../lib'\nmodules = '''\npdf2md\npdf_objects\n'''\n"
+
+///> rust
+///> gleam
+:# a_package_manifest_reads_into_a_publish_input =
+    ?= input_of_text (package_text ()) ?|
+    | Accepted p =>
+        (name_text p::identity::name, version_text p::identity::version, author_text p::identity::author, p::modules)
+        |> _assert_eq ("pdf2md", "1.2.3", "7", [ "pdf2md"; "pdf_objects" ])
+        p::build::targets |> _assert_eq [ TargetRust; TargetC ]
+    | Rejected _ => !- |> _assert_eq !+
+
+///> rust
+///> gleam
+:# missing_keys_and_bad_values_are_refused_by_name =
+    := no_author = "name = 'x'\nversion = '1.0.0'\n"
+    := bad_target = sm'::replace "'c'" "'cobol'" (package_text ())
+    := bad_version = sm'::replace "'1.2.3'" "'1.2'" (package_text ())
+    input_of_text no_author |> _assert_eq (Rejected (MissingKey "author"))
+    input_of_text bad_target |> _assert_eq (Rejected (BadValue ("targets", "rust,cobol")))
+    input_of_text bad_version |> _assert_eq (Rejected (BadValue ("version", "1.2")))

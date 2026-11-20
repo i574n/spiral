@@ -16,7 +16,7 @@ if ($UserManifest) {
 }
 foreach ($rel in Get-Tracked $Spiral @('lib/*.spi', 'lib/*.spir')) { Add-Row 'lib' (Join-Path $Spiral $rel) $rel }
 foreach ($rel in Get-Tracked $Spiral @('apps/*.spi', 'apps/*.spir')) {
-    $corpus = if ($rel -like 'apps/compiler/tmp/samples/*') { 'samples' } else { 'apps' }
+    $corpus = if ($rel -like 'apps/compiler/samples/*') { 'samples' } else { 'apps' }
     Add-Row $corpus (Join-Path $Spiral $rel) $rel
 }
 if (Test-Path $Kit) {

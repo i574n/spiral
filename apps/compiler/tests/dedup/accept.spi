@@ -1,0 +1,351 @@
+///- --package .
+:# accept static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ len (s : string) : i32 = text::length s
+
+:~ byte (s : string) (i : i32) : i32 = ? i >= 0i32 && i < len s ?> text::byte_at s i |: -1i32
+
+:~ digit (b : i32) : bool = b >= 48i32 && b <= 57i32
+
+:~ word (b : i32) : bool = digit b || (b >= 65i32 && b <= 90i32) || (b >= 97i32 && b <= 122i32) || b = 95i32
+
+:~ space (b : i32) : bool = b = 32i32 || b = 9i32 || b = 10i32 || b = 13i32 || b = 11i32 || b = 12i32
+
+:~ ^ digits_to (s : string) (i : i32) : i32 = ? digit (byte s i) ?> digits_to s (i + 1i32) |: i
+
+:~ ^ spaces_to (s : string) (i : i32) : i32 = ? space (byte s i) ?> spaces_to s (i + 1i32) |: i
+
+:~ boundary (s : string) (q : i32) : bool = word (byte s (q - 1i32)) <> word (byte s q)
+
+:~ suffix_end (s : string) (q : i32) : i32 =
+    := b = byte s q
+    := kind = b = 105i32 || b = 117i32 || b = 102i32
+    ? kind && text::starts_at s (q + 1i32) "8" ?> q + 2i32
+    |? kind && (text::starts_at s (q + 1i32) "16" || text::starts_at s (q + 1i32) "32" || text::starts_at s (q + 1i32) "64") ?> q + 3i32
+    |: -1i32
+
+:| tail_rule =
+    | WordBoundary
+    | TextEnd
+    | NoSuffixEnd
+
+:~ tail_ok (rule : tail_rule) (s : string) (q : i32) : bool =
+    ?= rule ?|
+    | WordBoundary => boundary s q
+    | TextEnd => q = len s
+    | NoSuffixEnd => q = len s
+
+:~ suffixed (rule : tail_rule) (s : string) (q : i32) : i32 =
+    := e = suffix_end s q
+    ?= rule ?|
+    | NoSuffixEnd => ? tail_ok rule s q ?> q |: -1i32
+    | _ => ? e >= 0i32 && tail_ok rule s e ?> e |? tail_ok rule s q ?> q |: -1i32
+
+:~ ^ exponent_try (rule : tail_rule) (s : string) (fe : i32) (ee : i32) (start : i32) : i32 * i32 =
+    := r = suffixed rule s ee
+    ? ee < start ?> (-1i32, -1i32) |? r >= 0i32 ?> (ee, r) |: exponent_try rule s fe (ee - 1i32) start
+
+:~ exponent_ends (rule : tail_rule) (s : string) (fe : i32) : i32 * i32 =
+    := sign = ? byte s (fe + 1i32) = 45i32 ?> 1i32 |: 0i32
+    := ds = fe + 1i32 + sign
+    := de = digits_to s ds
+    := with_e = ? byte s fe = 101i32 && de > ds ?> exponent_try rule s fe de (ds + 1i32) |: (-1i32, -1i32)
+    := lit, _ = with_e
+    ? lit >= 0i32 ?> with_e |: (fe, suffixed rule s fe)
+
+:~ ^ fraction_try (rule : tail_rule) (s : string) (fe : i32) (start : i32) : i32 * i32 =
+    := lit, r = exponent_ends rule s fe
+    ? fe < start ?> (-1i32, -1i32) |? r >= 0i32 ?> (lit, r) |: fraction_try rule s (fe - 1i32) start
+
+:~ fraction_ends (rule : tail_rule) (s : string) (de : i32) : i32 * i32 =
+    := fd = digits_to s (de + 1i32)
+    := with_f = ? byte s de = 46i32 && fd > de + 1i32 ?> fraction_try rule s fd (de + 2i32) |: (-1i32, -1i32)
+    := lit, _ = with_f
+    ? lit >= 0i32 ?> with_f |: exponent_ends rule s de
+
+:~ ^ digits_try (rule : tail_rule) (s : string) (de : i32) (start : i32) : i32 * i32 =
+    := lit, r = fraction_ends rule s de
+    ? de < start ?> (-1i32, -1i32) |? r >= 0i32 ?> (lit, r) |: digits_try rule s (de - 1i32) start
+
+:~ ^ string_end (s : string) (i : i32) : i32 =
+    := b = byte s i
+    ? b < 0i32 ?> -1i32 |? b = 34i32 ?> i + 1i32 |? b = 92i32 ?> (? byte s (i + 1i32) >= 0i32 ?> string_end s (i + 2i32) |: -1i32) |: string_end s (i + 1i32)
+
+:~ literal_at (rule : tail_rule) (s : string) (i : i32) : i32 * i32 =
+    := ds = ? byte s i = 45i32 ?> i + 1i32 |: i
+    := de = digits_to s ds
+    := number = ? de > ds ?> digits_try rule s de (ds + 1i32) |: (-1i32, -1i32)
+    := nl, _ = number
+    := se = ? byte s i = 34i32 ?> string_end s (i + 1i32) |: -1i32
+    := sr = ? se >= 0i32 ?> suffixed rule s se |: -1i32
+    := te = ? text::starts_at s i "true" ?> i + 4i32 |? text::starts_at s i "false" ?> i + 5i32 |: -1i32
+    := tr = ? te >= 0i32 ?> suffixed rule s te |: -1i32
+    ? nl >= 0i32 ?> number |? sr >= 0i32 ?> (se, sr) |? tr >= 0i32 ?> (te, tr) |: (-1i32, -1i32)
+
+:~ plain_value (s : string) : bool =
+    := lit, _ = literal_at NoSuffixEnd s 0i32
+    lit >= 0i32
+
+:~ ^ items_from (s : string) (i : i32) (acc : list string) : list string =
+    := b = byte s i
+    := se = ? b = 34i32 ?> string_end s (i + 1i32) |: -1i32
+    := comma = text::find_from s "," i
+    := plain_end = ? comma < 0i32 ?> len s |: comma
+    ? b < 0i32
+    ?> listm::rev acc
+    |? se >= 0i32
+    ?> items_from s se (text::slice_len s i (se - i) :: acc)
+    |? b <> 44i32 && not (space b)
+    ?> items_from s plain_end (text::utrim (text::slice_len s i (plain_end - i)) :: acc)
+    |: items_from s (i + 1i32) acc
+
+:~ ^ parsed_items (items : list string) (acc : list (string * string)) : option (list (string * string)) =
+    ?= items ?|
+    | [] => Some (listm::rev acc)
+    | item :: rest =>
+        := lit, e = literal_at TextEnd item 0i32
+        ? lit >= 0i32 ?> parsed_items rest ((text::take item lit, text::drop item lit) :: acc) |: None
+
+:~ tuple_items (s : string) : option (list (string * string)) =
+    := n = len s
+    ? n >= 2i32 && text::starts_with s "(" && text::starts_at s (n - 1i32) ")"
+    ?>
+        := items = items_from (text::slice_len s 1i32 (n - 2i32)) 0i32 []
+        ? listm::length items >= 2i32 ?> parsed_items items [] |: None
+    |: None
+
+:~ ^ mismatch_close (s : string) (from : i32) (pat : string) : i32 =
+    := k = text::find_from s pat from
+    := nl = text::find_from s "\n" from
+    ? k < 0i32 || (nl >= 0i32 && nl < k) ?> -1i32 |: k
+
+:~ ^ mismatch_from (s : string) (at : i32) : string =
+    := k = text::find_from s "__assert_eq { actual = " at
+    := a = k + 23i32
+    := m = ? k >= 0i32 ?> mismatch_close s a "; expected = " |: -1i32
+    := e = ? m >= 0i32 ?> mismatch_close s (m + 13i32) " }" |: -1i32
+    ? k < 0i32
+    ?> ""
+    |? e >= 0i32
+    ?> text::utrim (text::slice_len s a (m - a)) ++ "\n" ++ text::utrim (text::slice_len s (m + 13i32) (e - m - 13i32))
+    |: mismatch_from s (k + 1i32)
+
+:~ mismatch (message : string) : string = mismatch_from message 0i32
+
+:~ passed_line (raw : string) : bool =
+    := line = text::utrim raw
+    := p = "__assert_eq { expected = "
+    text::starts_with line p && len line >= len p + 2i32 && text::starts_at line (len line - 2i32) " }"
+
+:~ passed_before (message : string) : i32 =
+    listm::fold (\ (n : i32) (line : string) => ? passed_line line ?> n + 1i32 |: n) 0i32 (sm'::split_list "\n" message)
+
+:~ header_line (line : string) (name : string) : bool =
+    := after = \ (prefix : string) =>
+        := e = len prefix + len name
+        text::starts_with line (prefix ++ name) && (byte line e = 32i32 || byte line e = 61i32)
+    after "test " || after ":# "
+
+:~ ^ find_header (lines : list string) (name : string) (i : i32) : i32 =
+    ?= lines ?|
+    | [] => -1i32
+    | line :: rest => ? header_line line name ?> i |: find_header rest name (i + 1i32)
+
+:~ ^ body_count (lines : list string) (n : i32) : i32 =
+    ?= lines ?|
+    | [] => n
+    | line :: rest => ? line = "" || text::starts_with line " " || text::starts_with line "\t" ?> body_count rest (n + 1i32) |: n
+
+:~ quote_word (b : i32) : bool = word b || b = 39i32
+
+:~ ^ sites_in (line : string) (at : i32) (acc : list i32) : list i32 =
+    := k = text::find_from line "_assert_eq" at
+    := ok = k >= 0i32 && not (quote_word (byte line (k - 1i32))) && not (quote_word (byte line (k + 10i32)))
+    ? k < 0i32 ?> listm::rev acc |? ok ?> sites_in line (k + 10i32) (k :: acc) |: sites_in line (k + 1i32) acc
+
+:~ ^ sites_from (lines : list string) (i : i32) (first : i32) (last : i32) (acc : list (i32 * i32)) : list (i32 * i32) =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | line :: rest =>
+        := found = ? i >= first && i <= last ?> sites_in line 0i32 [] |: []
+        sites_from rest (i + 1i32) first last (listm::fold (\ (a : list (i32 * i32)) (at : i32) => (i, at) :: a) acc found)
+
+:~ ^ dropped (xs : list string) (n : i32) : list string = ?= xs ?| [] => [] | _ :: rest => ? n <= 0i32 ?> xs |: dropped rest (n - 1i32)
+
+:~ ^ nth (xs : list string) (i : i32) : string = ?= xs ?| [] => "" | x :: rest => ? i = 0i32 ?> x |: nth rest (i - 1i32)
+
+:~ ^ nth_site (xs : list (i32 * i32)) (i : i32) : option (i32 * i32) =
+    ?= xs ?| [] => None | x :: rest => ? i = 0i32 ?> Some x |: nth_site rest (i - 1i32)
+
+:~ ^ replaced_at (xs : list string) (i : i32) (line : string) : list string =
+    ?= xs ?| [] => [] | x :: rest => ? i = 0i32 ?> line :: rest |: x :: replaced_at rest (i - 1i32) line
+
+:~ ^ paren_end (s : string) (i : i32) : i32 =
+    := b = byte s i
+    ? b < 0i32 || b = 40i32 ?> -1i32
+    |? b = 41i32 ?> i + 1i32
+    |? b = 34i32 ?> (?= string_end s (i + 1i32) ?| -1i32 => -1i32 | e => paren_end s e)
+    |: paren_end s (i + 1i32)
+
+:~ values_of (items : list (string * string)) : list string = listm::map (\ ((v, _) : string * string) => v) items
+
+:~ suffixes_of (items : list (string * string)) : list string = listm::map (\ ((_, x) : string * string) => x) items
+
+:~ ^ zipped (values : list string) (suffixes : list string) (acc : list string) : list string =
+    ?= values, suffixes ?|
+    | (v :: vs), (x :: xs) => zipped vs xs ((v ++ x) :: acc)
+    | _ => listm::rev acc
+
+:~ rewrite (src : string) (name : string) (expected : string) (actual : string) (passed : i32) : string =
+    := lines = sm'::split_list "\n" src
+    := h = find_header lines name 0i32
+    := number = text::show_i32 (passed + 1i32)
+    := scalar = plain_value actual
+    := tuple = ? scalar ?> None |: tuple_items actual
+    := flat = ?= tuple ?| Some items => listm::fold (\ (ok : bool) ((_, x) : string * string) => ok && x = "") !+ items | None => !-
+    ? h < 0i32
+    ?> "Eno test block named " ++ name
+    |? not scalar && not flat
+    ?> (? text::starts_with actual "(" ?> "Ethe actual value " ++ actual ++ " is not a flat tuple of plain literals (nested tuples print flattened, so they are pinned by hand)" |: "Ethe actual value " ++ actual ++ " is not a plain literal")
+    |:
+        := first = h + 1i32
+        := last = h + body_count (dropped lines first) 0i32
+        := sites = sites_from lines 0i32 first last []
+        ?= nth_site sites passed ?|
+        | None => "Ethe failing _assert_eq is number " ++ number ++ " but the test body writes " ++ text::show_i32 (listm::length sites) ++ "; it ran more often than it is written (a loop or helper), so its literal is ambiguous"
+        | Some (index, at) =>
+            := line = nth lines index
+            := rest = text::drop line at
+            := pin = \ (whole : i32) (shown : string) => "K" ++ sm'::concat_list "\n" (replaced_at lines index (text::take line at ++ "_assert_eq " ++ shown ++ text::drop line (at + whole)))
+            ? scalar
+            ?>
+                := lit_start = spaces_to rest 10i32
+                := lit, e = literal_at WordBoundary rest lit_start
+                ? lit_start > 10i32 && lit >= 0i32 && text::slice_len rest lit_start (lit - lit_start) = expected
+                ?> pin e (actual ++ text::slice_len rest lit (e - lit))
+                |: "Ethe failing _assert_eq (number " ++ number ++ " in the test body) is not the literal " ++ expected
+            |:
+                := t_start = spaces_to rest 10i32
+                := t_end = ? t_start > 10i32 && byte rest t_start = 40i32 ?> paren_end rest (t_start + 1i32) |: -1i32
+                := written = ? t_end >= 0i32 ?> tuple_items (text::slice_len rest t_start (t_end - t_start)) |: None
+                := wanted = tuple_items expected
+                := values = ?= tuple ?| Some items => values_of items | None => []
+                ?= written, wanted ?|
+                | Some site_items, Some expected_items ?& (listm::length site_items : i32) = (listm::length values : i32) && values_of site_items = values_of expected_items =>
+                    pin t_end ("(" ++ sm'::concat_list ", " (zipped values (suffixes_of site_items) []) ++ ")")
+                | _ => "Ethe failing _assert_eq (number " ++ number ++ " in the test body) is not the tuple " ++ expected
+
+///> gleam
+:# accept_rewrites_one_literal_and_refuses_what_it_cannot_pin =
+    := ~spi = "///> rust\ninl one () = 1i32\n\n///> rust\ntest one =\n    one ()\n    |> _assert_eq 2i32\n\n///> rust\ntest other =\n    one () |> _assert_eq 2i32\n"
+    := pinned = "K///> rust\ninl one () = 1i32\n\n///> rust\ntest one =\n    one ()\n    |> _assert_eq 1i32\n\n///> rust\ntest other =\n    one () |> _assert_eq 2i32\n"
+    rewrite spi "one" "2" "1" 0i32 |> _assert_eq pinned
+    (rewrite spi "nope" "2" "1" 0i32, rewrite spi "one" "3" "1" 0i32) |> _assert_eq ("Eno test block named nope", "Ethe failing _assert_eq (number 1 in the test body) is not the literal 3")
+    rewrite spi "one" "2" "{ a = 1 }" 0i32 |> _assert_eq "Ethe actual value { a = 1 } is not a plain literal"
+    text::starts_with (rewrite spi "one" "2" "1" 2i32) "Ethe failing _assert_eq is number 3 but the test body writes 1" |> _assert_eq !+
+    := m = "cell exited 101\n__assert_eq { actual = 1; expected = 2 }\n"
+    (mismatch m, mismatch "cell exited 1", passed_before ("__assert_eq { expected = 2 }\n__assert_eq { expected = 2 }\n" ++ m)) |> _assert_eq ("1\n2", "", 2i32)
+
+///> gleam
+:# accept_pins_a_flat_tuple_element_by_element_keeping_suffixes =
+    := ~spi = "///> rust\ntest claims =\n    (a, b, c, d) |> _assert_eq (0i32, 0u32, \"x, y\", false)\n"
+    := pinned = "K///> rust\ntest claims =\n    (a, b, c, d) |> _assert_eq (3i32, 4u32, \"x, z\", true)\n"
+    rewrite spi "claims" "(0, 0, \"x, y\", false)" "(3, 4, \"x, z\", true)" 0i32 |> _assert_eq pinned
+    rewrite spi "claims" "(0, 1, \"x, y\", false)" "(3, 4, \"x, z\", true)" 0i32 |> _assert_eq "Ethe failing _assert_eq (number 1 in the test body) is not the tuple (0, 1, \"x, y\", false)"
+    text::starts_with (rewrite spi "claims" "(0, 0, \"x, y\", false)" "((1, 2), 3)" 0i32) "Ethe actual value ((1, 2), 3) is not a flat tuple" |> _assert_eq !+
+
+:~ split_first_nl (s : string) : string * string =
+    := k = text::find_from s "\n" 0i32
+    ? k < 0i32 ?> (s, "") |: (text::take s k, text::drop s (k + 1i32))
+
+:~ mismatch_ok (m : string) : erlang_term::term =
+    := actual, expected = split_first_nl m
+    erlang_term::tuple [ erlang_term::atom "ok"; erlang_term::of actual; erlang_term::of expected ]
+
+:~ mismatch_term (message : string) : erlang_term::term =
+    := m = mismatch message
+    ? m = "" ?> erlang_term::atom "none" |: mismatch_ok m
+
+:~ ^ first_diff (a : list string) (b : list string) : string * string =
+    ?= a, b ?|
+    | (x :: xs), (y :: ys) => ? x <> y ?> (text::utrim x, text::utrim y) |: first_diff xs ys
+    | _ => ("", "")
+
+:~ changed_line (src : string) (rewritten : string) : string * string =
+    first_diff (sm'::split_list "\n" src) (sm'::split_list "\n" rewritten)
+
+:~ result_ok (name : string) (before : string) (after : string) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::of name; erlang_term::tuple [ erlang_term::atom "ok"; erlang_term::of before; erlang_term::of after ] ]
+
+:~ result_error (name : string) (reason : string) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::of name; erlang_term::tuple [ erlang_term::atom "error"; erlang_term::of reason ] ]
+
+:~ applied_rewrite (src : string) (name : string) (rewritten : string) : string * bool * erlang_term::term =
+    := before, after = changed_line src rewritten
+    (rewritten, !+, result_ok name before after)
+
+:~ site_error (src : string) (name : string) (reason : string) : string * bool * erlang_term::term =
+    (src, !-, result_error name reason)
+
+:~ site_result (src : string) (name : string) (actual : string) (expected : string) (passed : i32) : string * bool * erlang_term::term =
+    := r = rewrite src name expected actual passed
+    ? text::starts_with r "K" ?> applied_rewrite src name (text::drop r 1i32) |: site_error src name (text::drop r 1i32)
+
+:~ one_site_hit (src : string) (name : string) (message : string) (m : string) : string * bool * erlang_term::term =
+    := actual, expected = split_first_nl m
+    site_result src name actual expected (passed_before message)
+
+:~ one_site (src : string) (name : string) (message : string) : string * bool * erlang_term::term =
+    := m = mismatch message
+    ? m = "" ?> site_error src name "no __assert_eq mismatch in its output" |: one_site_hit src name message m
+
+:~ decode_failures (failures : erlang_term::term) : list (string * string) =
+    listm::map
+        (\ t => ((erlang_term::element_at 1i32 t |> erlang_term::cast : string), (erlang_term::element_at 2i32 t |> erlang_term::cast : string)))
+        (erlang_term::items_of failures)
+
+:~ ^ fold_failures (src : string) (fs : list (string * string)) (acc : list erlang_term::term) (any : bool) : string * list erlang_term::term * bool =
+    ?= fs ?|
+    | [] => (src, listm::rev acc, any)
+    | (name, message) :: rest =>
+        := next, is_ok, r = one_site src name message
+        fold_failures next rest (r :: acc) (any || is_ok)
+
+:~ accept_sites_run (path : string) (failures : erlang_term::term) : erlang_term::term =
+    := text0 = erlang_file::file_text path
+    := final_text, results, any = fold_failures text0 (decode_failures failures) [] !-
+    := _ = ? any ?> erlang_file::file_written path final_text |: !-
+    erlang_term::list_term results
+
+:~ accept_sites (path : string) (failures : erlang_term::term) : erlang_term::term =
+    file_lock::locked (path ++ ".accept.lock") (\ () => accept_sites_run path failures) 30000i64
+
+:~ accept_uniq () : string =
+    erlang_term::integer_text (erlang_term::apply "erlang" "unique_integer" [ erlang_term::list_term [ erlang_term::atom "positive" ] ])
+
+:~ fixture_spi () : string = "///> rust\ninl one () = 1i32\n\n///> rust\ntest one =\n    one ()\n    |> _assert_eq 2i32\n\n///> rust\ntest other =\n    one () |> _assert_eq 2i32\n"
+
+:~ fixture_path () : string =
+    erlang_file::joined_path (erlang_file::test_cache_directory ()) ("accept-sites-" ++ accept_uniq () ++ ".spi")
+
+:~ fixture_failures () : erlang_term::term =
+    erlang_term::list_term [ erlang_term::tuple [ erlang_term::of "one"; erlang_term::of "__assert_eq { actual = 1; expected = 2 }" ] ]
+
+:~ accept_fixture () : erlang_term::term * string =
+    := path = fixture_path ()
+    := _ = erlang_file::file_written path (fixture_spi ())
+    := results = accept_sites_run path (fixture_failures ())
+    (results, erlang_file::file_text path)
+
+:~ expected_sites () : erlang_term::term = erlang_term::list_term [ result_ok "one" "|> _assert_eq 2i32" "|> _assert_eq 1i32" ]
+
+:~ fixture_checks (results : erlang_term::term) (rewritten : string) : bool * bool * bool =
+    (erlang_term::equal results (expected_sites ()), text::contains rewritten "    |> _assert_eq 1i32", text::contains rewritten "    one () |> _assert_eq 2i32")
+
+///> gleam
+:# accept_sites_run_rewrites_the_failing_literal_names_the_line_and_leaves_the_rest =
+    := results, rewritten = accept_fixture ()
+    fixture_checks results rewritten |> _assert_eq (!+, !+, !+)

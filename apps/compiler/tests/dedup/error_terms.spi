@@ -1,0 +1,21 @@
+///- --package .
+:# error_terms static =
+    :< testing
+
+:== trm = erlang_term::term
+
+:~ kv (k : string) (v : trm) : trm = erlang_term::tuple [ erlang_term::atom k; v ]
+
+:~ emap (xs : list trm) : trm = erlang_term::apply "maps" "from_list" [ erlang_term::list_term xs ]
+
+:~ exc (name : string) (fields : list trm) : trm =
+    emap (kv "__struct__" (erlang_term::atom name) :: kv "__exception__" (erlang_term::atom "true") :: fields)
+
+:~ process_error (message : trm) (exit_status : trm) (output : trm) (reason : trm) : trm =
+    exc "Elixir.Spiral.Cells.ProcessError" [ kv "message" message; kv "exit_status" exit_status; kv "output" output; kv "reason" reason ]
+
+:~ timeout_error (message : trm) (timeout : trm) (output : trm) : trm =
+    exc "Elixir.Spiral.Cells.TimeoutError" [ kv "message" message; kv "timeout" timeout; kv "output" output ]
+
+:~ spiral_error (message : trm) (details : trm) (result : trm) : trm =
+    exc "Elixir.Spiral.Cells.SpiralError" [ kv "message" message; kv "details" details; kv "result" result ]

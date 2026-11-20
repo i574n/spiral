@@ -542,7 +542,7 @@ defmodule Spiral.Cells.CompilerDaemon do
         {:error, "Spiral compiler was not found at #{dll}", state}
 
       not Spiral.Cells.Domain.host_has(dotnet, dll, "server-tcp") ->
-        {:error, "the Spiral compiler at #{source_dll} does not list server-tcp in --capabilities; rebuild it from apps/compiler/tmp/compiler/host", state}
+        {:error, "the Spiral compiler at #{source_dll} does not list server-tcp in --capabilities; rebuild it from apps/compiler/dotnet/host", state}
 
       true ->
         args = [dll, "--server-tcp", socket, "--stall-seconds", Integer.to_string(stall_seconds())]

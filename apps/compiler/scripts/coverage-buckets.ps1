@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory)] [string] $Run,
     [string[]] $Backends = @('Zig', 'Rust', 'Lean', 'Wasm', 'Bend', 'Wgsl', 'Calyx'),
-    [string] $Root = (Join-Path $PSScriptRoot '../tmp')
+    [string] $Root = (Join-Path $PSScriptRoot '..')
 )
 $Backends = @($Backends | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $runDir = if (Test-Path -LiteralPath $Run) { $Run } else { Join-Path "$env:LOCALAPPDATA\spiral-bin\runs" $Run }

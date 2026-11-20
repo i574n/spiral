@@ -1,0 +1,14 @@
+packageDir = '../../lib'
+packages = ['|core-', 'spiral-']
+modules = '''
+packages_model
+packages_planner
+packages_unit
+packages_canonical
+packages_lock
+packages_publish
+packages_manifest
+packages_dry_run
+packages_cli
+packages_main
+'''

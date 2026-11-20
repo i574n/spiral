@@ -1,0 +1,109 @@
+///- --package .
+:# memory_guard static =
+    :< testing
+
+:< sm'_operators
+
+:< file_lock
+
+:== term = erlang_term::term
+
+:~ guard_name () : term = atom "spiral_cells_memory_guard"
+
+:~ available_kb () : i64 =
+    := r = call "file" "read_file" [ erlang_term::of "/proc/meminfo" ]
+    ? is_ok r ?> (conv (host_text::mem_available_kb (nth 2i32 r |> erlang_term::cast)) : i64) |: -1i64
+
+:~ guard_limit () : i64 = daemon_pool::guard_limit_bytes (toolchain::beam_env "SPIRAL_CELLS_MAX_MB") (available_kb ())
+
+:~ vm_total () : i64 = call "erlang" "memory" [ atom "total" ] |> erlang_term::cast
+
+:~ mb_text (bytes : i64) : string = erlang_term::integer_text (erlang_term::of (bytes / daemon_pool::mib ()))
+
+:~ formatted (pattern : string) (args : list term) : string =
+    := chars = call "io_lib" "format" [ erlang_term::charlist pattern; erlang_term::list_term args ]
+    call "unicode" "characters_to_binary" [ chars ] |> erlang_term::cast
+
+:~ held_bytes (pid : term) : term =
+    := source = "case erlang:process_info(P, [binary, memory]) of [{binary, B}, {memory, M}] -> M + lists:sum([S || {_, S, _} <- B]); _ -> 0 end."
+    evaluated source [ ("P", pid) ]
+
+:~ holder_keys () : term = erlang_term::list_term (listm::map atom [ "registered_name"; "initial_call"; "current_stacktrace"; "message_queue_len" ])
+
+:~ holder_line (pair : term) : string =
+    := pid = nth 2i32 pair
+    := mb = mb_text (nth 1i32 pair |> erlang_term::cast)
+    formatted "  ~p ~s MB (heap + binaries) ~p" [ pid; erlang_term::of mb; call "erlang" "process_info" [ pid; holder_keys () ] ]
+
+:~ ranked_pairs () : term =
+    := pids = call "erlang" "processes" [] |> erlang_term::items_of
+    := pairs = erlang_term::list_term (listm::map (\ p => erlang_term::tuple [ held_bytes p; p ]) pids)
+    call "lists" "reverse" [ call "lists" "sort" [ pairs ] ]
+
+:~ top_holders () : list term = call "lists" "sublist" [ ranked_pairs (); erlang_term::of 5i32 ] |> erlang_term::items_of
+
+:~ kind_mb (row : term) : term = erlang_term::tuple [ nth 1i32 row; erlang_term::of (mb_text (nth 2i32 row |> erlang_term::cast)) ]
+
+:~ kind_keys () : term = erlang_term::list_term (listm::map atom [ "processes"; "binary"; "ets"; "code"; "system" ])
+
+:~ kinds_text () : string =
+    := rows = call "erlang" "memory" [ kind_keys () ] |> erlang_term::items_of
+    formatted "~p" [ erlang_term::list_term (listm::map kind_mb rows) ]
+
+:~ report_head (total : i64) (limit : i64) : string =
+    := usage = "spiral cells memory guard: this VM uses " ++# mb_text total ++# " MB, over its "
+    usage ++# mb_text limit ++# " MB limit (SPIRAL_CELLS_MAX_MB, 0 turns the guard off); halting before it fills swap."
+
+:~ with_line (text : string) (line : string) : string = text ++# "\n" ++# line
+
+:~ report (total : i64) (limit : i64) : string =
+    := lines = listm::map holder_line (top_holders ())
+    := head = report_head total limit ++# " MB by kind " ++# kinds_text () ++# "; top holders (heap + binaries):"
+    listm::fold with_line head lines
+
+:~ halted (total : i64) (limit : i64) : () =
+    call "io" "put_chars" [ atom "standard_error"; erlang_term::of (report total limit ++# "\n") ] |> ignore
+    call "erlang" "halt" [ erlang_term::of 137i32 ] |> ignore
+
+:~ ^ watch (limit : i64) : () =
+    := total = vm_total ()
+    ? daemon_pool::over_limit total limit
+    ?> halted total limit
+    |:
+        call "timer" "sleep" [ erlang_term::of 100i32 ] |> ignore
+        watch limit
+
+:~ registered (pid : term) : string =
+    := source = "try register(N, P) of true -> <<\"started\">> catch error:badarg -> exit(P, kill), <<\"running\">> end."
+    evaluated source [ ("N", guard_name ()); ("P", pid) ] |> erlang_term::cast
+
+:~ running () : bool = not (erlang_term::equal (call "erlang" "whereis" [ guard_name () ]) (atom "undefined"))
+
+:~ guard_start () : string =
+    := limit = guard_limit ()
+    ? limit = 0i64 ?> "disabled"
+    |? running () ?> "running"
+    |: registered (call "erlang" "spawn" [ nullary (erlang_term::of (\ () => watch limit)) ])
+
+:~ with_max_mb (value : string) : () = call "os" "putenv" [ erlang_term::charlist "SPIRAL_CELLS_MAX_MB"; erlang_term::charlist value ] |> ignore
+
+:~ stop_guard () : () = call "erlang" "exit" [ call "erlang" "whereis" [ guard_name () ]; atom "kill" ] |> ignore
+
+///> gleam
+:# a_zero_limit_disables_the_guard =
+    with_max_mb "0"
+    guard_start () |> _assert_eq "disabled"
+
+///> gleam
+:# a_second_start_finds_the_running_guard =
+    with_max_mb "1048576"
+    := a = guard_start ()
+    := b = guard_start ()
+    stop_guard ()
+    (a, b) |> _assert_eq ("started", "running")
+
+///> gleam
+:# the_report_names_the_usage_the_limit_and_the_switch =
+    := mb = daemon_pool::mib ()
+    := head = report_head (3i64 * mb) (2i64 * mb)
+    sm'::contains "uses 3 MB, over its 2 MB limit (SPIRAL_CELLS_MAX_MB" head |> _assert_eq !+

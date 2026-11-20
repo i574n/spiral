@@ -1,0 +1,14 @@
+:! yes = ()
+:! no = ()
+:| ^ ev answer =
+    | Eps :: ev yes
+    | NotNo :: ev no -> ev yes
+    | Never :: ev no
+    | NotYes :: ev yes -> ev no
+:| ^ tree n =
+    | Leaf :: \* n. tree n
+    | Node :: \* n. tree n * tree n -> tree n
+
+:= main () : i32 =
+    := e : ev yes = NotNo Eps
+    0

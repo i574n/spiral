@@ -24,7 +24,7 @@ $imported = foreach ($scope in 'Machine', 'User') {
 
 $compiler = Split-Path $PSScriptRoot
 $liveCore = Join-Path $compiler 'spiral_compiler.fs'
-$liveHost = Join-Path $compiler 'tmp/compiler/host/Program.fs'
+$liveHost = Join-Path $compiler 'dotnet/host/Program.fs'
 $root = Join-Path $env:LOCALAPPDATA "spiral-bin-candidates/$Name"
 $source = Join-Path $root 'source'
 New-Item -ItemType Directory -Force $source | Out-Null

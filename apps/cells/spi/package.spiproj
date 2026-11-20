@@ -6,7 +6,6 @@ modules:
     text
     toolchain
     tool_lookup
-    lisp
     file_lock
     tables
     type_trial

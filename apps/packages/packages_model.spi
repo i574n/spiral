@@ -1,0 +1,467 @@
+///- --package .
+:# packages_model static =
+    :< testing
+
+:< sm'_operators
+
+:! sha256_hex = string
+:! package_id = sha256_hex
+:! blob_id = sha256_hex
+:! index_checkpoint_id = sha256_hex
+:! author_id = u64
+:! package_name = string
+:! relative_path = string
+
+:! store_path = string
+:! host_pattern = string
+:! program_name = string
+:! env_var_name = string
+:! library_name = string
+:! bucket_name = string
+:! object_key = string
+:! social_post_id = u64
+
+:! public_key_text = string
+:! signature_text = string
+:! usd_micros = u64
+:! index_url = string
+:! asset_url = string
+:! crate_name = string
+:! cargo_feature = string
+
+:== exact_version = { major : u32; minor : u32; patch : u32 }
+
+:| outcome ok err =
+    | Accepted : ok
+    | Rejected : err
+
+:| edition =
+    | UpstreamEdition2
+    | ForkEdition3
+
+:| default_int =
+    | DefaultI8
+    | DefaultI16
+    | DefaultI32
+    | DefaultI64
+    | DefaultU8
+    | DefaultU16
+    | DefaultU32
+    | DefaultU64
+
+:| default_float =
+    | DefaultF32
+    | DefaultF64
+
+:== numeric_defaults = { default_int : default_int; default_float : default_float }
+
+:| backend_target =
+    | TargetC
+    | TargetRust
+    | TargetFsharp
+    | TargetPython
+    | TargetCuda
+    | TargetGleam
+    | TargetLua
+    | TargetZig
+    | TargetWasm
+    | TargetWgsl
+    | TargetTypeScript
+
+:| path_scope =
+    | OwnPackageDirectory
+    | CallerWorkspace
+    | UnderRelativePath : relative_path
+
+:| capability =
+    | ReadFiles : path_scope
+    | WriteFiles : path_scope
+    | NetworkTo : host_pattern
+    | SpawnProcess : program_name
+    | ReadEnvironment : env_var_name
+    | ForeignLibrary : backend_target * library_name
+    | GpuDevice
+    | WallClock
+
+:== module_entry = { module_path : relative_path; content : blob_id; content_bytes : u64 }
+
+:| source_layout =
+    | SingleModule : module_entry
+    | ModuleDirectory : list module_entry
+
+:== exact_requirement = { required_name : package_name; required_version : exact_version; required_id : package_id }
+
+:== cargo_crate = { crate : crate_name; crate_version : exact_version; features : list cargo_feature }
+
+:== release_identity = { name : package_name; version : exact_version; author : author_id }
+
+:== release_build = { edition : edition; numerics : numeric_defaults; targets : list backend_target }
+
+:== release_manifest =
+    {
+        identity : release_identity
+        build : release_build
+        requires : list exact_requirement
+        rust_crates : list cargo_crate
+        capabilities : list capability
+        layout : source_layout
+    }
+
+:| signature_algorithm =
+    | Ed25519
+    | SshEd25519
+
+:== detached_signature = { algorithm : signature_algorithm; signer_key : public_key_text; signature : signature_text }
+
+:== signed_release = { manifest : release_manifest; id : package_id; author_signature : detached_signature }
+
+:| yank_reason =
+    | SecurityAdvisory : string
+    | BrokenBuild : string
+    | AuthorRequest
+
+:| vouch =
+    | ForgeVouched
+    | SignedBy : public_key_text
+
+:| index_entry =
+    | Released : signed_release
+    | Yanked : package_id * yank_reason
+    | KeyAdded : author_id * public_key_text * vouch
+    | KeyRevoked : author_id * public_key_text * vouch
+
+:== index_checkpoint =
+    {
+        checkpoint : index_checkpoint_id
+        previous : index_checkpoint_id
+        entries : list index_entry
+        index_signature : detached_signature
+    }
+
+:| blob_origin =
+    | ReleaseAsset : asset_url
+    | ObjectStore : bucket_name * object_key
+    | LocalStore : store_path
+
+:| social_platform =
+    | XPlatform
+    | Bluesky
+    | Mastodon
+
+:== social_mirror = { platform : social_platform; posts : list social_post_id }
+
+:| blob_source =
+    | Authoritative : blob_origin
+    | MirrorOnly : social_mirror
+
+:== fetch_item = { expected : blob_id; source : blob_source }
+
+:| lock_schema =
+    | SpiralLockV1
+
+:== lock_node = { node_id : package_id; release : release_manifest }
+
+:== lock_body = { schema : lock_schema; root : package_id; nodes : list lock_node }
+
+:! unvalidated = ()
+:! validated = ()
+
+:| locked state =
+    | Unchecked :: lock_body -> locked unvalidated
+    | Checked :: lock_body * list package_id -> locked validated
+
+:= lock_body_of \* state. (l : locked state) : lock_body =
+    ?= l ?|
+    | Unchecked body => body
+    | Checked (body, _) => body
+
+:= validated_order (l : locked validated) : list package_id =
+    ?= l ?|
+    | Checked (_, order) => order
+
+:| link_kind =
+    | DirectoryJunction
+    | Symlink
+    | FileHardLink
+    | FileCopy
+
+:== workspace_link = { link_path : relative_path; target : store_path; kind : link_kind }
+
+:== compile_unit =
+    {
+        unit_package : package_id
+        unit_edition : edition
+        unit_numerics : numeric_defaults
+        unit_root : store_path
+        unit_dependencies : list package_id
+    }
+
+:== cached_blob = { cached_id : blob_id; cached_at : store_path; cached_bytes : u64 }
+
+:== install_request =
+    {
+        trusted_root : package_id
+        lock : locked validated
+        granted : list capability
+        cache : list cached_blob
+        known_revoked : list blob_id
+        offline : bool
+        fetch_budget : usd_micros
+    }
+
+:== install_plan =
+    {
+        package_order : list package_id
+        verified_from_cache : list package_id
+        to_fetch : list blob_id
+        estimated_cost : usd_micros
+        links : list workspace_link
+        compile_units : list compile_unit
+    }
+
+:| graph_error =
+    | RequirementIdMismatch : package_id * exact_requirement
+    | DependencyCycle : list package_id
+    | MissingDependency : package_id
+    | UnreachablePackages : list package_id
+
+:| lock_error =
+    | UnsupportedSchema
+    | RootDiffersFromCallerPin : package_id * package_id
+    | MetadataDigestMismatch : package_id
+    | VersionNotExact : package_id
+    | GraphError : graph_error
+
+:| blob_error =
+    | BlobRevoked : blob_id
+    | BlobDigestMismatch : blob_id
+    | BlobSizeMismatch : blob_id * u64 * u64
+    | MissingWhileOffline : list blob_id
+    | BudgetExceeded : usd_micros * usd_micros
+
+:| link_error =
+    | JunctionTargetNotDirectory : workspace_link
+    | StoreEntryMutable : store_path
+    | LinkPathTaken : relative_path
+    | LinkCreateFailed : workspace_link * string
+
+:| install_error =
+    | CapabilitiesNotGranted : list (package_id * capability)
+    | ReleaseYanked : package_id * yank_reason
+    | SignatureInvalid : package_id
+    | BlobError : blob_error
+    | LinkError : link_error
+
+:| declaration_error =
+    | EditionUndeclared : package_name
+    | CapabilityUndeclared : package_id * capability
+
+:| publish_error =
+    | NameVersionTaken : package_name * exact_version
+    | ContentNotUploaded : list blob_id
+    | ManifestDigestMismatch : package_id
+    | AuthorKeyUnknown : author_id
+    | SignatureNotVerified : package_id
+    | DeclarationError : declaration_error
+
+:| signer_error =
+    | SignerKeyNotLive : package_id
+    | KeyChangeNotAuthorized : author_id
+
+:| index_error =
+    | UnknownRelease : package_name * exact_version
+    | CheckpointChainBroken : index_checkpoint_id
+    | IndexSignatureInvalid : index_checkpoint_id
+    | YankOfUnpublished : package_id
+    | SignerError : signer_error
+
+:| index_backend =
+    | OwnContentAddressedIndex : index_url
+    | OwnIndexWithStaticMirror : index_url * index_url
+    | CargoSparseRegistry : index_url
+
+:| rust_resolution =
+    | CratesIoWithLock
+    | AlternativeRegistry : index_url
+
+:== registry_choice = { spiral_packages : index_backend; rust_crates : rust_resolution }
+
+:== materialize_request = { lock : locked validated; store_root : store_path; deps_dir : relative_path }
+
+:== digest_release = release_manifest -> package_id
+
+:== validate_lock = package_id -> locked unvalidated -> outcome (locked validated) lock_error
+
+:== check_capabilities = locked validated -> list capability -> outcome () install_error
+
+:== plan_install = install_request -> outcome install_plan install_error
+
+:== materialize = materialize_request -> install_plan -> outcome install_plan install_error
+
+:== publish_release = signed_release -> list blob_id -> outcome index_entry publish_error
+
+:== read_index = package_name -> exact_version -> outcome signed_release index_error
+
+:== follow_checkpoints = index_checkpoint_id -> list index_checkpoint -> outcome index_checkpoint_id index_error
+
+:== fetch_blob = fetch_item -> outcome cached_blob install_error
+
+:| index_line_encoding =
+    | JsonLinesRfc8785
+
+:== index_file = { path : string; encoding : index_line_encoding; entries : list index_entry }
+
+:| index_event =
+    | PublishedEvent : package_id
+    | YankedEvent : package_id * yank_reason
+
+:| package_state =
+    | NotPublished
+    | Published
+    | PublishedThenYanked : yank_reason
+
+:= spiral_index () : index_backend =
+    := pages = index_url "https://i574n.github.io/spiral-index"
+    OwnIndexWithStaticMirror (pages, index_url "https://raw.githubusercontent.com/i574n/spiral-index/main")
+
+:= chosen_registry () : registry_choice = { spiral_packages = spiral_index (); rust_crates = CratesIoWithLock }
+
+:= prefixed_path (name : string) : string =
+    sm'::substring 0i32 2i32 name ++# "/" ++# sm'::substring 2i32 2i32 name ++# "/" ++# name
+
+:= index_path (name : string) : string =
+    := n = sm'::length name
+    ? n = 1i32 ?> "1/" ++# name
+    |? n = 2i32 ?> "2/" ++# name
+    |? n = 3i32 ?> "3/" ++# sm'::substring 0i32 1i32 name ++# "/" ++# name
+    |: prefixed_path name
+
+:= event_of (entry : index_entry) : option index_event =
+    ?= entry ?|
+    | Released release => Some (PublishedEvent release::id)
+    | Yanked (id, reason) => Some (YankedEvent (id, reason))
+    | _ => None
+
+:~ ^ without_key (k : public_key_text) (keys : list public_key_text) : list public_key_text =
+    ?= keys ?|
+    | [] => []
+    | x :: rest => ? x = k ?> without_key k rest |: x :: without_key k rest
+
+:~ key_step (who : author_id) (ks : list public_key_text) (e : index_entry) : list public_key_text =
+    ?= e ?|
+    | KeyAdded (a, k, _) => ? a = who ?> k :: ks |: ks
+    | KeyRevoked (a, k, _) => ? a = who ?> without_key k ks |: ks
+    | _ => ks
+
+:~ ^ live_keys
+    (author : author_id) (entries : list index_entry) (keys : list public_key_text)
+    : list public_key_text
+    =
+    ?= entries ?|
+    | [] => keys
+    | entry :: rest => live_keys author rest (key_step author keys entry)
+
+:~ signer_live (release : signed_release) (before : list index_entry) : bool =
+    := keys = live_keys release::manifest::identity::author before []
+    listm::exists' (\ (k : public_key_text) => k = release::author_signature::signer_key) keys
+
+:== checked = outcome () index_error
+
+:~ vouch_ok (a : author_id) (v : vouch) (before : list index_entry) : bool =
+    := keys = live_keys a (listm::rev before) []
+    ?= v ?|
+    | ForgeVouched => listm::length keys = 0i32
+    | SignedBy k => listm::exists' (\ (x : public_key_text) => x = k) keys
+
+:~ key_change (a : author_id) (v : vouch) (before : list index_entry) : checked =
+    ? vouch_ok a v before ?> Accepted () |: Rejected (SignerError (KeyChangeNotAuthorized a))
+
+:~ release_signed (r : signed_release) (before : list index_entry) : checked =
+    ? signer_live r (listm::rev before) ?> Accepted () |: Rejected (SignerError (SignerKeyNotLive r::id))
+
+:~ entry_signed (entry : index_entry) (before : list index_entry) : checked =
+    ?= entry ?|
+    | Released r => release_signed r before
+    | KeyAdded (a, _, v) => key_change a v before
+    | KeyRevoked (a, _, v) => key_change a v before
+    | _ => Accepted ()
+
+:~ ^ check_signers (entries : list index_entry) (before : list index_entry) : checked =
+    ?= entries ?|
+    | [] => Accepted ()
+    | e :: rest => signed_then e rest before
+
+:& :~ signed_then (e : index_entry) (rest : list index_entry) (before : list index_entry) : checked =
+    ?= entry_signed e before ?|
+    | Accepted () => check_signers rest (e :: before)
+    | Rejected x => Rejected x
+
+:= after_published (state : package_state) : package_state =
+    ?= state ?|
+    | NotPublished => Published
+    | _ => state
+
+:== stepped = outcome package_state index_error
+
+:= after_yanked (id : package_id) (state : package_state) (reason : yank_reason) : stepped =
+    ?= state ?|
+    | NotPublished => Rejected (YankOfUnpublished id)
+    | _ => Accepted (PublishedThenYanked reason)
+
+:= after_event (id : package_id) (s : package_state) (e : index_event) : stepped =
+    ?= e ?|
+    | PublishedEvent p => Accepted (? p = id ?> after_published s |: s)
+    | YankedEvent (y, why) => ? y = id ?> after_yanked id s why |: Accepted s
+
+:~ ^ state_after (id : package_id) (events : list index_event) (s : package_state) : stepped =
+    ?= events ?|
+    | [] => Accepted s
+    | e :: rest => state_next id e rest s
+
+:& :~ state_next (id : package_id) (e : index_event) (rest : list index_event) (s : package_state) : stepped =
+    ?= after_event id s e ?|
+    | Accepted next => state_after id rest next
+    | Rejected x => Rejected x
+
+:~ ^ undeclared (derived : list capability) (declared : list capability) : list capability =
+    ?= derived ?|
+    | [] => []
+    | c :: rest =>
+        := more = undeclared rest declared
+        ? listm::exists' (\ (d : capability) => d = c) declared ?> more |: c :: more
+
+:~ reach_covered (r : signed_release) (derived : list capability) : outcome () publish_error =
+    ?= undeclared derived r::manifest::capabilities ?|
+    | [] => Accepted ()
+    | c :: _ => Rejected (DeclarationError (CapabilityUndeclared (r::id, c)))
+
+:= empty_lock (root : package_id) : lock_body = { schema = SpiralLockV1; root = root; nodes = [] }
+
+:= planned_root (l : locked validated) : package_id =
+    := body = lock_body_of l
+    body::root
+
+:= serde () : package_id = package_id (sha256_hex "5e7de")
+
+///> rust
+:# the_sparse_index_path_buckets_names_by_length_like_cargo =
+    (index_path "a", index_path "ab", index_path "abc", index_path "serde")
+    |> _assert_eq ("1/a", "2/ab", "3/a/abc", "se/rd/serde")
+
+///> rust
+:# a_release_published_then_yanked_ends_yanked_with_its_reason =
+    := events = [ PublishedEvent (serde ()); YankedEvent (serde (), AuthorRequest) ]
+    state_after (serde ()) events NotPublished |> _assert_eq (Accepted (PublishedThenYanked AuthorRequest))
+
+///> rust
+:# a_yank_before_any_publish_is_rejected_not_a_state =
+    state_after (serde ()) [ YankedEvent (serde (), AuthorRequest) ] NotPublished
+    |> _assert_eq (Rejected (YankOfUnpublished (serde ())))
+
+///> rust
+:# a_validated_lock_names_its_root =
+    planned_root (Checked (empty_lock (serde ()), [])) |> _assert_eq (serde ())
+
+///> rust
+:# an_unvalidated_lock_cannot_be_planned fails "Unification failure" =
+    planned_root (Unchecked (empty_lock (serde ()))) |> _assert_eq (serde ())

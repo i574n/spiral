@@ -1,0 +1,4 @@
+packageDir: ../../../samples
+packages: core-
+modules:
+    main

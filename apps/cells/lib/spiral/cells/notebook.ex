@@ -60,7 +60,7 @@ defmodule Spiral.Cells.Notebook do
     text = File.read!(path)
     parsed = parse(path, text, compiler_bounds?(opts))
     if opts[:livemd_path], do: File.write!(opts[:livemd_path], Domain.to_livemd_doc(parsed))
-    doc = expand_lisp(parsed, opts)
+    doc = parsed
 
     if opts[:export_only] do
       write_exports(path, doc, opts)
@@ -223,13 +223,6 @@ defmodule Spiral.Cells.Notebook do
     end
   end
 
-  defp expand_lisp(%{cells: cells} = doc, opts) do
-    %{doc | cells: Enum.map(cells, fn
-      %{kind: :spiral, source: source} = cell -> %{cell | source: Spiral.Cells.Domain.lisp_transpile(source, Spiral.Cells.Domain.tool("spl2spi", opts) || "")}
-      cell -> cell
-    end)}
-  end
-
   defp run_cells(path, doc, opts) do
     output_path = opts[:output_path] || path <> ".ipynb"
     root = opts[:root] || Path.dirname(path)
@@ -311,7 +304,7 @@ defmodule Spiral.Cells.Notebook do
         Enum.reduce(accepted_now, outcome, &Map.put(&2, &1, {:refused, "still failing after #{@accept_rounds} accept rounds"}))
 
       true ->
-        doc = expand_lisp(parse(path, File.read!(path)), opts)
+        doc = parse(path, File.read!(path))
         rerun = evaluate(doc, Keyword.put(opts, :tests, accepted_now))
 
         case failures_with_output(rerun) do

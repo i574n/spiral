@@ -1,0 +1,11 @@
+:| ^ tree =
+    | Leaf : i32
+    | Node : tree * tree
+
+:= main () : i32 =
+    := ~nested : array (array tree) = create 1i32
+    set nested 0i32 (create 4i32)
+    set (index nested 0i32) 0i32 (Leaf 40i32)
+    ?= index (index nested 0i32) 0i32 ?|
+    | Leaf n => n
+    | Node _ => 0i32

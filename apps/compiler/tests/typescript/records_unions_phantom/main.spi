@@ -1,0 +1,16 @@
+:! point = { x : i32; y : i32 }
+:| shape =
+    | Circle : f64
+    | Square : f64
+    | Empty
+:! cell t = { value : t; label : string }
+:! meters = { amount : f64 }
+:! feet = { amount : f64 }
+:! quantity unit = { amount : f64 }
+:| maybe t =
+    | Just : t
+    | Nothing
+:! pair_of a b = { first : a; second : b }
+:! row = { origin : point; tags : array string; size : maybe i64 }
+
+:= main () : i32 = 0

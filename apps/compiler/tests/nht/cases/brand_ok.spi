@@ -1,0 +1,7 @@
+:< sm'_operators
+
+:! meters = i32
+
+:= length_of ((meters x) : meters) : i32 = x
+
+:= main () : i32 = length_of (meters 3i32)

@@ -1,0 +1,31 @@
+///- --package .
+:# source_stamp static =
+    :< testing
+
+:== term = erlang_term::term
+
+:~ atom (s : string) : term = erlang_term::atom s
+
+:~ absolute (dir : string) : bool = erlang_term::equal (erlang_term::apply "filename" "pathtype" [ erlang_term::of dir ]) (atom "absolute")
+
+:~ read_ok (read : term) : bool = erlang_term::is_tuple read && erlang_term::equal (erlang_term::element_at 1i32 read) (atom "ok")
+
+:~ declared_dir (read : term) : string = ? read_ok read ?> manifest::package_dir_of (erlang_file::text_of (erlang_term::element_at 2i32 read)) |: ""
+
+:~ extra_dirs (read : term) : list string =
+    := dir = declared_dir read
+    ? dir <> "" && absolute dir ?> [ dir ] |: []
+
+:~ bigger (a : i64) (b : i64) : i64 = ? a > b ?> a |: b
+
+:~ newest_of (dirs : list string) : i64 = listm::fold (\ (acc : i64) (dir : string) => bigger acc (mount_stats::newest dir)) 0i64 dirs
+
+:~ source_mtime_of (core : string) (read : term) : i64 = newest_of (core :: extra_dirs read)
+
+///> gleam
+:# a_failed_manifest_read_adds_no_directory =
+    listm::length (extra_dirs (erlang_term::tuple [ atom "error"; atom "enoent" ])) |> _assert_eq 0i32
+
+///> gleam
+:# a_relative_package_dir_is_not_scanned =
+    absolute "rel/dir" |> _assert_eq !-

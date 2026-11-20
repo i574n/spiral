@@ -1,0 +1,19 @@
+:< sm'_operators
+
+:| version = V1 | V2 | V3
+
+:| event =
+    | Started : string
+    | Renamed : string * string
+
+:~ decode (v : version) (payload : string) : event =
+    ?= v ?|
+    | V1 => Started payload
+    | V2 => Renamed (payload, "")
+    | V3 => Started (payload ++# "!")
+
+:= main () : i32 =
+    := ~v = V2
+    ?= decode v "x" ?|
+    | Started _ => 1i32
+    | Renamed _ => 2i32

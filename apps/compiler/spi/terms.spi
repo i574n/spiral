@@ -4,9 +4,9 @@
 :# terms static =
     :< testing
 
-:== term_env = { top_down : bool; operator_floor : option i32; continuation_column : option i32 }
+:== term_env = { top_down : bool; operator_floor : option i32; continuation_column : option i32; default_int : ast::prim_type; default_float : ast::prim_type; upstream : bool }
 
-:~ top_env () : term_env = { top_down = !+; operator_floor = None; continuation_column = None }
+:~ top_env () : term_env = { top_down = !+; operator_floor = None; continuation_column = None; default_int = ast::Int32T; default_float = ast::Float64T; upstream = !- }
 
 :~ lowest_binding () : i32 = -1000000i32
 
@@ -82,8 +82,35 @@
     | Some (r, _) => cursor::Failed ([ (r, ast::ExpectedAnyOperator) ], c)
     | None => cursor::Failed ([], c)
 
+:~ parsed_default \* t. (r : ast::range) (x : string) (literal_of : t -> tokens::literal) (description : string) (after : cursor::cursor) : cursor::step tokens::literal =
+    ?= convert::try_convert x ?|
+    | Some value => cursor::Took (literal_of value, after)
+    | None => cursor::Failed ([ (r, ast::BottomUpNumberParseError (x, description)) ], after)
+
+:~ bottom_up_number (e : term_env) (r : ast::range) (x : string) (after : cursor::cursor) : cursor::step tokens::literal =
+    ? sm'::contains "." x ?>
+        ?= e::default_float ?|
+        | ast::Float32T => parsed_default r x (\ (v : f32) => tokens::LitFloat32 v) "f32" after
+        | ast::Float64T => parsed_default r x (\ (v : f64) => tokens::LitFloat64 v) "f64" after
+        | _ => failwith "Compiler error: Invalid default float type."
+    |:
+        ?= e::default_int ?|
+        | ast::Int8T => parsed_default r x (\ (v : i8) => tokens::LitInt8 v) "i8" after
+        | ast::Int16T => parsed_default r x (\ (v : i16) => tokens::LitInt16 v) "i16" after
+        | ast::Int32T => parsed_default r x (\ (v : i32) => tokens::LitInt32 v) "i32" after
+        | ast::Int64T => parsed_default r x (\ (v : i64) => tokens::LitInt64 v) "i64" after
+        | ast::UInt8T => parsed_default r x (\ (v : u8) => tokens::LitUInt8 v) "u8" after
+        | ast::UInt16T => parsed_default r x (\ (v : u16) => tokens::LitUInt16 v) "u16" after
+        | ast::UInt32T => parsed_default r x (\ (v : u32) => tokens::LitUInt32 v) "u32" after
+        | ast::UInt64T => parsed_default r x (\ (v : u64) => tokens::LitUInt64 v) "u64" after
+        | _ => failwith "Compiler error: Invalid default int type."
+
 :~ read_default (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
-    cursor::take c (\ r t => ?= t ?| | tokens::TokDefaultValue x ?& e::top_down => Some (ast::RawDefaultLit (r, x)) | _ => None) ast::ExpectedLit
+    ?= cursor::take c (\ r t => ?= t ?| | tokens::TokDefaultValue x => Some (r, x) | _ => None) ast::ExpectedLit ?|
+    | cursor::Took ((r, x), after) =>
+        ? e::top_down ?> cursor::Took (ast::RawDefaultLit (r, x), after)
+        |: cursor::map_p (\ (l : tokens::literal) => ast::RawLit (r, l)) (bottom_up_number e r x) after
+    | cursor::Failed (er, at) => cursor::Failed (er, at)
 
 :~ type_expr (c : cursor::cursor) : cursor::step ast::raw_texpr =
     := var = cursor::map_p (\ ((r, x) : ast::named) => ast::RawTVar (r, x)) parse_types::read_small_var
@@ -240,13 +267,337 @@
     | [] => []
     | a :: rest => listm::append a (concat_found rest)
 
+:~ pure_p \* a. (x : a) (c : cursor::cursor) : cursor::step a = cursor::Took (x, c)
+
+:~ value_p (c : cursor::cursor) : cursor::step ast::raw_expr = cursor::map_p (\ ((r, x) : ast::range * tokens::literal) => ast::RawLit (r, x)) parse_types::read_value c
+
+:~ text_p (c : cursor::cursor) : cursor::step ast::raw_expr = cursor::map_p (\ ((a, s, b) : ast::range * string * ast::range) => ast::RawLit (ast::joined a b, tokens::LitString s)) parse_types::read_string c
+
+:~ small_var_p (c : cursor::cursor) : cursor::step ast::raw_expr = cursor::map_p ast::rawv parse_types::read_small_var c
+
+:~ dyn_if_let (is_let : bool) (p : ast::pattern) : ast::pattern = ? is_let ?> ast::PatDyn (ast::range_of_pattern p, p) |: p
+
+:~ ^ adjust_join_point (is_let : bool) (name : option string) (x : ast::raw_expr) : ast::raw_expr =
+    ?= x ?|
+    | ast::RawForall (r, a, b) => ast::RawForall (r, a, adjust_join_point is_let name b)
+    | ast::RawFun (r, [ (a, b) ]) => ast::RawFun (r, [ (dyn_if_let is_let a, adjust_join_point is_let name b) ])
+    | ast::RawFun (r, l) =>
+        := (from, _) = r
+        := empty = from, from
+        := arg = " arg"
+        ast::RawFun (r, [ (dyn_if_let is_let (ast::PatVar (empty, arg)), join_point is_let name (ast::RawMatch (empty, ast::rawv (empty, arg), l))) ])
+    | _ => join_point is_let name x
+
+:~ adjust_join_point_head (is_let : bool) (name : option string) (x : ast::raw_expr) : ast::raw_expr =
+    ?= x ?|
+    | ast::RawForall _ => adjust_join_point is_let name x
+    | ast::RawFun _ => adjust_join_point is_let name x
+    | _ => x
+
+:~ ^ fold_let_funs (is_let : bool) (pats : list ast::pattern) (body : ast::raw_expr) : ast::raw_expr =
+    ?= pats ?|
+    | [] => body
+    | p :: rest =>
+        := inner = fold_let_funs is_let rest body
+        ast::RawFun (ast::joined (ast::range_of_pattern p) (ast::range_of_expr inner), [ (dyn_if_let is_let p, inner) ])
+
+:~ is_function (x : ast::raw_expr) : bool =
+    ?= x ?|
+    | ast::RawFun _ => !+
+    | ast::RawForall _ => !+
+    | _ => !-
+
+:~ pattern_var_name (p : ast::pattern) : option string =
+    ?= p ?|
+    | ast::PatVar (_, x) => Some x
+    | _ => None
+
+:== binding = { is_let : bool; is_rec : bool; name : ast::pattern; foralls : list ast::type_var; pats : list ast::pattern; body : ast::raw_expr }
+
+:== bound = (ast::range * ast::pattern * ast::raw_expr) * bool
+
+:~ process_binding (r : ast::range) (b : binding) (after : cursor::cursor) : cursor::step bound =
+    := var_name = pattern_var_name b::name
+    ?= b::foralls, b::pats ?|
+    | [], [] ?& b::is_rec = !- =>
+        ?= patterns::patterns_validate [ b::name ] ?|
+        | [] => cursor::Took (((r, b::name, adjust_join_point_head b::is_let var_name b::body), !-), after)
+        | er => cursor::Failed (er, after)
+    | _ =>
+        ?= var_name ?|
+        | Some _ =>
+            := checked = ? b::is_rec ?> b::name :: b::pats |: b::pats
+            ?= patterns::patterns_validate checked ?|
+            | [] =>
+                := body = fold_foralls b::foralls (fold_let_funs b::is_let b::pats (adjust_join_point b::is_let var_name b::body))
+                ? b::is_rec && is_function body = !- ?> cursor::Failed ([ (r, ast::ExpectedFunctionAsBodyOfRecStatement) ], after)
+                |: cursor::Took (((r, b::name, body), b::is_rec), after)
+            | er => cursor::Failed (er, after)
+        | None =>
+            ? b::is_rec ?> cursor::Failed ([ (ast::range_of_pattern b::name, ast::ExpectedVarOrOpAsNameOfRecStatement) ], after)
+            |: cursor::Failed ([ (ast::range_of_pattern b::name, ast::ExpectedSinglePatternWhenStatementNameIsNorVarOrOp) ], after)
+
+:| statement =
+    | StatementBind : ast::range * ast::pattern * ast::raw_expr
+    | StatementRec : ast::range * list (ast::named * ast::raw_expr)
+    | StatementOpen : ast::range * ast::named * list ast::named
+
+:~ statement_apply (s : statement) (on_succ : ast::raw_expr) : ast::raw_expr =
+    ?= s ?|
+    | StatementBind (r, name, body) => ast::RawMatch (r, body, [ (name, on_succ) ])
+    | StatementRec (r, l) => ast::RawRecBlock (r, l, on_succ)
+    | StatementOpen (r, name, symbols) => ast::RawOpen (r, name, symbols, on_succ)
+
+:== block = list (ast::range * statement) * ast::raw_expr
+
+:~ ^ apply_statements (xs : list (ast::range * statement)) (inner : ast::raw_expr) : ast::raw_expr =
+    ?= xs ?|
+    | [] => inner
+    | (_, s) :: rest => statement_apply s (apply_statements rest inner)
+
+:~ ^ fold_blocks (xs : list block) : ast::raw_expr =
+    ?= xs ?|
+    | [ (stmts, x) ] => apply_statements stmts x
+    | (stmts, x) :: rest =>
+        := tail = fold_blocks rest
+        apply_statements stmts (ast::RawSeq (joined_exprs x tail, x, tail))
+    | [] => ast::RawB (cursor::origin ())
+
+:~ ^ last_range (xs : list (ast::range * statement)) : ast::range =
+    ?= xs ?|
+    | [ (r, _) ] => r
+    | _ :: rest => last_range rest
+    | [] => cursor::origin ()
+
+:~ bare_block (x : ast::raw_expr) : block = [], x
+
+:== rec_entry = ast::range * (ast::named * ast::raw_expr)
+
+:~ ^ rec_entries (xs : list bound) : list rec_entry =
+    ?= xs ?|
+    | [] => []
+    | ((r, ast::PatVar (o, name), body), _) :: rest => (r, ((o, name), body)) :: rec_entries rest
+    | _ :: _ => failwith "Compiler error: Recursive inl/let statements should always have PatVar for names and should always be recursive."
+
+:~ ^ joined_ranges (r : ast::range) (xs : list rec_entry) : ast::range =
+    ?= xs ?|
+    | [] => r
+    | (x, _) :: rest => joined_ranges (ast::joined r x) rest
+
+:~ combine_bindings ((head, head_rec) : bound) (xs : list bound) (after : cursor::cursor) : cursor::step statement =
+    := (r, name, body) = head
+    ? head_rec = !- ?>
+        ?= xs ?|
+        | [] => cursor::Took (StatementBind (r, name, body), after)
+        | _ => cursor::Failed (listm::map (\ (((x, _, _), _) : bound) => x, ast::UnexpectedAndInlRec) xs, after)
+    |:
+        := l = rec_entries ((head, head_rec) :: xs)
+        := names = listm::map (\ ((_, (n, _)) : rec_entry) => n) l
+        ?= parse_types::duplicates ast::DuplicateRecFunctionName names ?|
+        | [] => cursor::Took (StatementRec (joined_ranges r l, listm::map snd l), after)
+        | er => cursor::Failed (er, after)
+
+:~ let_keyword (c : cursor::cursor) : cursor::step bool =
+    cursor::alt_p (cursor::map_p (\ _ => !-) (cursor::skip_keyword tokens::SpecInl)) (cursor::map_p (\ _ => !+) (cursor::skip_keyword tokens::SpecLet)) c
+
+:~ first_head (c : cursor::cursor) : cursor::step (bool * bool) =
+    cursor::pair_p let_keyword (cursor::alt_p (cursor::map_p (\ _ => !+) (cursor::skip_keyword tokens::SpecRec)) (pure_p !-)) c
+
+:~ and_head (c : cursor::cursor) : cursor::step (bool * bool) =
+    cursor::map_p (\ (l : bool) => l, !+) (cursor::right_p (cursor::skip_keyword tokens::SpecAnd) let_keyword) c
+
+:~ module_open (c : cursor::cursor) : cursor::step statement =
+    := head = cursor::right_p (cursor::skip_keyword tokens::SpecOpen) parse_types::read_small_var
+    cursor::map_p (\ ((r, (name, symbols)) : ast::range * (ast::named * list ast::named)) => StatementOpen (r, name, symbols)) (cursor::ranged_p (cursor::pair_p head (cursor::many_p parse_types::read_symbol))) c
+
+:~ ^ with_symbols (xs : list ast::raw_record_with) : list ast::named =
+    ?= xs ?|
+    | [] => []
+    | ast::RawRecordWithSymbol (a, _) :: rest => a :: with_symbols rest
+    | ast::RawRecordWithSymbolModify (a, _) :: rest => a :: with_symbols rest
+    | _ :: rest => with_symbols rest
+
+:~ ^ with_injects (xs : list ast::raw_record_with) : list ast::named =
+    ?= xs ?|
+    | [] => []
+    | ast::RawRecordWithInjectVar (a, _) :: rest => a :: with_injects rest
+    | ast::RawRecordWithInjectVarModify (a, _) :: rest => a :: with_injects rest
+    | _ :: rest => with_injects rest
+
+:~ ^ without_symbols (xs : list ast::raw_record_without) : list ast::named =
+    ?= xs ?|
+    | [] => []
+    | ast::RawRecordWithoutSymbol a :: rest => a :: without_symbols rest
+    | _ :: rest => without_symbols rest
+
+:~ ^ without_injects (xs : list ast::raw_record_without) : list ast::named =
+    ?= xs ?|
+    | [] => []
+    | ast::RawRecordWithoutInjectVar a :: rest => a :: without_injects rest
+    | _ :: rest => without_injects rest
+
+:== record_parts = ast::range * list ast::raw_expr * list ast::raw_record_with * list ast::raw_record_without
+
+:~ record_validate ((r, xs, withs, withouts) : record_parts) (after : cursor::cursor) : cursor::step ast::raw_expr =
+    := symbols = listm::append (parse_types::duplicates ast::DuplicateTermRecordSymbol (with_symbols withs)) (parse_types::duplicates ast::DuplicateTermRecordInjection (with_injects withs))
+    := removed = listm::append (parse_types::duplicates ast::DuplicateTermRecordSymbol (without_symbols withouts)) (parse_types::duplicates ast::DuplicateTermRecordInjection (without_injects withouts))
+    ?= listm::append symbols removed ?|
+    | [] => cursor::Took (ast::RawRecordWith (r, xs, withs, withouts), after)
+    | er => cursor::Failed (er, after)
+
+:== typecase_state = { metavars : list string; vars : list string; errors : cursor::failure }
+
+:~ typecase_error (r : ast::range) (er : ast::parser_error) (s : typecase_state) : typecase_state = { s ?| errors = (r, er) :: s::errors }
+
+:~ ^ typecase_walk (t : ast::raw_texpr) (s : typecase_state) : typecase_state =
+    ?= t ?|
+    | ast::RawTForall (r, _, _) => typecase_error r ast::ForallNotAllowedInTypecase s
+    | ast::RawTExists (r, _, _) => typecase_error r ast::ExistsNotAllowedInTypecase s
+    | ast::RawTMetaVar (r, a) => ? listm'::contains a s::vars ?> typecase_error r ast::MetavarShadowedByVar s |: { s ?| metavars = a :: s::metavars }
+    | ast::RawTVar (r, a) => ? listm'::contains a s::metavars ?> typecase_error r ast::VarShadowedByMetavar s |: { s ?| vars = a :: s::vars }
+    | ast::RawTApply (_, a, b) => typecase_walk b (typecase_walk a s)
+    | ast::RawTFun (_, a, b, _) => typecase_walk b (typecase_walk a s)
+    | ast::RawTPair (_, a, b) => typecase_walk b (typecase_walk a s)
+    | ast::RawTLayout (_, a, _) => typecase_walk a s
+    | ast::RawTArray (_, a) => typecase_walk a s
+    | ast::RawTUnion (_, cases, _, _) => typecase_cases cases s
+    | ast::RawTRecord (_, fields) => typecase_fields fields s
+    | ast::RawTMacro (_, l) => typecase_macros l s
+    | ast::RawTFilledNominal _ => failwith "Compiler error: This case is not supposed to appear in typecase."
+    | ast::RawTTerm _ => failwith "Compiler error: This case is not supposed to appear in typecase."
+    | ast::RawTTypecase _ => failwith "Compiler error: This case is not supposed to appear in typecase."
+    | _ => s
+
+:& :~ typecase_cases (xs : list ((i32 * string) * (bool * ast::raw_texpr))) (s : typecase_state) : typecase_state =
+    ?= xs ?|
+    | [] => s
+    | (_, (_, x)) :: rest => typecase_cases rest (typecase_walk x s)
+
+:& :~ typecase_fields (xs : list ((i32 * string) * ast::raw_texpr)) (s : typecase_state) : typecase_state =
+    ?= xs ?|
+    | [] => s
+    | (_, x) :: rest => typecase_fields rest (typecase_walk x s)
+
+:& :~ typecase_macros (xs : list ast::raw_macro) (s : typecase_state) : typecase_state =
+    ?= xs ?|
+    | [] => s
+    | ast::RawMacroType (_, x) :: rest => typecase_macros rest (typecase_walk x s)
+    | _ :: rest => typecase_macros rest s
+
+:~ typecase_validate (t : ast::raw_texpr) (after : cursor::cursor) : cursor::step ast::raw_texpr =
+    := walked = typecase_walk t { metavars = []; vars = []; errors = [] }
+    ?= listm::rev walked::errors ?|
+    | [] => cursor::Took (t, after)
+    | er => cursor::Failed (er, after)
+
+:~ ^ concat_types (xs : list (list ast::raw_texpr)) : list ast::raw_texpr =
+    ?= xs ?|
+    | [] => []
+    | a :: rest => listm::append a (concat_types rest)
+
+:~ lit_type_of (o : ast::range) ((r, x) : ast::range * ast::raw_expr) : ast::raw_expr =
+    := whole = ast::joined o r
+    ast::RawType (whole, ast::RawTTerm (whole, ast::RawOp (whole, ops::LitToTypeLit, [ x ])))
+
+:~ macro_term_of (mode : tokens::macro_term_mode) (x : ast::raw_expr) : ast::raw_macro = ast::RawMacroTerm (ast::range_of_expr x, x, mode)
+
+:~ macro_type_of (x : ast::raw_texpr) : ast::raw_macro = ast::RawMacroType (ast::range_of_texpr x, x)
+
+:~ macro_type_lit_of (x : ast::raw_texpr) : ast::raw_macro = ast::RawMacroTypeLit (ast::range_of_texpr x, x)
+
 :~ ^ root_term (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
     := i = parse_types::col c
-    cursor::map_p fold_seq (cursor::many1_p (parse_types::indented i (\ a b => a = b) (operators e))) c
+    := stmt = parse_types::indented i (\ a b => a = b) (cursor::ranged_p (statement_p e))
+    := tail_in = parse_types::indented i (\ a b => a <= b) (cursor::right_p (cursor::skip_keyword tokens::SpecIn) (root_term e))
+    := tail_expr = parse_types::indented i (\ a b => a = b) (operators e)
+    := stmts = \ (c : cursor::cursor) =>
+        ?= cursor::pair_p (cursor::many1_p stmt) (cursor::opt_p (cursor::alt_p tail_in tail_expr)) c ?|
+        | cursor::Took ((a, b), after) =>
+            ?= b ?|
+            | Some x => cursor::Took ((a, x), after)
+            | None => cursor::Took ((a, ast::RawB (last_range a)), after)
+        | cursor::Failed (er, at) => cursor::Failed (er, at)
+    cursor::map_p fold_blocks (cursor::many1_p (cursor::alt_p stmts (cursor::map_p bare_block tail_expr))) c
+
+:& :~ statement_p (e : term_env) (c : cursor::cursor) : cursor::step statement =
+    cursor::alt_p (bindings_p e) module_open c
+
+:& :~ bindings_p (e : term_env) (c : cursor::cursor) : cursor::step statement =
+    ?= cursor::pair_p (binding_p e first_head) (cursor::many_p (binding_p e and_head)) c ?|
+    | cursor::Took ((x, xs), after) => combine_bindings x xs after
+    | cursor::Failed (er, at) => cursor::Failed (er, at)
+
+:& :~ binding_p (e : term_env) (head : cursor::cursor -> cursor::step (bool * bool)) (c : cursor::cursor) : cursor::step bound =
+    := foralls = cursor::alt_p parse_types::forall_p (pure_p [])
+    := parts = cursor::pair_p head (cursor::pair_p patterns::root_pattern_pair (cursor::pair_p foralls (cursor::pair_p (cursor::many_p patterns::root_pattern_pair) (annotated e "="))))
+    ?= cursor::ranged_p parts c ?|
+    | cursor::Took ((r, ((is_let, is_rec), (name, (fs, (pats, body))))), after) => process_binding r { is_let = is_let; is_rec = is_rec; name = name; foralls = fs; pats = pats; body = body } after
+    | cursor::Failed (er, at) => cursor::Failed (er, at)
+
+:& :~ exists_form (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := sequence_type = \ (c : cursor::cursor) =>
+        := i = parse_types::col c
+        cursor::map_p concat_types (cursor::many_p (parse_types::indented i (\ a b => a = b) (cursor::sep_by1_p (parse_types::root_type (parse_types::type_defaults ())) (cursor::skip_op ";")))) c
+    := head = cursor::pair_p (cursor::ranged_p (cursor::skip_keyword tokens::SpecExists)) (cursor::opt_p (cursor::squares_p sequence_type))
+    ?= cursor::pair_p head (root_term e) c ?|
+    | cursor::Took ((((r, _), vars), body), after) =>
+        := explicit = ?= vars ?| | Some _ => !+ | None => e::top_down
+        ? explicit ?> cursor::Took (ast::RawExists (ast::joined r (ast::range_of_expr body), (r, vars), body), after)
+        |: cursor::Failed ([ (r, ast::TypeVarsNeedToBeExplicitForExists) ], after)
+    | cursor::Failed (er, at) => cursor::Failed (er, at)
+
+:& :~ typecase_form (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    ? e::top_down ?> cursor::Failed ([], c)
+    |:
+        := clauses = \ (c : cursor::cursor) =>
+            := bar = parse_types::bar (parse_types::col c)
+            := pattern = cursor::bind_p (parse_types::root_type { allow_wildcard = !+; allow_typecase_metavars = !+; allow_term = !- }) typecase_validate
+            cursor::right_p (parse_types::optional_p bar) (cursor::sep_by1_p (cursor::pair_p pattern (cursor::right_p (cursor::skip_op "=>") (root_term e))) bar) c
+        := scrutinee = cursor::left_p (cursor::right_p (cursor::skip_keyword tokens::SpecTypecase) (parse_types::root_type { allow_wildcard = !-; allow_typecase_metavars = !-; allow_term = !+ })) (cursor::skip_keyword tokens::SpecWith)
+        cursor::map_p (\ ((r, (a, b)) : ast::range * (ast::raw_texpr * list (ast::raw_texpr * ast::raw_expr))) => ast::RawTypecase (r, a, b)) (cursor::ranged_p (cursor::pair_p scrutinee clauses)) c
+
+:& :~ macro_form (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := within = \ (kind : tokens::macro_kind) (p : cursor::cursor -> cursor::step ast::raw_macro) => cursor::left_p (cursor::right_p (cursor::skip_macro_expression kind tokens::Open) p) (cursor::skip_macro_expression kind tokens::Close)
+    := plain = within tokens::MTerm (cursor::map_p (macro_term_of tokens::TermPlain) (root_term e))
+    := inlined = within tokens::MTermInline (cursor::map_p (macro_term_of tokens::TermInline) (root_term e))
+    := typed = within tokens::MType (cursor::map_p macro_type_of (parse_types::root_type (parse_types::type_defaults ())))
+    := type_lit = within tokens::MTypeLit (cursor::map_p macro_type_lit_of (parse_types::root_type (parse_types::type_defaults ())))
+    := text = cursor::map_p (\ ((r, s) : ast::range * string) => ast::RawMacroText (r, s)) (cursor::read_text !+)
+    := body = cursor::many_p (cursor::alt_p text (cursor::alt_p cursor::read_macro_var (cursor::alt_p plain (cursor::alt_p inlined (cursor::alt_p typed type_lit)))))
+    cursor::bind_p cursor::skip_macro_open (\ (a : ast::range) => cursor::bind_p body (\ (l : list ast::raw_macro) => cursor::map_p (\ (b : ast::range) => ast::RawMacro (ast::joined a b, l)) cursor::skip_macro_close)) c
+
+:& :~ record_form (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := field_value = \ (column : i32) => root_term { e ?| operator_floor = Some (column + 1i32) }
+    := create = \ (column : i32) => cursor::right_p (cursor::skip_op "=") (field_value column)
+    := modify = \ (column : i32) => cursor::right_p (cursor::skip_op "#=") (field_value column)
+    := var = cursor::ranged_p parse_types::record_var
+    := inject = cursor::right_p (cursor::skip_unary_op "$") parse_types::read_small_var
+    := or_self = \ (a : ast::named) (b : option ast::raw_expr) => ?= b ?| | Some x => x | None => ast::rawv a
+    := create_body = \ (c : cursor::cursor) =>
+        := column = parse_types::col c
+        := symbol = cursor::map_p (\ ((a, b) : ast::named * option ast::raw_expr) => ast::RawRecordWithSymbol (a, or_self a b)) (cursor::pair_p var (cursor::opt_p (create column)))
+        := injected = cursor::map_p (\ ((a, b) : ast::named * ast::raw_expr) => ast::RawRecordWithInjectVar (a, b)) (cursor::pair_p inject (create column))
+        cursor::alt_p symbol injected c
+    := with_body = \ (c : cursor::cursor) =>
+        := column = parse_types::col c
+        := symbol = cursor::bind_p var (\ (a : ast::named) => cursor::alt_p (cursor::map_p (\ (b : ast::raw_expr) => ast::RawRecordWithSymbolModify (a, b)) (modify column)) (cursor::map_p (\ (b : option ast::raw_expr) => ast::RawRecordWithSymbol (a, or_self a b)) (cursor::opt_p (create column))))
+        := injected = cursor::bind_p inject (\ (a : ast::named) => cursor::alt_p (cursor::map_p (\ (b : ast::raw_expr) => ast::RawRecordWithInjectVarModify (a, b)) (modify column)) (cursor::map_p (\ (b : ast::raw_expr) => ast::RawRecordWithInjectVar (a, b)) (create column)))
+        cursor::alt_p symbol injected c
+    := without_body = cursor::alt_p (cursor::map_p (\ (a : ast::named) => ast::RawRecordWithoutSymbol a) var) (cursor::map_p (\ (a : ast::named) => ast::RawRecordWithoutInjectVar a) inject)
+    := separator = parse_types::optional_p (cursor::skip_op ";")
+    := record_create = cursor::map_p (\ ((r, withs) : ast::range * list ast::raw_record_with) => r, [], withs, []) (cursor::ranged_p (cursor::curlies_p (cursor::sep_by_p create_body separator)))
+    := base_arg = cursor::alt_p small_var_p (cursor::alt_p value_p (cursor::alt_p (read_default e) (cursor::alt_p text_p (cursor::rounds_p (root_term e)))))
+    := record_base = cursor::alt_p (cursor::bind_p small_var_p (\ (a : ast::raw_expr) => cursor::map_p (fold_apply a) (cursor::many_p base_arg))) (cursor::rounds_p (root_term e))
+    := accessor = cursor::alt_p (cursor::map_p (\ (a : ast::named) => ast::RawSymbol a) parse_types::read_symbol) (cursor::right_p (cursor::skip_op "$") small_var_p)
+    := withs = cursor::alt_p (cursor::right_p (cursor::skip_keyword tokens::SpecWith) (cursor::sep_by_p with_body separator)) (pure_p [])
+    := withouts = cursor::alt_p (cursor::right_p (cursor::skip_keyword tokens::SpecWithout) (cursor::many_p without_body)) (pure_p [])
+    := parts = cursor::pair_p record_base (cursor::pair_p (cursor::many_p accessor) (cursor::pair_p withs withouts))
+    := record_with = cursor::map_p (\ ((r, (x, (xs, (ws, wos)))) : ast::range * (ast::raw_expr * (list ast::raw_expr * (list ast::raw_record_with * list ast::raw_record_without)))) => r, x :: xs, ws, wos) (cursor::ranged_p (cursor::curlies_p parts))
+    cursor::bind_p (cursor::alt_p (cursor::restore_p 3i32 record_create) record_with) record_validate c
 
 :& :~ expressions (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
     := next = root_term e
-    := value = cursor::map_p (\ ((r, x) : ast::range * tokens::literal) => ast::RawLit (r, x)) parse_types::read_value
+    := value = value_p
     := default_value = read_default e
     := var = cursor::map_p ast::rawv cursor::read_var
     := join_form = cursor::map_p (join_point !+ None) (cursor::right_p (cursor::skip_keyword tokens::SpecJoin) next)
@@ -261,8 +612,8 @@
             := (from, _) = r
             ? e::top_down ?> cursor::Took (fold_list (from, from) xs, after) |: cursor::Failed ([ (r, ast::ListLiteralsNotAllowedInBottomUp) ], after)
         | cursor::Failed (er, at) => cursor::Failed (er, at)
-    := text = cursor::map_p (\ ((a, s, b) : ast::range * string * ast::range) => ast::RawLit (ast::joined a b, tokens::LitString s)) parse_types::read_string
-    cursor::alt_p value (cursor::alt_p default_value (cursor::alt_p var (cursor::alt_p join_form (cursor::alt_p backend_join (cursor::alt_p real_form (cursor::alt_p symbol (cursor::alt_p (match_or_function e) (cursor::alt_p rounds (cursor::alt_p list (cursor::alt_p (type_if_then_else e) (cursor::alt_p (if_then_else e) (cursor::alt_p (fun_form e) (cursor::alt_p (forall_form e) text))))))))))))) c
+    := text = text_p
+    cursor::alt_p value (cursor::alt_p default_value (cursor::alt_p var (cursor::alt_p join_form (cursor::alt_p backend_join (cursor::alt_p real_form (cursor::alt_p symbol (cursor::alt_p (typecase_form e) (cursor::alt_p (match_or_function e) (cursor::alt_p rounds (cursor::alt_p list (cursor::alt_p (record_form e) (cursor::alt_p (type_if_then_else e) (cursor::alt_p (if_then_else e) (cursor::alt_p (fun_form e) (cursor::alt_p (forall_form e) (cursor::alt_p text (cursor::alt_p (macro_form e) (exists_form e)))))))))))))))))) c
 
 :& :~ pattern_when (e : term_env) (c : cursor::cursor) : cursor::step ast::pattern =
     := guard = cursor::opt_p (cursor::right_p (cursor::skip_keyword tokens::SpecWhen) (root_term e))
@@ -366,7 +717,9 @@
         |? a = "!!!!" ?> inbuilt_op e
         |? a = "`" ?> bottom_up_only typed
         |? a = "``" ?> bottom_up_only (type_to_var o)
+        |? a = "`@" ?> bottom_up_only (cursor::map_p (lit_type_of o) (cursor::ranged_p (cursor::alt_p (cursor::map_p ast::rawv cursor::read_var) (cursor::alt_p value_p (cursor::alt_p (read_default e) (cursor::alt_p text_p (cursor::rounds_p (root_term e))))))))
         |? a = "`$" ?> cursor::map_p (\ ((r, x) : ast::named) => ast::RawV (r, x, !-)) cursor::read_var
+        |? a = "*" && e::upstream ?> cursor::map_p (\ ((r, x) : ast::range * ast::raw_expr) => ast::RawLayoutIndex (r, x)) (cursor::ranged_p (cursor::alt_p (cursor::map_p ast::rawv cursor::read_var) (cursor::rounds_p (root_term e))))
         |: cursor::map_p (\ (b : ast::raw_expr) => ast::RawApply (ast::joined o (ast::range_of_expr b), ast::rawv (o, "~" ++# a), b)) next
     cursor::alt_p (cursor::bind_p cursor::read_unary_op after) next c
 
@@ -398,6 +751,11 @@
         |: cursor::Took (left, c)
     | cursor::Failed (er, at) => ? cursor::consumed c at ?> cursor::Failed (er, at) |: cursor::Took (left, c)
 
+:~ pattern_type_text (t : ast::raw_texpr) : string =
+    ?= t ?|
+    | ast::RawTMetaVar (_, x) => "~" ++# x
+    | _ => parse_types::type_text t
+
 :~ ^ expr_text (x : ast::raw_expr) : string =
     ?= x ?|
     | ast::RawB _ => "()"
@@ -425,16 +783,63 @@
     | ast::RawMatch (_, a, cs) => "match(" ++# expr_text a ++# ": " ++# sm'::concat_list "; " (listm::map clause_text cs) ++# ")"
     | ast::RawForall (_, ((_, (n, _)), _), b) => "forall " ++# n ++# ". " ++# expr_text b
     | ast::RawMissingBody _ => "missing"
+    | ast::RawLayoutIndex (_, a) => "layout_index " ++# expr_text a
+    | ast::RawRecordWith (_, xs, ws, wos) => "rec{" ++# sm'::concat_list " " (listm::map expr_text xs) ++# "|" ++# sm'::concat_list "; " (listm::map with_text ws) ++# "|" ++# sm'::concat_list " " (listm::map without_text wos) ++# "}"
+    | ast::RawRecBlock (_, l, on_succ) => "recblock(" ++# sm'::concat_list "; " (listm::map (\ (((_, n), b) : ast::named * ast::raw_expr) => n ++# " = " ++# expr_text b) l) ++# " in " ++# expr_text on_succ ++# ")"
+    | ast::RawExists (_, (_, vars), b) => "exists" ++# (?= vars ?| | Some l => "[" ++# sm'::concat_list "; " (listm::map parse_types::type_text l) ++# "]" | None => "") ++# " " ++# expr_text b
+    | ast::RawTypecase (_, a, cs) => "typecase(" ++# parse_types::type_text a ++# ": " ++# sm'::concat_list "; " (listm::map (\ ((t, b) : ast::raw_texpr * ast::raw_expr) => pattern_type_text t ++# " => " ++# expr_text b) cs) ++# ")"
+    | ast::RawMacro (_, l) => "macro(" ++# sm'::concat_list "|" (listm::map macro_text l) ++# ")"
+    | ast::RawType (_, ast::RawTTerm (_, x)) => "type(term " ++# expr_text x ++# ")"
+    | ast::RawType (_, t) => "type(" ++# parse_types::type_text t ++# ")"
+    | ast::RawOpen (_, (_, n), symbols, on_succ) => "open " ++# n ++# sm'::concat_list "" (listm::map (\ ((_, s) : ast::named) => " ." ++# s) symbols) ++# " in " ++# expr_text on_succ
     | _ => "?"
 
 :& :~ clause_text ((p, body) : clause) : string =
     := head = ?= p ?| | ast::PatWhen (_, a, w) => patterns::pattern_text a ++# " when " ++# expr_text w | _ => patterns::pattern_text p
     head ++# " => " ++# expr_text body
 
-:~ shown_term (text : string) : string =
-    ?= root_term (top_env ()) (cursor::line_cursor text) ?|
+:& :~ with_text (w : ast::raw_record_with) : string =
+    ?= w ?|
+    | ast::RawRecordWithSymbol ((_, n), x) => n ++# " = " ++# expr_text x
+    | ast::RawRecordWithSymbolModify ((_, n), x) => n ++# " #= " ++# expr_text x
+    | ast::RawRecordWithInjectVar ((_, n), x) => "$" ++# n ++# " = " ++# expr_text x
+    | ast::RawRecordWithInjectVarModify ((_, n), x) => "$" ++# n ++# " #= " ++# expr_text x
+
+:& :~ macro_text (m : ast::raw_macro) : string =
+    ?= m ?|
+    | ast::RawMacroText (_, s) => "text " ++# s
+    | ast::RawMacroTerm (_, x, tokens::TermInline) => "inline " ++# expr_text x
+    | ast::RawMacroTerm (_, x, _) => "term " ++# expr_text x
+    | ast::RawMacroType (_, t) => "type " ++# parse_types::type_text t
+    | ast::RawMacroTypeLit (_, t) => "typelit " ++# parse_types::type_text t
+
+:& :~ without_text (w : ast::raw_record_without) : string =
+    ?= w ?|
+    | ast::RawRecordWithoutSymbol (_, n) => n
+    | ast::RawRecordWithoutInjectVar (_, n) => "$" ++# n
+
+:~ shown_with (e : term_env) (c : cursor::cursor) : string =
+    ?= root_term e c ?|
     | cursor::Took (x, next) => ? (listm::length next::rest : i32) = 0i32 ?> expr_text x |: expr_text x ++# " +rest"
-    | cursor::Failed (e, _) => "fail " ++# sm'::format (listm::length e : i32)
+    | cursor::Failed (er, _) => "fail " ++# sm'::format (listm::length er : i32)
+
+:~ shown_cursor (c : cursor::cursor) : string = shown_with (top_env ()) c
+
+:~ shown_term (text : string) : string = shown_cursor (cursor::line_cursor text)
+
+:~ shown_upstream (text : string) : string =
+    := e = top_env ()
+    shown_with { e ?| upstream = !+ } (cursor::line_cursor text)
+
+:~ shown_bottom_with (default_int : ast::prim_type) (text : string) : string =
+    := e = top_env ()
+    shown_with { e ?| top_down = !-; default_int = default_int } (cursor::line_cursor text)
+
+:~ shown_bottom (text : string) : string =
+    := e = top_env ()
+    shown_with { e ?| top_down = !- } (cursor::line_cursor text)
+
+:~ shown_lines (xs : list string) : string = shown_cursor (cursor::of_lines 0i32 (listm::map (\ (x : string) => (tokens::tokenize_line (tokens::lex_state_init ()) x)::tokens) xs))
 
 ///> rust
 ///> fsharp
@@ -477,3 +882,31 @@
 :# matches_functions_guards_and_or_pattern_joins_follow_the_reference =
     (shown_term "?= a ?| | Some x => x | None => b", shown_term "function | A => 1 | B => 2", shown_term "?= a ?| | x ?& f x => x", shown_term "?= a ?| | A x | B x => f x", shown_term "?= a ?| | A x | B x => x")
     |> _assert_eq ("match(a: Some(x) => x; None(_) => b)", "fun(A(_) => 1; B(_) => 2)", "match(a: x when (f x) => x)", "match(fun(x => join (f x)):  or 0 => match(a: (A(x) | B(x)) => ( or 0 x)))", "match(a: (A(x) | B(x)) => x)")
+
+///> rust
+///> fsharp
+///> gleam
+:# statements_bind_join_and_validate_like_the_reference =
+    (shown_term ":= x = 1 in x", shown_term ":~ y = 1 in y", shown_term ":= f x = x in f", shown_term ":~ g x = x in g", shown_term ":= ^ f x = f x :& := g y = y in f", shown_term ":= f x = x :& := g y = y in f", shown_term ":= ^ x = 1 in x", shown_term ":= (a, b) x = a in a")
+    |> _assert_eq ("match(1: x => x)", "match(1: y => y)", "match(fun(x => x): f => f)", "match(fun(~x => join x): g => g)", "recblock(f = fun(x => (f x)); g = fun(y => y) in f)", "fail 1", "fail 1", "fail 1")
+
+///> rust
+///> fsharp
+///> gleam
+:# statement_lines_opens_and_records_follow_the_reference =
+    (shown_lines [ ":= x = 1"; "x" ], shown_lines [ "f a"; "g b" ], shown_lines [ ":= x = 1" ], shown_lines [ ":< sm .a"; "x" ], shown_term "{a = 1; b}", shown_term "{x with a = 1}", shown_term "{x .a with b #= f}", shown_term "{x without a}", shown_term "{a = 1; a = 2}", shown_term "{f x with a = 1}", shown_term "{$k = 1}")
+    |> _assert_eq ("match(1: x => x)", "((f a); (g b))", "match(1: x => ())", "open sm .a in x", "rec{|a = 1; b = b|}", "rec{x|a = 1|}", "rec{x .a|b #= f|}", "rec{x||a}", "fail 1", "rec{(f x)|a = 1|}", "rec{|$k = 1|}")
+
+///> rust
+///> fsharp
+///> gleam
+:# exists_typecase_macros_and_literal_types_follow_the_reference =
+    (shown_term "exists x", shown_term "exists [i32; f64] x", shown_bottom "exists x", shown_bottom "typecase a with | i32 => x | ~t => y", shown_bottom "typecase a with | ~t * t => x", shown_term "$'a !x b'", shown_bottom "`@3i32")
+    |> _assert_eq ("exists x", "exists[i32; f64] x", "fail 1", "typecase(a: i32 => x; ~t => y)", "fail 1", "macro(text a |term x|text  b)", "type(term op(3))")
+
+///> rust
+///> fsharp
+///> gleam
+:# bottom_up_defaults_and_the_upstream_layout_index_follow_the_reference =
+    (shown_term "3", shown_bottom "3", shown_bottom "2.5", shown_bottom "99999999999", shown_bottom_with ast::UInt8T "255", shown_bottom_with ast::UInt8T "256", shown_upstream "*x", shown_term "*x")
+    |> _assert_eq ("3", "3", "lit", "fail 1", "lit", "fail 1", "layout_index x", "(~* x)")

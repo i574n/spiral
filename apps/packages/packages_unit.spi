@@ -1,0 +1,108 @@
+///- --package .
+:# packages_unit static =
+    :< testing
+
+:< packages_model
+:< sm'_operators
+
+:== unit_description =
+    {
+        unit_name : package_name
+        unit_version : exact_version
+        packages : list string
+        modules : list string
+    }
+
+:== pin = { pinned_name : package_name; pinned_version : exact_version; pinned_id : package_id }
+
+:| derive_error =
+    | UnpinnedPackage : package_name
+    | NotAPackageEntry : string
+
+:| entry_kind =
+    | LibEntry
+    | SiblingEntry : package_name
+    | UnknownEntry
+
+:~ sibling_entry (entry : string) : bool =
+    sm'::starts_with "../" entry && sm'::ends_with "-" entry && sm'::length entry > 4i32
+
+:~ sibling_name (entry : string) : package_name = package_name (sm'::substring 3i32 (sm'::length entry - 4i32) entry)
+
+:~ entry_kind_of (entry : string) : entry_kind =
+    ? entry = "|core-" || entry = "spiral-" ?> LibEntry
+    |? sibling_entry entry ?> SiblingEntry (sibling_name entry)
+    |: UnknownEntry
+
+:~ ^ pin_of (name : package_name) (pins : list pin) : option pin =
+    ?= pins ?|
+    | [] => None
+    | p :: rest => ? p::pinned_name = name ?> Some p |: pin_of name rest
+
+:~ requirement_of (p : pin) : exact_requirement =
+    { required_name = p::pinned_name; required_version = p::pinned_version; required_id = p::pinned_id }
+
+:== found = outcome (option exact_requirement) derive_error
+
+:== derived = outcome (list exact_requirement) derive_error
+
+:~ pinned_requirement (name : package_name) (pins : list pin) : found =
+    ?= pin_of name pins ?|
+    | Some p => Accepted (Some (requirement_of p))
+    | None => Rejected (UnpinnedPackage name)
+
+:~ entry_requirement (entry : string) (pins : list pin) : found =
+    ?= entry_kind_of entry ?|
+    | LibEntry => Accepted None
+    | UnknownEntry => Rejected (NotAPackageEntry entry)
+    | SiblingEntry name => pinned_requirement name pins
+
+:~ with_found (q : option exact_requirement) (acc : list exact_requirement) : list exact_requirement =
+    ?= q ?|
+    | Some r => r :: acc
+    | None => acc
+
+:~ ^ requires_from (entries : list string) (pins : list pin) (acc : list exact_requirement) : derived =
+    ?= entries ?|
+    | [] => Accepted (listm::rev acc)
+    | entry :: rest => requires_next entry rest pins acc
+
+:& :~ requires_next (entry : string) (rest : list string) (pins : list pin) (acc : list exact_requirement) : derived =
+    ?= entry_requirement entry pins ?|
+    | Accepted q => requires_from rest pins (with_found q acc)
+    | Rejected e => Rejected e
+
+:~ unit_requires (u : unit_description) (pins : list pin) : derived =
+    requires_from u::packages pins []
+
+:= v1 () : exact_version = { major = 1u32; minor = 0u32; patch = 0u32 }
+
+:= pinned (s : string) : pin =
+    { pinned_name = package_name s; pinned_version = v1 (); pinned_id = package_id (sha256_hex s) }
+
+:= cli_unit () : unit_description =
+    {
+        unit_name = package_name "html"
+        unit_version = v1 ()
+        packages = [ "|core-"; "spiral-"; "../html_model-"; "../html_walk-" ]
+        modules = [ "html" ]
+    }
+
+:= required_names (r : outcome (list exact_requirement) derive_error) : outcome (list package_name) derive_error =
+    ?= r ?|
+    | Accepted rs => Accepted (listm::map (\ (q : exact_requirement) => q::required_name) rs)
+    | Rejected e => Rejected e
+
+///> rust
+:# a_unit_requires_its_sibling_packages_and_skips_the_lib =
+    required_names (unit_requires (cli_unit ()) [ pinned "html_walk"; pinned "html_model" ])
+    |> _assert_eq (Accepted [ package_name "html_model"; package_name "html_walk" ])
+
+///> rust
+:# a_sibling_package_missing_from_the_lock_is_named =
+    required_names (unit_requires (cli_unit ()) [ pinned "html_model" ])
+    |> _assert_eq (Rejected (UnpinnedPackage (package_name "html_walk")))
+
+///> rust
+:# an_entry_that_is_neither_lib_nor_sibling_is_refused =
+    entry_kind_of "elsewhere" |> _assert_eq UnknownEntry

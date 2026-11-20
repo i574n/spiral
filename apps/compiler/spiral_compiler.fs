@@ -42,6 +42,7 @@ module spiral_compiler =
         | UnusedOpen
         | GpuRecursion
         | WideGpuState
+        | DuplicatedSpecialization
     module WarningCodeOps =
         let name = function
             | WarningCode.UnneededRecMarker -> nameof WarningCode.UnneededRecMarker
@@ -51,11 +52,14 @@ module spiral_compiler =
             | WarningCode.UnusedOpen -> nameof WarningCode.UnusedOpen
             | WarningCode.GpuRecursion -> nameof WarningCode.GpuRecursion
             | WarningCode.WideGpuState -> nameof WarningCode.WideGpuState
+            | WarningCode.DuplicatedSpecialization -> nameof WarningCode.DuplicatedSpecialization
         let message (code : WarningCode) (text : string) = $"WTY-{name code}: {text}"
         let code_text (code : WarningCode) = $"WTY-{name code}"
         let wide_gpu_state_params = 50
         let wide_gpu_state (fn : string) (count : int) =
             message WarningCode.WideGpuState $"{fn} takes {count} parameters on the GPU; box the wide records it carries as heap layouts so the call passes one reference"
+        let duplicated_specialization (expansions : int64) (specializations : int64) (binds : int64) (saves : int64) =
+            message WarningCode.DuplicatedSpecialization $"this := body is expanded {expansions} times but has only {specializations} distinct specializations ({binds} binds in all); as :~ it would emit {specializations} copies, about {saves} fewer binds. Measure the program on its backend before switching"
     /// ### CompilerFlag
     [<RequireQualifiedAccess>]
     type CompilerFlag =
@@ -69,6 +73,7 @@ module spiral_compiler =
         | Hovers
         | RustGapTrace
         | SharedTestEntries
+        | WarnInlineDuplication
         | WarnLiteralSuffix
         | WarnUnusedBindings
         | ZigFast
@@ -84,13 +89,14 @@ module spiral_compiler =
             | CompilerFlag.Hovers -> "SPIRAL_HOVERS"
             | CompilerFlag.RustGapTrace -> "SPIRAL_RUST_GAP_TRACE"
             | CompilerFlag.SharedTestEntries -> "SPIRAL_SHARED_TEST_ENTRIES"
+            | CompilerFlag.WarnInlineDuplication -> "SPIRAL_WARN_INL_DUPLICATION"
             | CompilerFlag.WarnLiteralSuffix -> "SPIRAL_WARN_LITERAL_SUFFIX"
             | CompilerFlag.WarnUnusedBindings -> "SPIRAL_WARN_UNUSED_BINDINGS"
             | CompilerFlag.ZigFast -> "SPIRAL_ZIG_FAST"
         let onByDefault = function
             | CompilerFlag.AttentionServer | CompilerFlag.Hovers | CompilerFlag.WarnLiteralSuffix -> true
             | CompilerFlag.AutoExportTrace | CompilerFlag.DerivedLinks | CompilerFlag.FormatFullSecondPass | CompilerFlag.HopacsotaForceConflict
-            | CompilerFlag.HopacsotaStats | CompilerFlag.JoinPointStats | CompilerFlag.RustGapTrace | CompilerFlag.SharedTestEntries | CompilerFlag.WarnUnusedBindings | CompilerFlag.ZigFast -> false
+            | CompilerFlag.HopacsotaStats | CompilerFlag.JoinPointStats | CompilerFlag.RustGapTrace | CompilerFlag.SharedTestEntries | CompilerFlag.WarnInlineDuplication | CompilerFlag.WarnUnusedBindings | CompilerFlag.ZigFast -> false
         let enabled (flag : CompilerFlag) =
             let value = System.Environment.GetEnvironmentVariable (variable flag)
             if onByDefault flag then value <> "0" else value = "1"
@@ -351,9 +357,13 @@ module spiral_compiler =
 
     let test_entry_parsed = System.Collections.Concurrent.ConcurrentDictionary<string, string option>()
 
+    let mutable shared_test_entries_suspended = false
+
+    let shared_test_entries_active () = CompilerFlagOps.enabled CompilerFlag.SharedTestEntries && not shared_test_entries_suspended
+
     let test_entry_parse_key (text : string) (test_entry : string option) =
         match test_entry with
-        | Some wanted when CompilerFlagOps.enabled CompilerFlag.SharedTestEntries ->
+        | Some wanted when shared_test_entries_active () ->
             let header = System.Text.RegularExpressions.Regex($@"(?m)^:#\s+{System.Text.RegularExpressions.Regex.Escape wanted}\s[^=\n]*\bfails\b")
             Some (if header.IsMatch text then "\u0001shared:" + wanted else "\u0001shared")
         | other -> other
@@ -3806,7 +3816,7 @@ module spiral_compiler =
             let header = s.tokens |> Array.indexed |> Array.filter (fun (i, _) -> s.tokens_cords.[i].row = headerRow) |> Array.map (snd >> snd)
             let isStatic = header |> Array.exists (function TokVar ("static", _) -> true | _ -> false)
             match snd s.tokens.[1] with
-            | TokVar (name, _) when not isStatic && header.Length < s.tokens.Length && (name = wanted || (CompilerFlagOps.enabled CompilerFlag.SharedTestEntries && not (header |> Array.exists (function TokVar ("fails", _) -> true | _ -> false)))) -> Some header.Length
+            | TokVar (name, _) when not isStatic && header.Length < s.tokens.Length && (name = wanted || (shared_test_entries_active () && not (header |> Array.exists (function TokVar ("fails", _) -> true | _ -> false)))) -> Some header.Length
             | _ -> None
         | _ -> None
 
@@ -10089,6 +10099,27 @@ module spiral_compiler =
                 match sites.TryGetValue key with
                 | true, c -> c
                 | _ -> let c = Array.zeroCreate 5 in sites.[key] <- c; c
+            let inlines = Dictionary<E, struct (int64 [] * HashConsTable * HashSet<obj>)>(HashIdentity.Reference)
+            let duplicated_specialization_binds = 256
+            let duplicated_specialization_floor = 8L
+            let range_of_body (body : E) =
+                match body with
+                | EFun'(r,_,_,_,_) | EForall'(r,_,_,_) | ERecursiveFun'(r,_,_,_,_) | EJoinPoint'(r,_,_,_,_,_) | EB r | ELit(r,_) | ESymbol(r,_) | EType(r,_)
+                | EApply(r,_,_) | ETypeApply(r,_,_) | EOp(r,_,_) | EAnnot(r,_,_) | EIfThenElse(r,_,_,_) | EIfThen(r,_,_) | EPair(r,_,_) | ESeq(r,_,_)
+                | EMacro(r,_,_) | ENominal(r,_,_) | ELet(r,_,_,_) | EUnbox(r,_,_,_,_,_) | EPairTest(r,_,_,_,_,_) | ERecordTest(r,_,_,_,_)
+                | EAnnotTest(r,_,_,_,_) | ENominalTest(r,_,_,_,_,_) -> Some r
+                | _ -> None
+            let inline_facts () =
+                lock gate (fun () ->
+                    inlines |> Seq.choose (fun kv ->
+                        let struct (c, _, keys) = kv.Value
+                        if c.[0] < 2L || c.[1] = 0L then None
+                        else
+                            let path, line, column = match range_of_body kv.Key with Some r -> let p = range_start r.range in r.path, p.line + 1, p.character + 1 | None -> "?", 0, 0
+                            let specializations = int64 keys.Count
+                            let saves = c.[1] - c.[1] * specializations / c.[0]
+                            let candidate = c.[0] >= 3L && specializations * 2L <= c.[0] && c.[1] >= duplicated_specialization_floor * c.[0] && saves >= int64 duplicated_specialization_binds
+                            Some (struct (path, line, column, c.[0], specializations, c.[1], c.[2], saves, candidate))) |> Seq.toArray)
             member _.Call (r : Range) (name : string option) (args : TyV []) (fresh : bool) =
                 let distinct = args |> Array.distinctBy (fun (L(i, _)) -> i) |> Array.length
                 lock gate (fun () ->
@@ -10098,6 +10129,16 @@ module spiral_compiler =
                     if distinct < args.Length then c.[2] <- c.[2] + 1L
                     c.[3] <- max c.[3] (int64 args.Length))
             member _.Binds (r : Range) (name : string option) (n : int) = lock gate (fun () -> let c = counts r name in c.[4] <- c.[4] + int64 n)
+            member _.Inline (body : E) (key : HashConsTable -> obj) (binds : int) =
+                lock gate (fun () ->
+                    let struct (c, hc, keys) =
+                        match inlines.TryGetValue body with
+                        | true, x -> x
+                        | _ -> let x = struct (Array.zeroCreate 3, HashConsTable(), HashSet<obj>(HashIdentity.Structural)) in inlines.[body] <- x; x
+                    c.[0] <- c.[0] + 1L
+                    c.[1] <- c.[1] + int64 binds
+                    c.[2] <- max c.[2] (int64 binds)
+                    keys.Add (key hc) |> ignore)
             member _.Print () =
                 let rows =
                     lock gate (fun () ->
@@ -10108,6 +10149,14 @@ module spiral_compiler =
                             sprintf "jp-stats\t%s\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%b" path line column name c.[0] c.[1] c.[2] c.[3] c.[4] candidate) |> Seq.sort |> Seq.toArray)
                 eprintfn "jp-stats\tpath\tbody_line\tbody_column\tname\tcopies\tcalls\taliased_calls\tmax_args\tbinds\tflip_candidate"
                 rows |> Array.iter (eprintfn "%s")
+                let inline_rows =
+                    inline_facts () |> Array.map (fun struct (path, line, column, expansions, specializations, binds, max_binds, saves, candidate) ->
+                        sprintf "inl-stats\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%b" path line column expansions specializations binds max_binds saves candidate) |> Array.sort
+                eprintfn "inl-stats\tpath\tbody_line\tbody_column\texpansions\tspecializations\tbinds\tmax_binds\tcollapse_saves\tdup_candidate"
+                inline_rows |> Array.iter (eprintfn "%s")
+            member _.Warnings () =
+                inline_facts () |> Array.sortBy (fun struct (path, line, column, _, _, _, _, _, _) -> path, line, column) |> Array.iter (fun struct (path, line, column, expansions, specializations, binds, _, saves, candidate) ->
+                    if candidate && line > 0 then eprintfn "warning: %s:%d:%d: %s" path line column (WarningCodeOps.duplicated_specialization expansions specializations binds saves))
 
     /// ### rename_global_term
     // This rename is a consideration for when I do incremental compilation.
@@ -10799,7 +10848,7 @@ module spiral_compiler =
         let hopacsota = PartEvalSeams.start_for env.inline_restart { globals = (fun (s : LangEnv) -> s.globals); with_globals = (fun s globals -> { s with globals = globals }); dynamic_if = (fun () -> DynamicIfNesting.depth.Value); set_dynamic_if = (fun depth -> DynamicIfNesting.depth.Value <- depth); validating = (fun () -> RustGapTrace.validating.Value); set_validating = (fun depth -> RustGapTrace.validating.Value <- depth); rebuild_index = (fun root -> let index = GlobalsIndex.get root in index.Clear(); index.UnionWith root) }
         let join_point_method = Dictionary(HashIdentity.Structural)
         let join_point_closure = Dictionary(HashIdentity.Structural)
-        let jp_stats = if CompilerFlagOps.enabled CompilerFlag.JoinPointStats then Some (JoinPointStats.Table()) else None
+        let jp_stats = if CompilerFlagOps.enabled CompilerFlag.JoinPointStats || CompilerFlagOps.enabled CompilerFlag.WarnInlineDuplication then Some (JoinPointStats.Table()) else None
         let join_point_type = Dictionary(HashIdentity.Structural)
         let uninhabited_nesting = ref 0
         let backend_strings = HashConsTable()
@@ -11325,7 +11374,13 @@ module spiral_compiler =
                             if ExternCalls.warned.Value.Add ("wrapped " + export) then
                                 eprintfn "warning: %sthe call to %s inlines its body here instead of linking: the linked unit exports it only through the lambda %s. Export the definition itself (export \"...\" %s) so direct calls become cross-unit calls." where name export name
                         | None -> ()
-                        term s body)
+                        match jp_stats with
+                        | None -> term s body
+                        | Some t ->
+                            let mark = s.seq.Count
+                            let x = term s body
+                            t.Inline body (fun hc -> try let _, rdata = data_to_rdata s hc (Array.append gl_term [|b|]) in box (hc.Add(rdata, gl_ty)) with _ -> obj ()) (s.seq.Count - mark)
+                            x)
                 | DV(L(_,YForall)), _ -> raise_type_error s "Cannot apply a runtime forall, and not with a term. Foralls have to be known at compile time and applied with a type."
                 | DForall _, _ -> raise_type_error s "Cannot apply a forall with a term. Inside a `( ) or ~> block there is no type inference, so a bare operator such as >, +, - or = names the typed prototype, which is a forall: write real_core::(>), real_core::(+) and so on there. Elsewhere, apply the forall's types before its terms."
                 | DV(L(_,YFun(domain,range,t) & a_ty) & a), b ->
@@ -13305,7 +13360,7 @@ module spiral_compiler =
         let nominal_apply x = nominal_type_apply {s with i = ref 0} x
 
         match x with
-        | EFun'(r,_,_,_,_) -> PartEvalSeams.root hopacsota s.globals (fun () -> let main = term_scope s (EApply(r,x,EB r)) in jp_stats |> Option.iter (fun t -> t.Print ()); main), {join_point_method=join_point_method; join_point_closure=join_point_closure; ty_to_data=ty_to_data; nominal_apply=nominal_apply; globals=s.globals}
+        | EFun'(r,_,_,_,_) -> PartEvalSeams.root hopacsota s.globals (fun () -> let main = term_scope s (EApply(r,x,EB r)) in jp_stats |> Option.iter (fun t -> (if CompilerFlagOps.enabled CompilerFlag.JoinPointStats then t.Print ()); if CompilerFlagOps.enabled CompilerFlag.WarnInlineDuplication then t.Warnings ()); main), {join_point_method=join_point_method; join_point_closure=join_point_closure; ty_to_data=ty_to_data; nominal_apply=nominal_apply; globals=s.globals}
         | EForall' _ -> raise_type_error s "The main function should not have a forall."
         | _ -> raise_type_error s "Expected a function as the main."
 
@@ -15148,11 +15203,7 @@ module spiral_compiler =
     /// ### codegenRust
     let unionCaseSuffix (x : UnionRecFsharp) (index : int) = (generatedCaseNames (x.free_vars |> Map.keys)).[index]
 
-    let codegenRust (rust_extern : (string * string list) list) (linked_units : Map<int, LinkedUnit>) (env : PartEvalResult) (x : TypedBind []) =
-        match rust_extern |> List.tryFind (fun (name, _) -> name <> "rc_str") with
-        | Some (name, _) -> raise_codegen_error $"rust-extern: '{name} = ...' is retired (LINKED-UNITS-DERIVE-OUT): generated types derive Clone only, and linked units export Spiral equality/display functions instead. Only 'rc_str = ...' entries remain."
-        | None -> ()
-        let rc_str_exports = rust_extern |> List.tryPick (fun (name, exports) -> if name = "rc_str" then Some (Set.ofList exports) else None) |> Option.defaultValue Set.empty
+    let codegenRust (linked_units : Map<int, LinkedUnit>) (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
         let types = ResizeArray()
@@ -15516,6 +15567,9 @@ module spiral_compiler =
         let string_slice () =
             global' "fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {\n    let bytes = value.as_bytes();\n    let length = bytes.len() as i64;\n    if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }\n    if to < from { return Rc::<str>::from(\"\"); }\n    if (bytes[from as usize] & 0xC0) == 0x80 || (to + 1 < length && (bytes[(to + 1) as usize] & 0xC0) == 0x80) { std::process::exit(3); }\n    let slice = &bytes[from as usize..(to + 1) as usize];\n    match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or(\"\")) }\n}"
 
+        let string_argument () =
+            global' "pub trait SpiralStrArgument { fn spiral_rc(&self) -> Rc<str>; } impl SpiralStrArgument for str { fn spiral_rc(&self) -> Rc<str> { Rc::from(self) } } impl SpiralStrArgument for Rc<str> { fn spiral_rc(&self) -> Rc<str> { Rc::clone(self) } } impl SpiralStrArgument for String { fn spiral_rc(&self) -> Rc<str> { Rc::from(self.as_str()) } } impl SpiralStrArgument for std::borrow::Cow<'_, str> { fn spiral_rc(&self) -> Rc<str> { Rc::from(self.as_ref()) } } impl SpiralStrArgument for Box<str> { fn spiral_rc(&self) -> Rc<str> { Rc::from(&**self) } } impl<T: SpiralStrArgument + ?Sized> SpiralStrArgument for &T { fn spiral_rc(&self) -> Rc<str> { (**self).spiral_rc() } }"
+
         let string_concat () =
             global' "fn string_concat(parts: &[&str]) -> Rc<str> {\n    let mut joined = Rc::<[u8]>::new_uninit_slice(parts.iter().map(|part| part.len()).sum());\n    let bytes = Rc::get_mut(&mut joined).unwrap().as_mut_ptr() as *mut u8;\n    let mut at = 0;\n    for part in parts {\n        unsafe { std::ptr::copy_nonoverlapping(part.as_ptr(), bytes.add(at), part.len()) };\n        at += part.len();\n    }\n    unsafe { Rc::from_raw(Rc::into_raw(joined.assume_init()) as *const str) }\n}"
         let concat_planned = Dictionary<TypedOp, Data list>(HashIdentity.Reference)
@@ -15539,32 +15593,57 @@ module spiral_compiler =
                     | _ -> None
                 | _ -> None
             let opaque_reads = 1 <<< 20
-            let rec scope_reads (j : int) (block : TypedBind []) = block |> Array.sumBy (bind_reads j)
-            and data_reads (j : int) (d : Data) = data_free_vars d |> Array.sumBy (fun (L(i,_)) -> if i = j then 1 else 0)
-            and var_reads (j : int) (vs : TyV seq) = vs |> Seq.sumBy (fun (L(i,_)) -> if i = j then 1 else 0)
-            and bind_reads (j : int) (b : TypedBind) =
+            let opaque_key = System.Int32.MinValue
+            let bump (acc : Dictionary<int, int>) (i : int) = acc.[i] <- (match acc.TryGetValue i with | true, n -> n | _ -> 0) + 1
+            let rec scope_visit (acc : Dictionary<int, int>) (block : TypedBind []) = block |> Array.iter (bind_visit acc)
+            and data_visit (acc : Dictionary<int, int>) (d : Data) = data_free_vars d |> Array.iter (fun (L(i,_)) -> bump acc i)
+            and var_visit (acc : Dictionary<int, int>) (vs : TyV seq) = vs |> Seq.iter (fun (L(i,_)) -> bump acc i)
+            and bind_visit (acc : Dictionary<int, int>) (b : TypedBind) =
                 match b with
-                | TyLet(_,_,o) -> op_reads j o
-                | TyLocalReturnOp(_,o,d) -> op_reads j o + data_reads j d
-                | TyLocalReturnData(d,_) -> data_reads j d
-            and op_reads (j : int) (o : TypedOp) =
+                | TyLet(_,_,o) -> op_visit acc o
+                | TyLocalReturnOp(_,o,d) -> op_visit acc o; data_visit acc d
+                | TyLocalReturnData(d,_) -> data_visit acc d
+            and op_visit (acc : Dictionary<int, int>) (o : TypedOp) =
                 match o with
-                | TyMacro parts -> parts |> List.sumBy (function CMTerm(d,_) -> data_reads j d | _ -> 0)
-                | TyOp(_, args) | TyArrayLiteral(_, args) -> args |> List.sumBy (data_reads j)
+                | TyMacro parts -> parts |> List.iter (function CMTerm(d,_) -> data_visit acc d | _ -> ())
+                | TyOp(_, args) | TyArrayLiteral(_, args) -> args |> List.iter (data_visit acc)
                 | TyUnionBox(_, d, _) | TyToLayout(d, _) | TyFailwith(_, d) | TyConv(_, d)
-                | TyArrayCreate(_, d) | TyArrayLength(_, d) | TyStringLength(_, d) -> data_reads j d
+                | TyArrayCreate(_, d) | TyArrayLength(_, d) | TyStringLength(_, d) -> data_visit acc d
                 | TyUnionUnbox(vs, _, on_succs, on_fail) ->
-                    let arms = on_succs |> Map.fold (fun total _ (bound, block) -> total + (bound |> Seq.sumBy (data_reads j)) + scope_reads j block) 0
-                    var_reads j vs + arms + (match on_fail with Some block -> scope_reads j block | None -> 0)
-                | TyIntSwitch(v, cases, on_fail) -> var_reads j [v] + (cases |> Array.sumBy (scope_reads j)) + scope_reads j on_fail
-                | TyLayoutIndexAll v | TyLayoutIndexByKey(v, _) -> var_reads j [v]
-                | TyLayoutMutableSet(v, _, d) | TyApply(v, d) -> var_reads j [v] + data_reads j d
-                | TyIf(cond, tr, fl) -> data_reads j cond + scope_reads j tr + scope_reads j fl
-                | TyWhile((_, args), block) -> var_reads j args + scope_reads j block
-                | TyDo block | TyIndent block -> scope_reads j block
-                | TyJoinPoint(_, args) -> var_reads j args
-                | TySizeOf _ | TyBackend _ -> 0
-                | _ -> opaque_reads
+                    var_visit acc vs
+                    on_succs |> Map.iter (fun _ (bound, block) -> bound |> Seq.iter (data_visit acc); scope_visit acc block)
+                    on_fail |> Option.iter (scope_visit acc)
+                | TyIntSwitch(v, cases, on_fail) -> var_visit acc [v]; cases |> Array.iter (scope_visit acc); scope_visit acc on_fail
+                | TyLayoutIndexAll v | TyLayoutIndexByKey(v, _) -> var_visit acc [v]
+                | TyLayoutMutableSet(v, _, d) | TyApply(v, d) -> var_visit acc [v]; data_visit acc d
+                | TyIf(cond, tr, fl) -> data_visit acc cond; scope_visit acc tr; scope_visit acc fl
+                | TyWhile((_, args), block) -> var_visit acc args; scope_visit acc block
+                | TyDo block | TyIndent block -> scope_visit acc block
+                | TyJoinPoint(_, args) -> var_visit acc args
+                | TySizeOf _ | TyBackend _ -> ()
+                | _ -> bump acc opaque_key
+            let reads_index =
+                lazy (
+                    let suffix = Array.zeroCreate (x.Length + 1)
+                    let occurrences = Dictionary<int, ResizeArray<struct (int * int)>>()
+                    for t in x.Length - 1 .. -1 .. 0 do
+                        let acc = Dictionary<int, int>()
+                        bind_visit acc x.[t]
+                        let opaque = match acc.TryGetValue opaque_key with | true, n -> n | _ -> 0
+                        suffix.[t] <- suffix.[t + 1] + opaque * opaque_reads
+                        for kv in acc do
+                            if kv.Key <> opaque_key then
+                                match occurrences.TryGetValue kv.Key with
+                                | true, l -> l.Add(struct (t, kv.Value))
+                                | _ -> occurrences.[kv.Key] <- ResizeArray [struct (t, kv.Value)]
+                    suffix, occurrences)
+            let reads_after (j : int) (k : int) =
+                let suffix, occurrences = reads_index.Value
+                let mutable total = suffix.[k + 1]
+                match occurrences.TryGetValue j with
+                | true, l -> for p in l do (let struct (t, n) = p in if t > k then total <- total + n)
+                | _ -> ()
+                total
             for m in 0 .. x.Length - 1 do
                 match x.[m] with
                 | TyLet(d,_,(TyOp(StaticStringConcat,([_;_] as l)) as o)) ->
@@ -15578,7 +15657,7 @@ module spiral_compiler =
                             let once = reads |> List.filter ((=) j) |> List.length = 1
                             let dead_after = match live_after.TryGetValue x.[m] with | true, f -> not (f j) | _ -> false
                             let untouched = seq { k + 1 .. m - 1 } |> Seq.forall (fun t -> match x.[t] with TyLet(_,_,TyOp(StaticStringConcat,l')) -> not (List.contains j (concat_reads l')) | _ -> match plain_reads t with Some vs -> vs |> List.forall (fun v -> v <> j && not (Set.contains v inner)) | None -> false)
-                            let sole_reader = scope_reads j x.[k + 1 ..] = 1
+                            let sole_reader = reads_after j k = 1
                             if once && dead_after && untouched && sole_reader then
                                 fused.Add k |> ignore
                                 absorbed.[j] <- k
@@ -15921,9 +16000,9 @@ module spiral_compiler =
                             exports.Insert(0, $"pub struct {record_name} {{\n{members}\n}}\n")
                         $"v: {record_name}", (fields |> Map.toArray |> Array.map (fun ((_,k),_) -> $"v.{k}") |> String.concat ", ")
                     | None ->
-                        let shares_rc = rc_str_exports.Contains name
-                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> (if shares_rc then $"{var_name k}: &Rc<str>" else $"{var_name k}: &str") | t -> $"{var_name k}: {tyv t}") |> String.concat ", ",
-                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> (if shares_rc then $"Rc::clone({var_name k})" else $"Rc::<str>::from({var_name k})") | _ -> $"{var_name k}") |> String.concat ", "
+                        if parameters |> Array.exists (fun (L(_,t)) -> t = YPrim StringT) then string_argument ()
+                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"{var_name k}: &(impl SpiralStrArgument + ?Sized)" | t -> $"{var_name k}: {tyv t}") |> String.concat ", ",
+                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"{var_name k}.spiral_rc()" | _ -> $"{var_name k}") |> String.concat ", "
                 let returned_record =
                     match range with
                     | YNominal n ->
@@ -15942,7 +16021,7 @@ module spiral_compiler =
                     let build = parts |> Array.map (fun (k, f) -> $"{k}: {f}") |> String.concat ", "
                     exports.Add($"pub fn {name}({decl}) -> {record_name} {{\n    let {binding} = {closure_names.[tag]}()({call});\n    {record_name} {{ {build} }}\n}}\n")
                 | None ->
-                    exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n    {closure_names.[tag]}()({call})\n}}\n")
+                    exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{ {closure_names.[tag]}()({call}) }}\n")
                 if d.IsNone then line s "()"
             | TyOp(op,l) ->
                 let unary f = match l with [x] -> f $"({tup x})" | _ -> raise_codegen_error $"Compiler error: {op} expects one argument."
@@ -16762,7 +16841,9 @@ module spiral_compiler =
 
             counts |> Map.iter (fun (L(i,t)) n -> if n > 0 then (match rcCall "Retain" t $"v{i}" with Some call -> (for _ in 1 .. n do line s call) | None -> ()))
             counts |> Map.iter (fun (L(i,t)) n -> if n < 0 then (match rcCall "Release" t $"v{i}" with Some call -> (for _ in 1 .. -n do line s call) | None -> ()))
+        and rcResolved (t : Ty) = match t with YNominal _ | YApply _ -> (match tyvs t with [| L(_,resolved) |] -> resolved | _ -> t) | _ -> t
         and rcValue (t : Ty) : string option =
+            let t = rcResolved t
             let fields =
                 match t with
                 | YUnion u when u.Item.layout = UStack ->
@@ -16791,6 +16872,7 @@ module spiral_compiler =
                 Some name
             | _ -> None
         and rcCall (verb : string) (t : Ty) (target : string) : string option =
+            let t = rcResolved t
             if rcTy t || (match t with YArray el -> countedElement el | _ -> false) then Some $"Spiral{verb}({target});"
             else rcValue t |> Option.map (fun name -> $"Spiral{verb}_{name}({target});")
         and binds locals (s : CodegenEnv) (ret : BindsReturnPascal) (stmts : TypedBind []) =
@@ -17059,13 +17141,13 @@ module spiral_compiler =
             let assigns = tys |> Array.mapi (fun k _ -> $"Result.f{k} := f{k};") |> String.concat " "
             bodies.Add($"function TupleCreate{tag}({ps}): TTuple{tag};\nbegin\n  {assigns}\nend;"))
         and array_type : string -> int = memo (fun el tag -> types.Add($"  TArray{tag} = array of {el};"))
-        and countedElement (el : Ty) = rcTy el || (rcValue el).IsSome
+        and countedElement (el : Ty) = rcTy (rcResolved el) || (match rcResolved el with YArray inner -> countedElement inner | _ -> false) || (rcValue el).IsSome
         and box_array_type : Ty -> int = memo (fun el tag ->
             let item = tup_ty el
             forwards.Add($"  TBoxArray{tag} = class;")
             types.Add($"  TBoxArray{tag} = class(TSpiralRc) items: array of {item}; procedure DropFields; override; end;")
             let release = (rcCall "Release" el "items[i]").Value
-            bodies.Add($"procedure TBoxArray{tag}.DropFields;\nvar i: Int64;\nbegin\n  for i := 0 to High(items) do begin {release} end;\nend;"))
+            bodies.Add($"procedure TBoxArray{tag}.DropFields;\nvar i: NativeInt;\nbegin\n  for i := 0 to High(items) do begin {release} end;\nend;"))
         and arrayItems (d : Data) = match d with DV(L(_,YArray el)) when countedElement el -> ".items" | _ -> ""
         and fun_type : Ty * Ty -> int = memo (fun (a, b) tag ->
             forwards.Add($"  TFun{tag} = class;")
@@ -21817,9 +21899,9 @@ end
                     code.Append("(function () local __tag\n") |> ignore
                     h.cases |> Seq.iteri (fun idx (KeyValue ((ci,_), _)) ->
                         if idx = 0 then
-                            code.AppendFormat("if v{0}.tag == \"{1}\" then __tag = {2}\n", i, generatedCaseName ty h.cases idx, ci) |> ignore
+                            code.AppendFormat("if {0}.tag == \"{1}\" then __tag = {2}\n", var_name i, generatedCaseName ty h.cases idx, ci) |> ignore
                         else
-                            code.AppendFormat("elseif v{0}.tag == \"{1}\" then __tag = {2}\n", i, generatedCaseName ty h.cases idx, ci) |> ignore
+                            code.AppendFormat("elseif {0}.tag == \"{1}\" then __tag = {2}\n", var_name i, generatedCaseName ty h.cases idx, ci) |> ignore
                     )
                     code.Append("else __tag = 0 end\nreturn __tag end)()") |> ignore
                     code.ToString()
@@ -32598,15 +32680,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let crate p = if i <= column p then (many1Satisfy (fun c -> c <> '\n' && c <> '\r' && c <> ' ') .>> spacesSpiProj) p else Reply(ReplyStatus.Error,expected "crate on the same or greater indentation as the first one")
         many crate p
 
-    /// ### rust_extern_lines
-    let rust_extern_lines p =
-        let i = column p
-        let entry p = if i <= column p then (many1Satisfy (fun c -> c <> '\n' && c <> '\r') .>> spacesSpiProj) p else Reply(ReplyStatus.Error,expected "rust-extern entry on the same or greater indentation as the first one")
-        (many entry |>> List.map (fun (text : string) ->
-            match text.Split('=', 2) with
-            | [| name; traits |] -> name.Trim (), (traits.Split ',' |> Array.map (fun trait_name -> trait_name.Trim ()) |> Array.filter (fun trait_name -> trait_name <> "") |> List.ofArray)
-            | _ -> text.Trim (), [])) p
-
     /// ### tab_positions
     let tab_positions (str : string): VSCRange [] =
         let mutable line = -1
@@ -32659,7 +32732,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         defaultFloat : RString option
         edition : RString option
         dialect : RString option
-        rustExtern : (string * string list) list
         autoExport : RString option
         }
 
@@ -32680,7 +32752,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         defaultFloat=None
         edition=None
         dialect=None
-        rustExtern=[]
         autoExport=None
         }
 
@@ -32763,7 +32834,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 "edition", directory |>> fun x s -> {s with edition=x}
                 "dialect", directory |>> fun x s -> {s with dialect=x}
                 "crates", crate_lines |>> fun _ s -> s
-                "rust-extern", rust_extern_lines |>> fun x s -> {s with rustExtern=x}
                 "auto-export", directory |>> fun x s -> {s with autoExport=x}
                 ]
             let necessary = []
@@ -32811,7 +32881,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         defaultFloat : string option
         edition : string option
         dialect : string option
-        rustExtern : (string * string list) list
         autoExport : string option
         }
 
@@ -33095,7 +33164,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | year when year.Length = 4 && Seq.forall System.Char.IsDigit year -> dialect, Some year
                     | other -> raise (SchemaException(r, $"edition expects a year such as 2026 (the legacy dialect values 2, 3, upstream and i574n still work), got '{other}'"))
                 | None -> dialect, None
-            Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages; link = resolve_packages x.link; defaultInt = x.defaultInt |> Option.map snd; defaultFloat = x.defaultFloat |> Option.map snd; edition = edition; dialect = dialect; rustExtern = x.rustExtern; autoExport = x.autoExport |> Option.map snd}
+            Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages; link = resolve_packages x.link; defaultInt = x.defaultInt |> Option.map snd; defaultFloat = x.defaultFloat |> Option.map snd; edition = edition; dialect = dialect; autoExport = x.autoExport |> Option.map snd}
         with :? SchemaException as e -> Error [e.Data0]
         )
 
@@ -37957,7 +38026,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
     /// ### ss_empty
     let ss_empty = {
-        schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []; link = []; defaultInt = None; defaultFloat = None; edition = None; dialect = None; rustExtern = []; autoExport = None}
+        schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []; link = []; defaultInt = None; defaultFloat = None; edition = None; dialect = None; autoExport = None}
         errors_parse = []; errors_modules = []; errors_packages = []
         }
     
@@ -38035,15 +38104,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         | EveryTestEntryUnder root when file.StartsWith (root.TrimEnd '/' + "/", System.StringComparison.Ordinal) -> { env with test_entry = Some "" }
         | _ -> env
 
-    /// ### file_rust_extern
-    let file_rust_extern (packages : SchemaEnv) (file : string) =
-        let rec owner (dir : string) =
-            if System.String.IsNullOrEmpty dir then []
-            else
-                match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
-                | Some schema -> schema.schema.rustExtern
-                | None -> owner (System.IO.Path.GetDirectoryName dir)
-        owner (System.IO.Path.GetDirectoryName file)
     
 
     /// ### file_auto_export
@@ -39705,7 +39765,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                         build_many (fun file b a ->
                                             let linked, a = file_linked_units s.packages (fst s.package_ids) file, DeadPureLetElision.block a
                                             writeUnitGraph (file_package_dir s.packages file) file linked b a
-                                            let code, hashes = codegenRust (file_rust_extern s.packages file) linked b a |> UnusedGlobals.prune b.globals |> RustLinkedShapes.import linked |> RustLinkedShapes.export
+                                            let code, hashes = codegenRust linked b a |> UnusedGlobals.prune b.globals |> RustLinkedShapes.import linked |> RustLinkedShapes.export
                                             RustLinkedShapes.write (file_package_dir s.packages file) file hashes
                                             [generated_file code ".rs"]) "Rust"
                                     | Some PascalBackend ->

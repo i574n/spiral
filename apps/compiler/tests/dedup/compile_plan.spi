@@ -1,0 +1,22 @@
+///- --package .
+:# compile_plan static =
+    :< testing
+
+:~ rustc_args (proxy : bool) (toolchain : string) (exe : string) (rs : string) : list string =
+    := flags = [ "-C"; "opt-level=2"; "-A"; "warnings"; "--edition"; "2024"; "-o"; exe; rs ]
+    ? proxy ?> toolchain :: flags |: flags
+
+:~ compile_unit_first (test_cell : bool) (generated_main : bool) (original : string) : bool =
+    test_cell && generated_main && not (sm'::contains "spiral_cells_test ()" original)
+
+///> gleam
+:# rustc_args_prepends_the_toolchain_only_under_a_rustup_proxy =
+    rustc_args !+ "+nightly" "out" "src" |> _assert_eq [ "+nightly"; "-C"; "opt-level=2"; "-A"; "warnings"; "--edition"; "2024"; "-o"; "out"; "src" ]
+
+///> gleam
+:# rustc_args_without_a_proxy_omits_the_toolchain =
+    rustc_args !- "+nightly" "out" "src" |> _assert_eq [ "-C"; "opt-level=2"; "-A"; "warnings"; "--edition"; "2024"; "-o"; "out"; "src" ]
+
+///> gleam
+:# compile_unit_first_wants_a_test_cell_a_generated_main_and_no_test_block =
+    (compile_unit_first !+ !+ "code", compile_unit_first !+ !+ "spiral_cells_test ()", compile_unit_first !- !+ "code", compile_unit_first !+ !- "code") |> _assert_eq (!+, !-, !-, !-)

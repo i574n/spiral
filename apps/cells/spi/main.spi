@@ -257,7 +257,6 @@
     export "source_remap" ((\ (message : string), (program : string), (source : string), (path : string) => source_map::remap message program source path) : string * string * string * string -> string)
     export "temp_sweep" ((\ () => temp_sweep::run ()) : () -> string)
     export "html_write" ((\ (path : string), (out : string), (dotnet : string), (dll : string) => html::write path out dotnet dll) : string * string * string * string -> string)
-    export "lisp_transpile" ((\ (code : string), (spl2spi : string) => lisp::lisp_expand code spl2spi) : string * string -> string)
     export "parse_livemd" ((\ text => document::parse_livemd text) : string -> string)
     export "to_livemd" ((\ cells_wire => document::to_livemd cells_wire) : string -> string)
     export "ipynb_text" ((\ (cells_wire : string), (outputs : erlang_term::term), (durations : erlang_term::term), (report : erlang_term::term), (pool : erlang_term::term) => ipynb::ipynb_text cells_wire outputs durations report pool) : string * erlang_term::term * erlang_term::term * erlang_term::term * erlang_term::term -> string)

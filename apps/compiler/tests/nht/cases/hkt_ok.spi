@@ -1,0 +1,3 @@
+:< sm'_operators
+
+:= main () : i32 = fixed_views::duo_at 1i32 (fixed_views::mapped (\ x => x + 1i32) (fixed_views::duo (1i32, 2i32)))

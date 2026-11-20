@@ -1,0 +1,5 @@
+:< sm'_operators
+
+:= checked (n : i32) : i32 = ? n > 0i32 ?> n |: error_type "law: n must be positive"
+
+:= main () : i32 = checked -1i32

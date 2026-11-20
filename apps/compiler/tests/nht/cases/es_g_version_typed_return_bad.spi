@@ -1,0 +1,14 @@
+:< sm'_operators
+
+:| stored t =
+    | V1 :: i32 -> stored i32
+    | V2 :: string -> stored string
+
+:= payload \* t. (x : stored t) : t =
+    ?= x ?|
+    | V1 n => n
+    | V2 s => s
+
+:= main () : i32 =
+    := ~raw = 41i32
+    payload (V2 "v2") + sm'::length (payload (V1 raw))

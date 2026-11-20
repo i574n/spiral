@@ -1,0 +1,109 @@
+///- --package .
+:# packages_publish static =
+    :< testing
+
+:< packages_model
+:< packages_planner
+:< packages_canonical
+:< sm'_operators
+
+:| prepare_error =
+    | CrlfInModule : string
+    | DuplicateModulePath : string
+    | NoModules
+
+:== source_file = { path : string; text : string }
+
+:== prepared = { release : release_manifest; blobs : list (blob_id * string) }
+
+:= module_entry_of (f : source_file) : module_entry =
+    {
+        module_path = relative_path f::path
+        content = blob_id (text_digest f::text)
+        content_bytes = conv (sm'::length f::text : i32)
+    }
+
+:~ ^ first_crlf (files : list source_file) : option string =
+    ?= files ?|
+    | [] => None
+    | f :: rest => ? sm'::contains "\r" f::text ?> Some f::path |: first_crlf rest
+
+:~ ^ first_duplicate (seen : list string) (files : list source_file) : option string =
+    ?= files ?|
+    | [] => None
+    | f :: rest => ? listm'::exists' (\ p => p = f::path) seen ?> Some f::path |: first_duplicate (f::path :: seen) rest
+
+:= layout_of_files (files : list source_file) : source_layout =
+    ?= files ?|
+    | f :: [] => SingleModule (module_entry_of f)
+    | _ => ModuleDirectory (listm::map module_entry_of files)
+
+:= release_from
+    (identity : release_identity) (build : release_build) (requires : list exact_requirement) (files : list source_file)
+    : release_manifest
+    =
+    {
+        identity = identity
+        build = build
+        requires = requires
+        rust_crates = []
+        capabilities = []
+        layout = layout_of_files files
+    }
+
+:= blobs_of (files : list source_file) : list (blob_id * string) =
+    listm::map (\ (f : source_file) => blob_id (text_digest f::text), f::text) files
+
+:= prepare
+    (identity : release_identity) (build : release_build) (requires : list exact_requirement) (files : list source_file)
+    : outcome prepared prepare_error
+    =
+    ?= files, first_crlf files, first_duplicate [] files ?|
+    | [], _, _ => Rejected NoModules
+    | _, Some path, _ => Rejected (CrlfInModule path)
+    | _, None, Some path => Rejected (DuplicateModulePath path)
+    | _, None, None => Accepted { release = release_from identity build requires files; blobs = blobs_of files }
+
+:= index_line (m : release_manifest) : string =
+    name_text m::identity::name ++# " " ++# version_text m::identity::version ++# " " ++# id_text (release_digest m)
+
+:= file_of (path : string) (text : string) : source_file = { path = path; text = text }
+
+:= pdf2md_files () : list source_file =
+    [ file_of "pdf2md.spi" ":= reader = 1\n"; file_of "pdf_objects.spi" ":= parser = 2\n" ]
+
+///> rust -d sha2
+:# a_package_prepares_one_blob_per_module_and_its_index_line =
+    ?= prepare (identity_of "pdf2md") (build_of ()) [] (pdf2md_files ()) ?|
+    | Accepted p =>
+        (listm::length p::blobs, sm'::starts_with "pdf2md 1.0.0 " (index_line p::release))
+        |> _assert_eq (2i32, !+)
+    | Rejected _ => !- |> _assert_eq !+
+
+///> rust -d sha2
+:# a_crlf_module_is_refused_by_path =
+    := files = [ file_of "a.spi" ":= a = 1\n"; file_of "b.spi" ":= b = 2\r\n" ]
+    ?= prepare (identity_of "x") (build_of ()) [] files ?|
+    | Rejected e => e |> _assert_eq (CrlfInModule "b.spi")
+    | Accepted _ => !- |> _assert_eq !+
+
+///> rust -d sha2
+:# a_repeated_module_path_and_an_empty_package_are_refused =
+    := twice = [ file_of "a.spi" ":= a = 1\n"; file_of "a.spi" ":= a = 1\n" ]
+    := refused (r : outcome prepared prepare_error) : option prepare_error =
+        ?= r ?|
+        | Rejected e => Some e
+        | Accepted _ => None
+    (
+        refused (prepare (identity_of "x") (build_of ()) [] twice),
+        refused (prepare (identity_of "x") (build_of ()) [] [])
+    )
+    |> _assert_eq (Some (DuplicateModulePath "a.spi"), Some NoModules)
+
+///> rust -d sha2
+:# the_same_sources_give_the_same_index_line =
+    := line (files : list source_file) : string =
+        ?= prepare (identity_of "pdf2md") (build_of ()) [] files ?|
+        | Accepted p => index_line p::release
+        | Rejected _ => ""
+    line (pdf2md_files ()) |> _assert_eq (line (listm::rev (pdf2md_files ())))

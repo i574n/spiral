@@ -1,0 +1,74 @@
+///- --package .
+:# cell_result static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:== trm = erlang_term::term
+
+:~ cr_get (m : trm) (field : string) : trm = erlang_term::apply "maps" "get" [ erlang_term::atom field; m; erlang_term::atom "nil" ]
+
+:~ cr_str (m : trm) (field : string) : string = erlang_term::cast (cr_get m field)
+
+:~ cr_isnil (t : trm) : bool = erlang_term::equal t (erlang_term::atom "nil")
+
+:~ cr_islist (t : trm) : bool = erlang_term::apply "erlang" "is_list" [ t ] |> erlang_term::cast
+
+:~ cr_isatom (t : trm) : bool = erlang_term::apply "erlang" "is_atom" [ t ] |> erlang_term::cast
+
+:~ cr_text (m : trm) (field : string) : string =
+    := v = cr_get m field
+    ? cr_isatom v ?> erlang_term::cast (erlang_term::apply "erlang" "atom_to_binary" [ v ]) |: erlang_term::cast v
+
+:~ shown_stdout (print_code : bool) (generated : string) (stdout : string) : string =
+    ? print_code ?> generated ++ (? stdout = "" ?> "" |: "\n" ++ stdout) |: stdout
+
+:~ ^ cr_value (chunks : list trm) (acc : trm) : trm =
+    ?= chunks ?|
+    | [] => acc
+    | c :: rest =>
+        := v = cr_get c "value"
+        cr_value rest (? cr_isnil v ?> acc |: v)
+
+:~ ^ cr_status (chunks : list trm) : trm =
+    ?= chunks ?|
+    | [] => erlang_term::of 0i32
+    | c :: rest =>
+        := s = cr_get c "exit_status"
+        ? cr_isnil s ?> cr_status rest
+        |? (erlang_term::cast s : i32) = 0i32 ?> cr_status rest
+        |: s
+
+:~ cr_block (c : trm) : string = "." ++ cr_text c "ext" ++ " (" ++ cr_text c "tool" ++ ")\n" ++ cr_str c "stdout"
+
+:~ cr_stdout (chunks : list trm) : string =
+    ?= chunks ?|
+    | one :: [] => cr_str one "stdout"
+    | _ => sm'::concat_list "\n" (listm::map cr_block chunks)
+
+:~ cr_disp (c : trm) : list trm =
+    := d = cr_get c "displays"
+    ? cr_islist d ?> erlang_term::items_of d |: []
+
+:~ ^ cr_displays (chunks : list trm) (acc : list trm) : list trm =
+    ?= chunks ?|
+    | [] => acc
+    | c :: rest => cr_displays rest (listm::append acc (cr_disp c))
+
+:~ cr_kv (k : string) (v : trm) : trm = erlang_term::tuple [ erlang_term::atom k; v ]
+
+:~ cr_f1 (chunks : list trm) : list trm =
+    [
+        cr_kv "value" (cr_value chunks (erlang_term::atom "nil"))
+        cr_kv "exit_status" (cr_status chunks)
+    ]
+
+:~ cr_f2 (chunks : list trm) : list trm =
+    [
+        cr_kv "stdout" (erlang_term::of (cr_stdout chunks))
+        cr_kv "displays" (erlang_term::list_term (cr_displays chunks []))
+    ]
+
+:~ assemble_core (chunks_term : trm) : trm =
+    := chunks = erlang_term::items_of chunks_term
+    erlang_term::apply "maps" "from_list" [ erlang_term::list_term (listm::append (cr_f1 chunks) (cr_f2 chunks)) ]

@@ -24,7 +24,7 @@ defmodule Spiral.Cells do
     else
       timeout = opts[:timeout] || Domain.scale_budget(@default_timeout)
       validate_timeout!(timeout)
-      prepared = Spiral.Cells.Domain.lisp_transpile(code, Spiral.Cells.Domain.tool("spl2spi", opts) || "") |> Domain.prepare_run(opts)
+      prepared = Domain.prepare_run(code, opts)
 
       case cell_builders(opts, prepared) do
         [] -> {:error, Spiral.Cells.Domain.cells_spiral_error(untargeted_cell_message(), nil, nil)}

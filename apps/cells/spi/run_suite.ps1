@@ -16,7 +16,7 @@ New-Item -ItemType Directory -Force $crashDumps | Out-Null
 $env:ERL_CRASH_DUMP = Join-Path $crashDumps "erl_crash-$Label-$(Get-Date -Format yyyyMMdd-HHmmss).dump"
 $env:MIX_BUILD_PATH = Join-Path $state "cells-builds/$Label"
 $env:SPIRAL_DOTNET = Join-Path $state 'toolchains/dotnet/dotnet.exe'
-$env:SPIRAL_WORKSPACE_ROOT = Join-Path $repo 'apps/compiler/tmp'
+$env:SPIRAL_WORKSPACE_ROOT = Join-Path $repo 'apps/compiler'
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path $repo 'deps/The-Spiral-Language/VS Code Plugin'
 $env:SPIRAL_CELLS_DAEMON_POOL = '1'
 $env:SPIRAL_CELLS_MEMO = '0'

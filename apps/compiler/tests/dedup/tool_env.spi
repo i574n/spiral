@@ -1,0 +1,62 @@
+///- --package .
+:# tool_env static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:== term = erlang_term::term
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ pair (k : string) (v : string) : term = erlang_term::tuple [ str k; str v ]
+
+:~ key_of (entry : term) : string = erlang_file::text_of (erlang_term::element_at 1i32 entry)
+
+:~ value_of (entry : term) : term = erlang_term::element_at 2i32 entry
+
+:== stored = { items : list term; hit : bool }
+
+:~ store_step (k : string) (fresh : term) (st : stored) (e : term) : stored =
+    ? not st::hit && key_of e = k ?> { items = fresh :: st::items; hit = !+ } |: { items = e :: st::items; hit = st::hit }
+
+:~ keystore (env : list term) (k : string) (v : string) : list term =
+    := st = listm::fold (store_step k (pair k v)) { items = []; hit = !- } env
+    ? st::hit ?> listm::rev st::items |: listm::rev (pair k v :: st::items)
+
+:~ sample_env () : list term = [ pair "A" "1"; pair "B" "2"; pair "B" "3" ]
+
+:~ shown (xs : list term) : string = erlang_term::inspect (erlang_term::list_term xs)
+
+///> gleam
+:# keystore_replaces_only_the_first_match_in_place =
+    shown (keystore (sample_env ()) "B" "x") |> _assert_eq (shown [ pair "A" "1"; pair "B" "x"; pair "B" "3" ])
+
+///> gleam
+:# keystore_appends_a_missing_key =
+    shown (keystore (sample_env ()) "C" "y") |> _assert_eq (shown [ pair "A" "1"; pair "B" "2"; pair "B" "3"; pair "C" "y" ])
+
+:~ with_test_name (env : list term) (name : string) : list term = ? name = "" ?> env |: keystore env "SPIRAL_CELLS_TEST" name
+
+:~ existing_warnings (env : list term) : string =
+    := hits = memo::keep (\ (e : term) => key_of e = "PYTHONWARNINGS" && erlang_term::is_binary (value_of e)) env
+    ?= hits ?| e :: _ => erlang_file::text_of (value_of e) | [] => ""
+
+:~ without_cupy (env : list term) : list term = keystore env "PYTHONWARNINGS" (targets::python_warnings (existing_warnings env))
+
+:~ entry_of (line : string) : term =
+    := at = text::find_char line 0i32 '='
+    ? at < 0i32 ?> pair line "" |: pair (text::take line at) (text::drop line (at + 1i32))
+
+:~ os_env () : list term = listm::map (\ (c : term) => entry_of (erlang_file::text_of c)) (erlang_term::items_of (erlang_term::apply "os" "getenv" []))
+
+:~ spiral_env (env : list term) : list term = keystore (keystore env "SPIRAL_JSON" "1") "TRACE_LEVEL" "Info"
+
+:~ tool_env (name : string) (is_spiral : bool) : list term =
+    := named = with_test_name (os_env ()) name
+    without_cupy (? is_spiral ?> spiral_env named |: named)
+
+:~ env_term (env : term) (f : list term -> list term) : term = erlang_term::list_term (f (erlang_term::items_of env))
+
+///> gleam
+:# an_empty_test_name_leaves_the_env_alone =
+    erlang_term::inspect (erlang_term::list_term (with_test_name [ pair "P" "p" ] "")) |> _assert_eq (erlang_term::inspect (erlang_term::list_term [ pair "P" "p" ]))

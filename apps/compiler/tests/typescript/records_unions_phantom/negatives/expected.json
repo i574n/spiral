@@ -1,0 +1,11 @@
+{
+  "cell_wrong": "ETY-TermError: Unification failure",
+  "just_wrong": "ETY-TermError: Unification failure",
+  "meters_as_feet": "ETY-TermError: Unification failure",
+  "missing_field": "ETY-RecordIndexFailed: The record does not have the key: z",
+  "pair_swapped": "ETY-TermError: Unification failure",
+  "phantom_unit": "ETY-TermError: Unification failure",
+  "size_not_i32": "ETY-TermError: Unification failure",
+  "wrong_case": "ETY-UnboundVariable: Unbound term variable: Triangle",
+  "wrong_payload": "ETY-TermError: Unification failure"
+}

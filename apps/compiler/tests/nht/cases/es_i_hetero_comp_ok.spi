@@ -1,0 +1,24 @@
+:< sm'_operators
+
+:== comp_log = { refunds : list f64; releases : list i32; cancels : list string }
+
+:! comp_key t = { read : comp_log -> list t; write : comp_log -> list t -> comp_log }
+
+:= record \* t. (log : comp_log) ((comp_key k) : comp_key t) (v : t) : comp_log = k::write log (v :: k::read log)
+
+:= pending \* t. (log : comp_log) ((comp_key k) : comp_key t) : list t = k::read log
+
+:= refund_key () : comp_key f64 =
+    comp_key { read = \(x : comp_log) => x::refunds; write = \(x : comp_log) (v : list f64) => { x ?| refunds = v } }
+
+:= release_key () : comp_key i32 =
+    comp_key { read = \(x : comp_log) => x::releases; write = \(x : comp_log) (v : list i32) => { x ?| releases = v } }
+
+:= cancel_key () : comp_key string =
+    comp_key { read = \(x : comp_log) => x::cancels; write = \(x : comp_log) (v : list string) => { x ?| cancels = v } }
+
+:= empty_log () : comp_log = { refunds = []; releases = []; cancels = [] }
+
+:= main () : i32 =
+    := log = record (record (record (empty_log ()) (refund_key ()) 12.5f64) (release_key ()) 7i32) (cancel_key ()) "order-1"
+    listm::length (pending log (release_key ())) + listm::length (pending log (cancel_key ()))

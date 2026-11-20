@@ -1,0 +1,95 @@
+///- --package .
+:# packages_dry_run static =
+    :< testing
+
+:< packages_model
+:< packages_canonical
+:< packages_publish
+:< packages_manifest
+:< sm'_operators
+
+:| dry_run_error =
+    | ManifestMissing : string
+    | ManifestRefused : manifest_error
+    | ModuleMissing : string
+    | PrepareRefused : prepare_error
+
+:== dry_run_output = { index_line : string; release_text : string; blob_paths : list string }
+
+:= module_file (m : string) : string = m ^^ ".spi"
+
+:~ ^ read_modules
+    (dir : string) (modules : list string) (acc : list source_file)
+    : outcome (list source_file) dry_run_error
+    =
+    ?= modules ?|
+    | [] => Accepted (listm::rev acc)
+    | m :: rest =>
+        := path = dir ^^ "/" ^^ module_file m
+        ? file_system::file_exists path
+        ?> read_modules dir rest ({ path = module_file m; text = file_system::read_all_text path } :: acc)
+        |: Rejected (ModuleMissing (module_file m))
+
+:= written_blob (dir : string) (b : blob_id) (text : string) : string =
+    := path = dir ^^ "/" ^^ blob_text b ^^ ".spi"
+    file_system::write_all_text path text
+    path
+
+:= write_output (out : string) (p : prepared) : dry_run_output =
+    := blobs = out ^^ "/blobs"
+    := index = out ^^ "/index"
+    file_system::directory_create_all blobs |> ignore
+    file_system::directory_create_all index |> ignore
+    := line = index_line p::release
+    := release = release_text p::release
+    file_system::write_all_text (index ^^ "/" ^^ name_text p::release::identity::name) (line ^^ "\n")
+    file_system::write_all_text (out ^^ "/release.txt") release
+    := paths = p::blobs |> listm::map (\ (b, text) => written_blob blobs b text)
+    { index_line = line; release_text = release; blob_paths = paths }
+
+:= dry_run (dir : string) (out : string) : outcome dry_run_output dry_run_error =
+    := manifest = dir ^^ "/spiral.toml"
+    ? file_system::file_exists manifest ?>
+        ?= input_of_text (file_system::read_all_text manifest) ?|
+        | Rejected e => Rejected (ManifestRefused e)
+        | Accepted input =>
+            ?= read_modules dir input::modules [] ?|
+            | Rejected e => Rejected e
+            | Accepted files =>
+                ?= prepare input::identity input::build [] files ?|
+                | Rejected e => Rejected (PrepareRefused e)
+                | Accepted p => Accepted (write_output out p)
+    |: Rejected (ManifestMissing manifest)
+
+:= package_dir (root : string) (objects : string) : string =
+    := dir = root ^^ "/pdf2md"
+    file_system::directory_create_all dir |> ignore
+    file_system::write_all_text (dir ^^ "/spiral.toml") (package_text ())
+    file_system::write_all_text (dir ^^ "/pdf2md.spi") ":= reader = 1\n"
+    file_system::write_all_text (dir ^^ "/pdf_objects.spi") objects
+    dir
+
+///> rust -d chrono sha2
+:# a_dry_run_writes_the_same_bytes_twice =
+    := root, disposable = file_system::create_temp_directory ()
+    := dir = package_dir root ":= parser = 2\n"
+    ?= dry_run dir (root ^^ "/out1"), dry_run dir (root ^^ "/out2") ?|
+    | Accepted a, Accepted b =>
+        (a::index_line, a::release_text, listm::length a::blob_paths)
+        |> _assert_eq (b::index_line, b::release_text, 2i32)
+        sm'::starts_with "pdf2md 1.2.3 " a::index_line |> _assert_eq !+
+        file_system::read_all_text (root ^^ "/out1/index/pdf2md") |> _assert_eq (a::index_line ^^ "\n")
+        file_system::read_all_text (root ^^ "/out2/release.txt") |> _assert_eq a::release_text
+    | _ => !- |> _assert_eq !+
+    disposable |> use |> ignore
+
+///> rust -d chrono sha2
+:# a_missing_module_and_a_crlf_module_are_refused =
+    := root, disposable = file_system::create_temp_directory ()
+    := dir = package_dir root ":= parser = 2\r\n"
+    := crlf = dry_run dir (root ^^ "/out")
+    file_system::file_delete (dir ^^ "/pdf_objects.spi")
+    := missing = dry_run dir (root ^^ "/out")
+    crlf |> _assert_eq (Rejected (PrepareRefused (CrlfInModule "pdf_objects.spi")))
+    missing |> _assert_eq (Rejected (ModuleMissing "pdf_objects.spi"))
+    disposable |> use |> ignore

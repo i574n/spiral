@@ -1,0 +1,304 @@
+///- --package .
+:# toolchain static =
+    :< testing
+
+:< sm'_operators
+
+:| tool =
+    | Dotnet
+    | Rustc
+    | SpiralExe
+    | Python
+    | Lua
+    | Erl
+    | Gleam
+    | Zig
+    | WgslRun
+    | Naga
+    | Bun
+    | Pwsh
+    | Cc
+    | Dcc
+    | Fpc
+    | Plot
+    | Spl2spi
+
+:| step =
+    | FromEnv : string
+    | Bundled : list string
+    | OnPath : list string
+
+:== probe = { env : string -> string; on_path : string -> string; regular : string -> bool; home : string; windows : bool; root : string }
+
+:~ joined (dir : string) (rest : string) : string = dir ++# "/" ++# rest
+
+:~ exe_pair (base : string) : list string = [ base ++# ".exe"; base ]
+
+:~ first_set (values : list string) : string = listm::fold (\ found v => ? found <> "" ?> found |: v) "" values
+
+:~ cache_dir (p : probe) (override : string) : string =
+    := local = p::env "LOCALAPPDATA"
+    := fallback = ? local = "" ?> joined p::home ".cache/spiral-bin" |: joined local "spiral-bin"
+    first_set [ override; p::env "SPIRAL_BIN_CACHE_DIR"; fallback ]
+
+:~ release_bin (p : probe) (name : string) : list string = exe_pair (joined p::root ("workspace/target/release/" ++# name))
+
+:~ scoop_fpc (p : probe) : list string =
+    := scoop = joined p::home "scoop/apps/freepascal/current/bin/"
+    [ scoop ++# "x86_64-win64/fpc.exe"; scoop ++# "i386-win32/fpc.exe" ]
+
+:~ bundled_dotnet (p : probe) : list string =
+    := base = joined (cache_dir p "") "toolchains/dotnet/dotnet"
+    exe_pair base
+
+:~ built_wgsl (p : probe) : list string = exe_pair (joined (cache_dir p "") "toolchains/wgsl-run/release/spiral-wgsl")
+
+:~ steps (p : probe) (t : tool) : list step =
+    ?= t ?|
+    | Dotnet => [ FromEnv "SPIRAL_DOTNET"; Bundled (bundled_dotnet p); OnPath [ "dotnet" ] ]
+    | Rustc => [ FromEnv "SPIRAL_RUSTC"; OnPath [ "rustc" ] ]
+    | SpiralExe => [ FromEnv "SPIRAL_EXE"; Bundled (release_bin p "spiral") ]
+    | Python => [ FromEnv "SPIRAL_PYTHON"; OnPath [ "python"; "python3" ] ]
+    | Lua => [ FromEnv "SPIRAL_LUA"; OnPath [ "lua" ] ]
+    | Erl => [ FromEnv "SPIRAL_ERL"; OnPath [ "erl" ] ]
+    | Gleam => [ FromEnv "SPIRAL_GLEAM"; OnPath [ "gleam" ] ]
+    | Zig => [ FromEnv "SPIRAL_ZIG"; OnPath [ "zig" ] ]
+    | WgslRun => [ FromEnv "SPIRAL_WGSL_RUN"; Bundled (built_wgsl p) ]
+    | Naga => [ FromEnv "SPIRAL_NAGA"; OnPath [ "naga" ] ]
+    | Bun => [ FromEnv "SPIRAL_BUN"; OnPath [ "bun" ] ]
+    | Pwsh => [ FromEnv "SPIRAL_PWSH"; OnPath [ "pwsh" ] ]
+    | Cc => [ FromEnv "SPIRAL_CC"; OnPath [ "gcc"; "clang"; "cl" ] ]
+    | Dcc => [ FromEnv "SPIRAL_DCC"; OnPath [ "dcc32"; "dcc64" ] ]
+    | Fpc => [ FromEnv "SPIRAL_FPC"; OnPath [ "fpc" ]; Bundled (scoop_fpc p) ]
+    | Plot => [ FromEnv "SPIRAL_CELLS_PLOT"; Bundled (release_bin p "plot") ]
+    | Spl2spi => [ FromEnv "SPIRAL_SPL2SPI"; Bundled (exe_pair (joined p::root "target/build/lisp/spl2spi/spl2spi")); OnPath [ "spl2spi" ] ]
+
+:~ ^ first_where (f : string -> string) (xs : list string) : string =
+    ?= xs ?|
+    | [] => ""
+    | x :: rest =>
+        := found = f x
+        ? found <> "" ?> found |: first_where f rest
+
+:~ if_regular (p : probe) (path : string) : string = ? p::regular path ?> path |: ""
+
+:~ step_value (p : probe) (s : step) : string =
+    ?= s ?|
+    | FromEnv var => p::env var
+    | Bundled paths => first_where (if_regular p) paths
+    | OnPath names => first_where p::on_path names
+
+:~ resolve (p : probe) (t : tool) (override : string) : string =
+    ? override <> "" ?> override |: listm::fold (\ found s => ? found <> "" ?> found |: step_value p s) "" (steps p t)
+
+:~ compiler_dll (p : probe) (override : string) : string =
+    := built = joined (cache_dir p "") "bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll"
+    first_set [ override; p::env "SPIRAL_COMPILER_DLL"; built ]
+
+:~ package_dir (p : probe) (override : string) : string =
+    first_set [ override; p::env "SPIRAL_COMPILER_PACKAGE_DIR"; joined p::root "deps/The-Spiral-Language/VS Code Plugin" ]
+
+:~ workspace (p : probe) (override : string) : string =
+    first_set [ override; p::env "SPIRAL_WORKSPACE_ROOT"; joined p::root "apps/compiler/tmp" ]
+
+:~ lean_flag () : string = "+leanprover/lean4:v4.35.0"
+
+:~ pinned_in (p : probe) (exe : string) (home : string) : string =
+    if_regular p (joined home ("toolchains/leanprover--lean4---v4.35.0/bin/" ++# exe))
+
+:~ lean_wire (p : probe) (override : string) : string =
+    := explicit = first_set [ override; p::env "SPIRAL_LEAN" ]
+    := exe = ? p::windows ?> "lean.exe" |: "lean"
+    := homes = listm'::filter (\ (h : string) => h <> "") [ p::env "ELAN_HOME"; joined p::home ".elan"; joined p::home "scoop/persist/elan/.elan" ]
+    := pinned = first_where (pinned_in p exe) homes
+    ? explicit <> "" ?> explicit ++# "\t" ++# lean_flag ()
+    |? pinned <> "" ?> pinned ++# "\t"
+    |: p::on_path "lean" ++# "\t" ++# lean_flag ()
+
+:~ tool_names () : list (string * tool) =
+    [ ("dotnet", Dotnet); ("rustc", Rustc); ("spiral", SpiralExe); ("python", Python); ("lua", Lua); ("erl", Erl); ("gleam", Gleam); ("zig", Zig); ("wgsl_run", WgslRun); ("naga", Naga); ("bun", Bun); ("pwsh", Pwsh); ("cc", Cc); ("dcc", Dcc); ("fpc", Fpc); ("plot", Plot); ("spl2spi", Spl2spi) ]
+
+:~ tool_named (name : string) : option tool =
+    listm::fold (\ found (k, t) => ?= found ?| Some _ => found | None => ? k = name ?> Some t |: None) None (tool_names ())
+
+:~ setting (p : probe) (name : string) (override : string) : string =
+    ? name = "compiler_dll" ?> compiler_dll p override
+    |? name = "package_dir" ?> package_dir p override
+    |? name = "workspace" ?> workspace p override
+    |? name = "cache_dir" ?> cache_dir p override
+    |? name = "lean" ?> lean_wire p override
+    |: failwith ("toolchain: unknown tool " ++# name)
+
+:~ path_for (p : probe) (name : string) (override : string) : string =
+    ?= tool_named name ?|
+    | Some t => resolve p t override
+    | None => setting p name override
+
+:~ found_on_path (name : string) : string =
+    := r = erlang_term::apply "os" "find_executable" [ erlang_term::charlist name ]
+    ? erlang_term::equal r (erlang_term::atom "false") ?> "" |: erlang_term::apply "unicode" "characters_to_binary" [ r ] |> erlang_term::cast
+
+:~ on_windows () : bool = erlang_term::equal (erlang_term::element_at 1i32 (erlang_term::apply "os" "type" [])) (erlang_term::atom "win32")
+
+:~ beam_env (name : string) : string = erlang_file::text_of_call "os" "getenv" [ erlang_term::charlist name; erlang_term::charlist "" ]
+
+///> gleam
+:# the_beam_environment_reads_set_and_unset_variables =
+    (beam_env "SPIRAL_SURELY_UNSET_VARIABLE_1116", beam_env "PATH" <> "") |> _assert_eq ("", !+)
+
+:~ beam_probe (root : string) : probe =
+    := home = first_set [ beam_env "HOME"; beam_env "USERPROFILE" ]
+    { env = beam_env; on_path = found_on_path; regular = erlang_file::regular_file; home = home; windows = on_windows (); root = root }
+
+:~ tool_path_wire (name : string) (override : string) (root : string) : string = path_for (beam_probe root) name override
+
+:~ listed_in (xs : list string) (name : string) : bool = listm::fold (\ hit x => hit || x = name) !- xs
+
+:~ posix_opts () : erlang_term::term = erlang_term::list_term [ erlang_term::tuple [ erlang_term::atom "time"; erlang_term::atom "posix" ] ]
+
+:~ info_ok (r : erlang_term::term) : bool = erlang_term::equal (erlang_term::element_at 1i32 r) (erlang_term::atom "ok")
+
+:~ size_mtime (info : erlang_term::term) : erlang_term::term = erlang_term::tuple [ erlang_term::element_at 6i32 info; erlang_term::element_at 2i32 info ]
+
+:~ stat_pair (path : string) : erlang_term::term =
+    := r = erlang_term::apply "file" "read_file_info" [ erlang_term::of path; posix_opts () ]
+    ? info_ok r ?> size_mtime (erlang_term::element_at 2i32 r) |: erlang_term::atom "missing"
+
+:~ core_of (dll : string) : string = erlang_file::joined_path (erlang_file::dir_name dll) "SpiralCompilerCore.dll"
+
+:~ dll_stamp (dll : string) : erlang_term::term = erlang_term::tuple [ stat_pair dll; stat_pair (core_of dll) ]
+
+:~ separators () : erlang_term::term =
+    := code = \ (c : i32) => erlang_term::of c
+    erlang_term::list_term [ code 32i32; code 9i32; code 10i32; code 13i32; erlang_term::list_term [ code 13i32; code 10i32 ] ]
+
+:~ lexemes (text : string) : list string =
+    erlang_term::apply "string" "lexemes" [ erlang_term::of text; separators () ] |> erlang_term::items_of |> listm::map erlang_file::text_of
+
+:~ first_of_each (words : list string) : list string = listm::fold (\ seen w => ? listed_in seen w ?> seen |: w :: seen) [] words |> listm::rev
+
+:~ capability_words (text : string) : list string = first_of_each (lexemes text)
+
+///> gleam
+:# capability_words_split_on_any_space_and_keep_the_first_of_each =
+    capability_words "server-tcp source-blocks\r\nresolve-manifest\n server-tcp"
+    |> _assert_eq [ "server-tcp"; "source-blocks"; "resolve-manifest" ]
+
+:~ capabilities_key (dll : string) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::atom "spiral_cells_toolchain"; erlang_term::atom "capabilities"; erlang_term::of dll; dll_stamp dll ]
+
+:~ remembered (dll : string) (words : list string) : list string =
+    := terms = erlang_term::list_term (listm::map (\ (w : string) => erlang_term::of w) words)
+    erlang_term::apply "persistent_term" "put" [ capabilities_key dll; terms ] |> ignore
+    words
+
+:~ probed_capabilities (dotnet : string) (dll : string) : list string =
+    := out = process::captured_by dotnet [ dll; "--capabilities" ] !+
+    ? out::ran && out::code = 0i32 ?> remembered dll (capability_words out::stdout) |: []
+
+:~ cached_or_probed (dotnet : string) (dll : string) : list string =
+    := miss = erlang_term::atom "spiral_cells_toolchain_miss"
+    := hit = erlang_term::apply "persistent_term" "get" [ capabilities_key dll; miss ]
+    ? erlang_term::equal hit miss ?> probed_capabilities dotnet dll |: erlang_term::items_of hit |> listm::map erlang_file::text_of
+
+:~ host_capabilities (dotnet : string) (dll : string) : list string =
+    ? dotnet = "" || not (erlang_file::regular_file dll) ?> [] |: cached_or_probed dotnet dll
+
+:~ host_has (dotnet : string) (dll : string) (capability : string) : bool = listed_in (host_capabilities dotnet dll) capability
+
+:~ cached_dll () : string =
+    := dll = erlang_file::joined_path (erlang_file::test_cache_directory ()) "toolchain_caps/SpiralCompiler.dll"
+    erlang_term::apply "filelib" "ensure_dir" [ erlang_term::of dll ] |> ignore
+    erlang_file::file_written dll "dll" |> ignore
+    remembered dll [ "source-blocks" ] |> ignore
+    dll
+
+///> gleam
+:# a_missing_host_has_no_capabilities =
+    (host_has "" (cached_dll ()) "source-blocks", host_has "/no/dotnet" "/no/such.dll" "source-blocks") |> _assert_eq (!-, !-)
+
+///> gleam
+:# a_cached_list_answers_without_running =
+    := dll = cached_dll ()
+    (host_has "/no/dotnet" dll "source-blocks", host_has "/no/dotnet" dll "server-tcp") |> _assert_eq (!+, !-)
+
+:~ lookup_in (vars : list (string * string)) (var : string) : string = listm::fold (\ found (k, v) => ? k = var ?> v |: found) "" vars
+
+:~ on_path_in (path : list string) (name : string) : string = ? listed_in path name ?> "/bin/" ++# name |: ""
+
+:~ fake_probe (vars : list (string * string)) (path : list string) (files : list string) : probe =
+    { env = lookup_in vars; on_path = on_path_in path; regular = listed_in files; home = "/h"; windows = !-; root = "/r" }
+
+:~ rustc_of (p : probe) (override : string) : string = path_for p "rustc" override
+
+///> gleam
+///> rust
+:# an_explicit_option_beats_the_environment =
+    rustc_of (fake_probe [ ("SPIRAL_RUSTC", "/env/rustc") ] [ "rustc" ] []) "/opt/rustc" |> _assert_eq "/opt/rustc"
+
+///> gleam
+///> rust
+:# the_environment_beats_the_path =
+    rustc_of (fake_probe [ ("SPIRAL_RUSTC", "/env/rustc") ] [ "rustc" ] []) "" |> _assert_eq "/env/rustc"
+
+///> gleam
+///> rust
+:# the_path_is_the_last_resort =
+    (rustc_of (fake_probe [] [ "rustc" ] []) "", rustc_of (fake_probe [] [] []) "") |> _assert_eq ("/bin/rustc", "")
+
+:~ bundled_dotnet_path () : string = "/h/.cache/spiral-bin/toolchains/dotnet/dotnet"
+
+///> gleam
+///> rust
+:# dotnet_prefers_the_bundled_runtime_over_the_path =
+    path_for (fake_probe [] [ "dotnet" ] [ bundled_dotnet_path () ]) "dotnet" "" |> _assert_eq (bundled_dotnet_path ())
+
+///> gleam
+///> rust
+:# a_local_app_data_cache_without_a_bundle_uses_the_path =
+    path_for (fake_probe [ ("LOCALAPPDATA", "/l") ] [ "dotnet" ] [ bundled_dotnet_path () ]) "dotnet" "" |> _assert_eq "/bin/dotnet"
+
+:~ scoop_fpc_path () : string = "/h/scoop/apps/freepascal/current/bin/i386-win32/fpc.exe"
+
+///> gleam
+///> rust
+:# fpc_falls_back_to_scoop =
+    path_for (fake_probe [] [] [ scoop_fpc_path () ]) "fpc" "" |> _assert_eq (scoop_fpc_path ())
+
+///> gleam
+///> rust
+:# fpc_tries_the_path_before_scoop_and_cc_falls_through_gcc_clang_cl =
+    (path_for (fake_probe [] [ "fpc" ] [ scoop_fpc_path () ]) "fpc" "", path_for (fake_probe [] [ "clang"; "cl" ] []) "cc" "")
+    |> _assert_eq ("/bin/fpc", "/bin/clang")
+
+///> gleam
+///> rust
+:# spl2spi_resolves_from_env_bundled_or_path =
+    := p = fake_probe [ ("SPIRAL_SPL2SPI", "/env/spl2spi") ] [ "spl2spi" ] []
+    (path_for p "spl2spi" "/opt/spl2spi", path_for p "spl2spi" "", path_for (fake_probe [] [ "spl2spi" ] []) "spl2spi" "", path_for (fake_probe [] [] []) "spl2spi" "")
+    |> _assert_eq ("/opt/spl2spi", "/env/spl2spi", "/bin/spl2spi", "")
+
+///> gleam
+///> rust
+:# the_compiler_dll_and_package_dir_follow_the_cache_and_the_root =
+    := p = fake_probe [ ("SPIRAL_BIN_CACHE_DIR", "/c") ] [] []
+    (path_for p "compiler_dll" "", path_for p "package_dir" "")
+    |> _assert_eq ("/c/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll", "/r/deps/The-Spiral-Language/VS Code Plugin")
+
+///> gleam
+///> rust
+:# the_workspace_and_cache_dir_fall_back_to_the_root_and_home =
+    (path_for (fake_probe [] [] []) "workspace" "", path_for (fake_probe [] [] []) "cache_dir" "") |> _assert_eq ("/r/apps/compiler/tmp", "/h/.cache/spiral-bin")
+
+:~ pinned_lean_path () : string = "/h/.elan/toolchains/leanprover--lean4---v4.35.0/bin/lean"
+
+///> gleam
+///> rust
+:# lean_uses_the_pinned_elan_toolchain_without_a_flag =
+    path_for (fake_probe [] [ "lean" ] [ pinned_lean_path () ]) "lean" "" |> _assert_eq (pinned_lean_path () ++# "\t")
+
+///> gleam
+///> rust
+:# lean_otherwise_asks_for_the_pinned_toolchain =
+    (path_for (fake_probe [] [ "lean" ] []) "lean" "", path_for (fake_probe [] [] []) "lean" "/x/lean")
+    |> _assert_eq ("/bin/lean\t+leanprover/lean4:v4.35.0", "/x/lean\t+leanprover/lean4:v4.35.0")

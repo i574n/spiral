@@ -1,0 +1,130 @@
+///- --package .
+:# html static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ ^ all_digits (s : string) (i : i32) : bool =
+    ? i >= text::length s
+    ?> !+
+    |? text::byte_at s i >= 48i32 && text::byte_at s i <= 57i32
+    ?> all_digits s (i + 1i32)
+    |: !-
+
+:~ is_int (s : string) : bool =
+    := n = text::length s
+    := start = ? n > 0i32 && text::byte_at s 0i32 = 45i32 ?> 1i32 |: 0i32
+    ? n <= start ?> !- |: all_digits s start
+
+:~ valid_token_row (line : string) : bool =
+    ?= sm'::split_list "\t" line ?|
+    | l :: f :: t :: _ :: [] => is_int l && is_int f && is_int t
+    | _ => !-
+
+:~ ^ keep_rows (xs : list string) (acc : list string) : list string =
+    ?= xs ?|
+    | [] => listm::rev acc
+    | x :: rest => keep_rows rest (? valid_token_row x ?> x :: acc |: acc)
+
+:~ token_wire_of (out : string) : string =
+    sm'::concat_list "\n" (keep_rows (sm'::split_list "\n" out) [])
+
+:~ tmp_base () : string =
+    toolchain::first_set [ toolchain::beam_env "TMPDIR"; toolchain::beam_env "TEMP"; toolchain::beam_env "TMP"; "/tmp" ]
+
+:~ uniq () : string =
+    erlang_term::integer_text (erlang_term::apply "erlang" "unique_integer" [ erlang_term::list_term [ erlang_term::atom "positive" ] ])
+
+:~ tokens_path () : string = erlang_file::joined_path (tmp_base ()) ("spiral-tokens-" ++ uniq () ++ ".spi")
+
+:~ file_deleted (path : string) : () = erlang_term::apply "file" "delete" [ erlang_term::of path ] |> ignore
+
+:~ tokens_wire (dotnet : string) (dll : string) (has_cap : bool) (source : string) : string =
+    ? has_cap = !-
+    ?> ""
+    |:
+        := path = tokens_path ()
+        := _ = erlang_file::file_written path source
+        := out = process::captured_by dotnet [ dll; "tokens"; path ] !+
+        := _ = file_deleted path
+        ? out::ran && out::code = 0i32 ?> token_wire_of out::stdout |: ""
+
+:~ highlight (dotnet : string) (dll : string) (has_cap : bool) (source : string) : string =
+    html_page::highlighted source (tokens_wire dotnet dll has_cap source)
+
+:~ source_text (v : json_value::json) : string =
+    ?= json_value::field "source" v ?|
+    | None => ""
+    | Some s =>
+        ?= json_value::str_of s ?|
+        | Some one => one
+        | None => sm'::concat_list "" (listm::map (\ x => ?= json_value::str_of x ?| Some t => t | None => "") (json_value::arr_of s))
+
+:~ code_cell_html (dotnet : string) (dll : string) (has_cap : bool) (v : json_value::json) : string =
+    := badge = run_result::cell_head_html (json_value::field_text "metadata" v "{}")
+    := outputs =
+        sm'::concat_list "" (listm::map (\ o => run_result::output_html (json_value::to_text o)) (json_value::field_array "outputs" v))
+    badge ++ "<pre class=\"code\"><code>" ++ highlight dotnet dll has_cap (source_text v) ++ "</code></pre>\n" ++ outputs
+
+:~ cell_html (dotnet : string) (dll : string) (has_cap : bool) (v : json_value::json) : string =
+    := kind = json_value::field_string "cell_type" v
+    ? kind = "markdown"
+    ?> html_markdown::markdown (source_text v)
+    |? kind = "code"
+    ?> code_cell_html dotnet dll has_cap v
+    |: ""
+
+:~ render (ipynb_text : string) (title : string) (dotnet : string) (dll : string) (has_cap : bool) : string =
+    := tail = "\n</main>\n</body>\n</html>\n"
+    ?= json_value::parse ipynb_text ?|
+    | None => html_page::html_head title ++ tail
+    | Some root =>
+        := body =
+            sm'::concat_list "\n" (listm::map (\ c => cell_html dotnet dll has_cap c) (json_value::field_array "cells" root))
+        html_page::html_head title ++ body ++ tail
+
+:~ ^ follow (v : option json_value::json) (keys : list string) : option json_value::json =
+    ?= keys ?|
+    | [] => v
+    | k :: rest => ?= v ?| None => None | Some j => follow (json_value::field k j) rest
+
+:~ deep_string (root : json_value::json) (keys : list string) : string =
+    ?= follow (Some root) keys ?|
+    | Some j => (?= json_value::str_of j ?| Some s => s | None => "")
+    | None => ""
+
+:~ is_spiral_kernel (ipynb_text : string) : bool =
+    ?= json_value::parse ipynb_text ?|
+    | None => !+
+    | Some root =>
+        := lang = deep_string root [ "metadata"; "kernelspec"; "language" ]
+        lang = "" || lang = "spiral"
+
+:~ title_of (ipynb_path : string) : string =
+    erlang_file::text_of_call "filename" "basename" [ erlang_term::of ipynb_path; erlang_term::of ".ipynb" ]
+
+:~ write (ipynb_path : string) (out_path : string) (dotnet : string) (dll : string) : string =
+    := text = erlang_file::file_text ipynb_path
+    := effective = dotnet <> "" && erlang_file::regular_file dll && is_spiral_kernel text
+    := html = render text (title_of ipynb_path) dotnet dll effective
+    := _ = erlang_file::file_written out_path html
+    out_path
+
+///> gleam
+:# render_matches_the_elixir_layout_without_a_tokenizer =
+    := ipynb = "{\"cells\":[{\"cell_type\":\"markdown\",\"source\":[\"# Hi\"]},{\"cell_type\":\"code\",\"source\":[\"inl x = 1\"],\"metadata\":{},\"outputs\":[]}]}"
+    := md = html_markdown::markdown "# Hi"
+    := code = run_result::cell_head_html "{}" ++ "<pre class=\"code\"><code>" ++ html_page::highlighted "inl x = 1" "" ++ "</code></pre>\n"
+    := expected = html_page::html_head "demo" ++ md ++ "\n" ++ code ++ "\n</main>\n</body>\n</html>\n"
+    render ipynb "demo" "" "" !- |> _assert_eq expected
+
+///> gleam
+:# a_spiral_or_absent_kernel_is_spiral_but_a_python_kernel_is_not =
+    := spi = "{\"metadata\":{\"kernelspec\":{\"language\":\"spiral\"}}}"
+    := py = "{\"metadata\":{\"kernelspec\":{\"language\":\"python\"}}}"
+    (is_spiral_kernel spi, is_spiral_kernel "{}", is_spiral_kernel py) |> _assert_eq (!+, !+, !-)
+
+///> gleam
+:# token_rows_keep_only_four_fields_with_three_leading_integers =
+    (token_wire_of "1\t2\t3\tkw\nx\ty\tz\tc\n4\t5\t6\top\textra\n7\t8\t9\tid", valid_token_row "0\t0\t1\tk", valid_token_row "a\t0\t1\tk")
+    |> _assert_eq ("1\t2\t3\tkw\n7\t8\t9\tid", !+, !-)

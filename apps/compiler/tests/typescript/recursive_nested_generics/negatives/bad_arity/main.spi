@@ -1,0 +1,11 @@
+:| ^ tree t =
+    | Leaf : t
+    | Node : tree t * tree t
+:! labelled t = { label : string; item : t }
+:| ^ chain =
+    | End
+    | Link : i32 * chain
+
+:= main () : i32 =
+    := t : tree i32 = Node (Leaf 1i32)
+    0

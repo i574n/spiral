@@ -30,7 +30,7 @@ foreach ($name in 'SpiralCompiler.dll', 'SpiralCompilerCore.dll') { "$name $((Ge
 
 $compiler = Split-Path $PSScriptRoot
 $repo = (Resolve-Path (Join-Path $compiler '..\..')).Path
-$dirtyBefore = @(git -C $repo status --porcelain -- apps/compiler/tmp/samples)
+$dirtyBefore = @(git -C $repo status --porcelain -- apps/compiler/samples)
 "samples dirty before the run: $($dirtyBefore.Count)"
 $dirtyBefore | Select-Object -First 10
 
@@ -46,5 +46,5 @@ $code = $LASTEXITCODE
 $latest = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'spiral-bin\runs') -Directory -Filter 'single-flight-*' | Sort-Object LastWriteTime | Select-Object -Last 1
 "run dir: $($latest.FullName)"
 "samples changed by the run:"
-git -C $repo --no-pager diff --stat -- apps/compiler/tmp/samples | Select-Object -Last 30
+git -C $repo --no-pager diff --stat -- apps/compiler/samples | Select-Object -Last 30
 exit $code

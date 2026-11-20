@@ -1,0 +1,363 @@
+///- --package .
+:# json_value static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:| ^ json =
+    | JNull
+    | JBool : bool
+    | JNum : string
+    | JStr : string
+    | JArr : list json
+    | JObj : list (string * json)
+
+:~ at (s : string) (i : i32) : i32 = ? i >= 0i32 && i < text::length s ?> text::byte_at s i |: -1i32
+
+:~ ws_byte (b : i32) : bool = b = 32i32 || b = 9i32 || b = 10i32 || b = 13i32
+
+:~ ^ skip_ws (s : string) (i : i32) : i32 = ? ws_byte (at s i) ?> skip_ws s (i + 1i32) |: i
+
+:~ is_digit (b : i32) : bool = b >= 48i32 && b <= 57i32
+
+:~ ^ digits_end (s : string) (i : i32) : i32 = ? is_digit (at s i) ?> digits_end s (i + 1i32) |: i
+
+:~ some_digits_end (s : string) (i : i32) : i32 =
+    := j = digits_end s i
+    ? j = i ?> -1i32 |: j
+
+:~ int_end (s : string) (i : i32) : i32 = ? at s i = 48i32 ?> i + 1i32 |: some_digits_end s i
+
+:~ frac_end (s : string) (i : i32) : i32 = ? i >= 0i32 && at s i = 46i32 ?> some_digits_end s (i + 1i32) |: i
+
+:~ exp_end (s : string) (i : i32) : i32 =
+    := e = at s i
+    ? i >= 0i32 && (e = 101i32 || e = 69i32) ?>
+        := sign = at s (i + 1i32)
+        some_digits_end s (? sign = 43i32 || sign = 45i32 ?> i + 2i32 |: i + 1i32)
+    |: i
+
+:~ number_end (s : string) (i : i32) : i32 = exp_end s (frac_end s (int_end s (? at s i = 45i32 ?> i + 1i32 |: i)))
+
+:~ hex_val (b : i32) : i32 =
+    ? is_digit b
+    ?> b - 48i32
+    |? b >= 65i32 && b <= 70i32
+    ?> b - 55i32
+    |? b >= 97i32 && b <= 102i32
+    ?> b - 87i32
+    |: -1i32
+
+:~ hex4 (s : string) (i : i32) : i32 =
+    := a = hex_val (at s i)
+    := b = hex_val (at s (i + 1i32))
+    := c = hex_val (at s (i + 2i32))
+    := d = hex_val (at s (i + 3i32))
+    ? a < 0i32 || b < 0i32 || c < 0i32 || d < 0i32 ?> -1i32 |: ((a * 16i32 + b) * 16i32 + c) * 16i32 + d
+
+:~ simple_escape (e : i32) : string =
+    ? e = 34i32
+    ?> "\""
+    |? e = 92i32
+    ?> "\\"
+    |? e = 47i32
+    ?> "/"
+    |? e = 98i32
+    ?> unicode::char_of 8i32
+    |? e = 102i32
+    ?> unicode::char_of 12i32
+    |? e = 110i32
+    ?> "\n"
+    |? e = 114i32
+    ?> "\r"
+    |? e = 116i32
+    ?> "\t"
+    |: ""
+
+:~ is_high (code : i32) : bool = code >= 55296i32 && code <= 56319i32
+
+:~ is_low (code : i32) : bool = code >= 56320i32 && code <= 57343i32
+
+:~ low_after (s : string) (i : i32) : i32 = ? at s i = 92i32 && at s (i + 1i32) = 117i32 ?> hex4 s (i + 2i32) |: -1i32
+
+:~ paired (high : i32) (low : i32) : string =
+    unicode::char_of (65536i32 + (high - 55296i32) * 1024i32 + (low - 56320i32))
+
+:~ within (s : string) (i : i32) (lo : i32) (hi : i32) : bool =
+    := b = at s i
+    b >= lo && b <= hi
+
+:~ tail_ok (s : string) (i : i32) (n : i32) : bool =
+    within s i 128i32 191i32 && (n < 2i32 || within s (i + 1i32) 128i32 191i32)
+
+:~ utf8_width_at (s : string) (i : i32) : i32 =
+    := b = at s i
+    ? b >= 194i32 && b <= 223i32
+    ?> ? within s (i + 1i32) 128i32 191i32 ?> 2i32 |: 0i32
+    |? b >= 224i32 && b <= 239i32 ?>
+        := lo = ? b = 224i32 ?> 160i32 |: 128i32
+        := hi = ? b = 237i32 ?> 159i32 |: 191i32
+        ? within s (i + 1i32) lo hi && tail_ok s (i + 2i32) 1i32 ?> 3i32 |: 0i32
+    |? b >= 240i32 && b <= 244i32 ?>
+        := lo = ? b = 240i32 ?> 144i32 |: 128i32
+        := hi = ? b = 244i32 ?> 143i32 |: 191i32
+        ? within s (i + 1i32) lo hi && tail_ok s (i + 2i32) 2i32 ?> 4i32 |: 0i32
+    |: 0i32
+
+:~ ^ string_from (s : string) (start : i32) (i : i32) (acc : string) : option (string * i32) =
+    := c = at s i
+    := chunk = text::slice_len s start (i - start)
+    ? c < 0i32
+    ?> None
+    |? c = 34i32
+    ?> Some (acc ++ chunk, i + 1i32)
+    |? c = 92i32
+    ?> escape_at s i (acc ++ chunk)
+    |? c < 32i32
+    ?> None
+    |? c < 128i32
+    ?> string_from s start (i + 1i32) acc
+    |:
+        := w = utf8_width_at s i
+        ? w = 0i32 ?> None |: string_from s start (i + w) acc
+
+:& :~ escape_at (s : string) (slash : i32) (acc : string) : option (string * i32) =
+    := e = at s (slash + 1i32)
+    := plain = simple_escape e
+    ? e = 117i32
+    ?> code_at s slash acc
+    |? plain = ""
+    ?> None
+    |: string_from s (slash + 2i32) (slash + 2i32) (acc ++ plain)
+
+:& :~ code_at (s : string) (slash : i32) (acc : string) : option (string * i32) =
+    := code = hex4 s (slash + 2i32)
+    := low = low_after s (slash + 6i32)
+    ? code < 0i32 || is_low code
+    ?> None
+    |? is_high code && is_low low
+    ?> string_from s (slash + 12i32) (slash + 12i32) (acc ++ paired code low)
+    |? is_high code
+    ?> None
+    |: string_from s (slash + 6i32) (slash + 6i32) (acc ++ unicode::char_of code)
+
+:~ string_at (s : string) (q_at : i32) : option (string * i32) = string_from s (q_at + 1i32) (q_at + 1i32) ""
+
+:~ word (s : string) (i : i32) (w : string) (v : json) : option (json * i32) =
+    ? text::starts_at s i w ?> Some (v, i + text::length w) |: None
+
+:~ number_at (s : string) (i : i32) : option (json * i32) =
+    := stop = number_end s i
+    ? stop <= i ?> None |: Some (JNum (text::slice_len s i (stop - i)), stop)
+
+:~ ^ value_at (s : string) (start : i32) : option (json * i32) =
+    := i = skip_ws s start
+    := c = at s i
+    ? c = 123i32
+    ?> object_at s (i + 1i32)
+    |? c = 91i32
+    ?> array_at s (i + 1i32)
+    |? c = 34i32 ?>
+        ?= string_at s i ?|
+        | Some (t, next) => Some (JStr t, next)
+        | None => None
+    |? c = 116i32
+    ?> word s i "true" (JBool !+)
+    |? c = 102i32
+    ?> word s i "false" (JBool !-)
+    |? c = 110i32
+    ?> word s i "null" JNull
+    |: number_at s i
+
+:& :~ object_at (s : string) (opened : i32) : option (json * i32) =
+    := i = skip_ws s opened
+    ? at s i = 125i32 ?> Some (JObj [], i + 1i32) |: member_at s i []
+
+:& :~ member_at (s : string) (start : i32) (acc : list (string * json)) : option (json * i32) =
+    := i = skip_ws s start
+    ? at s i <> 34i32
+    ?> None
+    |:
+        ?= string_at s i ?|
+        | None => None
+        | Some (key, after) =>
+            := colon = skip_ws s after
+            ? at s colon <> 58i32
+            ?> None
+            |:
+                ?= value_at s (colon + 1i32) ?|
+                | None => None
+                | Some (v, next) => after_member s next ((key, v) :: acc)
+
+:& :~ after_member (s : string) (start : i32) (acc : list (string * json)) : option (json * i32) =
+    := i = skip_ws s start
+    := c = at s i
+    ? c = 44i32
+    ?> member_at s (i + 1i32) acc
+    |? c = 125i32
+    ?> Some (JObj (listm::rev acc), i + 1i32)
+    |: None
+
+:& :~ array_at (s : string) (opened : i32) : option (json * i32) =
+    := i = skip_ws s opened
+    ? at s i = 93i32 ?> Some (JArr [], i + 1i32) |: item_at s i []
+
+:& :~ item_at (s : string) (start : i32) (acc : list json) : option (json * i32) =
+    ?= value_at s start ?|
+    | None => None
+    | Some (v, next) => after_item s next (v :: acc)
+
+:& :~ after_item (s : string) (start : i32) (acc : list json) : option (json * i32) =
+    := i = skip_ws s start
+    := c = at s i
+    ? c = 44i32
+    ?> item_at s (i + 1i32) acc
+    |? c = 93i32
+    ?> Some (JArr (listm::rev acc), i + 1i32)
+    |: None
+
+:= parse (s : string) : option json =
+    ?= value_at s 0i32 ?|
+    | Some (v, next) => ? skip_ws s next = text::length s ?> Some v |: None
+    | None => None
+
+:~ ^ member (key : string) (members : list (string * json)) : option json =
+    ?= members ?|
+    | (name, v) :: rest => ? name = key ?> Some v |: member key rest
+    | [] => None
+
+:~ field (key : string) (v : json) : option json =
+    ?= v ?|
+    | JObj members => member key members
+    | _ => None
+
+:~ ^ quoted_from (s : string) (i : i32) (start : i32) (acc : string) : string =
+    := c = at s i
+    := chunk = text::slice_len s start (i - start)
+    ? c < 0i32
+    ?> acc ++ chunk
+    |? c = 34i32 || c = 92i32
+    ?> quoted_from s (i + 1i32) (i + 1i32) (acc ++ chunk ++ "\\" ++ text::one s i)
+    |? c < 32i32 ?>
+        quoted_from s
+            (i + 1i32)
+            (i + 1i32)
+            (acc ++ chunk ++ "\\u00" ++ text::hex_digit (c / 16i32) ++ text::hex_digit (c % 16i32))
+    |: quoted_from s (i + 1i32) start acc
+
+:~ quoted (s : string) : string = "\"" ++ quoted_from s 0i32 0i32 "" ++ "\""
+
+:~ ^ render (v : json) : string =
+    ?= v ?|
+    | JNull => "null"
+    | JBool b => ? b ?> "true" |: "false"
+    | JNum n => n
+    | JStr t => quoted t
+    | JArr items => "[" ++ sm'::concat_list "," (listm::map render items) ++ "]"
+    | JObj members => "{" ++ sm'::concat_list "," (listm::map (\ (k, x) => quoted k ++ ":" ++ render x) members) ++ "}"
+
+:~ str_of (v : json) : option string = ?= v ?| JStr s => Some s | _ => None
+
+:~ arr_of (v : json) : list json = ?= v ?| JArr xs => xs | _ => []
+
+:~ to_text (v : json) : string = render v
+
+:~ field_string (key : string) (v : json) : string =
+    ?= field key v ?|
+    | Some x => (?= str_of x ?| Some s => s | None => "")
+    | None => ""
+
+:~ field_array (key : string) (v : json) : list json =
+    ?= field key v ?|
+    | Some x => arr_of x
+    | None => []
+
+:~ field_text (key : string) (v : json) (fallback : string) : string =
+    ?= field key v ?|
+    | Some x => render x
+    | None => fallback
+
+:= canonical (s : string) : string =
+    ?= parse s ?|
+    | Some v => render v
+    | None => ""
+
+///> gleam
+:# json_values_parse_strictly_and_render_compact =
+    canonical " {\"a\" : [ true , false , null, -0.5e+3 ], \"b\\u00e9\" : \"x\\ty\" } "
+    |> _assert_eq "{\"a\":[true,false,null,-0.5e+3],\"bé\":\"x\\u0009y\"}"
+    canonical "[1,]" |> _assert_eq ""
+    canonical "01" |> _assert_eq ""
+    canonical "\"\\ud800\"" |> _assert_eq ""
+    canonical "\"\\ud83d\\ude00\"" |> _assert_eq ("\"" ++ unicode::char_of 128512i32 ++ "\"")
+    canonical "[] x" |> _assert_eq ""
+    canonical "" |> _assert_eq ""
+
+///> gleam
+:# json_accessors_read_fields_and_reemit_compactly =
+    := doc = "{\"cell_type\":\"code\",\"source\":[\"a\\n\",\"b\"],\"metadata\":{\"x\":1},\"outputs\":[]}"
+    := v = ?= parse doc ?| Some j => j | None => JNull
+    := src = sm'::concat_list "" (listm::map (\ x => ?= str_of x ?| Some s => s | None => "") (field_array "source" v))
+    (field_string "cell_type" v, src, field_text "metadata" v "{}", field_text "nope" v "{}", (listm::length (field_array "outputs" v) : i32))
+    |> _assert_eq ("code", "a\nb", "{\"x\":1}", "{}", 0i32)
+
+///> gleam
+:# canonical_json_keeps_the_old_json_decode_answers_on_the_edges =
+    := ins = [ "{\"a\":1,\"a\":2}"; "\"\\ud800\""; "\"\\udc00x\""; "\"𐀀\""; "\"\\ud800A\""; "\"é\\/\\b\\f\\n\\r\\t\\\"\\\\\""; "\"\\u0000\""; "\"\\x\""; "\"\\u12zz\""; "\"a\tb\""; "\"café 😀\""; "[1,]"; "{\"a\":1,}"; "{\"a\"}"; "{a:1}"; "{\"a\":1 \"b\":2}"; "[1 2]"; "01"; "-01"; "1."; ".5"; "-"; "+1"; "1e"; "1e+"; "1e5"; "1E-3"; "-0"; "-0.0"; "1.5E+3"; "[] x"; "[]]"; "nul"; "truex"; "True"; ""; "   "; "  \r\n\t[]\r\n"; "[ ]"; "{\"a\" : [ true , false , null ] }"; "{\"output\":\"hi\",\"command_result\":\"{\\\"output\\\":\\\"inner\\\"}\"}"; "[[[[[[[[[[[]]]]]]]]]]]"; "[[[[[[[[[[[]]]]]]]]]]"; "{\"\":{\"\":\"\"}}" ]
+    listm::map canonical ins |> _assert_eq [ "{\"a\":1,\"a\":2}"; ""; ""; "\"𐀀\""; ""; "\"é/\\u0008\\u000c\\u000a\\u000d\\u0009\\\"\\\\\""; "\"\\u0000\""; ""; ""; ""; "\"café 😀\""; ""; ""; ""; ""; ""; ""; ""; ""; ""; ""; ""; ""; ""; ""; "1e5"; "1E-3"; "-0"; "-0.0"; "1.5E+3"; ""; ""; ""; ""; ""; ""; ""; "[]"; ""; "{\"a\":[true,false,null]}"; "{\"output\":\"hi\",\"command_result\":\"{\\\"output\\\":\\\"inner\\\"}\"}"; "[[[[[[[[[[[]]]]]]]]]]]"; ""; "{\"\":{\"\":\"\"}}" ]
+
+:~ eq_hex (n : i32) : string = ? n < 10i32 ?> text::show_i32 n |: text::one "ABCDEF" (n - 10i32)
+
+:~ eq_short (c : i32) : string =
+    ? c = 34i32 ?> "\\\"" |? c = 92i32 ?> "\\\\" |? c = 8i32 ?> "\\b" |? c = 9i32 ?> "\\t" |? c = 10i32 ?> "\\n" |? c = 12i32 ?> "\\f" |? c = 13i32 ?> "\\r" |: ""
+
+:~ eq_esc_at (s : string) (i : i32) : string =
+    := c = text::byte_at s i
+    := short = eq_short c
+    ? short <> "" ?> short |? c < 32i32 ?> "\\u00" ++ eq_hex (c / 16i32) ++ eq_hex (c % 16i32) |: text::slice_len s i 1i32
+
+:~ ^ eq_esc_go (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s ?> acc |: eq_esc_go s (i + 1i32) (acc ++ eq_esc_at s i)
+
+:~ elixir_quoted (s : string) : string = "\"" ++ eq_esc_go s 0i32 "" ++ "\""
+
+///> gleam
+:# elixir_quoted_matches_elixir_json_escaping =
+    (elixir_quoted "a\tb\nc", elixir_quoted (unicode::char_of 11i32), elixir_quoted "q\"\\/")
+    |> _assert_eq ("\"a\\tb\\nc\"", "\"\\u000B\"", "\"q\\\"\\\\/\"")
+
+:~ ejson_is (f : string) (t : erlang_term::term) : bool = erlang_term::apply "erlang" f [ t ] |> erlang_term::cast
+
+:~ eq_atom (t : erlang_term::term) (name : string) : bool = erlang_term::equal t (erlang_term::atom name)
+
+:~ ejson_atom (t : erlang_term::term) : string =
+    ? eq_atom t "nil" ?> "null" |? eq_atom t "true" ?> "true" |? eq_atom t "false" ?> "false" |: elixir_quoted (erlang_term::apply "erlang" "atom_to_binary" [ t ] |> erlang_term::cast)
+
+:~ ejson_float (t : erlang_term::term) : string = erlang_term::apply "erlang" "float_to_binary" [ t; erlang_term::list_term [ erlang_term::atom "short" ] ] |> erlang_term::cast
+
+:~ ejson_int (t : erlang_term::term) : string = erlang_term::apply "erlang" "integer_to_binary" [ t ] |> erlang_term::cast
+
+:~ ejson_key (k : erlang_term::term) : string = ? ejson_is "is_binary" k ?> (erlang_term::cast k : string) |: (erlang_term::apply "erlang" "atom_to_binary" [ k ] |> erlang_term::cast)
+
+:~ ejson_scalar (t : erlang_term::term) : string =
+    ? ejson_is "is_binary" t ?> elixir_quoted (erlang_term::cast t)
+    |? ejson_is "is_integer" t ?> ejson_int t
+    |? ejson_is "is_float" t ?> ejson_float t
+    |: ejson_atom t
+
+:~ ^ ejson (t : erlang_term::term) : string =
+    ? ejson_is "is_list" t ?> ejson_list t
+    |? ejson_is "is_map" t ?> ejson_map t
+    |? ejson_is "is_tuple" t ?> failwith "json_value.ejson: unsupported term"
+    |: ejson_scalar t
+
+:& :~ ejson_list (t : erlang_term::term) : string = "[" ++ sm'::concat_list "," (listm::map ejson (erlang_term::items_of t)) ++ "]"
+
+:& :~ ejson_map (t : erlang_term::term) : string = "{" ++ sm'::concat_list "," (listm::map ejson_entry (erlang_term::items_of (erlang_term::apply "maps" "to_list" [ t ]))) ++ "}"
+
+:& :~ ejson_entry (pair : erlang_term::term) : string =
+    elixir_quoted (ejson_key (erlang_term::element_at 1i32 pair)) ++ ":" ++ ejson (erlang_term::element_at 2i32 pair)
+
+:~ term_json (t : erlang_term::term) : string = ejson t
+
+:~ otp_json (t : erlang_term::term) : string = erlang_term::apply "erlang" "iolist_to_binary" [ erlang_term::apply "json" "encode" [ t ] ] |> erlang_term::cast

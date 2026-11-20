@@ -12,7 +12,7 @@ $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir
 $env:DOTNET_ROOT = Split-Path $dotnet
 $env:SPIRAL_WORKSPACE_ROOT = $BundleRoot
 $fpc = if ($env:SPIRAL_FPC) { $env:SPIRAL_FPC } else { Join-Path $HOME 'scoop\apps\freepascal\3.3.1-20261025\bin\i386-win32\fpc.exe' }
-$root = (Resolve-Path (Join-Path $PSScriptRoot '..\tmp\samples')).Path + '\'
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..\samples')).Path + '\'
 $samples = @(Get-ChildItem $root -Recurse -Filter main.pas | ForEach-Object DirectoryName | Sort-Object -Unique | Where-Object { (Split-Path $_ -Leaf) -like $Filter })
 $work = Join-Path ([IO.Path]::GetTempPath()) "delphi-heaptrc-$PID"
 New-Item -ItemType Directory -Force $work | Out-Null

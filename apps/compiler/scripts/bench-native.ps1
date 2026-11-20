@@ -12,8 +12,8 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'env.ps1')
 $root = Join-Path (Get-SpiralCacheDir) "native/$(ConvertTo-SpiralMode $Mode)/samples"
-$sampleRoot = Join-Path $PSScriptRoot '../tmp/samples'
-$shimDir = Join-Path $PSScriptRoot '../tmp/tests/native-shims'
+$sampleRoot = Join-Path $PSScriptRoot '../samples'
+$shimDir = Join-Path $PSScriptRoot '../tests/native-shims'
 $tools = Get-SpiralNativeTools
 $kotlinStdlib = if ($tools.Kotlinc) { Join-Path (Split-Path (Split-Path $tools.Kotlinc)) 'lib/kotlin-stdlib.jar' }
 function Measure-FastestRun([string] $program, [string[]] $arguments, [string] $workingDirectory, [string] $pathPrefix, [hashtable] $environment) {

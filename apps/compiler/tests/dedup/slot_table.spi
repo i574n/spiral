@@ -1,0 +1,131 @@
+///- --package .
+:# slot_table static =
+    :< testing
+
+:< sm'_operators
+
+:== term = erlang_term::term
+
+:== waiter = term
+
+:== held_slot = term * term
+
+:== slot_state = { limit : i32; held : list held_slot; waiting : list waiter }
+
+:| slot_table = SlotTable : slot_state
+
+:~ slots_new (limit : i32) : slot_table = SlotTable { limit = limit; held = []; waiting = [] }
+
+:~ waiter_ref (w : waiter) : term = erlang_term::element_at 3i32 w
+
+:~ held_by (w : waiter) : held_slot = waiter_ref w, erlang_term::element_at 2i32 w
+
+:~ slot_of (h : held_slot) : term =
+    := ref, _ = h
+    ref
+
+:~ has_room (s : slot_state) : bool = listm::length s::held < s::limit
+
+:~ ^ grant_waiting (s : slot_state) (grants : list waiter) : slot_state * list waiter =
+    ?= s::waiting ?|
+    | w :: rest ?& has_room s => grant_waiting { s ?| held = held_by w :: s::held; waiting = rest } (w :: grants)
+    | _ => s, listm::rev grants
+
+:~ acquired (w : waiter) (s : slot_state) : bool * slot_state =
+    ?= s::waiting ?|
+    | [] ?& has_room s => !+, { s ?| held = held_by w :: s::held }
+    | _ => !-, { s ?| waiting = listm::append s::waiting [ w ] }
+
+:~ slots_acquire (w : waiter) (table : slot_table) : bool * slot_table =
+    ?= table ?|
+    | SlotTable s =>
+        := granted, next = acquired w s
+        granted, SlotTable next
+
+:~ ^ held_without (ref : term) (held : list held_slot) : bool * list held_slot =
+    ?= held ?|
+    | [] => !-, []
+    | h :: rest ?& erlang_term::equal (slot_of h) ref => !+, rest
+    | h :: rest =>
+        := found, kept = held_without ref rest
+        found, h :: kept
+
+:~ freed (found : bool) (held : list held_slot) (s : slot_state) : slot_state * list waiter =
+    ? found ?> grant_waiting { s ?| held = held } [] |: (s, [])
+
+:~ slots_release (ref : term) (table : slot_table) : bool * slot_table * list waiter =
+    ?= table ?|
+    | SlotTable s =>
+        := found, held = held_without ref s::held
+        := next, grants = freed found held s
+        found, SlotTable next, grants
+
+:~ ^ waiting_without (ref : term) (waiting : list waiter) : list waiter =
+    ?= waiting ?|
+    | [] => []
+    | w :: rest => ? erlang_term::equal (waiter_ref w) ref ?> waiting_without ref rest |: w :: waiting_without ref rest
+
+:~ slots_down (ref : term) (table : slot_table) : slot_table * list waiter =
+    := found, released, grants = slots_release ref table
+    ?= table ?|
+    | SlotTable s => ? found ?> (released, grants) |: (SlotTable { s ?| waiting = waiting_without ref s::waiting }, [])
+
+:~ slots_status (table : slot_table) : i32 * i32 * i32 =
+    ?= table ?|
+    | SlotTable s => s::limit, listm::length s::held, listm::length s::waiting
+
+:~ table_of (t : term) : slot_table = erlang_term::cast t
+
+:~ verdict (yes : bool) (named : string) (otherwise : string) : term = erlang_term::atom (? yes ?> named |: otherwise)
+
+:~ acquire_term (table : term) (w : waiter) : term =
+    := granted, next = slots_acquire w (table_of table)
+    erlang_term::tuple [ verdict granted "granted" "queued"; erlang_term::of next ]
+
+:~ release_term (table : term) (ref : term) : term =
+    := found, next, grants = slots_release ref (table_of table)
+    erlang_term::tuple [ verdict found "released" "unknown"; erlang_term::of next; erlang_term::list_term grants ]
+
+:~ down_term (table : term) (ref : term) : term =
+    := next, grants = slots_down ref (table_of table)
+    erlang_term::tuple [ erlang_term::of next; erlang_term::list_term grants ]
+
+:~ status_term (table : term) : term =
+    := limit, held, waiting = slots_status (table_of table)
+    erlang_term::tuple [ erlang_term::of limit; erlang_term::of held; erlang_term::of waiting ]
+
+:~ ref_of (n : string) : term = erlang_term::of ("ref" ++# n)
+
+:~ test_waiter (n : string) : waiter =
+    erlang_term::tuple [ erlang_term::of ("from" ++# n); erlang_term::of ("owner" ++# n); ref_of n ]
+
+:~ two_waiting () : slot_table =
+    := _, t = slots_new 1i32 |> slots_acquire (test_waiter "1")
+    := _, t = t |> slots_acquire (test_waiter "2")
+    t
+
+///> gleam
+:# a_full_table_queues =
+    := a, t = slots_new 1i32 |> slots_acquire (test_waiter "1")
+    := b, _ = t |> slots_acquire (test_waiter "2")
+    (a, b, slots_status (two_waiting ())) |> _assert_eq (!+, !-, (1i32, 1i32, 1i32))
+
+///> gleam
+:# a_release_grants_the_next_waiter =
+    := found, t, grants = two_waiting () |> slots_release (ref_of "1")
+    (found, listm::length grants, slots_status t) |> _assert_eq (!+, 1i32, (1i32, 1i32, 0i32))
+
+///> gleam
+:# a_dead_holder_frees_its_slot_for_the_next_waiter =
+    := t, grants = two_waiting () |> slots_down (ref_of "1")
+    (listm::length grants, slots_status t) |> _assert_eq (1i32, (1i32, 1i32, 0i32))
+
+///> gleam
+:# a_dead_waiter_leaves_the_queue =
+    := t, grants = two_waiting () |> slots_down (ref_of "2")
+    (listm::length grants, slots_status t) |> _assert_eq (0i32, (1i32, 1i32, 0i32))
+
+///> gleam
+:# an_unknown_release_is_ignored =
+    := found, t, _ = two_waiting () |> slots_release (ref_of "nope")
+    (found, slots_status t) |> _assert_eq (!-, (1i32, 1i32, 1i32))

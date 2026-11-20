@@ -1,0 +1,7 @@
+:~ ^ walk (n : i32) (s : { at : i32; spawn : i32 }) : i32 =
+    ? n < 1i32 ?> s.at +. s.spawn |: walk (n -. 1i32) { at = s.at +. n; spawn = s.spawn *. 2i32 }
+
+:= main () : i32 =
+    := ~x = 1i32
+    := ~k = 10i32
+    walk k { at = x; spawn = x } -. 1080i32

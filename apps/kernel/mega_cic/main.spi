@@ -1,0 +1,50 @@
+///- --package .
+
+:< syntax
+:< scope
+:< subst
+:< universes
+:< env
+:< reduce
+:< conversion
+:< typing
+:< inductive
+:< nested
+
+:~ syntax_check () : bool =
+    (term_text (id_on "x" Default), term_text (id_on "x" Implicit), is_closed (id_on "x" Default))
+    = ("fun (x : Prop) => #0", "fun {x : Prop} => #0", !+)
+
+:~ env_check () : bool =
+    := env = [ Axiom (name "nat", [], Sort (Succ Zero)); Def (name "id_prop", [], Sort (Succ Zero), Sort Zero) ]
+    (unfold env "id_prop", unfold env "nat", unfold env "missing") = (Some (Sort Zero), None, None)
+
+:~ reduce_check () : bool =
+    := r = whnf [] (App (identity (), FVar (name "a"))) 10i32
+    (result_text r, r) = ("whnf a in 1", Whnf (FVar (name "a"), [ Beta ]))
+
+:~ conversion_check () : bool = defeq_text (defeq_with [] (App (identity (), FVar (name "a"))) (FVar (name "a")) 10i32) = "same in 1"
+
+:~ typing_check () : bool =
+    (type_text (infer [] [] (identity ())), type_text (infer [] [] (poly_id ())))
+    = ("(x : Prop) -> Prop", "(A : Type) -> (a : #0) -> #1")
+
+:~ inductive_check () : bool =
+    := env =
+        ?= admit_inductive [] (nat_decl ()) ?|
+        | Admitted e => e
+        | Refused _ => []
+    := one = App (Const (name "succ", []), Const (name "zero", []))
+    (admitted_text (admit_inductive [] (nat_decl ())), type_text (infer env [] one)) = ("admitted 4", "Nat")
+
+:~ nested_check () : bool =
+    := env = tree_env ()
+    := node_type =
+        ?= infer env [] (Const (name "node", [])) ?|
+        | Typed ty => same_as ty (Pi (name "x", Default, trees (), tree ()))
+        | Rejected _ => !-
+    (admitted_text (admit_nested (list_env ()) [ tree_family () ]), node_type) = ("admitted 12", !+)
+
+:= main () : i32 =
+    [ syntax_check (); env_check (); reduce_check (); conversion_check (); typing_check (); inductive_check (); nested_check () ]
+    |> listm::fold (\ n ok => ? ok ?> n + 1i32 |: n) 0i32

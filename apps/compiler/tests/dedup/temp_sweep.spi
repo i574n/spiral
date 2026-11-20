@@ -1,0 +1,108 @@
+///- --package .
+:# temp_sweep static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ is_ok (t : erlang_term::term) : bool = erlang_term::equal (erlang_term::element_at 1i32 t) (erlang_term::atom "ok")
+
+:~ posix_time_opts () : erlang_term::term =
+    erlang_term::list_term [ erlang_term::tuple [ erlang_term::atom "time"; erlang_term::atom "posix" ] ]
+
+:~ file_info (path : string) : erlang_term::term =
+    erlang_term::apply "file" "read_file_info" [ erlang_term::of path; posix_time_opts () ]
+
+:~ is_directory (info : erlang_term::term) : bool =
+    erlang_term::equal (erlang_term::element_at 3i32 info) (erlang_term::atom "directory")
+
+:~ info_mtime (info : erlang_term::term) : i64 = (erlang_term::element_at 6i32 info |> erlang_term::cast : i64)
+
+:~ is_old_dir (path : string) (cutoff : i64) : bool =
+    := r = file_info path
+    ? is_ok r
+    ?>
+        := info = erlang_term::element_at 2i32 r
+        is_directory info && info_mtime info < cutoff
+    |: !-
+
+:~ removed_dir (path : string) : bool =
+    erlang_term::equal (erlang_term::apply "file" "del_dir_r" [ erlang_term::of path ]) (erlang_term::atom "ok")
+
+:~ listed_names (r : erlang_term::term) : list string =
+    erlang_term::apply "lists" "sort" [ erlang_term::element_at 2i32 r ] |> erlang_term::items_of |> listm::map erlang_file::text_of
+
+:~ sorted_names (root : string) : list string =
+    := r = erlang_term::apply "file" "list_dir" [ erlang_term::of root ]
+    ? is_ok r ?> listed_names r |: []
+
+:~ kept_acc (path : string) (acc : list string) : list string = ? removed_dir path ?> path :: acc |: acc
+
+:~ ^ sweep_from (root : string) (cutoff : i64) (names : list string) (acc : list string) : list string =
+    ?= names ?|
+    | [] => listm::rev acc
+    | name :: rest =>
+        := path = erlang_file::joined_path root name
+        := next = ? is_old_dir path cutoff ?> kept_acc path acc |: acc
+        sweep_from root cutoff rest next
+
+:~ swept (root : string) (max_age_s : i64) (now : i64) : list string =
+    sweep_from root (now - max_age_s) (sorted_names root) []
+
+:~ sys_seconds () : i64 = (erlang_term::apply "os" "system_time" [ erlang_term::atom "second" ] |> erlang_term::cast : i64)
+
+:~ sweep_root () : string =
+    := base = toolchain::first_set [ toolchain::beam_env "TMPDIR"; toolchain::beam_env "TEMP"; toolchain::beam_env "TMP"; "/tmp" ]
+    erlang_file::joined_path base "spiral_cells"
+
+:~ run () : string = sm'::concat_list "\n" (swept (sweep_root ()) 86400i64 (sys_seconds ()))
+
+:~ unique_suffix () : string = erlang_term::integer_text (erlang_term::apply "erlang" "unique_integer" [ erlang_term::list_term [ erlang_term::atom "positive" ] ])
+
+:~ test_base (tag : string) : string =
+    erlang_file::joined_path (erlang_file::test_cache_directory ()) (tag ++ unique_suffix ())
+
+:~ ensure_dir_of (path : string) : () = erlang_term::apply "filelib" "ensure_dir" [ erlang_term::of path ] |> ignore
+
+:~ make_dir (path : string) : () = erlang_term::apply "file" "make_dir" [ erlang_term::of path ] |> ignore
+
+:~ present (path : string) : bool = is_ok (erlang_term::apply "file" "read_file_info" [ erlang_term::of path ])
+
+:~ backdate (path : string) (secs_ago : i64) : () =
+    := at = erlang_term::apply "calendar" "system_time_to_local_time" [ erlang_term::of (sys_seconds () - secs_ago); erlang_term::atom "second" ]
+    erlang_term::apply "file" "change_time" [ erlang_term::of path; at ] |> ignore
+
+:~ fixture_old (base : string) : string =
+    := old = erlang_file::joined_path base "1-old"
+    := leaf = erlang_file::joined_path old "sub/main.spi"
+    := _ = ensure_dir_of leaf
+    := _ = erlang_file::file_written leaf "x"
+    := _ = backdate old (2i64 * 86400i64)
+    old
+
+:~ fixture_fresh (base : string) : string =
+    := fresh = erlang_file::joined_path base "2-fresh"
+    := _ = make_dir fresh
+    fresh
+
+:~ fixture_note (base : string) : string =
+    := note = erlang_file::joined_path base "note.txt"
+    := _ = erlang_file::file_written note "keep"
+    note
+
+:~ run_fixture () : string * string * string * string =
+    := base = test_base "run"
+    (base, fixture_old base, fixture_fresh base, fixture_note base)
+
+:~ swept_fixture () : list string * string * string * string =
+    := base, old, fresh, note = run_fixture ()
+    (swept base 86400i64 (sys_seconds ()), old, fresh, note)
+
+///> gleam
+:# only_old_run_dirs_are_removed_with_contents_and_files_and_fresh_dirs_stay =
+    := removed, old, fresh, note = swept_fixture ()
+    (removed, present old, present fresh, present note) |> _assert_eq ([ old ], !-, !+, !+)
+
+///> gleam
+:# a_missing_root_sweeps_nothing =
+    := root = test_base "missing"
+    swept root 1i64 0i64 |> _assert_eq []

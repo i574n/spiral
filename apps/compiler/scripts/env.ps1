@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 3.0
 
-$script:BundleRoot = Join-Path (Split-Path $PSScriptRoot -Parent) 'tmp'
+$script:BundleRoot = Split-Path $PSScriptRoot -Parent
 
 function Get-SpiralCacheDir {
     $dir =
@@ -31,7 +31,7 @@ function ConvertTo-SpiralMode([string]$Mode) {
 
 function Get-SpiralCoreSource([string]$Mode) {
     [void](ConvertTo-SpiralMode $Mode)
-    Join-Path (Split-Path $BundleRoot -Parent) 'spiral_compiler.fs'
+    Join-Path $BundleRoot 'spiral_compiler.fs'
 }
 
 function Get-SpiralCoreProjection([string]$Mode, [string]$Destination, [string]$Source, [string[]]$KeepDefines = @()) {
@@ -147,7 +147,7 @@ function Get-SpiralScoreboardPath([string]$Mode) { Join-Path (Get-SpiralCacheDir
 function Get-SpiralPackageDir {
     $candidates = @(
         $env:SPIRAL_COMPILER_PACKAGE_DIR,
-        (Join-Path $BundleRoot '../../../deps/The-Spiral-Language/VS Code Plugin')
+        (Join-Path $BundleRoot '../../deps/The-Spiral-Language/VS Code Plugin')
     )
     foreach ($candidate in $candidates) {
         if ($candidate -and (Test-SpiralManifest (Join-Path $candidate 'core'))) { return (Resolve-Path $candidate).Path }
@@ -160,7 +160,7 @@ function Get-SpiralLibDir {
     $lib = Join-Path $cache 'lib'
     if (-not (Test-Path (Join-Path $lib 'Hopac.dll'))) {
         $dotnet = Resolve-SpiralDotnet
-        & $dotnet build (Join-Path $BundleRoot 'compiler/lib/Dependencies.fsproj') -c Release -nologo -v:q "-p:SpiralCacheDir=$cache" | Out-Host
+        & $dotnet build (Join-Path $BundleRoot 'dotnet/lib/Dependencies.fsproj') -c Release -nologo -v:q "-p:SpiralCacheDir=$cache" | Out-Host
         if ($LASTEXITCODE -ne 0) { throw 'building the dependency directory failed' }
     }
     (Resolve-Path $lib).Path

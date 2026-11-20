@@ -1,0 +1,93 @@
+:< sm'_operators
+
+:# mount_place static =
+    :< testing
+
+:== trm = erlang_term::term
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ etup (xs : list trm) : trm = erlang_term::tuple xs
+
+:~ eof (x : string) : trm = erlang_term::of x
+
+:~ j (a : string) (b : string) : string = erlang_file::joined_path a b
+
+:~ mkall (p : string) : bool = erlang_file::make_dir_all p
+
+:~ fw (p : string) (c : string) : bool = erlang_file::file_written p c
+
+:~ ft (p : string) : string = erlang_file::file_text p
+
+:~ ls (p : string) : list string = erlang_file::list_dir p
+
+:~ drop_prefix (n : i32) (s : string) : string = sm'::substring n (sm'::length s - n) s
+
+:~ abs_line (tg : string) (ln : string) : string =
+    ? sm'::starts_with "packageDir:" ln && sm'::length ln > 11i32
+    ?> "packageDir: " ++ mount_text::expanded (sm'::trim (drop_prefix 11i32 ln)) tg
+    |: ln
+
+:~ proj_text (mt : string) (tg : string) (ab : bool) : string =
+    ? ab
+    ?> sm'::concat_list "\n" (listm::map (abs_line tg) (sm'::split_list "\n" mt))
+    |: mount_text::sibling_project mt
+
+:~ ^ mem (x : string) (xs : list string) : bool =
+    ?= xs ?| [] => !- | h :: t => ? h = x ?> !+ |: mem x t
+
+:~ skip (sk : list string) (n : string) : bool = mem n (manifest::manifest_names ()) || mem n sk
+
+:~ pair (ld : string) (tg : string) (n : string) : trm = etup [ eof (j ld n); eof (j tg n) ]
+
+:~ ^ links (ld : string) (tg : string) (sk : list string) (ns : list string) (ac : list trm) : list trm =
+    ?= ns ?|
+    | [] => listm::rev ac
+    | n :: rest => ? skip sk n ?> links ld tg sk rest ac |: links ld tg sk rest (pair ld tg n :: ac)
+
+:~ shadow (ld : string) (tg : string) (mt : string) (ab : bool) : () =
+    mkall ld |> ignore
+    fw (j ld "package.spiproj") (proj_text mt tg ab) |> ignore
+    fw (j ld "spiral_cells_shadow") "" |> ignore
+
+:~ ok_plan (xs : list trm) : trm = etup [ erlang_term::atom "ok"; erlang_term::list_term xs ]
+
+:~ err_plan (m : string) : trm = etup [ erlang_term::atom "error"; eof m ]
+
+:~ ok_links (ld : string) (tg : string) (sk : list string) : trm = ok_plan (links ld tg sk (ls tg) [])
+
+:~ mount_plan_shadow (ld : string) (tg : string) (mt : string) (ab : bool) : trm =
+    shadow ld tg mt ab
+    ok_links ld tg []
+
+:~ pe (i : i32) (p : trm) : string = erlang_term::cast (erlang_term::element_at i p)
+
+:~ perr (file : string) (old : string) (tg : string) : string =
+    "patch for " ++ file ++ " does not apply: " ++ verdict_text::elixir_inspect old ++ " is not in " ++ j tg file
+
+:~ wrote (ld : string) (file : string) (r : string) : option string =
+    fw (j ld file) (drop_prefix 1i32 r) |> ignore
+    None
+
+:~ patch1 (ld : string) (tg : string) (p : trm) : option string =
+    := file = pe 1i32 p
+    := old = pe 2i32 p
+    := r = mount_text::patch_first (ft (j tg file)) old (pe 3i32 p)
+    ? r = "E" ?> Some (perr file old tg) |: wrote ld file r
+
+:~ ^ patches (ld : string) (tg : string) (ps : list trm) : option string =
+    ?= ps ?| [] => None | p :: rest => ?= patch1 ld tg p ?| Some e => Some e | None => patches ld tg rest
+
+:~ pgo (ld : string) (tg : string) (mt : string) (ps : list trm) (pn : list string) (ab : bool) : trm =
+    shadow ld tg mt ab
+    ?= patches ld tg ps ?| Some e => err_plan e | None => ok_links ld tg pn
+
+:~ nest_err (nm : string) : string = "patch target " ++ nm ++ " is nested; patched mounts take top-level package files only"
+
+:~ nested_of (pn : list string) : string = mount_text::nested_name (sm'::concat_list "\n" pn)
+
+:~ mount_plan_patched (ld : string) (tg : string) (mt : string) (pat : trm) (ab : bool) : trm =
+    := ps = erlang_term::items_of pat
+    := pn = listm::map (pe 1i32) ps
+    := nm = nested_of pn
+    ? nm = "" ?> pgo ld tg mt ps pn ab |: err_plan (nest_err nm)

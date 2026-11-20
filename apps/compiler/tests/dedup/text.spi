@@ -1,0 +1,502 @@
+///- --package .
+:# text static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ length (text : string) : i32 = unicode.byte_count text
+
+:~ index (text : string) (i : i32) : char =
+    := part = unicode.byte_part text i 1i32
+    $'!part' : char
+
+:~ slice (text : string) { from = (from : i32) to = (to : i32) } : string = unicode.byte_part text from (to - from + 1i32)
+
+:~ starts_at (text : string) (i : i32) (pat : string) : bool =
+    := n = length pat
+    ? i < 0i32
+    ?> !-
+    |? i + n > length text
+    ?> !-
+    |? n = 0i32
+    ?> !+
+    |: slice text { from = i; to = i + n - 1i32 } = pat
+
+:~ starts_with (text : string) (pat : string) : bool = starts_at text 0i32 pat
+
+:~ drop (text : string) (n : i32) : string =
+    := len = length text
+    ? n >= len
+    ?> ""
+    |? n <= 0i32
+    ?> text
+    |: slice text { from = n; to = len - 1i32 }
+
+:~ slice_len (text : string) (from : i32) (n : i32) : string =
+    ? n <= 0i32
+    ?> ""
+    |? from >= length text
+    ?> ""
+    |:
+        := last = from + n - 1i32
+        := end = ? last >= length text ?> length text - 1i32 |: last
+        ? end < from
+        ?> ""
+        |: slice text { from = from; to = end }
+
+:~ take (text : string) (n : i32) : string =
+    := len = length text
+    := m = ? n < len ?> n |: len
+    ? m <= 0i32
+    ?> ""
+    |: slice text { from = 0i32; to = m - 1i32 }
+
+:~ find_from (text : string) (pat : string) (i : i32) : i32 =
+    := at = ? i < 0i32 ?> 0i32 |: i
+    ? length pat = 0i32
+    ?> i
+    |? at + length pat > length text
+    ?> -1i32
+    |: unicode.byte_find pat text at
+
+:~ contains (text : string) (pat : string) : bool = find_from text pat 0i32 >= 0i32
+
+:~ ^ find_char (text : string) (i : i32) (ch : char) : i32 =
+    ? i >= length text
+    ?> -1i32
+    |? index text i = ch
+    ?> i
+    |: find_char text (i + 1i32) ch
+
+:~ one (text : string) (i : i32) : string = slice text { from = i; to = i }
+
+:~ is_space (ch : char) : bool =
+    ? ch = ' '
+    ?> !+
+    |? ch = '\t'
+    ?> !+
+    |? ch = '\n'
+    ?> !+
+    |? ch = '\r'
+    ?> !+
+    |: !-
+
+:~ ^ trim_start (text : string) (i : i32) : i32 =
+    ? i >= length text
+    ?> i
+    |? is_space (index text i)
+    ?> trim_start text (i + 1i32)
+    |: i
+
+:~ ^ trim_end (text : string) (i : i32) : i32 =
+    ? i <= 0i32
+    ?> 0i32
+    |? is_space (index text (i - 1i32))
+    ?> trim_end text (i - 1i32)
+    |: i
+
+:~ trim (text : string) : string =
+    := a = trim_start text 0i32
+    := b = trim_end text (length text)
+    ? b <= a
+    ?> ""
+    |: slice text { from = a; to = b - 1i32 }
+
+:~ ^ trim_nl_start (text : string) (i : i32) : i32 =
+    ? i >= length text
+    ?> i
+    |? index text i = '\n'
+    ?> trim_nl_start text (i + 1i32)
+    |: i
+
+:~ ^ trim_nl_end (text : string) (i : i32) : i32 =
+    ? i <= 0i32
+    ?> 0i32
+    |? index text (i - 1i32) = '\n'
+    ?> trim_nl_end text (i - 1i32)
+    |: i
+
+:~ trim_newlines (text : string) : string =
+    := a = trim_nl_start text 0i32
+    := b = trim_nl_end text (length text)
+    ? b <= a
+    ?> ""
+    |: slice text { from = a; to = b - 1i32 }
+
+:~ trim_trailing_newlines (text : string) : string =
+    := b = trim_nl_end text (length text)
+    ? b <= 0i32
+    ?> ""
+    |? b = length text
+    ?> text
+    |: slice text { from = 0i32; to = b - 1i32 }
+
+:~ trim_cr (text : string) : string =
+    ? length text = 0i32
+    ?> ""
+    |? index text (length text - 1i32) = '\r'
+    ?> take text (length text - 1i32)
+    |: text
+
+:~ blank (text : string) : bool = trim text = ""
+
+:~ digit_high (n : i32) : string =
+    ? n = 5i32
+    ?> "5"
+    |? n = 6i32
+    ?> "6"
+    |? n = 7i32
+    ?> "7"
+    |? n = 8i32
+    ?> "8"
+    |? n = 9i32
+    ?> "9"
+    |: "0"
+
+:~ digit (n : i32) : string =
+    ? n = 0i32
+    ?> "0"
+    |? n = 1i32
+    ?> "1"
+    |? n = 2i32
+    ?> "2"
+    |? n = 3i32
+    ?> "3"
+    |? n = 4i32
+    ?> "4"
+    |: digit_high n
+
+:~ ^ show_i32 (n : i32) : string =
+    ? n < 0i32
+    ?> "-" ++ show_i32 (0i32 - n)
+    |? n < 10i32
+    ?> digit n
+    |: show_i32 (n / 10i32) ++ digit (n % 10i32)
+
+:~ digit_val (ch : char) : i32 =
+    ? ch = '0'
+    ?> 0i32
+    |? ch = '1'
+    ?> 1i32
+    |? ch = '2'
+    ?> 2i32
+    |? ch = '3'
+    ?> 3i32
+    |? ch = '4'
+    ?> 4i32
+    |? ch = '5'
+    ?> 5i32
+    |? ch = '6'
+    ?> 6i32
+    |? ch = '7'
+    ?> 7i32
+    |? ch = '8'
+    ?> 8i32
+    |? ch = '9'
+    ?> 9i32
+    |: -1i32
+
+:~ parse_done (acc : i32) (any : i32) : i32 =
+    ? any = 1i32
+    ?> acc
+    |: -1i32
+
+:~ ^ parse_acc (text : string) (i : i32) (acc : i32) (any : i32) : i32 =
+    ? i >= length text
+    ?> parse_done acc any
+    |:
+        := v = digit_val (index text i)
+        ? v < 0i32
+        ?> -1i32
+        |: parse_acc text (i + 1i32) (acc * 10i32 + v) 1i32
+
+:~ parse_i32 (text : string) : i32 = parse_acc text 0i32 0i32 0i32
+
+:~ ^ skip_spaces (text : string) (i : i32) : i32 =
+    ? i < length text && index text i = ' ' ?> skip_spaces text (i + 1i32) |: i
+
+:~ ^ has_char (pat : string) (i : i32) (ch : char) : bool =
+    ? i >= length pat
+    ?> !-
+    |? index pat i = ch
+    ?> !+
+    |: has_char pat (i + 1i32) ch
+
+:~ ident_set () : string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'"
+
+:~ letter_set () : string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+:~ ident_char (ch : char) : bool = has_char (ident_set ()) 0i32 ch
+
+:~ is_letter (ch : char) : bool = has_char (letter_set ()) 0i32 ch
+
+:~ name_char (ch : char) : bool =
+    ? ch = '~'
+    ?> !+
+    |? ch = '(' ?> !+
+    |: ident_char ch
+
+:~ ^ take_name (text : string) (i : i32) : i32 =
+    ? i < length text && name_char (index text i) ?> take_name text (i + 1i32) |: i
+
+:~ ^ take_ident (text : string) (i : i32) : i32 =
+    ? i < length text && ident_char (index text i) ?> take_ident text (i + 1i32) |: i
+
+:~ byte_at (text : string) (i : i32) : i32 =
+    unicode.byte_at text i
+
+:~ lowercase (text : string) : string =
+    sm'::to_lower text
+
+:~ utf8_width (lead : i32) : i32 =
+    ? lead < 128i32
+    ?> 1i32
+    |? lead < 224i32
+    ?> 2i32
+    |? lead < 240i32
+    ?> 3i32
+    |: 4i32
+
+:~ continuation (text : string) (i : i32) : i32 = ? i < length text ?> byte_at text i - 128i32 |: 0i32
+
+:~ code_point (text : string) (i : i32) : i32 =
+    := lead = byte_at text i
+    := width = utf8_width lead
+    ? width = 1i32
+    ?> lead
+    |? width = 2i32
+    ?> (lead - 192i32) * 64i32 + continuation text (i + 1i32)
+    |? width = 3i32
+    ?> (lead - 224i32) * 4096i32 + continuation text (i + 1i32) * 64i32 + continuation text (i + 2i32)
+    |:
+        (lead - 240i32) * 262144i32
+        + continuation text (i + 1i32) * 4096i32
+        + continuation text (i + 2i32) * 64i32
+        + continuation text (i + 3i32)
+
+:~ ^ take_unicode_ident (text : string) (i : i32) : i32 =
+    ? i >= length text
+    ?> i
+    |? byte_at text i >= 128i32
+    ?> take_unicode_ident text (i + 1i32)
+    |? ident_char (index text i)
+    ?> take_unicode_ident text (i + 1i32)
+    |: i
+
+:~ hex_digit (n : i32) : string = one "0123456789abcdef" n
+
+:~ ^ show_hex (n : i32) : string =
+    ? n < 16i32
+    ?> hex_digit n
+    |: show_hex (n / 16i32) ++ hex_digit (n % 16i32)
+
+:~ ^ take_spaces_or_brace (text : string) (i : i32) : i32 =
+    ? i >= length text
+    ?> i
+    |:
+        := ch = index text i
+        ? ch = ' ' || ch = '}' ?> take_spaces_or_brace text (i + 1i32) |: i
+
+:~ function_tail (text : string) (i : i32) : bool =
+    := j = skip_spaces text i
+    ? j > i && starts_at text j "function" ?> !+ |: !-
+
+:~ eq_at (text : string) (i : i32) : bool =
+    := j = skip_spaces text i
+    ? j > i && j < length text ?>
+        := ch = index text j
+        ? ch = ':' || ch = '='
+        ?> function_tail text (j + 1i32) = !-
+        |: !-
+    |: !-
+
+:~ take_tilde_word (text : string) (i : i32) : i32 =
+    ? i >= length text
+    ?> -1i32
+    |:
+        := ch = index text i
+        ? ch = '~' || ident_char ch ?>
+            take_ident text (i + 1i32)
+        |: -1i32
+
+:~ group_word (text : string) (i : i32) : i32 =
+    ? i >= length text || ident_char (index text i) = !-
+    ?> -1i32
+    |:
+        := j = take_ident text (i + 1i32)
+        := k = take_spaces_or_brace text j
+        ? k < length text && index text k = '&' ?>
+            := m = skip_spaces text (k + 1i32)
+            ? m < length text && ident_char (index text m) ?> take_ident text (m + 1i32) |: k
+        |: k
+
+:~ group_paren (text : string) (i : i32) : i32 =
+    := j = skip_spaces text i
+    := k = take_tilde_word text j
+    ? k >= 0i32 && k < length text && index text k = ')' ?> k + 1i32 |: -1i32
+
+:~ group_comma (text : string) (i : i32) : i32 =
+    ? i >= length text || index text i <> ','
+    ?> -1i32
+    |: take_tilde_word text (skip_spaces text (i + 1i32))
+
+:~ binds_at (line : string) (at : i32) : bool = at >= 0i32 && eq_at line at
+
+:~ value_binding_from (line : string) (after : i32) : bool =
+    := named = take_name line after
+    named <> after
+    && (binds_at line named || binds_at line (group_word line named) || binds_at line (group_paren line named)
+        || binds_at line (group_comma line named))
+
+:~ is_value_binding (line : string) : bool =
+    := origin =
+        ? starts_at line 0i32 "and "
+        ?> skip_spaces line 3i32
+        |? starts_at line 0i32 ":& "
+        ?> skip_spaces line 2i32
+        |: 0i32
+    := keyword_end =
+        ? starts_at line origin "inl" || starts_at line origin "let"
+        ?> origin + 3i32
+        |? starts_at line origin ":=" || starts_at line origin ":~"
+        ?> origin + 2i32
+        |: -1i32
+    := after =
+        ? keyword_end >= 0i32 && keyword_end < length line && index line keyword_end = ' ' ?>
+            skip_spaces line keyword_end
+        |: -1i32
+    after >= 0i32 && value_binding_from line after
+
+:| line_step =
+    | LineDone
+    | LineGot : string * i32
+
+:~ next_line (text : string) (i : i32) : line_step =
+    := len = length text
+    ? i > len
+    ?> LineDone
+    |? len = 0i32 && i = 0i32
+    ?> LineGot ("", 1i32)
+    |? i = len ?>
+        ? len > 0i32 && index text (len - 1i32) = '\n'
+        ?> LineGot ("", len + 1i32)
+        |: LineDone
+    |:
+        := nl = find_char text i '\n'
+        ? nl < 0i32
+        ?> LineGot (slice text { from = i; to = len - 1i32 }, len)
+        |? nl = i
+        ?> LineGot ("", nl + 1i32)
+        |: LineGot (slice text { from = i; to = nl - 1i32 }, nl + 1i32)
+
+:~ ^ replace_from (text : string) (pat : string) (repl : string) (i : i32) (acc : string) : string =
+    := at = find_from text pat i
+    ? at < 0i32 ?>
+        ? i = 0i32 ?> text |: acc ++ drop text i
+    |:
+        replace_from text pat repl (at + length pat) ((acc ++ slice_len text i (at - i)) ++ repl)
+
+:~ replace (text : string) (pat : string) (repl : string) : string =
+    ? pat = "" ?> text |: replace_from text pat repl 0i32 ""
+
+:~ ^ newlines (n : i32) : string =
+    ? n <= 0i32
+    ?> ""
+    |: "\n" ++ newlines (n - 1i32)
+
+:~ ^ collapse_at (text : string) (i : i32) (run : i32) (acc : string) : string =
+    ? i >= length text ?>
+        if run >= 3i32 then acc ++ """
+
+
+
+            """
+        |: acc ++ newlines run
+    |? index text i = '\n' ?> collapse_at text (i + 1i32) (run + 1i32) acc
+    |:
+        inl acc2 = if run >= 3i32 then acc ++ """
+
+
+
+            """ else acc ++ newlines run
+        := nl = find_char text i '\n'
+        := stop = ? nl < 0i32 ?> length text |: nl
+        collapse_at text stop 0i32 (acc2 ++ slice text { from = i; to = stop - 1i32 })
+
+:~ collapse_newlines (text : string) : string = collapse_at text 0i32 0i32 ""
+
+:~ ensure_nl (text : string) : string =
+    ? length text = 0i32
+    ?> "\n"
+    |? index text (length text - 1i32) = '\n'
+    ?> text
+    |: text ++ "\n"
+
+:~ indent_name (acc : string) (line : string) : string =
+    ? line = ""
+    ?> acc
+    |: acc ++ "    " ++ line ++ "-\n"
+
+:~ ^ indent_names (text : string) (i : i32) (acc : string) : string =
+    ?= next_line text i ?|
+    | LineDone => acc
+    | LineGot (line, next) => indent_names text next (indent_name acc line)
+
+:~ err (kind : string) (payload : string) : string = "error\n" ++ kind ++ "\n" ++ payload
+
+:~ is_error (text : string) : bool = starts_with text "error\n"
+
+:~ byte_or (text : string) (i : i32) : i32 = ? i >= 0i32 && i < length text ?> byte_at text i |: -1i32
+
+:~ elixir_space_width (text : string) (i : i32) : i32 =
+    := b = byte_or text i
+    := b1 = byte_or text (i + 1i32)
+    := b2 = byte_or text (i + 2i32)
+    ? b = 32i32 || (b >= 9i32 && b <= 13i32)
+    ?> 1i32
+    |? b = 194i32 && (b1 = 133i32 || b1 = 160i32)
+    ?> 2i32
+    |? b = 225i32 && b1 = 154i32 && b2 = 128i32
+    ?> 3i32
+    |? b = 226i32 && b1 = 128i32 && ((b2 >= 128i32 && b2 <= 138i32) || b2 = 168i32 || b2 = 169i32 || b2 = 175i32)
+    ?> 3i32
+    |? b = 226i32 && b1 = 129i32 && b2 = 159i32
+    ?> 3i32
+    |? b = 227i32 && b1 = 128i32 && b2 = 128i32
+    ?> 3i32
+    |: 0i32
+
+:~ ^ ucontent_start (text : string) (i : i32) : i32 =
+    := w = elixir_space_width text i
+    ? w > 0i32 ?> ucontent_start text (i + w) |: i
+
+:~ ^ ucontent_end (text : string) (i : i32) (last : i32) : i32 =
+    := w = elixir_space_width text i
+    ? i >= length text
+    ?> last
+    |? w > 0i32
+    ?> ucontent_end text (i + w) last
+    |:
+        := next = i + utf8_width (byte_at text i)
+        ucontent_end text next next
+
+:~ utrim (text : string) : string =
+    := a = ucontent_start text 0i32
+    slice_len text a (ucontent_end text a a - a)
+
+///> gleam
+:# utrim_strips_exactly_what_elixir_string_trim_strips =
+    := ws = [ 9i32; 10i32; 11i32; 12i32; 13i32; 32i32; 133i32; 160i32; 5760i32; 8192i32; 8193i32; 8194i32; 8195i32; 8196i32; 8197i32; 8198i32; 8199i32; 8200i32; 8201i32; 8202i32; 8232i32; 8233i32; 8239i32; 8287i32; 12288i32 ]
+    := kept = [ 8203i32; 8206i32; 8207i32; 65279i32; 6158i32 ]
+    := wrap = \ (cp : i32) => unicode::char_of cp ++ "a b" ++ unicode::char_of cp
+    (listm::map (\ (cp : i32) => utrim (wrap cp)) ws, listm::map (\ (cp : i32) => utrim (wrap cp) = wrap cp) kept, utrim "", utrim " \t ", utrim "éé")
+    |> _assert_eq (listm::map (\ (_ : i32) => "a b") ws, listm::map (\ (_ : i32) => !+) kept, "", "", "éé")
+
+///> gleam
+:# a_value_binding_names_its_value_before_an_equals =
+    (is_value_binding ":= x = 1", is_value_binding ":= a, b = p", is_value_binding ":= f x = 1")
+    |> _assert_eq (!+, !+, !-)
+
+///> gleam
+:# a_nameless_or_non_binding_line_is_not_a_value_binding =
+    (is_value_binding ":= = 1", is_value_binding "type t = i32", is_value_binding ":=x = 1") |> _assert_eq (!-, !-, !-)

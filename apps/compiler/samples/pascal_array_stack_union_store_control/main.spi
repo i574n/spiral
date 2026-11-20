@@ -1,0 +1,10 @@
+:| tree =
+    | Leaf : i32
+    | Node : i32 * i32
+
+:= main () : i32 =
+    := ~xs : array tree = create 2i32
+    set xs 0i32 (Leaf 40i32)
+    ?= index xs 0i32 ?|
+    | Leaf n => n
+    | Node _ => 0i32

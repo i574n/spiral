@@ -1,0 +1,54 @@
+///- --package .
+:# report_tail static =
+    :< testing
+
+:== term = erlang_term::term
+
+:~ atom (s : string) : term = erlang_term::atom s
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ maps (f : string) (args : list term) : term = erlang_term::apply "maps" f args
+
+:~ erl (f : string) (args : list term) : bool = erlang_term::apply "erlang" f args |> erlang_term::cast
+
+:~ report_counts (rows : term) : term = accept_mark::counts_of (erlang_term::items_of rows)
+
+:~ below (cells : term) (index : term) : bool = (erlang_term::cast index : i32) < erlang_term::count_of cells
+
+:~ in_range (cells : term) (index : term) : bool =
+    erl "is_integer" [ index ] && erl ">=" [ index; erlang_term::of 0i32 ] && below cells index
+
+:~ source_field (cell : term) : term = ? erlang_term::is_map cell ?> maps "get" [ atom "source"; cell; atom "nil" ] |: atom "nil"
+
+:~ source_of (cell : term) : string =
+    := source = source_field cell
+    ? erlang_term::is_binary source ?> erlang_term::cast source |: ""
+
+:~ cell_text (cells : term) (index : term) : string = ? in_range cells index ?> source_of (erlang_term::item_at (erlang_term::cast index) cells) |: ""
+
+:~ tail_of (reason : string) : term = str (sm'::substring 1i32 (sm'::length reason - 1i32) reason)
+
+:~ row_reason (cells : term) (row : term) : string = notebook::no_agree_reason (cell_text cells (maps "get" [ str "index"; row; atom "nil" ]))
+
+:~ with_no_agree (cells : term) (row : term) : term =
+    := reason = row_reason cells row
+    ? sm'::starts_with "R" reason ?> maps "put" [ str "no_agree"; tail_of reason; row ] |: row
+
+:~ with_rows (report : term) (rows : list term) : term =
+    maps "put" [ str "tests"; erlang_term::list_term rows; maps "merge" [ report; accept_mark::counts_of rows ] ]
+
+:~ no_agree_report (report : term) (cells : term) : term =
+    with_rows report (listm::map (with_no_agree cells) (erlang_term::items_of (maps "get" [ str "tests"; report ])))
+
+:~ cell (source : string) : term = maps "from_list" [ erlang_term::list_term [ erlang_term::tuple [ atom "source"; str source ] ] ]
+
+:~ cells () : term = erlang_term::list_term [ cell "a"; maps "new" [] ]
+
+///> gleam
+:# a_cell_text_reads_the_source_of_the_indexed_cell =
+    (cell_text (cells ()) (erlang_term::of 0i32), cell_text (cells ()) (erlang_term::of 1i32)) |> _assert_eq ("a", "")
+
+///> gleam
+:# a_cell_text_out_of_range_or_not_an_integer_is_empty =
+    (cell_text (cells ()) (erlang_term::of 5i32), cell_text (cells ()) (atom "nil")) |> _assert_eq ("", "")

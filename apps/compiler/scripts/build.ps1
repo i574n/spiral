@@ -16,7 +16,7 @@ $dotnet = Resolve-SpiralDotnet
 $cache = Get-SpiralCacheDir
 $sharedCache = if ($IsWindows) { Join-Path $env:LOCALAPPDATA 'spiral-bin' } else { Join-Path $HOME '.cache/spiral-bin' }
 $detRoot = Get-SpiralDetRoot
-$project = Join-Path $BundleRoot 'compiler/host/SpiralCompiler.fsproj'
+$project = Join-Path $BundleRoot 'dotnet/host/SpiralCompiler.fsproj'
 $modes = ConvertTo-SpiralMode $Mode
 $receipts = Join-Path $cache 'results/builds.tsv'
 New-Item -ItemType Directory -Force (Split-Path $receipts) | Out-Null
@@ -180,7 +180,7 @@ foreach ($m in $modes) {
     $env:DOTNET_gcServer = '0'; $env:DOTNET_GCConserveMemory = '9'; $env:MSBUILDDISABLENODEREUSE = '1'
     if ($Configuration -eq 'Release') { Unlock-SpiralOutputs (Join-Path $cache "bin/$m/SpiralCompiler/$Configuration/net11.0") }
     $buildDirectory = Get-SpiralBuildDirectory $dotnet
-    Push-Location $(if ($buildDirectory) { $buildDirectory } else { Join-Path $BundleRoot 'compiler' })
+    Push-Location $(if ($buildDirectory) { $buildDirectory } else { Join-Path $BundleRoot 'dotnet' })
     try {
         & $dotnet @args | Tee-Object -Variable buildOutput
         $exit = $LASTEXITCODE

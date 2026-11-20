@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory)] [string] $Run,
     [Parameter(Mandatory)] [ValidateSet('Wgsl', 'Calyx', 'Bend', 'Lean', 'Zig', 'Wasm', 'Rust', 'OpenQasm', 'Ebpf')] [string] $Backend,
-    [string] $Root = (Join-Path $PSScriptRoot '../tmp'),
+    [string] $Root = (Join-Path $PSScriptRoot '..'),
     [string] $Out = (Join-Path ([IO.Path]::GetTempPath()) "blockers-$PID")
 )
 . (Join-Path $Root 'scripts/env.ps1')

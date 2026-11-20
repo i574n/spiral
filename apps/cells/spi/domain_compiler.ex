@@ -62,7 +62,7 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
     env = [
       {"DOTNET_NOLOGO", "1"},
       {"DOTNET_CLI_TELEMETRY_OPTOUT", "1"},
-      {"SPIRAL_WORKSPACE_ROOT", System.get_env("SPIRAL_WORKSPACE_ROOT") || Path.expand("../compiler/tmp", root)},
+      {"SPIRAL_WORKSPACE_ROOT", System.get_env("SPIRAL_WORKSPACE_ROOT") || Path.expand("../compiler", root)},
       {"SPIRAL_COMPILER_PACKAGE_DIR", System.get_env("SPIRAL_COMPILER_PACKAGE_DIR") || core_package_dir(root)}
     ]
 

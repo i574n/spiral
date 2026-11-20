@@ -4,7 +4,7 @@ param(
     [Parameter(Mandatory, ParameterSetName = 'Backend')] [string] $Backend,
     [Parameter(ParameterSetName = 'Backend')] [string] $After = '',
     [Parameter(Mandatory)] [string[]] $Samples,
-    [string] $Matrix = (Join-Path $PSScriptRoot '../tmp/tests/matrix.psd1'),
+    [string] $Matrix = (Join-Path $PSScriptRoot '../tests/matrix.psd1'),
     [switch] $Apply
 )
 $ErrorActionPreference = 'Stop'

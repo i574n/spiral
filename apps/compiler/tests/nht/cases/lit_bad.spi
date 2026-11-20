@@ -1,0 +1,3 @@
+:< sm'_operators
+
+:= main () : i32 = "three"

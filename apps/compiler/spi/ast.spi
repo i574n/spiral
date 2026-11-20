@@ -342,6 +342,18 @@
 
 :~ at (line : i32) (from : i32) (near_to : i32) : range = { line = line; character = from }, { line = line; character = near_to }
 
+:| ^ top_statement =
+    | TopAnd : range * top_statement
+    | TopInl : string * range * named * raw_expr * bool
+    | TopRecInl : string * range * named * raw_expr * bool
+    | TopNominal : range * named * list hovar * raw_texpr
+    | TopNominalRec : range * named * list hovar * raw_texpr
+    | TopType : range * named * list hovar * raw_texpr
+    | TopPrototype : string * range * named * named * list type_var * raw_texpr
+    | TopInstance : range * named * named * list type_var * raw_expr
+    | TopOpen : range * named * list named
+    | TopStatic : range * list top_statement
+
 ///> rust
 ///> fsharp
 ///> gleam

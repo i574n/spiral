@@ -1,6 +1,6 @@
 param(
     [int] $Rounds = 5,
-    [string] $Families = (Join-Path $PSScriptRoot '..\tmp\tests\families'),
+    [string] $Families = (Join-Path $PSScriptRoot '..\tests\families'),
     [string] $Out = (Join-Path $env:LOCALAPPDATA "spiral-bin\runs\bench-cells-vs-matrix-$(Get-Date -Format yyyyMMdd-HHmmss)"),
     [double] $Threshold = 2.0,
     [int] $MinFreeMB = 1536,
@@ -85,9 +85,9 @@ $rows = foreach ($round in 1..$Rounds) {
     $snap = Join-Path $Out "round$round-tree"
     $spiralRoot = (Resolve-Path (Join-Path $scripts '..\..\..')).Path
     robocopy (Join-Path $spiralRoot 'lib\spiral') (Join-Path $snap 'lib\spiral') /E /XD target _build .cache node_modules /NFL /NDL /NJH /NJS /NP | Out-Null
-    robocopy (Join-Path $spiralRoot 'apps\compiler\tmp\samples\core') (Join-Path $snap 'apps\compiler\tmp\samples\core') /E /NFL /NDL /NJH /NJS /NP | Out-Null
-    robocopy $Families (Join-Path $snap 'apps\compiler\tmp\tests\families') /E /NFL /NDL /NJH /NJS /NP | Out-Null
-    $roundFamilies = Join-Path $snap 'apps\compiler\tmp\tests\families'
+    robocopy (Join-Path $spiralRoot 'apps\compiler\samples\core') (Join-Path $snap 'apps\compiler\samples\core') /E /NFL /NDL /NJH /NJS /NP | Out-Null
+    robocopy $Families (Join-Path $snap 'apps\compiler\tests\families') /E /NFL /NDL /NJH /NJS /NP | Out-Null
+    $roundFamilies = Join-Path $snap 'apps\compiler\tests\families'
     Write-Host "round $round lib snapshot: $(@(Get-ChildItem (Join-Path $snap 'lib\spiral') -Recurse -File).Count) files at $snap"
     $cellsArgs = if ($CellsCompiler -eq 'process') {
         @('-NoProfile', '-File', (Join-Path $scripts 'test-blocks.ps1'), '-Lib', $roundFamilies, '-Files', ($familyFiles -join ','), '-Out', $cellsOut, '-Compiler', 'process')

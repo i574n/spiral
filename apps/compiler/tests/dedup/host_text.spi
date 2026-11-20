@@ -1,0 +1,128 @@
+///- --package .
+:# host_text static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ len (s : string) : i32 = text::length s
+
+:~ byte (s : string) (i : i32) : i32 = ? i >= 0i32 && i < len s ?> text::byte_at s i |: -1i32
+
+:~ digit (b : i32) : bool = b >= 48i32 && b <= 57i32
+
+:~ blank (b : i32) : bool = b = 32i32 || b = 9i32 || b = 10i32 || b = 11i32 || b = 12i32 || b = 13i32
+
+:~ ^ blanks_end (s : string) (i : i32) : i32 = ? blank (byte s i) ?> blanks_end s (i + 1i32) |: i
+
+:~ ^ digits_end (s : string) (i : i32) : i32 = ? digit (byte s i) ?> digits_end s (i + 1i32) |: i
+
+:~ python_entry () : string = "if __name__ == '__main__': result = main(); None if result is None else print(result)"
+
+:~ ^ entry_patched (lines : list string) (acc : list string) : list string =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | line :: rest =>
+        ? text::starts_with line "if __name__ == '__main__':"
+        ?> listm::append (listm::rev (python_entry () :: acc)) rest
+        |: entry_patched rest (line :: acc)
+
+:= python_patched (python : string) : string = sm'::concat_list "\n" (entry_patched (sm'::split_list "\n" python) [])
+
+:~ ^ mem_available_from (s : string) (at : i32) : i32 =
+    := k = text::find_from s "MemAvailable:" at
+    := b = k + 13i32
+    := d = blanks_end s b
+    := e = digits_end s d
+    ? k < 0i32
+    ?> -1i32
+    |? d > b && e > d && text::starts_at s e " kB"
+    ?> erlang_term::apply "erlang" "binary_to_integer" [ erlang_term::of (text::slice_len s d (e - d)) ] |> erlang_term::cast
+    |: mem_available_from s (k + 1i32)
+
+:= mem_available_kb (meminfo : string) : i32 = mem_available_from meminfo 0i32
+
+:= mem_available_mb (meminfo : string) : i32 =
+    := kb = mem_available_kb meminfo
+    ? kb < 0i32
+    ?> -1i32
+    |: kb / 1024i32
+
+:~ ^ line_end (s : string) (i : i32) : i32 = ? i >= len s || byte s i = 10i32 ?> i |: line_end s (i + 1i32)
+
+:~ ^ timeout_on_line (s : string) (from : i32) (stop : i32) (k : i32) : string =
+    ? k < from
+    ?> ""
+    |:
+        := b = k + 9i32
+        := d = blanks_end s b
+        := e = digits_end s d
+        ? text::starts_at s k "--timeout" && d > b && e > d ?> text::slice_len s d (e - d) |: timeout_on_line s from stop (k - 1i32)
+
+:~ ^ timeout_from (s : string) (p : i32) : string =
+    ? p > len s
+    ?> ""
+    |:
+        := q = blanks_end s p
+        := stop = line_end s (q + 4i32)
+        := found = ? text::starts_at s q "///-" ?> timeout_on_line s (q + 4i32) stop (stop - 9i32) |: ""
+        := next = line_end s p
+        ? found <> "" ?> found |? next >= len s ?> "" |: timeout_from s (next + 1i32)
+
+:= directive_timeout (source : string) : string = timeout_from source 0i32
+
+:~ ^ name_rest (s : string) (i : i32) : bool =
+    := b = byte s i
+    ? i >= len s ?> !+ |: ((b >= 97i32 && b <= 122i32) || digit b || b = 95i32) && name_rest s (i + 1i32)
+
+:= project_name_ok (name : string) : bool = len name > 0i32 && byte name 0i32 >= 97i32 && byte name 0i32 <= 122i32 && name_rest name 1i32
+
+///> gleam
+:# python_entry_and_meminfo_read_like_the_elixir_regexes =
+    := entry = python_entry ()
+    (python_patched "a\nif __name__ == '__main__':\r\n  main()\nif __name__ == '__main__': x", python_patched "no entry")
+    |> _assert_eq ("a\n" ++ entry ++ "\n  main()\nif __name__ == '__main__': x", "no entry")
+    (mem_available_mb "MemTotal: 9 kB\nMemAvailable:    2048000 kB\n", mem_available_mb "MemAvailable:2048 kB\nMemAvailable: 4096 kB", mem_available_mb "none")
+    |> _assert_eq (2000i32, 4i32, -1i32)
+
+///> gleam
+:# fsharp_timeout_directive_and_project_names_read_like_the_elixir_regexes =
+    (directive_timeout "let x = 1\n  ///- --timeout 30 --timeout 45\n///- --timeout 9", directive_timeout "///- --timeout\n 12", directive_timeout "x ///- --timeout 5", directive_timeout "///- --timeoutx 5")
+    |> _assert_eq ("45", "12", "", "")
+    (project_name_ok "my_app2", project_name_ok "My", project_name_ok "", project_name_ok "a-b", project_name_ok "_a")
+    |> _assert_eq (!+, !-, !-, !-, !-)
+
+///> gleam
+:# host_text_keeps_the_old_elixir_regex_answers_on_the_edges =
+    python_patched "if __name__ == '__main__':\r\n  main()" |> _assert_eq "if __name__ == '__main__': result = main(); None if result is None else print(result)\n  main()"
+    python_patched "x\nif __name__ == '__main__': a\nif __name__ == '__main__': b" |> _assert_eq "x\nif __name__ == '__main__': result = main(); None if result is None else print(result)\nif __name__ == '__main__': b"
+    python_patched "  if __name__ == '__main__': x\nif __name__ == '__main__':" |> _assert_eq "  if __name__ == '__main__': x\nif __name__ == '__main__': result = main(); None if result is None else print(result)"
+    python_patched "if __name__ == '__main__':" |> _assert_eq "if __name__ == '__main__': result = main(); None if result is None else print(result)"
+    python_patched "print(1)\n#if __name__ == '__main__':\n" |> _assert_eq "print(1)\n#if __name__ == '__main__':\n"
+    python_patched "é\nif __name__ == '__main__': é\n" |> _assert_eq "é\nif __name__ == '__main__': result = main(); None if result is None else print(result)\n"
+    mem_available_mb "MemAvailable:\t2048 kB" |> _assert_eq 2i32
+    mem_available_mb "MemAvailable:2048 kB\nMemAvailable:   1023 kB" |> _assert_eq 0i32
+    mem_available_mb "MemAvailable: 99999999 kB" |> _assert_eq 97656i32
+    mem_available_mb "MemAvailable:\n 4096 kB" |> _assert_eq 4i32
+    mem_available_mb "MemAvailable: 4096kB" |> _assert_eq (-1i32)
+    mem_available_mb "MemTotal: 5 kB\nMemAvailable: 0 kB" |> _assert_eq 0i32
+    mem_available_mb "xMemAvailable: 3072 kB" |> _assert_eq 3i32
+    (mem_available_kb "MemAvailable: 4000001 kB", mem_available_kb "MemAvailable: 4096kB", mem_available_kb "none") |> _assert_eq (4000001i32, -1i32, -1i32)
+    directive_timeout "  ///- x --timeout 30" |> _assert_eq "30"
+    directive_timeout "///- --timeout 30 --timeout 45" |> _assert_eq "45"
+    directive_timeout "///- --timeout\n\n 12" |> _assert_eq "12"
+    directive_timeout "let a = 1\n\t///- --timeout 4500\n///- --timeout 9" |> _assert_eq "4500"
+    directive_timeout "// ///- --timeout 5" |> _assert_eq ""
+    directive_timeout "///---timeout 7" |> _assert_eq "7"
+    directive_timeout "///- --timeout x 5\n///- --timeout 6" |> _assert_eq "6"
+    project_name_ok "a" |> _assert_eq !+
+    project_name_ok "my_app2" |> _assert_eq !+
+    project_name_ok "a_" |> _assert_eq !+
+    project_name_ok "a9" |> _assert_eq !+
+    project_name_ok "" |> _assert_eq !-
+    project_name_ok "A" |> _assert_eq !-
+    project_name_ok "_a" |> _assert_eq !-
+    project_name_ok "9a" |> _assert_eq !-
+    project_name_ok "a-b" |> _assert_eq !-
+    project_name_ok "é" |> _assert_eq !-
+    project_name_ok "ab c" |> _assert_eq !-
+    project_name_ok "z" |> _assert_eq !+

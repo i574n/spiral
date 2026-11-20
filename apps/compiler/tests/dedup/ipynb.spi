@@ -1,0 +1,261 @@
+///- --package .
+:# ipynb static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:== trm = erlang_term::term
+
+:== ck = document::cell_kind
+
+:~ nilt () : trm = erlang_term::atom "nil"
+
+:~ et_of \* t. (v : t) : trm = erlang_term::of v
+
+:~ et_kv \* t. (k : string) (v : t) : trm = erlang_term::tuple [ et_of k; et_of v ]
+
+:~ et_kvt (k : trm) (v : trm) : trm = erlang_term::tuple [ k; v ]
+
+:~ et_map (xs : list trm) : trm = erlang_term::apply "maps" "from_list" [ erlang_term::list_term xs ]
+
+:~ et_listt (xs : list trm) : trm = erlang_term::list_term xs
+
+:~ et_get \* k. (m : trm) (key : k) : trm = erlang_term::apply "maps" "get" [ et_of key; m; nilt () ]
+
+:~ et_call (m : string) (f : string) (args : list trm) : trm = erlang_term::apply m f args
+
+:~ et_el (i : i32) (t : trm) : trm = erlang_term::element_at i t
+
+:~ et_items (t : trm) : list trm = erlang_term::items_of t
+
+:~ et_str (t : trm) : string = erlang_term::cast t
+
+:~ et_i32 (t : trm) : i32 = erlang_term::cast t
+
+:~ et_eq (t : trm) (name : string) : bool = erlang_term::equal t (erlang_term::atom name)
+
+:~ et_islist (t : trm) : bool = et_call "erlang" "is_list" [ t ] |> erlang_term::cast
+
+:~ et_geta (m : trm) (field : string) : trm = et_call "maps" "get" [ erlang_term::atom field; m; nilt () ]
+
+:~ res_items (m : trm) (field : string) : list trm =
+    := v = et_geta m field
+    ? et_islist v ?> et_items v |: []
+
+:== ipy_ctx = { outs : trm; durs : trm; tsts : trm }
+
+:~ ipy_source_of (kind : ck) (source : string) : string =
+    ?= kind ?| document::ImportCell => "#!import " ++ source | _ => source
+
+:~ ipy_src (kind : string) (source : string) : string = ? kind = "import" ?> "#!import " ++ source |: source
+
+:~ ipy_language (kind : ck) : string =
+    ?= kind ?|
+    | document::FsharpCode => "fsharp"
+    | document::ImportCell => "fsharp"
+    | document::CodeIn lang => lang
+    | _ => "spiral"
+
+:~ ipy_phase_key (key : string) : string =
+    := n = text::length key
+    ? n >= 3i32 && text::starts_at key (n - 3i32) "_ms" ?> text::take key (n - 3i32) |: key
+
+:~ ends_nl (s : string) : bool = text::length s > 0i32 && text::byte_at s (text::length s - 1i32) = 10i32
+
+:~ ^ jl_join_nl (xs : list string) : list string =
+    ?= xs ?|
+    | [] => []
+    | x :: rest => (x ++ "\n") :: jl_join_nl rest
+
+:~ ^ jl_split_last (xs : list string) (acc : list string) : list string * string =
+    ?= xs ?|
+    | [] => (listm::rev acc, "")
+    | [last] => (listm::rev acc, last)
+    | x :: rest => jl_split_last rest (x :: acc)
+
+:~ jl_finish (init : list string) (last : string) (keep : bool) : list string =
+    := prefixed = jl_join_nl init
+    ? keep ?> prefixed |: listm::append prefixed [ last ]
+
+:~ jupyter_lines (t : string) : list string =
+    := content = text::replace t "\r\n" "\n"
+    ? content = ""
+    ?> [ "" ]
+    |:
+        := init, last = jl_split_last (sm'::split_list "\n" content) []
+        jl_finish init last (ends_nl content)
+
+:~ jl_lines_t (t : string) : trm = et_listt (listm::map et_of (jupyter_lines t))
+
+:~ ipy_data1 (mime : string) (payload : string) : trm = et_map [ et_kvt (et_of mime) (jl_lines_t payload) ]
+
+:~ ipy_stream_t (name : string) (text_in : string) : trm =
+    et_map [ et_kv "output_type" "stream"; et_kv "name" name; et_kv "text" (jl_lines_t text_in) ]
+
+:~ ipy_exec_t (count : i32) (value : string) : trm =
+    et_map [ et_kv "output_type" "execute_result"; et_kv "execution_count" count; et_kv "metadata" (et_map []); et_kv "data" (ipy_data1 "text/plain" value) ]
+
+:~ ipy_display_t (mime : string) (data : string) : trm =
+    et_map [ et_kv "output_type" "display_data"; et_kv "metadata" (et_map []); et_kv "data" (ipy_data1 mime data) ]
+
+:~ ipy_first_line (t : string) : string =
+    := nl = text::find_from t "\n" 0i32
+    ? nl < 0i32 ?> t |: text::take t nl
+
+:~ ipy_error_t (text_in : string) : trm =
+    et_map [ et_kv "output_type" "error"; et_kv "ename" "SpiralError"; et_kv "evalue" (ipy_first_line text_in); et_kv "traceback" (jl_lines_t text_in) ]
+
+:~ term_str (t : trm) : string = ? erlang_term::is_binary t ?> et_str t |: ""
+
+:~ ipy_display_of (d : trm) : trm = ipy_display_t (term_str (et_geta d "mime")) (term_str (et_geta d "data"))
+
+:~ ipy_std_out (result : trm) : list trm =
+    := out = term_str (et_geta result "stdout")
+    ? out = "" ?> [] |: [ ipy_stream_t "stdout" out ]
+
+:~ ipy_val_out (count : i32) (result : trm) : list trm =
+    := val = term_str (et_geta result "value")
+    ? val = "" ?> [] |: [ ipy_exec_t count val ]
+
+:~ ipy_success_outputs (count : i32) (result : trm) : list trm =
+    := mids = listm::map ipy_display_of (res_items result "displays")
+    listm::append (ipy_std_out result) (listm::append mids (ipy_val_out count result))
+
+:~ ipy_outputs_t (count : i32) (result : trm) : trm =
+    ? et_islist result
+    ?> result
+    |? erlang_term::is_map result
+    ?> et_listt (ipy_success_outputs count result)
+    |: et_listt [ ipy_error_t (term_str (et_el 2i32 result)) ]
+
+:~ ipy_phase_entry (pair : trm) : trm =
+    et_kvt (et_of (ipy_phase_key (et_str (et_call "erlang" "atom_to_binary" [ et_el 1i32 pair ])))) (et_el 2i32 pair)
+
+:~ ipy_phases_t (phases : trm) : trm =
+    et_map (listm::map ipy_phase_entry (et_items (et_call "maps" "to_list" [ phases ])))
+
+:~ ipy_test_keys () : trm =
+    et_listt (listm::map et_of [ "mode"; "name"; "realm"; "status"; "symbol"; "targets"; "title" ])
+
+:~ ipy_test_t (test : trm) : list trm =
+    ? et_eq test "nil" ?> [] |: [ et_kv "spiral_test" (et_call "maps" "with" [ ipy_test_keys (); test ]) ]
+
+:~ ipy_empty (m : trm) : bool = et_i32 (et_call "erlang" "map_size" [ m ]) = 0i32
+
+:~ ipy_dur_present (le : trm) (duration : trm) : list trm =
+    := de = et_kvt (et_of "duration_ms") (et_el 1i32 duration)
+    := ph = et_el 2i32 duration
+    ? ipy_empty ph ?> [ le; de ] |: [ le; de; et_kv "phases_ms" (ipy_phases_t ph) ]
+
+:~ ipy_dur_t (duration : trm) (lang : string) : list trm =
+    := le = et_kv "language" lang
+    ? et_eq duration "nil" ?> [ le ] |: ipy_dur_present le duration
+
+:~ ipy_code_meta (lang : string) (duration : trm) (test : trm) : trm =
+    et_map (listm::append (ipy_dur_t duration lang) (ipy_test_t test))
+
+:~ ipy_md_cell (source : string) (test : trm) : trm =
+    et_map [ et_kv "cell_type" "markdown"; et_kv "metadata" (et_map (ipy_test_t test)); et_kv "source" (jl_lines_t source) ]
+
+:~ ipy_count_kv (ran : bool) (n : i32) : trm = et_kvt (et_of "execution_count") (? ran ?> et_of n |: nilt ())
+
+:~ ipy_outs_kv (ran : bool) (n : i32) (c : ipy_ctx) (idx : i32) : trm =
+    et_kvt (et_of "outputs") (? ran ?> ipy_outputs_t n (et_get c::outs idx) |: et_listt [])
+
+:~ ipy_meta_kv (kind : ck) (c : ipy_ctx) (idx : i32) (test : trm) : trm =
+    et_kv "metadata" (ipy_code_meta (ipy_language kind) (et_get c::durs idx) test)
+
+:~ ipy_source_kv (kind : ck) (source : string) : trm =
+    et_kv "source" (jl_lines_t (ipy_source_of kind source))
+
+:~ ipy_code_cell (kind : ck) (source : string) (idx : i32) (n : i32) (ran : bool) (c : ipy_ctx) (test : trm) : trm =
+    et_map [ et_kv "cell_type" "code"; ipy_count_kv ran n; ipy_meta_kv kind c idx test; ipy_outs_kv ran n c idx; ipy_source_kv kind source ]
+
+:~ ipy_cell_t (kind : ck) (source : string) (idx : i32) (n : i32) (ran : bool) (c : ipy_ctx) : trm =
+    := test = et_get c::tsts idx
+    ?= kind ?| document::Markdown => ipy_md_cell source test | _ => ipy_code_cell kind source idx n ran c test
+
+:~ ipy_ran (c : ipy_ctx) (idx : i32) : bool = et_call "maps" "is_key" [ et_of idx; c::outs ] |> erlang_term::cast
+
+:~ ipy_next_n (ran : bool) (n : i32) : i32 = ? ran ?> n + 1i32 |: n
+
+:~ ipy_adv (c : ipy_ctx) (idx : i32) (n : i32) : i32 = ipy_next_n (ipy_ran c idx) n
+
+:~ ipy_push (kind : ck) (source : string) (idx : i32) (n : i32) (c : ipy_ctx) (acc : list trm) : list trm =
+    ipy_cell_t kind source idx n (ipy_ran c idx) c :: acc
+
+:~ ^ ipy_go (cells : document::cells) (idx : i32) (n : i32) (c : ipy_ctx) (acc : list trm) : list trm =
+    ?= cells ?|
+    | [] => listm::rev acc
+    | (kind, source) :: rest =>
+        ipy_go rest (idx + 1i32) (ipy_adv c idx n) c (ipy_push kind source idx n c acc)
+
+:~ ipy_tests_index (report : trm) : trm =
+    et_map (listm::map (\ row => et_kvt (et_get row "index") row) (et_items (et_get report "tests")))
+
+:~ ipy_kernelspec () : trm =
+    et_map [ et_kv "display_name" "Spiral"; et_kv "language" "spiral"; et_kv "name" "spiral" ]
+
+:~ ipy_meta_t (report : trm) (pool : trm) : trm =
+    := base = [ et_kv "kernelspec" (ipy_kernelspec ()); et_kv "spiral_tests" report ]
+    et_map (? et_eq pool "nil" ?> base |: et_kv "compiler_pool" pool :: base)
+
+:~ ipy_notebook_t (cells : trm) (report : trm) (pool : trm) : trm =
+    et_map [ et_kv "cells" cells; et_kv "metadata" (ipy_meta_t report pool); et_kv "nbformat" 4i32; et_kv "nbformat_minor" 5i32 ]
+
+:~ ipy_ctx_of (outputs : trm) (durations : trm) (report : trm) : ipy_ctx =
+    { outs = outputs; durs = durations; tsts = ipy_tests_index report }
+
+:~ ipy_cells_of (cells_wire : string) (c : ipy_ctx) : trm =
+    et_listt (ipy_go (document::load cells_wire) 0i32 1i32 c [])
+
+:~ ipynb_text (cells_wire : string) (outputs : trm) (durations : trm) (report : trm) (pool : trm) : string =
+    := cells = ipy_cells_of cells_wire (ipy_ctx_of outputs durations report)
+    json_value::term_json (ipy_notebook_t cells report pool)
+
+///> gleam
+:# jupyter_lines_appends_newline_per_line_except_a_bare_last =
+    (jupyter_lines "", jupyter_lines "a", jupyter_lines "a\nb")
+    |> _assert_eq ([ "" ], [ "a" ], [ "a\n"; "b" ])
+
+///> gleam
+:# jupyter_lines_keeps_a_trailing_newline =
+    jupyter_lines "a\nb\n" |> _assert_eq [ "a\n"; "b\n" ]
+
+///> gleam
+:# ipy_source_of_prefixes_import =
+    (ipy_source_of document::ImportCell "a/b.spi", ipy_source_of document::Markdown "x") |> _assert_eq ("#!import a/b.spi", "x")
+
+///> gleam
+:# ipy_language_and_phase_key_follow_the_cell_kind =
+    (ipy_language document::FsharpCode, ipy_language (document::CodeIn "python"), ipy_language document::SpiralCode, ipy_phase_key "parse_ms")
+    |> _assert_eq ("fsharp", "python", "spiral", "parse")
+
+///> gleam
+:# ipy_stream_and_error_terms_match_otp_json =
+    := a, b = (ipy_stream_t "stdout" "s\nt", ipy_error_t "boom\nline2")
+    (json_value::term_json a, json_value::term_json b) |> _assert_eq (json_value::otp_json a, json_value::otp_json b)
+
+///> gleam
+:# term_json_scalars_match_otp_json =
+    := t = erlang_term::list_term [ et_of 123456i32; et_of "a\tb"; et_call "erlang" "binary_to_float" [ et_of "0.1" ] ]
+    json_value::term_json t |> _assert_eq (json_value::otp_json t)
+
+:~ tja (name : string) : string = json_value::term_json (erlang_term::atom name)
+
+///> gleam
+:# term_json_nil_is_null_bools_literal_other_atoms_quoted =
+    (tja "nil", tja "true", tja "false", tja "foo") |> _assert_eq ("null", "true", "false", "\"foo\"")
+
+///> gleam
+:# term_json_sorted_map_matches_otp_json =
+    := t = et_map [ et_kv "b" 1i32; et_kv "a" "x\ty"; et_kv "c" 3i32 ]
+    json_value::term_json t |> _assert_eq (json_value::otp_json t)
+
+///> gleam
+:~ ipy_kvi (it : trm) : trm = et_kvt (et_of ("k" ++ text::show_i32 (et_i32 it))) it
+
+///> gleam
+:# term_json_40_key_hash_map_matches_otp_json =
+    := m = et_map (listm::map ipy_kvi (et_items (et_call "lists" "seq" [ et_of 0i32; et_of 39i32 ])))
+    json_value::term_json m |> _assert_eq (json_value::otp_json m)

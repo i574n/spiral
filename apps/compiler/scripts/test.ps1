@@ -58,7 +58,7 @@ if ($BackendsFrom -and -not $Backend) {
     for (; $j -lt $b.Length; $j++) { & $mark 1 $j }    if (-not $shared -and $owners.Count) { $Backend = @($owners | Sort-Object) }
     Write-Host "-BackendsFrom: $(if ($shared) { 'a change outside the codegen sections, so every backend' } elseif ($owners.Count) { "codegen sections changed: $($Backend -join ',')" } else { 'no change found' })"
 }
-foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast', 'linked', 'families', 'split', 'split-corpus', 'tstypes', 'linkgate') { throw "unknown suite '$s'" } }
+foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast', 'linked', 'families', 'split', 'split-corpus', 'typescript', 'linkgate') { throw "unknown suite '$s'" } }
 if ($Suite -contains 'linkgate') {
     if ($Suite.Count -gt 1) { throw "-Suite linkgate runs split then split-corpus and does not combine with '$($Suite -join ',')'" }
     $passOn = @('-Mode', $Mode, '-Configuration', $Configuration)
@@ -75,7 +75,7 @@ if ($Suite -contains 'linkgate') {
 if ($Suite -contains 'linked' -and $Suite.Count -gt 1) { throw "-Suite linked builds multi-unit cases and does not combine with '$($Suite -join ',')'" }
 if ($Suite -contains 'split' -and $Suite.Count -gt 1) { throw "-Suite split cuts samples into linked units and does not combine with '$($Suite -join ',')'" }
 if ($Suite -contains 'split-corpus' -and $Suite.Count -gt 1) { throw "-Suite split-corpus cuts real packages at module boundaries and does not combine with '$($Suite -join ',')'" }
-if ($Suite -contains 'tstypes' -and $Suite.Count -gt 1) { throw "-Suite tstypes checks --types-out declarations with tsc and does not combine with '$($Suite -join ',')'" }
+if ($Suite -contains 'typescript' -and $Suite.Count -gt 1) { throw "-Suite typescript checks --types-out declarations with tsc and does not combine with '$($Suite -join ',')'" }
 if ($Suite -contains 'families' -and $Suite.Count -gt 1) { throw "-Suite families runs the test-block families through Cells and does not combine with '$($Suite -join ',')'" }
 $fastSuite = $Suite -contains 'fast'
 if ($fastSuite -and $Suite.Count -gt 1) { throw "-Suite fast picks its rows from every suite and does not combine with '$($Suite -join ',')'" }
@@ -135,29 +135,32 @@ if ($Suite -contains 'families') {
     exit ([int]($failed -ne 0))
 }
 
-if ($Suite -contains 'tstypes') {
+if ($Suite -contains 'typescript') {
     $tsc = (Get-SpiralNativeTools).Tsc
-    if (-not $tsc) { throw 'the tstypes suite needs the native TypeScript 7 tsc: set SPIRAL_TSC or unpack @typescript/typescript-<rid> into <spiral cache>/toolchains/tsc' }
+    if (-not $tsc) { throw 'the typescript suite needs the native TypeScript 7 tsc: set SPIRAL_TSC or unpack @typescript/typescript-<rid> into <spiral cache>/toolchains/tsc' }
     $tscVersion = (& $tsc --version | Select-Object -Last 1).Trim()
     $compileInto = { param($entry, $out, $extra)
         New-Item -ItemType Directory -Force $out | Out-Null
         & $dotnet $compiler @extra --backend Fsharp $entry (Join-Path $out 'main.fsx') *> (Join-Path $out 'compile.log')
         $LASTEXITCODE }
-    $rows = foreach ($case in Get-ChildItem (Join-Path $BundleRoot 'tests/tstypes') -Directory | Where-Object { -not $Filter -or $_.Name -match $Filter } | Sort-Object Name) {
-        $out = Join-Path $runDir "tstypes/$($case.Name)"
+    $rows = foreach ($case in Get-ChildItem (Join-Path $BundleRoot 'tests/typescript') -Directory | Where-Object { -not $Filter -or $_.Name -match $Filter } | Sort-Object Name) {
+        $out = Join-Path $runDir "typescript/$($case.Name)"
         $types = Join-Path $out 'types.d.ts'
         $compiled = & $compileInto (Join-Path $case.FullName 'main.spi') $out @('--types-out', $types)
         & $tsc --strict --noEmit --target es2022 --lib es2022 $types (Join-Path $case.FullName 'trial.ts') *> (Join-Path $out 'tsc.log')
         $checked = $LASTEXITCODE
         $expected = @(Select-String -LiteralPath (Join-Path $case.FullName 'trial.ts') -Pattern '^\s*// @ts-expect-error').Count
         $negatives = @(Get-ChildItem (Join-Path $case.FullName 'negatives') -Directory -ErrorAction Ignore | Sort-Object Name)
+        $expectedErrors = @{}
+        $expectedTable = Join-Path $case.FullName 'negatives/expected.json'
+        if (Test-Path -LiteralPath $expectedTable) { $expectedErrors = Get-Content -Raw -LiteralPath $expectedTable | ConvertFrom-Json -AsHashtable }
         $accepted = @(foreach ($n in $negatives) {
             $entry = Join-Path $n.FullName 'main.spi'
             $code = & $compileInto $entry (Join-Path $out "negatives/$($n.Name)") @()
             $log = Join-Path $out "negatives/$($n.Name)/compile.log"
             $own = Select-String -LiteralPath $log -Pattern ([regex]::Escape(($entry -replace '\\', '/')) + ':\d+:\d+: ETY-') -Quiet
-            $expectFile = Join-Path $n.FullName 'expect'
-            $reason = (Test-Path -LiteralPath $expectFile) -and (Select-String -LiteralPath $log -SimpleMatch (Get-Content -LiteralPath $expectFile -TotalCount 1).Trim() -Quiet)
+            $expectedError = $expectedErrors[$n.Name]
+            $reason = [bool]$expectedError -and (Select-String -LiteralPath $log -SimpleMatch $expectedError.Trim() -Quiet)
             if ($code -eq 0 -or -not $own -or -not $reason) { $n.Name }
         })
         $verdict = if ($compiled -eq 0 -and $checked -eq 0 -and $expected -eq $negatives.Count -and $negatives.Count -gt 0 -and $accepted.Count -eq 0) { 'PASS' } else { 'FAIL' }
@@ -167,7 +170,7 @@ if ($Suite -contains 'tstypes') {
     $rows | Export-Csv -Delimiter "`t" -NoTypeInformation -UseQuotes Never (Join-Path $runDir 'results.tsv')
     $rows | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
     $failed = @($rows | Where-Object verdict -ne 'PASS').Count
-    Write-Host "tstypes $(@($rows).Count) cases, $failed failed, tsc $tscVersion; results: $(Join-Path $runDir 'results.tsv')"
+    Write-Host "typescript $(@($rows).Count) cases, $failed failed, tsc $tscVersion; results: $(Join-Path $runDir 'results.tsv')"
     if ($lockHeld) { $lock.ReleaseMutex() }
     exit ([int]($failed -ne 0))
 }
@@ -397,7 +400,7 @@ if ($Suite -contains 'split-corpus') {
         $text = @(& $dotnet $compiler --check --timeout-ms 900000 $file 2>&1 | ForEach-Object { "$_" })
         $LASTEXITCODE, (@($text | Where-Object { $_ -match 'ETY-\w+|TracedError|FatalError|Error|timed out' }) | Select-Object -First 1)
     }
-    $gitRoot = [IO.Path]::GetFullPath((Join-Path $BundleRoot '../../../..'))
+    $gitRoot = [IO.Path]::GetFullPath((Join-Path $BundleRoot '../../..'))
     $rows = foreach ($entry in @($matrix.SplitCorpus | Where-Object { -not $Filter -or $_ -match $Filter })) {
         $root = if ($env:SPIRAL_CELLS_ROOT -and $entry -match '^spiral/apps/cells(/|$)') { [IO.Path]::GetFullPath([IO.Path]::Combine($env:SPIRAL_CELLS_ROOT, $entry.Substring('spiral/apps/cells'.Length).TrimStart('/'))) }
         else { [IO.Path]::GetFullPath((Join-Path $gitRoot $entry)) }
@@ -685,8 +688,8 @@ function Get-SpiralSourceFiles([string]$root) {
     }
     $found | Sort-Object
 }
-foreach ($root in @($BundleRoot, (Join-Path $BundleRoot '../../../lib'), $env:SPIRAL_COMPILER_PACKAGE_DIR) | Where-Object { $_ -and (Test-Path $_) }) {
-    foreach ($source in Get-SpiralSourceFiles $root) { $compileSignatureLines.Add("$([IO.Path]::GetRelativePath($root, $source))=$([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($source))))") }
+foreach ($root in @($BundleRoot, (Join-Path $BundleRoot '../../lib'), $env:SPIRAL_COMPILER_PACKAGE_DIR) | Where-Object { $_ -and (Test-Path $_) }) {
+    foreach ($source in Get-SpiralSourceFiles $root | Where-Object { $root -ne $BundleRoot -or [IO.Path]::GetRelativePath($BundleRoot, $_).Replace('\', '/') -match '^(samples|tests|hopacsota)/' }) { $compileSignatureLines.Add("$([IO.Path]::GetRelativePath($root, $source))=$([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($source))))") }
 }
 Get-ChildItem Env: | Where-Object { $_.Name -like 'SPIRAL_*' -and $_.Name -notin 'SPIRAL_NATIVE_PARALLEL', 'SPIRAL_BIN_CACHE_DIR' -and $_.Name -notlike 'SPIRAL_CELLS_*' } | Sort-Object Name | ForEach-Object { $compileSignatureLines.Add("env $($_.Name)=$($_.Value)") }
 $compileSignature = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($compileSignatureLines -join "`n") + "`n$mode`n$compiler"))).ToLowerInvariant()
@@ -1289,7 +1292,7 @@ if ($Native) {
         $kotlinLib = Join-Path (Split-Path (Split-Path $tools.Kotlinc)) 'lib'
         $kotlinStdlib = Join-Path $kotlinLib 'kotlin-stdlib.jar'
         $kotlinClasspath = (Get-ChildItem $kotlinLib -Filter *.jar | Where-Object Name -notmatch 'sources|-js|wasm' | ForEach-Object FullName) -join [IO.Path]::PathSeparator
-        $kotlinServer = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../tmp/tests/native-shims/kotlin-server/KotlinServer.java'))
+        $kotlinServer = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../tests/native-shims/kotlin-server/KotlinServer.java'))
         $kotlinRequests = foreach ($job in $kotlinJobs) {
             $classes = Join-Path $job.Native 'classes'
             Remove-Item -LiteralPath $classes -Recurse -Force -ErrorAction SilentlyContinue

@@ -1,0 +1,115 @@
+///- --package .
+:# cells_boot static =
+    :< testing
+
+:== term = erlang_term::term
+
+:~ b (s : string) : term = erlang_term::of s
+
+:~ ap (m : string) (f : string) (args : list term) : term = erlang_term::apply m f args
+
+:~ apc (m : string) (f : string) (args : list term) : term = ap ("Elixir.Spiral.Cells." ^^ m) f args
+
+:~ lst (items : list term) : term = erlang_term::list_term items
+
+:~ el (n : i32) (t : term) : term = erlang_term::element_at n t
+
+:~ is_atom (name : string) (t : term) : bool = erlang_term::equal t (erlang_term::atom name)
+
+:~ is_tuple (t : term) : bool = ap "erlang" "is_tuple" [ t ] |> erlang_term::cast
+
+:~ env_is (name : string) (val : string) : bool =
+    erlang_term::equal (ap "os" "getenv" [ erlang_term::charlist name; erlang_term::charlist "" ]) (erlang_term::charlist val)
+
+:~ has_flag (flag : string) (argv : term) : bool = ap "lists" "member" [ b flag; argv ] |> erlang_term::cast
+
+:~ not_gate (t : term) : bool = not (erlang_term::equal t (b "--gate"))
+
+:~ reject_gate (argv : term) : term = lst (listm'::filter not_gate (erlang_term::items_of argv))
+
+:~ append2 (base : term) (x : string) (y : string) : term = ap "lists" "append" [ base; lst [ b x; b y ] ]
+
+:~ has_output (argv : term) : bool = has_flag "--output-dir" argv || has_flag "--output-path" argv
+
+:~ gate_args (argv : term) (dir : string) : term =
+    := base = append2 (reject_gate argv) "--no-memo" "--no-html"
+    ? has_output base ?> base |: append2 base "--output-dir" dir
+
+:~ pin_args_when (process : bool) : term =
+    ? process ?> lst []
+    |:
+        := pin = apc "CompilerDaemon" "gate_pin" [ tool_lookup::tool "compiler_dll" (lst []) ]
+        ? erlang_term::is_binary pin ?> lst [ b "--compiler-pin"; pin ] |: lst []
+
+:~ pin_args () : term = pin_args_when (env_is "SPIRAL_CELLS_COMPILER" "process")
+
+:~ strings_of (t : term) : list string = listm::map erlang_term::cast (erlang_term::items_of t)
+
+:~ gate_strings (argv : list string) : list string = strings_of (gate_args (lst (listm::map b argv)) "scratch")
+
+///> gleam
+:# a_gate_turns_memo_and_html_off_and_reports_to_a_scratch_dir_unless_the_caller_chose_one =
+    gate_strings [ "--gate"; "--path"; "a.spi" ]
+    |> _assert_eq [ "--path"; "a.spi"; "--no-memo"; "--no-html"; "--output-dir"; "scratch" ]
+    gate_strings [ "--gate"; "--path"; "a.spi"; "--output-dir"; "mine" ]
+    |> _assert_eq [ "--path"; "a.spi"; "--output-dir"; "mine"; "--no-memo"; "--no-html" ]
+    gate_strings [ "--path"; "a.spi"; "--output-path"; "a.ipynb"; "--gate" ]
+    |> _assert_eq [ "--path"; "a.spi"; "--output-path"; "a.ipynb"; "--no-memo"; "--no-html" ]
+
+///> gleam
+:# a_process_mode_gate_passes_no_pin_since_it_compiles_with_its_own_process =
+    strings_of (pin_args_when !+) |> _assert_eq []
+
+:~ uniq () : string =
+    erlang_term::cast (ap "erlang" "integer_to_binary" [ ap "erlang" "unique_integer" [ lst [ erlang_term::atom "positive" ] ] ]) : string
+
+:~ unique_dir () : string =
+    := tmp = erlang_term::cast (ap "Elixir.System" "tmp_dir!" []) : string
+    tmp ^^ "/spiral-cells-gate-" ^^ uniq ()
+
+:~ expand (argv : term) (gate : bool) (dir : string) : term =
+    ? gate ?> ap "lists" "append" [ gate_args argv dir; pin_args () ] |: argv
+
+:~ run (argv : term) : term =
+    := served = apc "Server" "try_execute" [ argv ]
+    ? is_tuple served && is_atom "served" (el 1i32 served) ?> el 2i32 served
+    |: apc "NotebookCli" "execute" [ argv ]
+
+:~ put_line (line : term) : () = ap "io" "put_chars" [ lst [ line; b "\n" ] ] |> ignore
+
+:~ print_lines (lines : term) : () = listm::iter put_line (erlang_term::items_of lines)
+
+:~ warm () : bool = not (env_is "SPIRAL_CELLS_WARM" "0") && not (env_is "SPIRAL_CELLS_COMPILER" "process")
+
+:~ cleanup (gate : bool) (dir : string) : () =
+    ? gate
+    ?>
+        := _r = ap "file" "del_dir_r" [ b dir ]
+        apc "CompilerClient" "shutdown" [] |> ignore
+    |? warm () ?> (apc "CompilerClient" "prestart" [] |> ignore)
+    |: ()
+
+:~ said (status : term) (code : i32) : i32 =
+    put_line (el 2i32 status)
+    code
+
+:~ exit_code (status : term) : i32 =
+    ? is_atom "ok" status ?> 0i32
+    |? is_tuple status && is_atom "void" (el 1i32 status) ?> said status 3i32
+    |: said status 1i32
+
+:~ guards () : () =
+    := _g = apc "Domain" "guard_start" []
+    := _t = apc "Domain" "temp_sweep" []
+    apc "Domain" "ensure!" [] |> ignore
+
+:~ finish (gate : bool) (dir : string) (result : term) : i32 =
+    := _p = print_lines (el 2i32 result)
+    := _c = cleanup gate dir
+    exit_code (el 1i32 result)
+
+:~ main (argv : term) : i32 =
+    := _x = guards ()
+    := gate = has_flag "--gate" argv
+    := dir = ? gate ?> unique_dir () |: ""
+    finish gate dir (run (expand argv gate dir))

@@ -1,0 +1,8 @@
+:< sm'_operators
+
+:= pick () : i32 =
+    backend_switch {
+        Fsharp = \ () => 2i32
+    }
+
+:= main () : i32 = pick ()

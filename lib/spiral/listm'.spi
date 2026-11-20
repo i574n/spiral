@@ -873,3 +873,34 @@
 :# collect_keeps_order =
     := ~l = [ 1i32; 2; 3 ]
     collect (\ x => [ x; x * 10i32 ]) l |> _assert_eq [ 1i32; 10; 2; 20; 3; 30 ]
+
+:~ ^ index_of_min_by_from \* t. (score : t -> f64) (items : list t) (i : i32) (best : i32) (best_score : f64) : i32 =
+    ?= items ?|
+    | [] => best
+    | x :: rest =>
+        := s = score x
+        := better = s < best_score
+        index_of_min_by_from score rest (i + 1i32) (? better ?> i |: best) (? better ?> s |: best_score)
+
+:= index_of_min_by \* t. (score : t -> f64) (items : list t) : option i32 =
+    ?= items ?|
+    | [] => None
+    | first :: rest => Some (index_of_min_by_from score rest 1i32 0i32 (score first))
+
+:~ ^ all_some \* t. (items : list (option t)) : option (list t) =
+    ?= items ?|
+    | [] => Some []
+    | Some x :: rest => all_some rest |> optionm::map (\ xs => x :: xs)
+    | None :: _ => None
+
+///> rust
+///> gleam
+:# index_of_min_by_takes_the_first_minimum_of_a_runtime_list =
+    := ~l = [ 3f64; 1f64; 2f64; 1f64 ]
+    (index_of_min_by id l, index_of_min_by id ([] : list f64)) |> _assert_eq (Some 1i32, None)
+
+///> rust
+///> gleam
+:# all_some_needs_every_item =
+    := ~l = [ Some 1i32; Some 2i32 ]
+    (all_some l, all_some [ Some 1i32; None ]) |> _assert_eq (Some [ 1i32; 2i32 ], None)

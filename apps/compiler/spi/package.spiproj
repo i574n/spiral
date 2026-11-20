@@ -11,6 +11,7 @@ modules:
     parse_types
     patterns
     terms
+    top
     dedup_score
     dedup_gold
     dedup_gold_v2

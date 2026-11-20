@@ -14,7 +14,7 @@
     | Checkpoint : string
     | Seeded : u64
 
-:== data_plan = { train : string; val : string; window : i32; batch : i32; seed : u64; val_cap : i32 }
+:== data_plan = { train : string; val : string; window : i32; batch : i32; seed : u64; val_cap : i32; probs : i32 }
 
 :== run_plan = { steps : i32; peak : f32; warmup : i32; every : i32; out : string }
 
@@ -51,11 +51,15 @@
 
 := sampling_env () : u64 * i32 = number_or "TRAIN_SEED" 88172645463325252u64, number_or "TRAIN_VAL_WINDOWS" 0
 
+:= window_env () : i32 * i32 = number_or "TRAIN_WINDOW" 129, number_or "TRAIN_BATCH" 4
+
+:= probs_env () : i32 = number_or "TRAIN_DUMP_PROBS" 0
+
 := data_env () : data_plan =
     := train, val = files_env ()
-    := window, batch = number_or "TRAIN_WINDOW" 129, number_or "TRAIN_BATCH" 4
+    := window, batch = window_env ()
     := seed, cap = sampling_env ()
-    { train = train; val = val; window = window; batch = batch; seed = seed; val_cap = cap }
+    { train = train; val = val; window = window; batch = batch; seed = seed; val_cap = cap; probs = probs_env () }
 
 := peak_env () : f32 = conv (number_or "TRAIN_PEAK_MICRO" 1000) / 1000000.0f32
 
@@ -139,9 +143,11 @@
 := val_tokens (data : array u8) (window : i32) (k : i32) : array i32 =
     train_grad::window_at data (k * (window - 1)) window
 
+:= val_net (m : transformer::model) (d : data_plan) (data : array u8) (k : i32) : train_grad::net =
+    { m = m; tokens = val_tokens data d::window k }
+
 := val_rows (m : transformer::model) (d : data_plan) (data : array u8) : array floats =
-    parallel::map_index (val_count data d::window d::val_cap) \ k =>
-        row_losses { m = m; tokens = val_tokens data d::window k }
+    parallel::map_index (val_count data d::window d::val_cap) \ k => row_losses (val_net m d data k)
 
 :~ ^ sum_from (x : floats) (i : i32) (acc : f32) : f32 = ? i >= length x ?> acc |: sum_from x (i + 1) (acc + index x i)
 
@@ -197,12 +203,39 @@
     := rows = val_rows t::m d data
     train_grad::for_each (length rows) (\ k => token_lines rows data d::window k)
 
+:~ ^ top_from (p : floats) (k : i32) (acc : string) : string =
+    ? k <= 0
+    ?> acc
+    |:
+        := i = transformer::argmax p
+        := v = index p i
+        set p i (0.0f32 - 1.0f32)
+        top_from p (k - 1) (acc ++# "\t" ++#? i ++# "\t" ++#? v)
+
+:= top_text (n : train_grad::net) (xf : floats) (t : i32) (k : i32) : string =
+    top_from (f32_grads::softmax_of (train_grad::logits_row n xf t)) k ""
+
+:= probs_line (n : train_grad::net) (xf : floats) (d : data_plan) (data : array u8) (k : i32) (t : i32) : () =
+    := at = k * (d::window - 1) + t + 1
+    console::write_line ("probs\t" ++#? at ++# "\t" ++#? train_grad::u16_at data at ++# top_text n xf t d::probs)
+
+:= probs_window (m : transformer::model) (d : data_plan) (data : array u8) (k : i32) : () =
+    := n = val_net m d data k
+    := xf = last_rows n
+    train_grad::for_each (train_grad::steps n) (\ t => probs_line n xf d data k t)
+
+:= dump_probs (t : train_grad::trainer) (d : data_plan) (data : array u8) : () =
+    train_grad::for_each (val_count data d::window d::val_cap) (\ k => probs_window t::m d data k)
+
+:= dump_val (t : train_grad::trainer) (d : data_plan) (data : array u8) : () =
+    ? d::probs > 0 ?> dump_probs t d data |: dump_tokens t d data
+
 := save (r : run_plan) (t : train_grad::trainer) : () =
     ? r::out = "" ?> () |: train_grad::write_fp32_file t::m t::m::w r::out
 
 := finish (io : step_io) (t : train_grad::trainer) : () =
     save io::p::r t
-    ?= io::val ?| | Some data => dump_tokens t io::p::d data | None => ()
+    ?= io::val ?| | Some data => dump_val t io::p::d data | None => ()
 
 := io_of (p : plan) : step_io =
     := val = ? p::d::val = "" ?> None |: Some (file_system::read_bytes p::d::val)
@@ -237,3 +270,9 @@
 :# seeded_logits_start_near_uniform =
     := mean = mean_row (probe_rows ())
     (abs (mean - log 512.0f32) < 0.2f32) |> _assert_eq !+
+
+///> c
+///> rust
+:# top_from_lists_the_k_most_likely_ids_most_likely_first =
+    := p = f32_kernels::floats_of [ 0.1f32; 0.5f32; 0.15f32; 0.25f32 ]
+    top_from p 2 "" |> _assert_eq ("\t1\t" ++#? 0.5f32 ++# "\t3\t" ++#? 0.25f32)

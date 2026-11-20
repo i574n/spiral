@@ -1,0 +1,196 @@
+///- --package .
+:# memo_store static =
+    :< testing
+
+:< sm'_operators
+
+:~ format () : i32 = 1i32
+
+:~ keep_entries () : i32 = 5000i32
+
+:~ prune_every_ms () : i64 = 600000i64
+
+:~ call (m : string) (f : string) (args : list erlang_term::term) : erlang_term::term = erlang_term::apply m f args
+
+:~ atom (name : string) : erlang_term::term = erlang_term::atom name
+
+:~ is_atom_named (name : string) (t : erlang_term::term) : bool = erlang_term::equal t (atom name)
+
+:~ tagged (name : string) (t : erlang_term::term) : bool = erlang_term::is_tuple t && is_atom_named name (erlang_term::element_at 1i32 t)
+
+:~ second_of (t : erlang_term::term) : erlang_term::term = erlang_term::element_at 2i32 t
+
+:~ entry_path (dir : string) (key : string) : string =
+    erlang_file::joined_path (erlang_file::joined_path dir (sm'::substring 0i32 2i32 key)) (key ++# ".etf")
+
+///> gleam
+:# an_entry_lives_under_its_two_letter_prefix =
+    sm'::contains "ab/abcdef.etf" (entry_path "d" "abcdef") |> _assert_eq !+
+
+:~ cache_base () : string =
+    := home = toolchain::first_set [ toolchain::beam_env "HOME"; toolchain::beam_env "USERPROFILE" ]
+    := local = toolchain::beam_env "LOCALAPPDATA"
+    ? local <> "" ?> local |: erlang_file::joined_path home ".cache"
+
+:~ memo_dir (override : string) : string =
+    := fallback = erlang_file::joined_path (cache_base ()) "spiral-bin/cells-results"
+    toolchain::first_set [ override; toolchain::beam_env "SPIRAL_CELLS_MEMO_DIR"; fallback ]
+
+:~ decoded_safely (blob : erlang_term::term) : erlang_term::term =
+    := args = erlang_term::list_term [ blob; erlang_term::list_term [ atom "safe" ] ]
+    call "rpc" "call" [ call "erlang" "node" []; atom "erlang"; atom "binary_to_term"; args ]
+
+:~ pair_sized (t : erlang_term::term) : bool = (call "erlang" "tuple_size" [ t ] |> erlang_term::cast : i32) = 2i32
+
+:~ framed (t : erlang_term::term) : bool =
+    erlang_term::is_tuple t && pair_sized t && erlang_term::equal (erlang_term::element_at 1i32 t) (erlang_term::of (format ()))
+
+:~ touched (path : string) : () = call "file" "change_time" [ erlang_term::of path; call "calendar" "local_time" [] ] |> ignore
+
+:~ framed_value (path : string) (blob : erlang_term::term) : erlang_term::term =
+    := decoded = decoded_safely blob
+    ? framed decoded
+    ?>
+        touched path
+        erlang_term::tuple [ atom "ok"; second_of decoded ]
+    |: atom "miss"
+
+:~ fetch (dir : string) (key : string) : erlang_term::term =
+    := path = entry_path dir key
+    := read = call "file" "read_file" [ erlang_term::of path ]
+    ? tagged "ok" read ?> framed_value path (second_of read) |: atom "miss"
+
+:~ wildcard (pattern : string) : list string =
+    call "filelib" "wildcard" [ erlang_term::charlist pattern ] |> erlang_term::items_of |> listm::map erlang_file::text_of
+
+:~ glob (dir : string) (pattern : string) : list string = wildcard (erlang_file::joined_path (sm'::replace "\\" "/" dir) pattern)
+
+:~ posix_opts () : erlang_term::term = erlang_term::list_term [ erlang_term::tuple [ atom "time"; atom "posix" ] ]
+
+:~ mtime (path : string) : i64 =
+    := info = call "file" "read_file_info" [ erlang_term::of path; posix_opts () ]
+    ? tagged "ok" info ?> erlang_term::element_at 6i32 (second_of info) |> erlang_term::cast |: 0i64
+
+:~ stamped (p : string) : erlang_term::term = erlang_term::tuple [ erlang_term::of (mtime p); erlang_term::of p ]
+
+:~ path_of (r : erlang_term::term) : string = second_of r |> erlang_term::cast
+
+:~ newest_first (paths : list string) : list string =
+    := sorted = call "lists" "reverse" [ call "lists" "sort" [ erlang_term::list_term (listm::map stamped paths) ] ]
+    erlang_term::items_of sorted |> listm::map path_of
+
+:~ ^ dropped (n : i32) (xs : list string) : list string =
+    ?= xs ?|
+    | [] => []
+    | _ :: rest => ? n <= 0i32 ?> xs |: dropped (n - 1i32) rest
+
+:~ now_ms () : i64 = call "erlang" "monotonic_time" [ atom "millisecond" ] |> erlang_term::cast
+
+:~ pruned_key (dir : string) : erlang_term::term = erlang_term::tuple [ atom "spiral_cells_memo_store"; atom "pruned"; erlang_term::of dir ]
+
+:~ due (key : erlang_term::term) (now : i64) (every_ms : i64) : bool =
+    := last = call "persistent_term" "get" [ key; atom "never" ]
+    is_atom_named "never" last || now - (last |> erlang_term::cast : i64) > every_ms
+
+:~ deleted (p : string) : () = call "file" "delete" [ erlang_term::of p ] |> ignore
+
+:~ removed_beyond (dir : string) (keep : i32) : i32 =
+    := stale = dropped keep (newest_first (glob dir "*/*.etf"))
+    listm::iter deleted stale
+    listm::length stale
+
+:~ prune_with (dir : string) (keep : i32) (every_ms : i64) : i32 =
+    := now = now_ms ()
+    := key = pruned_key dir
+    ? due key now every_ms
+    ?>
+        call "persistent_term" "put" [ key; erlang_term::of now ] |> ignore
+        removed_beyond dir keep
+    |: 0i32
+
+:~ tmp_path (path : string) : string =
+    path ++# "." ++# erlang_term::integer_text (call "erlang" "unique_integer" [ erlang_term::list_term [ atom "positive" ] ]) ++# ".tmp"
+
+:~ framed_blob (value : erlang_term::term) : erlang_term::term = call "erlang" "term_to_binary" [ erlang_term::tuple [ erlang_term::of (format ()); value ] ]
+
+:~ ok_call (m : string) (f : string) (args : list erlang_term::term) : bool = is_atom_named "ok" (call m f args)
+
+:~ dir_ready (path : string) : bool = ok_call "filelib" "ensure_dir" [ erlang_term::of path ]
+
+:~ written_to (path : string) (blob : erlang_term::term) : bool = ok_call "file" "write_file" [ erlang_term::of path; blob ]
+
+:~ renamed_to (tmp : string) (path : string) : bool = ok_call "file" "rename" [ erlang_term::of tmp; erlang_term::of path ]
+
+:~ replaced (tmp : string) (path : string) (blob : erlang_term::term) : bool = dir_ready path && written_to tmp blob && renamed_to tmp path
+
+:~ pruned_by_default (dir : string) : () = prune_with dir (keep_entries ()) (prune_every_ms ()) |> ignore
+
+:~ store (dir : string) (key : string) (value : erlang_term::term) : erlang_term::term =
+    := path = entry_path dir key
+    := tmp = tmp_path path
+    ? replaced tmp path (framed_blob value) ?> pruned_by_default dir |: deleted tmp
+    atom "ok"
+
+:~ test_dir (name : string) : string =
+    := dir = erlang_file::joined_path (erlang_file::test_cache_directory ()) name
+    call "filelib" "ensure_path" [ erlang_term::charlist dir ] |> ignore
+    dir
+
+:~ ok_of (v : erlang_term::term) : erlang_term::term = erlang_term::tuple [ atom "ok"; v ]
+
+:~ code_value () : erlang_term::term = erlang_term::tuple [ atom "code_result"; erlang_term::of "out" ]
+
+///> gleam
+:# a_stored_value_comes_back_framed =
+    := dir = test_dir "memo_store_round_trip"
+    store dir "aa11" (code_value ()) |> ignore
+    erlang_term::equal (fetch dir "aa11") (ok_of (code_value ())) |> _assert_eq !+
+
+///> gleam
+:# a_missing_key_misses =
+    is_atom_named "miss" (fetch (test_dir "memo_store_missing") "bb22") |> _assert_eq !+
+
+:~ planted (name : string) (key : string) (blob : erlang_term::term) : string =
+    := dir = test_dir name
+    := path = entry_path dir key
+    (dir_ready path && written_to path blob) |> ignore
+    dir
+
+///> gleam
+:# a_corrupt_entry_is_a_miss_not_a_crash =
+    := dir = planted "memo_store_corrupt" "cc33" (erlang_term::of "not a term")
+    is_atom_named "miss" (fetch dir "cc33") |> _assert_eq !+
+
+///> gleam
+:# an_unframed_entry_is_a_miss =
+    := dir = planted "memo_store_foreign" "dd44" (call "erlang" "term_to_binary" [ erlang_term::of "bare" ])
+    is_atom_named "miss" (fetch dir "dd44") |> _assert_eq !+
+
+:~ ints (xs : list i32) : erlang_term::term = erlang_term::tuple (listm::map (\ (i : i32) => erlang_term::of i) xs)
+
+:~ stamp_at (second : i32) : erlang_term::term = erlang_term::tuple [ ints [ 2020i32; 1i32; 1i32 ]; ints [ 0i32; 0i32; second ] ]
+
+:~ aged (path : string) (second : i32) : () = call "file" "change_time" [ erlang_term::of path; stamp_at second ] |> ignore
+
+:~ seeded (dir : string) (key : string) (second : i32) : () =
+    store dir key (erlang_term::of key) |> ignore
+    aged (entry_path dir key) second
+
+:~ seeded_three (name : string) : string =
+    := dir = test_dir name
+    seeded dir "ee01" 1i32
+    seeded dir "ee02" 2i32
+    seeded dir "ee03" 3i32
+    dir
+
+///> gleam
+:# pruning_keeps_the_newest_entries =
+    := dir = seeded_three "memo_store_prune"
+    := first = prune_with dir 2i32 (-1i64)
+    (first, is_atom_named "miss" (fetch dir "ee01"), tagged "ok" (fetch dir "ee03")) |> _assert_eq (1i32, !+, !+)
+
+///> gleam
+:# pruning_waits_out_its_interval =
+    := dir = seeded_three "memo_store_prune_wait"
+    prune_with dir 3i32 (-1i64) |> ignore
+    prune_with dir 0i32 600000i64 |> _assert_eq 0i32

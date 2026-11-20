@@ -1,0 +1,749 @@
+///- --package .
+:# notebook static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:| ^ nb =
+    | NoNb
+    | Nb : string * nb
+
+:| ^ sources =
+    | NoSource
+    | Source : string * string * sources
+
+:| ^ flags =
+    | NoFlag
+    | Flag : string * flags
+
+:~ ^ rev_nb (xs : nb) (acc : nb) : nb =
+    ?= xs ?|
+    | NoNb => acc
+    | Nb (s, rest) => rev_nb rest (Nb (s, acc))
+
+:~ ^ snoc (xs : nb) (item : string) : nb =
+    ?= xs ?|
+    | NoNb => Nb (item, NoNb)
+    | Nb (s, rest) => Nb (s, snoc rest item)
+
+:~ ^ has_nb (xs : nb) (item : string) : bool =
+    ?= xs ?|
+    | NoNb => !-
+    | Nb (s, rest) => ? s = item ?> !+ |: has_nb rest item
+
+:~ add_nb (xs : nb) (item : string) : nb =
+    ? has_nb xs item ?> xs |: snoc xs item
+
+:~ ^ nb_joined_after (xs : nb) (acc : string) : string =
+    ?= xs ?|
+    | NoNb => acc
+    | Nb (s, rest) => nb_joined_after rest (acc ++ "\n" ++ s)
+
+:~ join_nb (xs : nb) : string =
+    ?= xs ?|
+    | NoNb => ""
+    | Nb (s, rest) => nb_joined_after rest s
+
+:~ ^ rev_flags (xs : flags) (acc : flags) : flags =
+    ?= xs ?|
+    | NoFlag => acc
+    | Flag (s, rest) => rev_flags rest (Flag (s, acc))
+
+:~ ^ take_token (src : string) (i : i32) : i32 =
+    ? i >= text::length src
+    ?> i
+    |:
+        := ch = text::index src i
+        ? ch = ' '
+        ?> i
+        |? ch = '\t'
+        ?> i
+        |: take_token src (i + 1i32)
+
+:~ ^ skip_ws (src : string) (i : i32) : i32 =
+    ? i >= text::length src
+    ?> i
+    |:
+        := ch = text::index src i
+        ? ch = ' '
+        ?> skip_ws src (i + 1i32)
+        |? ch = '\t'
+        ?> skip_ws src (i + 1i32)
+        |: i
+
+:~ ^ flags_from (src : string) (i : i32) (acc : flags) : flags =
+    := j = skip_ws src i
+    ? j >= text::length src
+    ?> rev_flags acc NoFlag
+    |:
+        := k = take_token src j
+        flags_from src k (Flag (text::slice_len src j (k - j), acc))
+
+:~ ^ read_flags
+    (xs : flags) (packages : nb) (test : i32) (is_real : i32) (timeout : string)
+    : nb * i32 * i32 * string
+    =
+    ?= xs ?|
+    | NoFlag => packages, test, is_real, timeout
+    | Flag ("--package", Flag (path, rest)) =>
+        ? text::starts_with path "--"
+        ?> read_flags rest packages test is_real timeout
+        |: read_flags rest (add_nb packages path) test is_real timeout
+    | Flag ("--package", rest) => read_flags rest packages test is_real timeout
+    | Flag ("--ignore", rest) => read_flags rest packages 3i32 is_real timeout
+    | Flag ("--test", Flag ("static", rest)) =>
+        read_flags rest packages (? test = 3i32 ?> 3i32 |: 2i32) is_real timeout
+    | Flag ("--test", rest) => read_flags rest packages (? test >= 2i32 ?> test |: 1i32) is_real timeout
+    | Flag ("--real", rest) => read_flags rest packages test 1i32 timeout
+    | Flag ("--timeout", Flag (ms, rest)) =>
+        := n = text::parse_i32 ms
+        := timeout2 = ? n > 0i32 ?> ms |: timeout
+        read_flags rest packages test is_real timeout2
+    | Flag (_, rest) => read_flags rest packages test is_real timeout
+
+:~ ^ scan_lines
+    (src : string) (i : i32) (packages : nb) (test : i32) (is_real : i32) (timeout : string) (body : nb) (opens : nb)
+    : nb * i32 * i32 * string * string * nb
+    =
+    ?= text::next_line src i ?|
+    | LineDone =>
+        := joined_body = text::trim_trailing_newlines (join_nb (rev_nb body NoNb))
+        packages, test, is_real, timeout, joined_body, rev_nb opens NoNb
+    | LineGot (line, next) =>
+        := trimmed = text::trim line
+        ? text::starts_with trimmed "///"
+        ?>
+            ? text::starts_with trimmed "///- "
+            ?>
+                := packages2, test2, is_real2, timeout2 =
+                    read_flags
+                        (flags_from (text::drop trimmed (text::length "///- ")) 0i32 NoFlag)
+                        packages
+                        test
+                        is_real
+                        timeout
+                scan_lines src next packages2 test2 is_real2 timeout2 body opens
+            |: scan_lines src next packages test is_real timeout body opens
+        |:
+            := opens2 =
+                ? text::starts_with trimmed "open " || text::starts_with trimmed ":< " ?> Nb (trimmed, opens) |: opens
+            scan_lines src next packages test is_real timeout (Nb (line, body)) opens2
+
+:~ scan (src : string) : nb * i32 * i32 * string * string * nb =
+    scan_lines (text::replace src "\r\n" "\n") 0i32 NoNb 0i32 0i32 "" NoNb NoNb
+
+:~ ^ merge (xs : nb) (more : nb) : nb =
+    ?= more ?|
+    | NoNb => xs
+    | Nb (s, rest) => merge (add_nb xs s) rest
+
+:~ push_part (xs : nb) (part : string) : nb =
+    ? part = "" ?> xs |: snoc xs part
+
+:~ ^ package_line (xs : nb) : string =
+    ?= xs ?|
+    | NoNb => ""
+    | Nb (path, NoNb) => "--package " ++ path
+    | Nb (path, rest) => "--package " ++ path ++ " " ++ package_line rest
+
+:~ program (packages : nb) (opens : nb) (defs : nb) (body : string) : string =
+    := header =
+        ?= packages ?|
+        | NoNb => ""
+        | _ => "///- " ++ package_line packages
+    join_nb (push_part (push_part (push_part (push_part NoNb header) (join_nb opens)) (join_nb defs)) body)
+
+:| ^ steps =
+    | NoStep
+    | Step : i32 * string * string * string * steps
+
+:~ ^ read_sources (src : string) (i : i32) (n : i32) (acc : sources) : sources =
+    ? n <= 0i32
+    ?> acc
+    |:
+        ?= text::next_line src i ?|
+        | LineDone => acc
+        | LineGot (kind, j) =>
+            ?= text::next_line src j ?|
+            | LineDone => acc
+            | LineGot (len_text, k) =>
+                := nlen = text::parse_i32 len_text
+                read_sources src (k + nlen) (n - 1i32) (Source (kind, text::slice_len src k nlen, acc))
+
+:~ ^ rev_sources (xs : sources) (acc : sources) : sources =
+    ?= xs ?|
+    | NoSource => acc
+    | Source (k, s, rest) => rev_sources rest (Source (k, s, acc))
+
+:~ load_sources (src : string) : sources =
+    ?= text::next_line src 0i32 ?|
+    | LineDone => NoSource
+    | LineGot (count, next) => rev_sources (read_sources src next (text::parse_i32 count) NoSource) NoSource
+
+:~ ^ indent_body (src : string) (i : i32) (acc : string) : string =
+    ?= text::next_line src i ?|
+    | LineDone => acc
+    | LineGot (line, next) =>
+        := row = ? text::trim line = "" ?> "" |: "    " ++ line
+        indent_body src next (? row = "" && acc = "" ?> acc |: acc ++ "\n" ++ row)
+
+:~ ^ split_declarations
+    (src : string) (i : i32) (in_declaration : bool) (declarations : string) (rest : string)
+    : string * string
+    =
+    ?= text::next_line src i ?|
+    | LineDone => declarations, rest
+    | LineGot (line, next) =>
+        := top = line <> "" && text::starts_with line " " = !-
+        := declaration = ? top ?> cell::declaration line |: in_declaration
+        ? declaration
+        ?> split_declarations src next !+ (declarations ++ "\n" ++ line) rest
+        |: split_declarations src next !- declarations (rest ++ "\n" ++ line)
+
+:~ ^ last_top_block (src : string) (i : i32) (block : string) : string =
+    ?= text::next_line src i ?|
+    | LineDone => block
+    | LineGot (line, next) =>
+        ? line <> "" && text::starts_with line " " = !-
+        ?> last_top_block src next line
+        |: last_top_block src next (block ++ "\n" ++ line)
+
+:~ ^ names_status_target (src : string) (i : i32) : bool =
+    ?= text::next_line src i ?|
+    | LineDone => !-
+    | LineGot (line, next) =>
+        ? text::starts_with (text::trim line) "///> wgsl" ?> !+ |: names_status_target src next
+
+:~ scoped_test_body (returns_status : bool) (body : string) : string =
+    := declarations, rest = split_declarations body 0i32 !- "" ""
+    ? text::trim rest = "" ?> body
+    |:
+        := ends_in_assertion = text::contains (last_top_block rest 0i32 "") "_assert"
+        := call =
+            if ends_in_assertion then """
+
+                spiral_cells_test ()
+                0i32
+                """
+            elif returns_status then """
+
+                spiral_cells_test ()
+                """
+            else """
+
+                inl _ = spiral_cells_test ()
+                0i32
+                """
+        text::trim declarations ++ "\ninl spiral_cells_test () =" ++ indent_body rest 0i32 "" ++ call
+
+:~ real_entry () : string = "spiral_cells_real"
+
+:~ real_program (packages : nb) (reals : nb) (body : string) : string * string =
+    := wrapped, generated = cell::wrap body
+    ? cell::from_expression generated ?>
+        := entry = text::replace wrapped "inl main () : i32 =" ("inl " ++ real_entry () ++ " () =")
+        program packages NoNb NoNb ("inl main () : i32 =\n    inl _ = real " ++ real_entry () ++ " ()\n    0i32"),
+        join_nb (snoc reals entry)
+    |: program packages NoNb NoNb "", join_nb (snoc reals body)
+
+:| plan_scope =
+    | EveryCell
+    | TestsOnly
+
+:~ planned (scope : plan_scope) (test : i32) : bool =
+    ?= scope ?|
+    | EveryCell => !+
+    | TestsOnly => test = 1i32 || test = 2i32
+
+:| file_budget =
+    | BudgetUnseen
+    | BudgetOf : string
+
+:~ budget_after (budget : file_budget) (timeout : string) : file_budget =
+    ?= budget ?|
+    | BudgetUnseen => BudgetOf timeout
+    | BudgetOf _ => budget
+
+:~ inherited_budget (budget : file_budget) : string =
+    ?= budget ?|
+    | BudgetOf timeout => ? timeout = "" ?> "-" |: timeout
+    | BudgetUnseen => "-"
+
+:~ step_budget (budget : file_budget) (test : i32) (timeout : string) : string =
+    ? timeout <> ""
+    ?> timeout
+    |? test = 1i32 || test = 2i32
+    ?> inherited_budget budget
+    |: "-"
+
+:~ ^ any_test (xs : sources) : bool =
+    ?= xs ?|
+    | NoSource => !-
+    | Source (kind, source, rest) =>
+        := _, test, _, _, _, _ = scan source
+        (kind = "spiral" && test <> 0i32) || any_test rest
+
+:~ ^ walk
+    (scope : plan_scope) (has_tests : bool) (xs : sources) (index : i32) (packages : nb) (opens : nb)
+    (defs : nb) (reals : nb) (budget : file_budget) (acc : steps)
+    : steps
+    =
+    ?= xs ?|
+    | NoSource => acc
+    | Source (kind, source, rest) =>
+        ? kind <> "spiral"
+        ?> walk scope has_tests rest (index + 1i32) packages opens defs reals budget acc
+        |:
+            := cell_packages, test, is_real, timeout, body, cell_opens = scan source
+            := skip = ? test = 0i32 && cell::entry_skipped has_tests body ?> 1i32 |: 0i32
+            := packages2 = merge packages cell_packages
+            := budget2 = budget_after budget timeout
+            ? test = 3i32
+            ?> walk scope has_tests rest (index + 1i32) packages2 opens defs reals budget2 acc
+            |:
+                := code, real_code =
+                    ? skip = 1i32
+                    ?> "", ""
+                    |? is_real = 1i32
+                    ?> real_program packages2 reals body
+                    |:
+                        program packages2 opens defs (
+                            ? test = 1i32
+                            ?> scoped_test_body (names_status_target source 0i32) body
+                            |: body
+                        ),
+                        join_nb reals
+                := timeout_text = step_budget budget2 test timeout
+                := step = ? planned scope test ?> Step (index, timeout_text, code, real_code, acc) |: acc
+                := kept = test <> 1i32 && skip = 0i32 && text::trim body <> ""
+                ? is_real = 1i32 ?>
+                    walk scope has_tests rest
+                        (index + 1i32)
+                        packages2
+                        opens
+                        defs
+                        ? kept
+                        ?> snoc reals body
+                        |: reals
+                        budget2
+                        step
+                |? test = 1i32
+                ?> walk scope has_tests rest (index + 1i32) packages2 opens defs reals budget2 step
+                |? kept
+                ?> walk scope has_tests rest (index + 1i32) packages2 opens (snoc defs body) reals budget2 step
+                |: walk scope has_tests rest (index + 1i32) packages2 opens defs reals budget2 step
+
+:~ ^ rev_steps (xs : steps) (acc : steps) : steps =
+    ?= xs ?|
+    | NoStep => acc
+    | Step (index, timeout, code, real_code, rest) => rev_steps rest (Step (index, timeout, code, real_code, acc))
+
+:~ ^ count_steps (xs : steps) : i32 =
+    ?= xs ?|
+    | NoStep => 0i32
+    | Step (_, _, _, _, rest) => 1i32 + count_steps rest
+
+:~ ^ step_pieces (xs : steps) (acc : list string) : list string =
+    ?= xs ?|
+    | NoStep => acc
+    | Step (index, timeout, code, real_code, rest) =>
+        := head = text::show_i32 index ++ "\n" ++ timeout ++ "\n" ++ text::show_i32 (text::length code) ++ "\n"
+        step_pieces rest (real_code :: (text::show_i32 (text::length real_code) ++ "\n") :: code :: head :: acc)
+
+:~ emit_steps (xs : steps) : string = sm'::concat_list "" (listm::rev (step_pieces xs []))
+
+///> gleam
+:# steps_join_once_in_order_with_byte_lengths =
+    emit_steps (Step (0i32, "1s", "ab", "", Step (2i32, "-", "xyz", "r", NoStep))) |> _assert_eq "0\n1s\n2\nab0\n2\n-\n3\nxyz1\nr"
+
+:~ plan_in (scope : plan_scope) (src : string) : string =
+    ?= text::next_line (text::replace src "\r\n" "\n") 0i32 ?|
+    | LineDone => "0\n"
+    | LineGot (lib, next) =>
+        := packages = ? lib = "-" || lib = "" ?> NoNb |: Nb (lib, NoNb)
+        := sources = load_sources (text::drop src next)
+        := found =
+            rev_steps
+                (walk scope (any_test sources) sources 0i32 packages NoNb NoNb NoNb BudgetUnseen NoStep)
+                NoStep
+        text::show_i32 (count_steps found) ++ "\n" ++ emit_steps found
+
+:~ plan (src : string) : string = plan_in EveryCell src
+
+:~ plan_tests (src : string) : string = plan_in TestsOnly src
+
+:~ ^ word_stop (s : string) (i : i32) : i32 =
+    ? i < text::length s && text::is_space (text::index s i) = !- ?> word_stop s (i + 1i32) |: i
+
+:~ word_after (s : string) (marker : string) : string =
+    := at = text::find_from s marker 0i32
+    := start = at + text::length marker
+    ? at < 0i32 ?> "" |: text::slice_len s start (word_stop s start - start)
+
+:~ phase_of (phases : string) (key : string) : i32 =
+    := v = word_after ("\n" ++ phases) ("\n" ++ key ++ "=")
+    ? v = "" ?> 0i32 |: text::parse_i32 v
+
+:~ phase_text (phases : string) (key : string) : string = text::show_i32 (phase_of phases key)
+
+:~ phase_header () : string = "test\tbackend\tqueue_ms\tmount_ms\tcompile_ms\tbuild_ms\trun_ms\ttarget_ms\thost\tslot_wait_ms\tcode_memo_hit_ms\tcompare_ms"
+
+:== phase_cols =
+    {
+        cell : string; backend : string; queue_ms : i32; mount_ms : i32; compile_ms : i32; build_ms : i32; run_ms : i32;
+        target_ms : i32; host : string; slot_wait_ms : i32; code_memo_hit_ms : i32; compare_ms : i32
+    }
+
+:~ phase_cols_of (source : string) (phases : string) : phase_cols =
+    {
+        cell = word_after source ":# "; backend = word_after source "///> "; queue_ms = phase_of phases "queue";
+        mount_ms = phase_of phases "mount"; compile_ms = phase_of phases "compile";
+        build_ms = phase_of phases "rustc" + phase_of phases "target_build"; run_ms = phase_of phases "run" + phase_of phases "target_run";
+        target_ms = phase_of phases "target"; host = word_after ("\n" ++ phases) "\nhost="; slot_wait_ms = phase_of phases "slot_wait";
+        code_memo_hit_ms = phase_of phases "code_memo_hit"; compare_ms = phase_of phases "compare"
+    }
+
+:~ phase_line (c : phase_cols) : string =
+    := n (v : i32) : string = text::show_i32 v
+    sm'::concat_list "\t" [ c::cell; c::backend; n c::queue_ms; n c::mount_ms; n c::compile_ms; n c::build_ms; n c::run_ms; n c::target_ms; c::host; n c::slot_wait_ms; n c::code_memo_hit_ms; n c::compare_ms ]
+
+:~ ^ nth_col (cols : list string) (i : i32) : string =
+    ?= cols ?|
+    | x :: rest => ? i = 0i32 ?> x |: nth_col rest (i - 1i32)
+    | [] => ""
+
+:~ col_i32 (cols : list string) (i : i32) : i32 =
+    := v = nth_col cols i
+    ? v = "" ?> 0i32 |: text::parse_i32 v
+
+:~ phase_cols_parse (line : string) : phase_cols =
+    := f = sm'::split_list "\t" line
+    {
+        cell = nth_col f 0i32; backend = nth_col f 1i32; queue_ms = col_i32 f 2i32; mount_ms = col_i32 f 3i32; compile_ms = col_i32 f 4i32;
+        build_ms = col_i32 f 5i32; run_ms = col_i32 f 6i32; target_ms = col_i32 f 7i32; host = nth_col f 8i32;
+        slot_wait_ms = col_i32 f 9i32; code_memo_hit_ms = col_i32 f 10i32; compare_ms = col_i32 f 11i32
+    }
+
+:~ phase_row (first : bool) (source : string) (phases : string) : string =
+    := row = phase_line (phase_cols_of source phases)
+    ? first ?> phase_header () ++ "\n" ++ row |: row
+
+:~ line_end (src : string) (at : i32) : i32 =
+    := nl = text::find_from src "\n" at
+    ? nl < 0i32 ?> text::length src |: nl
+
+:~ ^ body_head_from (src : string) (at : i32) (in_header : bool) : string =
+    := stop = line_end src at
+    := line = text::slice_len src at (stop - at)
+    := header = in_header && text::starts_with line "///"
+    := t = text::trim line
+    ? not header && t <> "" ?> t |? stop >= text::length src ?> "" |: body_head_from src (stop + 1i32) header
+
+:~ body_head (cell_source : string) : string = body_head_from cell_source 0i32 !+
+
+:~ ^ floor_from (src : string) (head : string) (at : i32) (index : i32) (best : i32) : i32 =
+    := stop = line_end src at
+    := found = ? text::trim (text::slice_len src at (stop - at)) = head ?> index |: best
+    ? stop >= text::length src ?> found |: floor_from src head (stop + 1i32) (index + 1i32) found
+
+:~ body_floor (program : string) (head : string) : i32 = floor_from program head 0i32 0i32 -1i32
+
+:~ ^ last_fails (line : string) (at : i32) (best : i32) : i32 =
+    := k = text::find_from line "--fails" at
+    := spaced = k >= 0i32 && k + 7i32 < text::length line && text::is_space (text::index line (k + 7i32))
+    ? k < 0i32 ?> best |: last_fails line (k + 1i32) (? spaced ?> k |: best)
+
+:~ ^ dashed (tokens : list string) (code_next : bool) : bool =
+    ?= tokens ?|
+    | [] => not code_next
+    | t :: rest => (? code_next ?> t <> "" |: t = "-") && dashed rest (not code_next)
+
+:~ ^ words_from (s : string) (i : i32) (cur : string) (acc : list string) : list string =
+    ? i >= text::length s
+    ?> listm::rev (? cur = "" ?> acc |: cur :: acc)
+    |? text::is_space (text::index s i)
+    ?> words_from s (i + 1i32) "" (? cur = "" ?> acc |: cur :: acc)
+    |: words_from s (i + 1i32) (cur ++ text::slice_len s i 1i32) acc
+
+:~ fails_clause (clause : string) : string =
+    := n = text::length clause
+    := q = text::find_from clause "\"" 0i32
+    := prefix = ? q < 0i32 ?> "" |: text::take clause q
+    := tokens = words_from prefix 0i32 "" []
+    := code_ok = q = 0i32 || (text::is_space (text::index clause (q - 1i32)) && dashed tokens !+)
+    ? q < 0i32 || n - q < 2i32 || text::byte_at clause (n - 1i32) <> 34i32 || not code_ok
+    ?> ""
+    |: sm'::concat_list "" tokens ++ "\t" ++ text::slice_len clause (q + 1i32) (n - q - 2i32)
+
+:~ ^ fails_from (src : string) (at : i32) : string =
+    := stop = line_end src at
+    := line = text::slice_len src at (stop - at)
+    := k = ? text::starts_with line "///- " ?> last_fails line 0i32 -1i32 |: -1i32
+    ? k >= 0i32 ?> fails_clause (text::trim (text::drop line (k + 7i32)))
+    |? stop >= text::length src ?> ""
+    |: fails_from src (stop + 1i32)
+
+:~ fails_expectation (source : string) : string = fails_from source 0i32
+
+:~ word_char (c : char) : bool = text::is_letter c || text::digit_val c >= 0i32 || c = '_'
+
+:~ ^ word_end (line : string) (i : i32) : i32 =
+    ? i < text::length line && word_char (text::index line i) ?> word_end line (i + 1i32) |: i
+
+:~ ^ space_end (line : string) (i : i32) : i32 =
+    ? i < text::length line && text::is_space (text::index line i) ?> space_end line (i + 1i32) |: i
+
+:~ ^ bounded_at (line : string) (flag : string) (at : i32) : bool =
+    := k = text::find_from line flag at
+    := e = k + text::length flag
+    ? k < 0i32 ?> !- |? e >= text::length line || not (word_char (text::index line e)) ?> !+ |: bounded_at line flag (k + 1i32)
+
+:~ ^ bare_at (line : string) (at : i32) : bool =
+    := k = text::find_from line "--no-agree" at
+    := e = k + 10i32
+    := w = space_end line e
+    ? k < 0i32 ?> !- |? w > e && w < text::length line && text::index line w = '"' ?> bare_at line (k + 1i32) |: !+
+
+:~ ^ reason_at (line : string) (at : i32) (best : string) : string =
+    := k = text::find_from line "--no-agree" at
+    := w = space_end line (k + 10i32)
+    := close = ? w < text::length line && text::index line w = '"' ?> text::find_from line "\"" (w + 1i32) |: -1i32
+    := found = ? w > k + 10i32 && close > w ?> "R" ++ text::slice_len line (w + 1i32) (close - w - 1i32) |: best
+    ? k < 0i32 ?> best |: reason_at line (k + 1i32) found
+
+:~ ^ word_at (line : string) (flag : string) (at : i32) (best : string) : string =
+    := k = text::find_from line flag at
+    := w = space_end line (k + text::length flag)
+    := e = word_end line w
+    := found = ? w > k + text::length flag && e > w ?> text::slice_len line w (e - w) |: best
+    ? k < 0i32 ?> best |: word_at line flag (k + 1i32) found
+
+:| directive_probe =
+    | FlagProbe : string
+    | BareNoAgree
+    | ReasonProbe
+    | WordProbe : string
+
+:~ probe_line (p : directive_probe) (line : string) : string =
+    ?= p ?|
+    | FlagProbe flag => ? bounded_at line flag 5i32 ?> "1" |: ""
+    | BareNoAgree => ? bare_at line 5i32 ?> "1" |: ""
+    | ReasonProbe => reason_at line 5i32 ""
+    | WordProbe flag => word_at line flag 5i32 ""
+
+:~ ^ probe_from (src : string) (p : directive_probe) (at : i32) : string =
+    := stop = line_end src at
+    := line = text::slice_len src at (stop - at)
+    := found = ? text::starts_with line "///- " ?> probe_line p line |: ""
+    ? found <> "" ?> found |? stop >= text::length src ?> "" |: probe_from src p (stop + 1i32)
+
+:~ directive_flag (source : string) (flag : string) : bool = probe_from source (FlagProbe flag) 0i32 <> ""
+
+:~ bare_no_agree (source : string) : bool = probe_from source BareNoAgree 0i32 <> ""
+
+:~ no_agree_reason (source : string) : string = probe_from source ReasonProbe 0i32
+
+:~ directive_word (source : string) (flag : string) : string = probe_from source (WordProbe flag) 0i32
+
+:== trm = erlang_term::term
+
+:~ nb_nil () : trm = erlang_term::atom "nil"
+
+:~ nb_kv (k : string) (v : trm) : trm = erlang_term::tuple [ erlang_term::atom k; v ]
+
+:~ nb_map (xs : list trm) : trm = erlang_term::apply "maps" "from_list" [ erlang_term::list_term xs ]
+
+:~ agreement (source : string) : bool = directive_flag source "--test" && not (directive_flag source "--no-agree")
+
+:~ reference_target (source : string) : trm =
+    := w = directive_word source "--reference"
+    ? w = "" ?> nb_nil () |: erlang_term::of w
+
+:~ exp_map (code : string) (substring : string) : trm =
+    := codev = ? code = "" ?> nb_nil () |: erlang_term::of code
+    nb_map [ nb_kv "code" codev; nb_kv "substring" (erlang_term::of substring) ]
+
+:~ expectation (source : string) : trm =
+    := raw = fails_expectation source
+    := t = text::find_from raw "\t" 0i32
+    ? t < 0i32 ?> nb_nil () |: exp_map (text::take raw t) (text::drop raw (t + 1i32))
+
+:~ empty_message (path : string) : string = "livebook did not run " ++ path ++ ": no spiral cells"
+
+:~ join_host (prev : string) (next : string) : string = ? prev = "" ?> next |: prev ++ "\n\n" ++ next
+
+:~ ^ collapsed_from (s : string) (i : i32) (in_run : bool) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |? text::index s i = ' ' || text::index s i = '\t'
+    ?> collapsed_from s (i + 1i32) !+ (? in_run ?> acc |: acc ++ " ")
+    |: collapsed_from s (i + 1i32) !- (acc ++ text::slice_len s i 1i32)
+
+:~ collapsed (s : string) : string = collapsed_from s 0i32 !- ""
+
+:~ code_char (c : char) : bool = word_char c || c = '-'
+
+:~ ^ bounded_code_at (message : string) (code : string) (at : i32) : bool =
+    := k = text::find_from message code at
+    := e = k + text::length code
+    := before = k <= 0i32 || not (code_char (text::index message (k - 1i32)))
+    := after = e >= text::length message || not (code_char (text::index message e))
+    ? k < 0i32 ?> !- |? before && after ?> !+ |: bounded_code_at message code (k + 1i32)
+
+:~ upper_char (c : char) : bool = text::has_char "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 0i32 c
+
+:~ ^ uppers_end (s : string) (i : i32) : i32 = ? i < text::length s && upper_char (text::index s i) ?> uppers_end s (i + 1i32) |: i
+
+:~ ^ digits_end (s : string) (i : i32) : i32 = ? i < text::length s && text::digit_val (text::index s i) >= 0i32 ?> digits_end s (i + 1i32) |: i
+
+:~ ^ letters_end (s : string) (i : i32) : i32 = ? i < text::length s && text::is_letter (text::index s i) ?> letters_end s (i + 1i32) |: i
+
+:~ code_end_ok (s : string) (e : i32) : bool = e >= text::length s || not (code_char (text::index s e))
+
+:~ ^ tail_fits (s : string) (start : i32) (n : i32) : bool =
+    := u = start + n
+    := digit_tail = digits_end s u >= u + 4i32 && code_end_ok s (u + 4i32)
+    := dash_tail = u < text::length s && text::index s u = '-' && letters_end s (u + 1i32) > u + 1i32 && code_end_ok s (letters_end s (u + 1i32))
+    ? n < 2i32 ?> !- |? digit_tail || dash_tail ?> !+ |: tail_fits s start (n - 1i32)
+
+:~ ^ diagnostic_at (s : string) (at : i32) : bool =
+    := k = text::find_from s "E" at
+    := before = k <= 0i32 || not (code_char (text::index s (k - 1i32)))
+    := runs = uppers_end s (k + 1i32) - (k + 1i32)
+    := most = ? runs > 4i32 ?> 4i32 |: runs
+    ? k < 0i32 ?> !- |? before && tail_fits s (k + 1i32) most ?> !+ |: diagnostic_at s (k + 1i32)
+
+:~ ^ location_from (s : string) (at : i32) (acc : list (i32 * i32)) : list (i32 * i32) =
+    := k = text::find_from s "main.spi:" at
+    := a = k + 9i32
+    := d = digits_end s a
+    := ok = d > a && d < text::length s && text::index s d = ':' && digits_end s (d + 1i32) > d + 1i32
+    ? k < 0i32 ?> listm::rev acc |? ok ?> location_from s (digits_end s (d + 1i32)) ((k, text::parse_i32 (text::slice_len s a (d - a))) :: acc) |: location_from s (k + 1i32) acc
+
+:~ ^ segment_hit (s : string) (wanted : string) (floor : i32) (locs : list (i32 * i32)) : bool =
+    ?= locs ?|
+    | [] => !-
+    | (at, line) :: rest =>
+        := stop = ?= rest ?| (next, _) :: _ => next | [] => text::length s
+        (line > floor && text::contains (collapsed (text::slice_len s at (stop - at))) wanted) || segment_hit s wanted floor rest
+
+:~ in_body (message : string) (substring : string) (floor : i32) : bool =
+    := locs = location_from message 0i32 []
+    floor < 0i32 || locs = [] || segment_hit message (collapsed substring) floor locs
+
+:~ compile_error_verdict (message : string) (code : string) (substring : string) (floor : i32) : string =
+    := has_text = text::contains (collapsed message) (collapsed substring)
+    := has_code = code = "" || bounded_code_at message code 0i32
+    ? has_text && has_code && not (in_body message substring floor)
+    ?> "early"
+    |? has_text && has_code
+    ?> "ok"
+    |? has_text && not (diagnostic_at message 0i32)
+    ?> "nocode"
+    |: "other"
+:~ has_line (wire : string) (item : string) : bool = wire <> "" && text::contains ("\n" ++ wire ++ "\n") ("\n" ++ item ++ "\n")
+
+:~ ^ uniq_from (names : string) (at : i32) (acc : string) (any : bool) : string =
+    := nl = text::find_from names "\n" at
+    := stop = ? nl < 0i32 ?> text::length names |: nl
+    := item = text::slice_len names at (stop - at)
+    := next = ? any && has_line acc item ?> acc |? any ?> acc ++ "\n" ++ item |: item
+    ? nl < 0i32 ?> next |: uniq_from names (nl + 1i32) next !+
+
+:~ ^ unknown_from (asked : string) (names : string) (symbols : string) (at : i32) (acc : string) : string =
+    := nl = text::find_from asked "\n" at
+    := stop = ? nl < 0i32 ?> text::length asked |: nl
+    := item = text::slice_len asked at (stop - at)
+    := next = ? has_line names item || has_line symbols item ?> acc |: acc ++ "\n" ++ item
+    ? nl < 0i32 ?> next |: unknown_from asked names symbols (nl + 1i32) next
+
+:~ unknown_tests (names : string) (symbols : string) (asked : string) : string =
+    := unknown = unknown_from asked names symbols 0i32 ""
+    := known = ? names = "" ?> "no tests" |: text::replace (uniq_from names 0i32 "" !-) "\n" ", "
+    ? unknown = "" ?> "" |: "unknown test " ++ text::replace (text::drop unknown 1i32) "\n" ", " ++ "; the notebook has: " ++ known
+
+:~ test_state (mode : string) (filtered : bool) (kind : string) : string =
+    ? mode = "ignore" ?> "skipped"
+    |? mode = "static" ?> "static"
+    |? mode = "prelude" ?> "prelude"
+    |? filtered ?> "filtered"
+    |? kind = "passed" || kind = "built" ?> kind
+    |? kind = "failed!" || kind = "unsupported!" || kind = "timed_out!" ?> text::take kind (text::length kind - 1i32)
+    |: "not_run"
+
+///> gleam
+:# a_phase_row_names_the_test_and_sums_build_and_run =
+    := rust = phase_row !- "///> rust\n:# sieve_rust =\n    x" "queue=5\nmount=2\ncompile=3\nrustc=4\nrun=6"
+    := c = phase_row !- "///> c\n:# sieve_c =" "compile=3\ntarget_build=7\ntarget_run=8\ntarget=16"
+    := zig = phase_row !- "///> zig\n:# tree_zig =" "compile=2\ntarget=11\nslot_wait=7"
+    zig |> _assert_eq "tree_zig\tzig\t0\t0\t2\t0\t0\t11\t\t7\t0\t0"
+    (rust, c, phase_row !- "1i32" "") |> _assert_eq ("sieve_rust\trust\t5\t2\t3\t4\t6\t0\t\t0\t0\t0", "sieve_c\tc\t0\t0\t3\t7\t8\t16\t\t0\t0\t0", "\t\t0\t0\t0\t0\t0\t0\t\t0\t0\t0")
+
+///> gleam
+:# the_first_phase_row_carries_the_header_and_every_row_names_its_host_and_waits =
+    := ~wire = "host=ganymede\nqueue=1\nslot_wait=40\ncode_memo_hit=3\ncompile=5\nrun=2\ntarget=9\ncompare=1"
+    := first = phase_row !+ "///> rust\n:# t =" wire
+    := rest = phase_row !- "///> rust\n:# t =" wire
+    first |> _assert_eq (phase_header () ++ "\n" ++ rest)
+    rest |> _assert_eq "t\trust\t1\t0\t5\t0\t2\t9\tganymede\t40\t3\t1"
+    (text::length (phase_header ()) > 0i32) |> _assert_eq !+
+
+///> gleam
+:# a_phase_row_parses_back_into_every_named_column =
+    := c = phase_cols_parse "sieve_rust\trust\t5\t2\t3\t4\t6\t11\tganymede\t40\t7\t1"
+    (c::cell, c::backend, c::queue_ms, c::mount_ms, c::compile_ms, c::build_ms)
+    |> _assert_eq ("sieve_rust", "rust", 5i32, 2i32, 3i32, 4i32)
+    (c::run_ms, c::target_ms, c::host, c::slot_wait_ms, c::code_memo_hit_ms, c::compare_ms)
+    |> _assert_eq (6i32, 11i32, "ganymede", 40i32, 7i32, 1i32)
+
+///> gleam
+:# phase_lines_round_trip_and_short_rows_read_zero =
+    := line = phase_row !- "///> c\n:# sieve_c =" "compile=3\ntarget_build=7\ntarget_run=8\ntarget=16"
+    phase_line (phase_cols_parse line) |> _assert_eq line
+    := short = phase_cols_parse "t\tzig\t1"
+    (short::host, short::compare_ms, short::mount_ms) |> _assert_eq ("", 0i32, 0i32)
+
+///> gleam
+:# fails_clauses_body_heads_and_floors_match_the_elixir_notebook =
+    := ~src = "///> rust\n///- --test --fails EJP0040 \"Unification failure\"\n:# t =\n    1i32\n"
+    fails_expectation src |> _assert_eq "EJP0040\tUnification failure"
+    := dashed_code = "///- --fails ETY - Unbound \"x \"y\" z\"\n"
+    (fails_expectation dashed_code, fails_expectation "///- --fails \"\"", fails_expectation "///- --fails nope") |> _assert_eq ("ETY-Unbound\tx \"y\" z", "\t", "")
+    (fails_expectation "//- --fails \"x\"", fails_expectation "///- --failsx \"x\"", fails_expectation "") |> _assert_eq ("", "", "")
+    (body_head src, body_head "///> rust\n\n  \n", body_head "") |> _assert_eq (":# t =", "", "")
+    := ~program = "a\n:# t =\nb\n  :# t =  \nc"
+    (body_floor program ":# t =", body_floor program "zz", body_floor "x\n" "") |> _assert_eq (3i32, -1i32, 1i32)
+
+///> gleam
+:# directive_flags_words_and_no_agree_reasons_read_like_the_old_regexes =
+    := ~cell = "///> rust\n///- --test --no-agree \"a\" x --no-agree  \"b c\"\n///- --reference fsharp_2 --build-only\n:# t ="
+    (directive_flag cell "--test", directive_flag cell "--build-only", directive_flag cell "--test static", directive_flag "///- --testing" "--test") |> _assert_eq (!+, !+, !-, !-)
+    (directive_flag "///- --test-x" "--test", directive_flag "// - --test" "--test", directive_flag "///- --test static" "--test static") |> _assert_eq (!+, !-, !+)
+    (no_agree_reason cell, no_agree_reason "///- --no-agree \"\"", no_agree_reason "///- --no-agree x", no_agree_reason "///- --no-agree \"open") |> _assert_eq ("Rb c", "R", "", "")
+    (bare_no_agree cell, bare_no_agree "///- --test --no-agree", bare_no_agree "///- --no-agree\"x\"", bare_no_agree "///- --no-agree  \"x\"") |> _assert_eq (!-, !+, !+, !-)
+    (directive_word cell "--reference", directive_word "///- --reference" "--reference", directive_word "///- --reference  rust x" "--reference") |> _assert_eq ("fsharp_2", "", "rust")
+
+///> gleam
+:# compile_error_verdicts_match_the_elixir_expected_error_rules =
+    := ~message = "main.spi:3:5: ETY-Unbound: x\nmain.spi:9:1: error ETY-Unbound: Unbound  variable foo"
+    := ~floor = 5i32
+    := v = \ (m : string) (c : string) (s : string) (f : i32) => compile_error_verdict m c s f
+    (v message "ETY-Unbound" "Unbound variable foo" floor, v message "ETY-Unbound" "Unbound variable foo" 10i32, v message "" "variable foo" -1i32) |> _assert_eq ("ok", "early", "ok")
+    (v "type mismatch here" "" "mismatch" floor, v "Unbound variable foo" "ETY0040" "Unbound variable" -1i32, v "EJP0040 Unification failure" "ETY0001" "Unification" -1i32) |> _assert_eq ("ok", "nocode", "other")
+    (v "x" "" "absent" -1i32, v "EJP00401 a" "EJP0040" "a" -1i32) |> _assert_eq ("other", "nocode")
+    (diagnostic_at "XEJP0040" 0i32, diagnostic_at "EJP00401" 0i32, diagnostic_at "see ETY-Unbound." 0i32, diagnostic_at "EA1234" 0i32, diagnostic_at "(ETYP0001)" 0i32) |> _assert_eq (!-, !-, !+, !-, !+)
+    (collapsed "a \t  b\tc", in_body "no locations" "x" 3i32) |> _assert_eq ("a b c", !+)
+
+///> gleam
+:# unknown_test_names_give_the_old_notebook_message_and_known_ones_pass =
+    := ~names = "a\nb\na"
+    := ~symbols = "sa\nsb\nsa"
+    (unknown_tests names symbols "a\nsb", unknown_tests names symbols "x\na\ny") |> _assert_eq ("", "unknown test x, y; the notebook has: a, b")
+    (unknown_tests "" "" "q", unknown_tests names symbols "b\nb") |> _assert_eq ("unknown test q; the notebook has: no tests", "")
+
+///> gleam
+:# test_state_orders_mode_then_filter_then_verdict_like_the_old_notebook =
+    := ~test = "test"
+    (test_state "ignore" !+ "failed!", test_state "static" !- "passed", test_state "prelude" !- "", test_state test !+ "passed") |> _assert_eq ("skipped", "static", "prelude", "filtered")
+    (test_state test !- "passed", test_state test !- "built", test_state test !- "failed!", test_state test !- "unsupported!", test_state test !- "timed_out!") |> _assert_eq ("passed", "built", "failed", "unsupported", "timed_out")
+    (test_state test !- "failed", test_state test !- "passed!", test_state test !- "", test_state test !- "accepted") |> _assert_eq ("not_run", "not_run", "not_run", "not_run")

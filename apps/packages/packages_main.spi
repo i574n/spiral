@@ -1,0 +1,6 @@
+:< packages_cli
+
+:= main () : i32 =
+    ?= route_of (env::command_line_arguments ()) ?|
+    | PublishDryRun (dir, out) => published dir out
+    | Usage => usage ()

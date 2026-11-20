@@ -1,0 +1,112 @@
+///- --package .
+:# builder_calls static =
+    :< testing
+
+:== term = erlang_term::term
+
+:~ atom (name : string) : term = erlang_term::atom name
+
+:~ kv (key : string) (v : term) : term = erlang_term::tuple [ atom key; v ]
+
+:~ argument_error (message : string) : term =
+    erlang_term::apply "maps" "from_list" [ erlang_term::list_term [ kv "__struct__" (atom "Elixir.ArgumentError"); kv "__exception__" (atom "true"); kv "message" (erlang_term::of message) ] ]
+
+:~ raised (message : string) : term = erlang_term::apply "erlang" "error" [ argument_error message ]
+
+:~ field (key : string) (b : term) (fallback : term) : term = erlang_term::apply "maps" "get" [ atom key; b; fallback ]
+
+:~ newline () : term = erlang_term::apply "erlang" "list_to_binary" [ erlang_term::list_term [ erlang_term::of 10i32 ] ]
+
+:~ lines (wire : string) : list term = erlang_term::items_of (erlang_term::apply "binary" "split" [ erlang_term::of wire; newline (); erlang_term::list_term [ atom "global" ] ])
+
+:~ is_atom (name : string) (t : term) : bool = erlang_term::equal t (atom name)
+
+:~ tagged (tag : string) (t : term) : bool = erlang_term::is_tuple t && is_atom tag (erlang_term::element_at 1i32 t)
+
+:~ split (code : string) : term =
+    := r = builders::split_term code
+    ? tagged "ok" r ?> erlang_term::tuple [ erlang_term::element_at 2i32 r; erlang_term::element_at 3i32 r ]
+    |: raised (erlang_term::cast (erlang_term::element_at 2i32 r))
+
+:~ commands (code : string) : term = erlang_term::element_at 1i32 (split code)
+
+:~ missing () : term = atom "spiral_cells_builder_field_missing"
+
+:~ unset (key : string) (b : term) : bool = is_atom "nil" (field key b (missing ()))
+
+:~ no_deps (b : term) : bool = erlang_term::equal (field "deps" b (missing ())) (erlang_term::list_term [])
+
+:~ keeps_cleanup (b : term) : bool =
+    := c = field "cleanup" b (missing ())
+    not (is_atom "false" c) && not (erlang_term::equal c (missing ()))
+
+:~ host_rust (b : term) : bool =
+    erlang_term::is_map b && is_atom "rust" (field "tool" b (missing ())) && unset "contract" b && unset "wasm" b && no_deps b && keeps_cleanup b
+
+:~ tool_name (b : term) : string = erlang_term::cast (erlang_term::apply "erlang" "atom_to_binary" [ field "tool" b (atom "nil") ])
+
+:~ known (value : string) (b : term) : term = ? value = "" ?> raised ("no Spiral target for :" ^^ tool_name b) |: erlang_term::of value
+
+:~ backend (b : term) : term = known (targets::backend (targets::target_of (tool_name b))) b
+
+:~ ext (b : term) : term = known (targets::extension (targets::target_of (tool_name b))) b
+
+:~ raw_of (b : term) : string =
+    := raw = field "raw" b (atom "nil")
+    ? is_atom "nil" raw || is_atom "false" raw ?> tool_name b |: erlang_term::cast raw
+
+:~ error_text (wire : string) : option string =
+    ? sm'::starts_with "E" wire ?> Some (sm'::substring 1i32 ((sm'::length wire : i32) - 1i32) wire) |: None
+
+:~ text_of (t : term) : string = erlang_term::cast t
+
+:~ gleam_route (b : term) (path : string) : term = erlang_term::tuple [ atom "gleam"; erlang_term::of path; field "deps" b (erlang_term::list_term []) ]
+
+:~ atom_route (only : term) (path : string) : term = erlang_term::tuple [ erlang_term::apply "erlang" "binary_to_atom" [ only ]; erlang_term::of path ]
+
+:~ single (b : term) (path : string) (only : term) : term = ? text_of only = "gleam" ?> gleam_route b path |: atom_route only path
+
+:~ spiral_route (rest : list term) : term = erlang_term::tuple [ atom "spiral"; erlang_term::list_term rest ]
+
+:~ unroutable () : term = raised "unroutable builder"
+
+:~ lone (b : term) (path : string) (first : term) (rest : list term) : term =
+    ? (listm::length rest : i32) = 0i32 ?> single b path first |: unroutable ()
+
+:~ routed (b : term) (path : string) (parts : list term) : term =
+    ?= parts ?|
+    | first :: rest => ? text_of first = "spiral" ?> spiral_route rest |: lone b path first rest
+    | _ => unroutable ()
+
+:~ dispatch (b : term) (path : string) : term =
+    := wire = builders::route_wire (raw_of b) path
+    ?= error_text wire ?| Some message => raised message | None => routed b path (lines wire)
+
+:~ argv (b : term) (path : string) : term =
+    := wire = builders::argv_wire (raw_of b) path
+    ?= error_text wire ?| Some message => raised message | None => erlang_term::list_term (lines wire)
+
+:~ rust_base () : list term =
+    [ kv "tool" (atom "rust"); kv "contract" (atom "nil"); kv "wasm" (atom "nil"); kv "deps" (erlang_term::list_term []); kv "cleanup" (atom "true") ]
+
+:~ rust_builder (extra : list term) : term = erlang_term::apply "maps" "from_list" [ erlang_term::list_term (listm::append (rust_base ()) extra) ]
+
+:~ caught (run : term) : term = file_lock::evaluated "try F(nil) catch error:E -> E end." [ ("F", run) ]
+
+:~ message_of (e : term) : string = erlang_term::cast (field "message" e (erlang_term::of ""))
+
+:~ field_is (key : string) (want : string) (e : term) : bool = is_atom want (field key e (atom "nil"))
+
+///> gleam
+:# a_plain_rust_builder_is_the_host_and_any_extra_turns_it_off =
+    := off = \ (k : string) (v : string) => host_rust (rust_builder [ kv k (atom v) ])
+    (host_rust (rust_builder []), off "cleanup" "false", off "wasm" "true") |> _assert_eq (!+, !-, !-)
+
+///> gleam
+:# a_builder_error_is_an_elixir_argument_error =
+    := e = caught (erlang_term::of (\ () => raised "bad builder"))
+    (field_is "__struct__" "Elixir.ArgumentError" e, field_is "__exception__" "true" e, message_of e) |> _assert_eq (!+, !+, "bad builder")
+
+///> gleam
+:# wires_split_on_newlines_and_errors_drop_their_marker =
+    ((listm::length (lines "a\nb\nc") : i32), error_text "Eboom", error_text "fine") |> _assert_eq (3i32, Some "boom", None)

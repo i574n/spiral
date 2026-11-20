@@ -1,0 +1,136 @@
+///- --package .
+:# report_row static =
+    :< testing
+
+:== term = erlang_term::term
+
+:~ atom (s : string) : term = erlang_term::atom s
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ maps (f : string) (args : list term) : term = erlang_term::apply "maps" f args
+
+:~ get (m : term) (k : string) : term = maps "get" [ atom k; m ]
+
+:~ lookup (m : term) (key : term) (d : term) : term = maps "get" [ key; m; d ]
+
+:~ field_or (m : term) (k : string) (d : term) : term = lookup m (atom k) d
+
+:~ put (k : string) (v : term) (m : term) : term = maps "put" [ str k; v; m ]
+
+:~ at (n : i32) (t : term) : term = erlang_term::element_at n t
+
+:~ is (name : string) (t : term) : bool = erlang_term::equal t (atom name)
+
+:~ falsy (t : term) : bool = is "nil" t || is "false" t
+
+:~ text (t : term) : string = erlang_term::cast t
+
+:~ atom_text (t : term) : string = erlang_term::apply "erlang" "atom_to_binary" [ t ] |> erlang_term::cast
+
+:~ none () : term = maps "new" []
+
+:~ empty () : term = erlang_term::list_term []
+
+:~ verdict_kind (verdict : term) : string =
+    ? erlang_term::is_tuple verdict ?> atom_text (at 1i32 verdict) ^^ "!" |: ? is "nil" verdict ?> "" |: atom_text verdict
+
+:~ filtered (selected : term) (index : term) : bool =
+    ? is "nil" selected ?> !- |: not (erlang_term::apply "Elixir.MapSet" "member?" [ selected; index ] |> erlang_term::cast)
+
+:~ state_of (test : term) (selected : term) (verdict : term) : string =
+    notebook::test_state (text (get test "mode")) (filtered selected (get test "index")) (verdict_kind verdict)
+
+:~ messaged (state : string) : bool = state = "failed" || state = "unsupported" || state = "timed_out"
+
+:~ with_message (state : string) (verdict : term) (row : term) : term =
+    ? messaged state && erlang_term::is_tuple verdict ?> put "message" (str (verdict_text::first_line (text (at 2i32 verdict)))) row |: row
+
+:~ errored (status : term) : bool = erlang_term::is_tuple status && is "error" (at 1i32 status)
+
+:~ reason_of (status : term) : string = ? errored status ?> verdict_text::not_run_reason_text (text (at 2i32 status)) |: "no step ran for this cell"
+
+:~ with_reason (state : string) (status : term) (row : term) : term = ? state = "not_run" ?> put "reason" (str (reason_of status)) row |: row
+
+:~ memo_flag (memo : term) (index : term) : term = ? erlang_term::is_map memo ?> lookup memo index (atom "nil") |: atom "nil"
+
+:~ with_memo (memo : term) (index : term) (row : term) : term =
+    := flag = memo_flag memo index
+    ? falsy flag ?> row |: put "memo" (str (atom_text flag)) row
+
+:~ mismatched (message : string) (row : term) : term =
+    := m = accept::mismatch_term message
+    ? erlang_term::is_tuple m && is "ok" (at 1i32 m) ?> put "actual" (at 2i32 m) (put "expected" (at 3i32 m) row) |: row
+
+:~ failed_text (verdict : term) : bool = erlang_term::is_tuple verdict && is "failed" (at 1i32 verdict) && erlang_term::is_binary (at 2i32 verdict)
+
+:~ with_mismatch (verdict : term) (row : term) : term = ? failed_text verdict ?> mismatched (text (at 2i32 verdict)) row |: row
+
+:~ ms_of (row : term) : term =
+    := ms = lookup row (str "ms") (atom "nil")
+    ? falsy ms ?> erlang_term::of 0i32 |: ms
+
+:~ higher (top : term) (row : term) : term = erlang_term::apply "erlang" "max" [ top; ms_of row ]
+
+:~ slowest (rows : term) : term = listm::fold higher (erlang_term::of 0i32) (erlang_term::items_of rows)
+
+:~ with_budget (budget : term) (row : term) : term =
+    ? is "nil" budget ?> row |: put "timeout_ms" budget (put "slowest_ms" (slowest (lookup row (str "targets") (empty ()))) row)
+
+:~ pair (k : string) (v : term) : term = erlang_term::tuple [ str k; v ]
+
+:~ target_row (r : term) : term = maps "from_list" [ erlang_term::list_term [ pair "target" (get r "target"); pair "status" (get r "status"); pair "ms" (get r "ms") ] ]
+
+:~ target_rows (targets : term) : term = erlang_term::list_term (listm::map target_row (erlang_term::items_of targets))
+
+:~ copied (test : term) (row : term) (name : string) : term = put name (get test name) row
+
+:~ base_row (test : term) : term = listm::fold (copied test) (none ()) [ "index"; "name"; "symbol"; "title"; "mode"; "realm" ]
+
+:~ indexed (ran : term) (name : string) (index : term) (d : term) : term = lookup (field_or ran name (none ())) index d
+
+:~ listed_row (test : term) (ran : term) : term = put "targets" (target_rows (indexed ran "targets" (get test "index") (empty ()))) (base_row test)
+
+:~ core_row (test : term) (state : string) (ran : term) : term =
+    put "status" (str state) (put "unavailable" (indexed ran "unavailable" (get test "index") (empty ())) (listed_row test ran))
+
+:~ noted (index : term) (state : string) (verdict : term) (ran : term) (row : term) : term =
+    with_message state verdict (with_reason state (field_or ran "status" (atom "nil")) (with_memo (get ran "memo") index row))
+
+:~ decorated (index : term) (state : string) (verdict : term) (ran : term) (row : term) : term =
+    with_budget (indexed ran "budgets" index (atom "nil")) (with_mismatch verdict (noted index state verdict ran row))
+
+:~ report_row (selected : term) (ran : term) (test : term) : term =
+    := verdict = indexed ran "verdicts" (get test "index") (atom "nil")
+    := state = state_of test selected verdict
+    decorated (get test "index") state verdict ran (core_row test state ran)
+
+:~ report_rows (tests : term) (selected : term) (ran : term) : term = erlang_term::list_term (listm::map (report_row selected ran) (erlang_term::items_of tests))
+
+///> gleam
+:# a_tuple_verdict_kind_gets_a_bang_and_nil_is_empty =
+    (verdict_kind (erlang_term::tuple [ atom "failed"; str "m" ]), verdict_kind (atom "nil"), verdict_kind (atom "passed")) |> _assert_eq ("failed!", "", "passed")
+
+///> gleam
+:# an_error_status_explains_not_run_and_ok_falls_back =
+    reason_of (atom "ok") |> _assert_eq "no step ran for this cell"
+
+:~ ms_row (ms : term) : term = maps "from_list" [ erlang_term::list_term [ pair "ms" ms ] ]
+
+///> gleam
+:# slowest_takes_the_highest_ms_and_counts_nil_as_zero =
+    erlang_term::equal (slowest (erlang_term::list_term [ ms_row (erlang_term::of 7i32); ms_row (atom "nil") ])) (erlang_term::of 7i32) |> _assert_eq !+
+
+///> gleam
+:# slowest_of_no_rows_is_zero =
+    erlang_term::equal (slowest (empty ())) (erlang_term::of 0i32) |> _assert_eq !+
+
+:~ flags () : term = maps "from_list" [ erlang_term::list_term [ erlang_term::tuple [ erlang_term::of 0i32; atom "false" ]; erlang_term::tuple [ erlang_term::of 1i32; atom "hit" ] ] ]
+
+///> gleam
+:# a_false_memo_flag_adds_no_memo_field =
+    (maps "size" [ with_memo (flags ()) (erlang_term::of 0i32) (none ()) ] |> erlang_term::cast : i32) |> _assert_eq 0i32
+
+///> gleam
+:# a_hit_memo_flag_adds_its_name =
+    erlang_term::equal (lookup (with_memo (flags ()) (erlang_term::of 1i32) (none ())) (str "memo") (atom "nil")) (str "hit") |> _assert_eq !+

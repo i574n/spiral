@@ -1,0 +1,127 @@
+///- --package .
+:# cell_collect static =
+    :< testing
+
+:== term = erlang_term::term
+
+:~ atom (s : string) : term = erlang_term::atom s
+
+:~ maps (f : string) (args : list term) : term = erlang_term::apply "maps" f args
+
+:~ size_of (t : term) : i32 = erlang_term::apply "erlang" "tuple_size" [ t ] |> erlang_term::cast
+
+:~ at (n : i32) (t : term) : term = erlang_term::element_at n t
+
+:~ is (name : string) (t : term) : bool = erlang_term::equal t (atom name)
+
+:~ t2 (a : term) (b : term) : term = erlang_term::tuple [ a; b ]
+
+:~ is_empty (t : term) : bool = erlang_term::equal t (erlang_term::list_term [])
+
+:~ is_cons (t : term) : bool = (erlang_term::apply "erlang" "is_list" [ t ] |> erlang_term::cast) && not (is_empty t)
+
+:~ put_at (field : string) (index : term) (value : term) (acc : term) : term =
+    maps "put" [ atom field; maps "put" [ index; value; maps "get" [ atom field; acc ] ]; acc ]
+
+:~ durations_only (index : term) (ms : term) (acc : term) : term = put_at "durations" index (t2 (at 1i32 ms) (at 2i32 ms)) acc
+
+:~ listed_targets (index : term) (ms : term) (acc : term) : term = put_at "targets" index (at 3i32 ms) (durations_only index ms acc)
+
+:~ timed_triple (index : term) (ms : term) (acc : term) : term =
+    ? is_cons (at 3i32 ms) ?> listed_targets index ms acc
+    |: ? is_empty (at 3i32 ms) ?> durations_only index ms acc |: put_at "durations" index ms acc
+
+:~ timed (index : term) (ms : term) (acc : term) : term =
+    ? is "nil" ms ?> acc
+    |: ? erlang_term::is_tuple ms && size_of ms = 3i32 ?> timed_triple index ms acc |: put_at "durations" index ms acc
+
+:~ outcome (index : term) (outputs : term) (verdict : term) (acc : term) : term =
+    put_at "verdicts" index verdict (put_at "outputs" index outputs acc)
+
+:~ passed_with (index : term) (result : term) (acc : term) : term =
+    := passed = outcome index (at 2i32 result) (atom "passed") acc
+    ? is_empty (at 3i32 result) ?> passed |: put_at "unavailable" index (at 3i32 result) passed
+
+:~ kept_error (status : term) (message : term) : term = ? is "ok" status ?> t2 (atom "error") message |: status
+
+:~ failed (index : term) (result : term) (acc : term) : term =
+    := marked = outcome index (at 2i32 result) (t2 (atom "failed") (at 3i32 result)) acc
+    maps "put" [ atom "status"; kept_error (maps "get" [ atom "status"; marked ]) (at 3i32 result); marked ]
+
+:~ paired (index : term) (result : term) (acc : term) : term =
+    outcome index (at 2i32 result) (? is "built" (at 1i32 result) ?> atom "built" |: atom "passed") acc
+
+:~ tagged (index : term) (result : term) (acc : term) : term = outcome index (at 2i32 result) (t2 (at 1i32 result) (at 3i32 result)) acc
+
+:~ triple (index : term) (result : term) (acc : term) : term =
+    ? is "ok" (at 1i32 result) ?> passed_with index result acc
+    |: ? is "error" (at 1i32 result) ?> failed index result acc |: tagged index result acc
+
+:~ resulted (index : term) (result : term) (acc : term) : term = ? size_of result = 2i32 ?> paired index result acc |: triple index result acc
+
+:~ collect_one (acc : term) (entry : term) : term = resulted (at 1i32 entry) (at 2i32 entry) (timed (at 1i32 entry) (at 3i32 entry) acc)
+
+:~ collect (entries : term) (acc : term) : term = listm::fold collect_one acc (erlang_term::items_of entries)
+
+:~ with_blank (acc : term) (name : string) : term = maps "put" [ atom name; maps "new" []; acc ]
+
+:~ fresh () : term =
+    listm::fold with_blank (maps "from_list" [ erlang_term::list_term [ t2 (atom "status") (atom "ok") ] ]) [ "outputs"; "verdicts"; "durations"; "targets"; "unavailable" ]
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ t3 (a : term) (b : term) (c : term) : term = erlang_term::tuple [ a; b; c ]
+
+:~ run (entries : list term) : term = collect (erlang_term::list_term entries) (fresh ())
+
+:~ entry (index : i32) (result : term) (ms : term) : term = t3 (erlang_term::of index) result ms
+
+:~ has (name : string) (index : i32) (expected : term) (acc : term) : bool =
+    erlang_term::equal (maps "get" [ erlang_term::of index; maps "get" [ atom name; acc ] ]) expected
+
+:~ errored (index : i32) (message : string) : term = entry index (t3 (atom "error") (atom "x") (str message)) (atom "nil")
+
+:~ timed_run () : term =
+    run [ entry 3i32 (t2 (atom "built") (atom "o")) (t3 (erlang_term::of 5i32) (atom "p") (erlang_term::list_term [ atom "rust" ])) ]
+
+///> gleam
+:# a_passing_entry_with_no_timing_records_its_verdict_and_output =
+    := acc = run [ entry 0i32 (t2 (atom "ok") (str "o")) (atom "nil") ]
+    (has "verdicts" 0i32 (atom "passed") acc, has "outputs" 0i32 (str "o") acc) |> _assert_eq (!+, !+)
+
+///> gleam
+:# a_passing_entry_with_no_timing_leaves_durations_empty =
+    := acc = run [ entry 0i32 (t2 (atom "ok") (str "o")) (atom "nil") ]
+    erlang_term::equal (maps "get" [ atom "durations"; acc ]) (maps "new" []) |> _assert_eq !+
+
+///> gleam
+:# the_first_error_sets_the_status_and_a_later_error_keeps_it =
+    := acc = run [ errored 1i32 "first"; errored 2i32 "second" ]
+    erlang_term::equal (maps "get" [ atom "status"; acc ]) (t2 (atom "error") (str "first")) |> _assert_eq !+
+
+///> gleam
+:# a_failed_entry_records_the_failed_verdict =
+    := acc = run [ entry 2i32 (t3 (atom "error") (atom "y") (str "second")) (atom "nil") ]
+    has "verdicts" 2i32 (t2 (atom "failed") (str "second")) acc |> _assert_eq !+
+
+///> gleam
+:# a_timing_triple_with_targets_keeps_elapsed_and_phases_as_the_duration =
+    has "durations" 3i32 (t2 (erlang_term::of 5i32) (atom "p")) (timed_run ()) |> _assert_eq !+
+
+///> gleam
+:# a_timing_triple_with_targets_records_the_targets =
+    has "targets" 3i32 (erlang_term::list_term [ atom "rust" ]) (timed_run ()) |> _assert_eq !+
+
+///> gleam
+:# a_built_entry_records_the_built_verdict =
+    has "verdicts" 3i32 (atom "built") (run [ entry 3i32 (t2 (atom "built") (atom "o")) (atom "nil") ]) |> _assert_eq !+
+
+///> gleam
+:# unsupported_keeps_its_tag_with_the_message =
+    := acc = run [ entry 4i32 (t3 (atom "unsupported") (atom "o") (str "m")) (atom "nil") ]
+    has "verdicts" 4i32 (t2 (atom "unsupported") (str "m")) acc |> _assert_eq !+
+
+///> gleam
+:# a_nonempty_unavailable_list_is_recorded =
+    := acc = run [ entry 5i32 (t3 (atom "ok") (atom "o") (erlang_term::list_term [ atom "cuda" ])) (atom "nil") ]
+    has "unavailable" 5i32 (erlang_term::list_term [ atom "cuda" ]) acc |> _assert_eq !+

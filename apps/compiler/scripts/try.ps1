@@ -21,7 +21,7 @@ Copy-Item -LiteralPath $Source (Join-Path $run 'main.spi')
 $extension = @{ C = 'c'; Zig = 'zig'; Lua = 'lua'; Rust = 'rs' }[$Backend]
 $output = Join-Path $run "main.$extension"
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-$env:SPIRAL_WORKSPACE_ROOT = Join-Path $repo 'apps/compiler/tmp'
+$env:SPIRAL_WORKSPACE_ROOT = Join-Path $repo 'apps/compiler'
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path $repo 'deps/The-Spiral-Language/VS Code Plugin'
 $dll = if ($env:SPIRAL_COMPILER_DLL) { $env:SPIRAL_COMPILER_DLL } else { Join-Path $env:LOCALAPPDATA 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll' }
 $info = [Diagnostics.ProcessStartInfo]::new((Join-Path $env:LOCALAPPDATA 'spiral-bin/toolchains/dotnet/dotnet.exe'))

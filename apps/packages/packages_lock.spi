@@ -1,0 +1,283 @@
+///- --package .
+:# packages_lock static =
+    :< testing
+
+:< packages_model
+:< packages_planner
+:< packages_canonical
+:< sm'_operators
+
+:| text_error =
+    | MissingLine : string
+    | BadLine : string
+    | ModulesWithoutLayout
+    | SingleLayoutNeedsOneModule
+
+:| layout_kind =
+    | NoLayout
+    | SingleLayout
+    | DirectoryLayout
+
+:== draft =
+    {
+        targets : list backend_target
+        requires : list exact_requirement
+        crates : list cargo_crate
+        capabilities : list capability
+        kind : layout_kind
+        modules : list module_entry
+    }
+
+:= all_targets () : list backend_target =
+    [
+        TargetC
+        TargetRust
+        TargetFsharp
+        TargetPython
+        TargetCuda
+        TargetGleam
+        TargetLua
+        TargetZig
+        TargetWasm
+        TargetWgsl
+        TargetTypeScript
+    ]
+
+:= all_ints () : list default_int =
+    [ DefaultI8; DefaultI16; DefaultI32; DefaultI64; DefaultU8; DefaultU16; DefaultU32; DefaultU64 ]
+
+:~ ^ printed_as \* t. (show : t -> string) (text : string) (cases : list t) : option t =
+    ?= cases ?|
+    | [] => None
+    | c :: rest => ? show c = text ?> Some c |: printed_as show text rest
+
+:= u32_of (s : string) : option u32 = convert::try_convert s
+
+:= u64_of (s : string) : option u64 = convert::try_convert s
+
+:= version_of (s : string) : option exact_version =
+    ?= sm'::split_list "." s ?|
+    | a :: b :: c :: [] =>
+        ?= u32_of a, u32_of b, u32_of c ?|
+        | Some x, Some y, Some z => Some { major = x; minor = y; patch = z }
+        | _ => None
+    | _ => None
+
+:= hex_of (s : string) : sha256_hex = sha256_hex s
+
+:= scope_of (words : list string) : option path_scope =
+    ?= words ?|
+    | "own" :: [] => Some OwnPackageDirectory
+    | "caller" :: [] => Some CallerWorkspace
+    | "path" :: p :: [] => Some (UnderRelativePath (relative_path p))
+    | _ => None
+
+:= capability_of (words : list string) : option capability =
+    ?= words ?|
+    | "read-files" :: scope => scope_of scope |> optionm::map ReadFiles
+    | "write-files" :: scope => scope_of scope |> optionm::map WriteFiles
+    | "network" :: h :: [] => Some (NetworkTo (host_pattern h))
+    | "spawn" :: p :: [] => Some (SpawnProcess (program_name p))
+    | "env" :: v :: [] => Some (ReadEnvironment (env_var_name v))
+    | "foreign" :: t :: l :: [] =>
+        printed_as target_text t (all_targets ()) |> optionm::map \ x => ForeignLibrary (x, library_name l)
+    | "gpu" :: [] => Some GpuDevice
+    | "clock" :: [] => Some WallClock
+    | _ => None
+
+:= features_of (s : string) : list cargo_feature =
+    ? s = "-" ?> [] |: sm'::split_list "," s |> listm::map cargo_feature
+
+:= requirement_of (n : string) (v : string) (id : string) : option exact_requirement =
+    version_of v
+    |> optionm::map \ x => {
+        required_name = package_name n
+        required_version = x
+        required_id = package_id (hex_of id)
+    }
+
+:= crate_of (n : string) (v : string) (fs : string) : option cargo_crate =
+    version_of v |> optionm::map (\ x => { crate = crate_name n; crate_version = x; features = features_of fs })
+
+:= module_of (p : string) (blob : string) (bytes : string) : option module_entry =
+    u64_of bytes
+    |> optionm::map \ n => { module_path = relative_path p; content = blob_id (hex_of blob); content_bytes = n }
+
+:= added \* t. (line : string) (found : option t) (put : t -> draft) : outcome draft text_error =
+    ?= found ?|
+    | Some x => Accepted (put x)
+    | None => Rejected (BadLine line)
+
+:= step (d : draft) (line : string) : outcome draft text_error =
+    ?= sm'::split_list " " line ?|
+    | "target" :: t :: [] =>
+        added line (printed_as target_text t (all_targets ())) \ x => { d with targets = x :: d::targets }
+    | "requires" :: n :: v :: id :: [] =>
+        added line (requirement_of n v id) \ x => { d with requires = x :: d::requires }
+    | "crate" :: n :: v :: fs :: [] => added line (crate_of n v fs) \ x => { d with crates = x :: d::crates }
+    | "capability" :: words => added line (capability_of words) \ x => { d with capabilities = x :: d::capabilities }
+    | "layout" :: "single" :: [] => Accepted { d with kind = SingleLayout }
+    | "layout" :: "directory" :: [] => Accepted { d with kind = DirectoryLayout }
+    | "module" :: p :: blob :: bytes :: [] =>
+        added line (module_of p blob bytes) \ x => { d with modules = x :: d::modules }
+    | _ => Rejected (BadLine line)
+
+:~ ^ steps (d : draft) (lines : list string) : outcome draft text_error =
+    ?= lines ?|
+    | [] => Accepted d
+    | line :: rest =>
+        ?= step d line ?|
+        | Accepted next => steps next rest
+        | Rejected e => Rejected e
+
+:= layout_of (d : draft) : outcome source_layout text_error =
+    ?= d::kind, listm::rev d::modules ?|
+    | SingleLayout, (m :: []) => Accepted (SingleModule m)
+    | SingleLayout, _ => Rejected SingleLayoutNeedsOneModule
+    | DirectoryLayout, ms => Accepted (ModuleDirectory ms)
+    | NoLayout, _ => Rejected ModulesWithoutLayout
+
+:= field (key : string) (line : string) : option string =
+    ? sm'::starts_with (key ++# " ") line
+    ?> Some (sm'::substring (sm'::length key + 1i32) (sm'::length line - sm'::length key - 1i32) line)
+    |: None
+
+:= empty_draft () : draft =
+    { targets = []; requires = []; crates = []; capabilities = []; kind = NoLayout; modules = [] }
+
+:= release_of_parts
+    (identity : release_identity) (numerics : numeric_defaults) (e : edition) (d : draft) (layout : source_layout)
+    : release_manifest
+    =
+    {
+        identity = identity
+        build = { edition = e; numerics = numerics; targets = listm::rev d::targets }
+        requires = listm::rev d::requires
+        rust_crates = listm::rev d::crates
+        capabilities = listm::rev d::capabilities
+        layout = layout
+    }
+
+:= release_body
+    (identity : release_identity) (numerics : numeric_defaults) (e : edition) (rest : list string)
+    : outcome release_manifest text_error
+    =
+    ?= steps (empty_draft ()) rest ?|
+    | Rejected err => Rejected err
+    | Accepted d =>
+        ?= layout_of d ?|
+        | Rejected err => Rejected err
+        | Accepted layout => Accepted (release_of_parts identity numerics e d layout)
+
+:= header_values (lines : list string) : option (list string * list string) =
+    ?= lines ?|
+    | "spiral-release 1" :: n :: v :: a :: e :: i :: f :: rest =>
+        ?=
+            field "name" n,
+            field "version" v,
+            field "author" a,
+            field "edition" e,
+            field "default-int" i,
+            field "default-float" f
+        ?|
+        | Some n', Some v', Some a', Some e', Some i', Some f' => Some ([ n'; v'; a'; e'; i'; f' ], rest)
+        | _ => None
+    | _ => None
+
+:= release_of_lines (lines : list string) : outcome release_manifest text_error =
+    ?= header_values lines ?|
+    | Some ((n :: v :: a :: e :: i :: f :: []), rest) =>
+        := floats = [ DefaultF32; DefaultF64 ]
+        := editions = [ UpstreamEdition2; ForkEdition3 ]
+        ?=
+            version_of v,
+            u64_of a,
+            printed_as edition_text e editions,
+            printed_as int_text i (all_ints ()),
+            printed_as float_text f floats
+        ?|
+        | Some version, Some author, Some ed, Some di, Some df =>
+            := identity = { name = package_name n; version = version; author = author_id author }
+            release_body identity { default_int = di; default_float = df } ed rest
+        | _ => Rejected (MissingLine "header values")
+    | _ => Rejected (MissingLine "spiral-release header")
+
+:= release_of_text (text : string) : outcome release_manifest text_error =
+    sm'::split_list "\n" text |> listm'::filter (\ l => l <> "") |> release_of_lines
+
+:= lock_text (l : lock_body) : string =
+    := node_text (n : lock_node) : string =
+        "node " ++# id_text n::node_id ++# "\n" ++# release_text n::release ++# "end\n"
+    := nodes = l::nodes |> listm::map node_text |> file_manifest::sorted |> sm'::concat_list ""
+    "spiral-lock 1\nroot " ++# id_text l::root ++# "\n" ++# nodes
+
+:~ ^ node_blocks
+    (lines : list string) (current : list string) (blocks : list (list string))
+    : option (list (list string))
+    =
+    ?= lines ?|
+    | [] => ? current = [] ?> Some (listm::rev blocks) |: None
+    | "end" :: rest => node_blocks rest [] (listm::rev current :: blocks)
+    | line :: rest => node_blocks rest (line :: current) blocks
+
+:~ ^ nodes_of (blocks : list (list string)) (acc : list lock_node) : outcome (list lock_node) text_error =
+    ?= blocks ?|
+    | [] => Accepted (listm::rev acc)
+    | (head :: body) :: rest =>
+        ?= field "node" head, release_of_lines body ?|
+        | Some id, Accepted r => nodes_of rest ({ node_id = package_id (hex_of id); release = r } :: acc)
+        | None, _ => Rejected (BadLine head)
+        | _, Rejected e => Rejected e
+    | [] :: _ => Rejected (MissingLine "node")
+
+:= lock_of_text (text : string) : outcome lock_body text_error =
+    ?= sm'::split_list "\n" text |> listm'::filter (\ l => l <> "") ?|
+    | "spiral-lock 1" :: root :: rest =>
+        ?= field "root" root, node_blocks rest [] [] ?|
+        | Some id, Some blocks =>
+            ?= nodes_of blocks [] ?|
+            | Accepted ns => Accepted { schema = SpiralLockV1; root = package_id (hex_of id); nodes = ns }
+            | Rejected e => Rejected e
+        | None, _ => Rejected (MissingLine "root")
+        | _, None => Rejected (MissingLine "end")
+    | _ => Rejected (MissingLine "spiral-lock header")
+
+:= sample () : release_manifest =
+    := b = build_of ()
+    {
+        identity = identity_of "pdf2md"
+        build = { b with targets = [ TargetRust; TargetC ] }
+        requires = [ needs "core" ]
+        rust_crates = [ { crate = crate_name "miniz"; crate_version = v1 (); features = [ cargo_feature "std" ] } ]
+        capabilities = [ ReadFiles (UnderRelativePath (relative_path "fixtures")); WallClock ]
+        layout = two_modules "pdf_objects.spi" "pdf2md.spi"
+    }
+
+///> rust
+:# a_release_text_parses_back_to_the_same_text =
+    ?= release_of_text (release_text (sample ())) ?|
+    | Accepted m => release_text m |> _assert_eq (release_text (sample ()))
+    | Rejected _ => !- |> _assert_eq !+
+
+///> rust -d sha2
+:# a_parsed_release_keeps_its_digest =
+    ?= release_of_text (release_text (sample ())) ?|
+    | Accepted m => release_digest m |> _assert_eq (release_digest (sample ()))
+    | Rejected _ => !- |> _assert_eq !+
+
+///> rust
+:# an_unknown_line_is_refused_by_name =
+    release_of_text (release_text (sample ()) ++# "target cobol\n") |> _assert_eq (Rejected (BadLine "target cobol"))
+
+///> rust
+:# a_lock_text_parses_back_to_the_same_text =
+    := l = { schema = SpiralLockV1; root = id_of "cli"; nodes = [ node_of "cli" [ "core" ] []; node_of "core" [] [] ] }
+    ?= lock_of_text (lock_text l) ?|
+    | Accepted back => lock_text back |> _assert_eq (lock_text l)
+    | Rejected _ => !- |> _assert_eq !+
+
+///> rust
+:# a_lock_without_its_end_line_is_refused =
+    := l = { schema = SpiralLockV1; root = id_of "cli"; nodes = [ node_of "cli" [] [] ] }
+    := text = lock_text l
+    lock_of_text (sm'::substring 0i32 (sm'::length text - 4i32) text) |> _assert_eq (Rejected (MissingLine "end"))

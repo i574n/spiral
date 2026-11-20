@@ -1,0 +1,8 @@
+:< sm'_operators
+
+:== step = { action : string; compensate : string }
+
+:~ run_saga (steps : list step) : i32 = listm::length steps
+
+:= main () : i32 =
+    run_saga [ { action = "reserve"; compensate = "release" }; { action = "charge" } ]

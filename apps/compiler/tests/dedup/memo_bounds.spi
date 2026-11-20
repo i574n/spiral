@@ -1,0 +1,156 @@
+///- --package .
+:# memo_bounds static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:== term = erlang_term::term
+
+:== pairs = list (string * string)
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ tup (xs : list term) : term = erlang_term::tuple xs
+
+:~ el (t : term) (n : i32) : string = erlang_file::text_of (erlang_term::element_at n t)
+
+:== tools = { dotnet : string; dll : string; tdotnet : string; tdll : string }
+
+:~ tools_of (t : term) : tools = { dotnet = el t 1i32; dll = el t 2i32; tdotnet = el t 3i32; tdll = el t 4i32 }
+
+:~ first (p : string * string) : string =
+    := a, b = p
+    a
+
+:~ second (p : string * string) : string =
+    := a, b = p
+    b
+
+:~ hex_lower (b : term) : string = erlang_term::apply "binary" "encode_hex" [ b; erlang_term::atom "lowercase" ] |> erlang_term::cast
+
+:~ bounds_key (binaries : term) (src : string) : string =
+    hex_lower (mount_text::term_hash (tup [ erlang_term::atom "source_rows"; binaries; str src ]))
+
+///> gleam
+:# a_bounds_key_is_lowercase_sha256_hex_of_the_tagged_term =
+    := k = bounds_key (erlang_term::atom "b") "inl a = 1"
+    (text::length k, k = text::lowercase k, k = bounds_key (erlang_term::atom "b") "inl a = 2") |> _assert_eq (64i32, !+, !-)
+
+:~ table () : term =
+    := opts = erlang_term::list_term [ erlang_term::atom "set" ]
+    tables::ensure (erlang_term::atom "spiral_cells_memo_bounds") opts
+
+:~ ets_rows (key : string) : option string =
+    ?= erlang_term::items_of (erlang_term::apply "ets" "lookup" [ table (); str key ]) ?|
+    | row :: _ => Some (el row 2i32)
+    | [] => None
+
+:~ ets_put (key : string) (rows : string) : () = erlang_term::apply "ets" "insert" [ table (); tup [ str key; str rows ] ] |> ignore
+
+:~ is_rows (v : term) : bool = erlang_term::is_tuple v && erlang_term::equal (erlang_term::element_at 1i32 v) (erlang_term::atom "source_rows")
+
+:~ rows_in (r : term) : option string =
+    := v = erlang_term::element_at 2i32 r
+    ? is_rows v ?> Some (el v 2i32) |: None
+
+:~ fetched_rows (dir : string) (key : string) : option string =
+    := r = memo_store::fetch dir key
+    ? mount_text::is_ok_tuple r ?> rows_in r |: None
+
+:~ cached (key : string) (rows : string) : option string =
+    ets_put key rows
+    Some rows
+
+:~ from_store (dir : string) (key : string) : option string = ?= fetched_rows dir key ?| Some rows => cached key rows | None => None
+
+:~ remembered (dir : string) (key : string) : option string = ?= ets_rows key ?| Some rows => Some rows | None => from_store dir key
+
+:== split = { known : pairs; unknown : pairs }
+
+:~ with_known (s : split) (p : string * string) : split = { known = p :: s::known; unknown = s::unknown }
+
+:~ with_unknown (s : split) (p : string * string) : split = { known = s::known; unknown = p :: s::unknown }
+
+:~ sort_text (dir : string) (binaries : term) (s : split) (src : string) : split =
+    := key = bounds_key binaries src
+    ?= remembered dir key ?| Some rows => with_known s (src, rows) | None => with_unknown s (src, key)
+
+:~ field_at (w : string) (i : i32) : string * i32 =
+    := colon = text::find_char w (i + 1i32) ':'
+    := n = text::parse_i32 (text::slice_len w (i + 1i32) (colon - i - 1i32))
+    (text::slice_len w (colon + 1i32) n, colon + 1i32 + n)
+
+:~ ^ wire_pairs (w : string) (i : i32) (acc : pairs) : pairs =
+    ? i >= text::length w
+    ?> acc
+    |:
+        := t, j = field_at w i
+        := r, k = field_at w j
+        wire_pairs w k ((t, r) :: acc)
+
+///> gleam
+:# wire_fields_pair_each_text_with_its_rows =
+    wire_pairs "t1:pr14:2\t4\tinl a () =t1:qr0:" 0i32 [] |> _assert_eq [ ("q", ""); ("p", "2\t4\tinl a () =") ]
+
+:~ rows_map (ps : pairs) : term =
+    := rows = listm::map (\ (p : string * string) => tup [ str (first p); str (second p) ]) ps
+    erlang_term::apply "maps" "from_list" [ erlang_term::list_term rows ]
+
+:~ answer_of (d : dict::dict string string) (src : string) : string = ?= dict::find src d ?| Some r => r | None => ""
+
+:~ keep_one (dir : string) (d : dict::dict string string) (p : string * string) : () =
+    := src, key = p
+    := rows = answer_of d src
+    memo_store::store dir key (tup [ erlang_term::atom "source_rows"; str rows ]) |> ignore
+    ets_put key rows
+
+:~ kept_answer (dir : string) (s : split) (ps : pairs) : term =
+    := d = listm::fold (\ acc (p : string * string) => dict::insert (first p) (second p) acc) (dict::empty ()) ps
+    listm::iter (keep_one dir d) s::unknown
+    rows_map (listm::append s::known ps)
+
+:~ answered (t : tools) (dir : string) (s : split) : term =
+    := w = source_blocks::of_texts_wire t::dotnet t::dll (listm::map first s::unknown)
+    ? w = "x0:" ?> erlang_term::atom "unavailable" |: kept_answer dir s (wire_pairs w 0i32 [])
+
+:~ own_files (t : tools) (d : string) : list string = mount_text::module_files d (mount_text::manifest_text d t::tdotnet t::tdll)
+
+:~ deps_of (t : tools) (d : string) : list term = mount_text::declared_dependencies d t::tdotnet t::tdll
+
+:~ ^ tree_files (t : tools) (seen : list string) (dir : string) : list string =
+    := d = mount_text::expanded dir (mount_text::cwd ())
+    ? mount_text::seen_has seen d || not (mount_text::has_manifest d) ?> [] |: manifest_files t (d :: seen) d
+
+:& :~ manifest_files (t : tools) (seen : list string) (d : string) : list string =
+    listm::append (own_files t d) (listm::concat (listm::map (dep_files t seen) (deps_of t d)))
+
+:& :~ dep_files (t : tools) (seen : list string) (row : term) : list string = tree_files t seen (el row 2i32)
+
+:~ file_text (path : string) : list string =
+    := r = erlang_term::apply "file" "read_file" [ str path ]
+    ? mount_text::is_ok_tuple r ?> [ el r 2i32 ] |: []
+
+:~ uniq (xs : list string) : list string = memo::uniq_from xs (dict::empty ()) []
+
+:~ texts_for (t : tools) (bounded : list string) (dirs : list string) : list string =
+    := files = uniq (listm::concat (listm::map (tree_files t []) dirs))
+    uniq (listm::append bounded (listm::concat (listm::map file_text files)))
+
+:~ dirs_of (core : string) (programs : term) : list string =
+    core :: listm::concat (listm::map package_reach::paths_of (package_reach::texts_in programs))
+
+:~ split_of (dir : string) (binaries : term) (texts : list string) : split = listm::fold (sort_text dir binaries) { known = []; unknown = [] } texts
+
+:~ bounds_of (t : tools) (dir : string) (s : split) : term = ? listm::length s::unknown = 0i32 ?> rows_map s::known |: answered t dir s
+
+:~ source_bounds (bounded : term) (programs : term) (core : string) (binaries : term) (dir : string) (tools : term) : term =
+    := t = tools_of tools
+    bounds_of t dir (split_of dir binaries (texts_for t (package_reach::texts_in bounded) (dirs_of core programs)))
+
+:~ rows_of_texts (dotnet : string) (dll : string) (texts : term) : term =
+    := w = source_blocks::of_texts_wire dotnet dll (package_reach::texts_in texts)
+    ? w = "x0:" ?> erlang_term::atom "unavailable" |: rows_map (wire_pairs w 0i32 [])
+
+///> gleam
+:# texts_without_a_source_blocks_host_have_no_rows =
+    erlang_term::equal (rows_of_texts "" "/no/such.dll" (erlang_term::list_term [ str "inl a = 1" ])) (erlang_term::atom "unavailable") |> _assert_eq !+
