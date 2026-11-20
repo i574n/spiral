@@ -973,6 +973,7 @@ module Program =
     let private runCheckWith (full : bool) (scope : CheckScope) inputPath =
         check_lean <- not full
         check_stream <- not full && Environment.GetEnvironmentVariable "SPIRAL_CHECK_STREAM" <> "0"
+        incremental_cutoff <- full && Environment.GetEnvironmentVariable "SPIRAL_CHECK_CUTOFF" <> "0"
         if scope = WithCells then Environment.SetEnvironmentVariable("SPIRAL_SHARED_TEST_ENTRIES", "1")
         try
             let inputPath = inputPath |> Path.GetFullPath |> SpiralFileSystem.standardize_path
@@ -1067,7 +1068,13 @@ module Program =
             | WithCells -> printfn "checked package %s with its test cells (parse and type inference of the modules and their ///> cell bodies; partial evaluation did not run, so a --backend build can still fail)" packageDir
             0
         with error ->
-            eprintfn "%s" error.Message
+            let rec innermost (e : exn) =
+                match e with
+                | :? AggregateException as a when a.InnerExceptions.Count = 1 -> innermost a.InnerExceptions.[0]
+                | e when not (isNull e.InnerException) -> innermost e.InnerException
+                | e -> e
+            let cause = innermost error
+            eprintfn "%s" (if obj.ReferenceEquals(cause, error) then error.Message else $"{error.Message}: {cause.Message}")
             5
 
     let private runCheck (scope : CheckScope) inputPath = runCheckWith (Environment.GetEnvironmentVariable "CHECK_REPEAT_FULL" = "1") scope inputPath
