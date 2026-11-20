@@ -22,24 +22,11 @@ defmodule Spiral.Cells.CompilerPool do
   @spec stats(GenServer.server()) :: map()
   def stats(pool), do: GenServer.call(pool, :stats)
 
-  @default_max_workers 3
-
   @spec settings(String.t() | nil) :: %{max_workers: pos_integer(), fair: boolean(), fair_single: boolean()}
   def settings(pool) do
-    workers = max_workers(pool)
+    workers = Spiral.Cells.Domain.pool_max_workers(pool || "")
     fair = System.get_env("SPIRAL_CELLS_DAEMON_FAIR") != "0"
     %{max_workers: workers, fair: fair, fair_single: workers == 1 and pool not in [nil, "off", "0"] and fair}
-  end
-
-  defp max_workers(nil), do: 1
-  defp max_workers("off"), do: 1
-  defp max_workers("auto"), do: @default_max_workers
-
-  defp max_workers(text) do
-    case Integer.parse(text) do
-      {n, ""} when n >= 1 -> n
-      _ -> 1
-    end
   end
 
   @impl true
@@ -55,8 +42,7 @@ defmodule Spiral.Cells.CompilerPool do
        fair: Keyword.get(opts, :fair, true),
        start_worker: Keyword.get(opts, :start_worker),
        free_mb: Keyword.get(opts, :free_mb, &free_mb/0),
-       queues: %{},
-       order: [],
+       queue: Spiral.Cells.Domain.fair_empty(),
        served: 0,
        peak_workers: 1,
        free_reading: :none,
@@ -69,9 +55,7 @@ defmodule Spiral.Cells.CompilerPool do
   def handle_call({:compile, client, req}, from, state) do
     client = if state.fair, do: client, else: "fifo"
 
-    queues = Map.update(state.queues, client, :queue.in({from, req}, :queue.new()), &:queue.in({from, req}, &1))
-    order = if client in state.order, do: state.order, else: state.order ++ [client]
-    {:noreply, dispatch(%{state | queues: queues, order: order})}
+    {:noreply, dispatch(%{state | queue: Spiral.Cells.Domain.fair_push(state.queue, client, {from, req})})}
   end
 
   def handle_call(:stats, _from, state) do
@@ -94,7 +78,7 @@ defmodule Spiral.Cells.CompilerPool do
 
   def handle_info(_message, state), do: {:noreply, state}
 
-  defp queued(state), do: state.queues |> Map.values() |> Enum.map(&:queue.len/1) |> Enum.sum()
+  defp queued(state), do: Spiral.Cells.Domain.fair_len(state.queue)
 
   defp dispatch(state) do
     state = grow(state)
@@ -122,17 +106,10 @@ defmodule Spiral.Cells.CompilerPool do
     end
   end
 
-  defp next(%{order: []}), do: :empty
-
-  defp next(%{order: [client | rest]} = state) do
-    case :queue.out(Map.get(state.queues, client, :queue.new())) do
-      {{:value, item}, left} ->
-        queues = if :queue.is_empty(left), do: Map.delete(state.queues, client), else: Map.put(state.queues, client, left)
-        order = if :queue.is_empty(left), do: rest, else: rest ++ [client]
-        {:ok, item, %{state | queues: queues, order: order}}
-
-      {:empty, _} ->
-        next(%{state | order: rest, queues: Map.delete(state.queues, client)})
+  defp next(state) do
+    case Spiral.Cells.Domain.fair_pop(state.queue) do
+      {:ok, item, queue} -> {:ok, item, %{state | queue: queue}}
+      :empty -> :empty
     end
   end
 
@@ -169,10 +146,16 @@ defmodule Spiral.Cells.CompilerPool do
         _ -> gauge_free_mb(state)
       end
 
-    case state.free_reading do
-      :none -> {:waiting_for_reading, state}
-      {_, nil} -> {:room, state}
-      {_, free} -> if free >= server_mb() + reserve_mb(), do: {:room, state}, else: {:no_room, state}
+    free =
+      case state.free_reading do
+        {_, mb} when is_integer(mb) -> mb
+        _ -> -1
+      end
+
+    case Spiral.Cells.Domain.room_verdict(state.free_reading != :none, free, server_mb() + reserve_mb()) do
+      "room" -> {:room, state}
+      "no_room" -> {:no_room, state}
+      _ -> {:waiting_for_reading, state}
     end
   end
 
@@ -201,21 +184,14 @@ defmodule Spiral.Cells.CompilerPool do
   defp last_free_mb({_, mb}), do: mb
   defp last_free_mb(:none), do: nil
 
-  defp server_mb, do: env_mb("SPIRAL_CELLS_DAEMON_SERVER_MB", @default_server_mb)
-  defp reserve_mb, do: env_mb("SPIRAL_CELLS_DAEMON_RESERVE_MB", @default_reserve_mb)
-
-  defp env_mb(name, default) do
-    case Integer.parse(System.get_env(name) || "") do
-      {n, ""} when n >= 0 -> n
-      _ -> default
-    end
-  end
+  defp server_mb, do: Spiral.Cells.Domain.count_or(System.get_env("SPIRAL_CELLS_DAEMON_SERVER_MB") || "", @default_server_mb)
+  defp reserve_mb, do: Spiral.Cells.Domain.count_or(System.get_env("SPIRAL_CELLS_DAEMON_RESERVE_MB") || "", @default_reserve_mb)
 
   @doc false
   def free_mb do
     case :os.type() do
       {:win32, _} ->
-        case System.cmd("powershell", ["-NoProfile", "-Command", "(Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory"], stderr_to_stdout: true) do
+        case System.cmd("pwsh", ["-NoProfile", "-NonInteractive", "-Command", "(Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory"], stderr_to_stdout: true) do
           {text, 0} ->
             case Integer.parse(String.trim(text)) do
               {kb, _} -> div(kb, 1024)

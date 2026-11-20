@@ -12,8 +12,6 @@
 
 := bracketed (items : string) : string = "[" ++# items ++# "]"
 
-:= number_text \* t. (x : t) : string = sm'::obj_to_string x
-
 := bool_text (b : bool) : string = ? b ?> "true" |: "false"
 
 := nullable \* a. (f : a -> string) (x : option a) : string =
@@ -36,9 +34,9 @@
 ///> rust
 ///> gleam
 :# an_absent_value_is_null =
-    (nullable number_text (None : option i32), nullable number_text (Some 7i32)) |> _assert_eq ("null", "7")
+    (nullable sm'::obj_to_string (None : option i32), nullable sm'::obj_to_string (Some 7i32)) |> _assert_eq ("null", "7")
 
 ///> rust
 ///> gleam
 :# lists_are_bracketed_and_comma_joined =
-    (list_text number_text [ 1i32; 2i32; 3i32 ], list_text number_text ([] : list i32)) |> _assert_eq ("[1,2,3]", "[]")
+    (list_text sm'::obj_to_string [ 1i32; 2i32; 3i32 ], list_text sm'::obj_to_string ([] : list i32)) |> _assert_eq ("[1,2,3]", "[]")

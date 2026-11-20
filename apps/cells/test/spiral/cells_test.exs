@@ -3,7 +3,7 @@ defmodule Spiral.CellsTest do
 
   import ExUnit.CaptureIO
 
-  alias Spiral.Cells.{ProcessError, Result, SpiralError, TimeoutError}
+  alias Spiral.Cells.{ProcessError, SpiralError, TimeoutError}
 
   @rust """
   fn spiral_main() -> i32 {
@@ -38,7 +38,7 @@ defmodule Spiral.CellsTest do
   end
 
   test "value and stdout come from the patched binary" do
-    assert {:ok, %Result{} = result} =
+    assert {:ok, %{exit_status: _, outputs: _} = result} =
              Spiral.Cells.run(
                """
                ///> rust
@@ -87,7 +87,7 @@ defmodule Spiral.CellsTest do
   end
 
   test "print_code puts the patched Rust in front of stdout" do
-    assert {:ok, %Result{stdout: stdout, value: "3"}} =
+    assert {:ok, %{stdout: stdout, value: "3"}} =
              Spiral.Cells.run("///> rust\n1i32 + 2i32",
                print_code: true,
                compile: &compile_ok/1,
@@ -108,7 +108,7 @@ defmodule Spiral.CellsTest do
       end
     end
 
-    assert {:ok, %Result{value: nil, stdout: "Hello", source: source}} =
+    assert {:ok, %{value: nil, stdout: "Hello", source: source}} =
              Spiral.Cells.run("///> rust\nconsole.write_line \"Hello\"",
                compile: compile,
                rustc: &rustc_ok/1,
@@ -129,7 +129,7 @@ defmodule Spiral.CellsTest do
       end
     end
 
-    assert {:ok, %Result{value: nil}} =
+    assert {:ok, %{value: nil}} =
              Spiral.Cells.run("///> rust\ntrace Verbose (fun () => \"\") id",
                compile: compile,
                builders: [
@@ -161,7 +161,7 @@ defmodule Spiral.CellsTest do
       end
     end
 
-    assert {:ok, %Result{value: ~s{("a", 1)}, source: source}} =
+    assert {:ok, %{value: ~s{("a", 1)}, source: source}} =
              Spiral.Cells.run("///> rust\n\"a\", 1i32",
                compile: compile,
                rustc: &rustc_ok/1,
@@ -307,7 +307,7 @@ defmodule Spiral.CellsTest do
        """}
     end
 
-    assert {:ok, %Result{value: "42"}} =
+    assert {:ok, %{value: "42"}} =
              Spiral.Cells.run("///> rust\n///- --package shared\noffset.add_one 41i32",
                compile: compile,
                rustc: &rustc_ok/1,
@@ -370,7 +370,7 @@ defmodule Spiral.CellsTest do
        """}
     end
 
-    assert {:ok, %Result{value: "1"}} =
+    assert {:ok, %{value: "1"}} =
              Spiral.Cells.run(
                "///> rust\n///- --package #{String.replace(spiral, "\\", "/")} " <>
                  "--package #{String.replace(dice, "\\", "/")}\n1i32",
@@ -450,7 +450,7 @@ defmodule Spiral.CellsTest do
        """}
     end
 
-    assert {:ok, %Result{}} =
+    assert {:ok, %{exit_status: _, outputs: _}} =
              Spiral.Cells.run("///> rust\n///- --package shared\n1i32",
                compile: compile,
                rustc: &rustc_ok/1,
@@ -459,7 +459,7 @@ defmodule Spiral.CellsTest do
                timeout: 30_000
              )
 
-    assert {:ok, %Result{}} =
+    assert {:ok, %{exit_status: _, outputs: _}} =
              Spiral.Cells.run("///> rust\n///- --package shared\n2i32",
                compile: compile,
                rustc: &rustc_ok/1,
@@ -494,7 +494,7 @@ defmodule Spiral.CellsTest do
   end
 
   test "a bare rust builder stays on rustc" do
-    assert {:ok, %Result{value: "1", stdout: ""}} =
+    assert {:ok, %{value: "1", stdout: ""}} =
              Spiral.Cells.run("///> rust\n1i32",
                compile: fn %{backend: "Rust", source: source} ->
                  refute source =~ "///>"
@@ -507,7 +507,7 @@ defmodule Spiral.CellsTest do
   end
 
   test "rust contract flags call the target and skip the value patch" do
-    assert {:ok, %Result{value: nil, stdout: "contract"}} =
+    assert {:ok, %{value: nil, stdout: "contract"}} =
              Spiral.Cells.run("///> rust -cd near-token\n1i32",
                compile: fn %{backend: "Rust", source: source} ->
                  refute source =~ "///>"
@@ -587,7 +587,7 @@ defmodule Spiral.CellsTest do
   test "each builder compiles once and the outputs are labeled" do
     {:ok, agent} = Agent.start_link(fn -> [] end)
 
-    assert {:ok, %Result{value: "9", stdout: stdout}} =
+    assert {:ok, %{value: "9", stdout: stdout}} =
              Spiral.Cells.run("///> fsharp\n///> rust\n1i32",
                compile: fn %{backend: backend} ->
                  Agent.update(agent, &(&1 ++ [backend]))
@@ -621,7 +621,7 @@ defmodule Spiral.CellsTest do
   end
 
   test "a builder value is the cell value" do
-    assert {:ok, %Result{value: "7", stdout: "", exit_status: 0}} =
+    assert {:ok, %{value: "7", stdout: "", exit_status: 0}} =
              Spiral.Cells.run("///> c\n1i32",
                compile: fn %{backend: "C", source: source} ->
                  refute source =~ "///>"
@@ -637,7 +637,7 @@ defmodule Spiral.CellsTest do
     inner = JSON.encode!(%{"code" => "return 1", "extension" => "lua", "output" => "printed"})
     outer = JSON.encode!(%{"command_result" => inner})
 
-    assert {:ok, %Result{stdout: "printed", value: nil}} =
+    assert {:ok, %{stdout: "printed", value: nil}} =
              Spiral.Cells.run("///> lua\n1i32",
                compile: fn %{backend: "Lua"} -> {:ok, "return 1\n"} end,
                target: fn %{builder: %{tool: :lua}} ->
@@ -650,12 +650,12 @@ defmodule Spiral.CellsTest do
     test "prints stdout and returns the result" do
       output =
         capture_io(fn ->
-          assert %Result{value: "49"} =
-                   Spiral.Cells.eval!("///> rust\nsquare 7i32",
+          assert %{type: :terminal_text, text: "49"} =
+                   Kino.Render.to_livebook(Spiral.Cells.eval!("///> rust\nsquare 7i32",
                      compile: &compile_ok/1,
                      rustc: &rustc_ok/1,
                      execute: run_value("Hello from Spiral!\nSPIRAL_CELLS_VALUE:49\n")
-                   )
+                   ))
         end)
 
       assert output == "Hello from Spiral!\n"
@@ -686,11 +686,6 @@ defmodule Spiral.CellsTest do
     end
   end
 
-  test "Kino.Render shows the value" do
-    assert %{type: :terminal_text, text: "49"} = Kino.Render.to_livebook(%Result{value: "49"})
-    assert %{type: :plain_text, text: "(no value)"} = Kino.Render.to_livebook(%Result{})
-  end
-
   test "the package fallback root is this spiral checkout; the workspace_root option overrides it" do
     unless System.get_env("SPIRAL_CELLS_WORKSPACE_ROOT") do
       root = Spiral.Cells.workspace_root()
@@ -702,7 +697,7 @@ defmodule Spiral.CellsTest do
   end
 
   test "the core package is spiral's fork clone" do
-    dir = Spiral.Cells.Toolchain.default_package_dir()
+    dir = Path.join(Spiral.Cells.Domain.cells_root(), "deps/The-Spiral-Language/VS Code Plugin")
     assert String.ends_with?(dir, "deps/The-Spiral-Language/VS Code Plugin"), dir
   end
 

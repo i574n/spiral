@@ -1,0 +1,98 @@
+///- --package .
+:# dedup_corpus static =
+    :< testing
+
+:< sm'_operators
+
+:== corpus_file = { file : string; sha256 : string }
+
+:~ corpus_v1 () : list corpus_file =
+    [
+        { file = "spi/accept.spi"; sha256 = "c643c6f57b0a92dc5cf61c3562096c48dc4b69f5d85c0d29efecb218f866a174" }
+        { file = "spi/accept_mark.spi"; sha256 = "1ea37504a0897da23f7b7fc73e90d5fc5ae977577a8ee450870c8e8e85e44b25" }
+        { file = "spi/builder_calls.spi"; sha256 = "dc686a412d08d52f46570dd82b6bc440106bdb265c1445397a505e778e66eb61" }
+        { file = "spi/builder_output.spi"; sha256 = "b64428dde274aef6e969e4cba2ab26435895cfeabe5df7f669e9924e40d53fd9" }
+        { file = "spi/builders.spi"; sha256 = "e689af9a62d7b18d6715dc36acb5858328bee0d7c2f9c9c289c2e62ff92422f0" }
+        { file = "spi/canonical.spi"; sha256 = "1f07aefe621938a4af2339f84a84b511b9e104c23e503077fa7351c88a703c61" }
+        { file = "spi/cell.spi"; sha256 = "4500eac5cbc56cb3ef44e906337ea1522571580b19f2058fea0c1a6dd537ee71" }
+        { file = "spi/cell_budget.spi"; sha256 = "c612256e6ce03ceaa955f3f486b8cc3b297e07047b1cb05e77194186bc7f8e91" }
+        { file = "spi/cell_budget_ruled.spi"; sha256 = "c4c163be44bdd22baa1f6764e27920fba4a707959841a451df3b66bcce42b68b" }
+        { file = "spi/cell_collect.spi"; sha256 = "ce5ad3e95dbc74414389af5a65e32f033ca590bbb54599925b739fb20c396490" }
+        { file = "spi/cell_display.spi"; sha256 = "8f664fa368bc68880343f297db7248774ca3a642997f956e12919ec001c94f97" }
+        { file = "spi/cell_result.spi"; sha256 = "51a8f36ddda1384f5ad3348cdb3bdcf20e61f56cd2c42ff4437b56870679f957" }
+        { file = "spi/cells_boot.spi"; sha256 = "925e0e1bbd2699a2ea8593d1c129688f074698adefb405c0f144fa80a58da918" }
+        { file = "spi/cli_text.spi"; sha256 = "c5e31352b44a829e14ab9a8594ed7bd0835efcc95162d73c8f3acaf3fdd78d71" }
+        { file = "spi/client.spi"; sha256 = "9cbaa27d12730e225d3f55dcd3a96f920c096dc3b94243773e7a33f8b7ee4f62" }
+        { file = "spi/compile_outcome.spi"; sha256 = "4cac71d343b54846ea619402f0fd5bfa2569e2816f195ef9505c01e4b495c2fd" }
+        { file = "spi/compile_plan.spi"; sha256 = "30dadaff727cf088192e94671c033f7cd3c75b78b53a9a7c2f93ebd57f4fa73e" }
+        { file = "spi/daemon.spi"; sha256 = "a7fdae45f0174d330c4efedb2868a62f9fdc1c036fba2a329f23885403d42ce5" }
+        { file = "spi/daemon_host.spi"; sha256 = "cdce93d7cff02a7babdd2ab5ddd376603be5bad3e7f3a76b4c0757d7d2fc55b6" }
+        { file = "spi/daemon_pool.spi"; sha256 = "4a54516093bffe361a3bee97576ab2e498d6b436b319fc63aeb9a479266846e5" }
+        { file = "spi/directives.spi"; sha256 = "0d9428fafdb8e66f633382f2c7eb2714dd028fa712db45d77db10a442edde0b8" }
+        { file = "spi/display_value.spi"; sha256 = "e3d04bb4b9bed42e2d7a2ca5d5de9db1da8fdc9f03cbfe0cbd32e859678ff1e5" }
+        { file = "spi/document.spi"; sha256 = "42e3e6e31feae04d1ce05225d87afc33cc980ecc38730927634840702aaeb873" }
+        { file = "spi/error_terms.spi"; sha256 = "4368e96062ccb39ce09fcb7c7deb1f3a55cff6b2b0db748d9615aedc93f45ee6" }
+        { file = "spi/file_lock.spi"; sha256 = "be01eb6fe01726cacb014f1e2b83820b95981a28e0491705070f865fb1bece96" }
+        { file = "spi/fs_probe.spi"; sha256 = "bd872997868fa8d18a798f29dbbc75637a06e0d5f57591567055ab73280e893c" }
+        { file = "spi/fsi_text.spi"; sha256 = "9dfb79ad5ec8bde1d962eff127946fc546034de605caa02706620d559a5351a9" }
+        { file = "spi/gleam_project.spi"; sha256 = "957bcc97c10aa1348417302066cb5740130cebf72d8d9b20b7d6f1ab12b19622" }
+        { file = "spi/host_text.spi"; sha256 = "96cd5d467a51131e9d59da3ae9b2f6061e2a2d2e67e2477cdece3052e385b358" }
+        { file = "spi/html.spi"; sha256 = "43d4e52754d84f7bb2e6ff8a95bcefb0dabad2a1b5c08cd2e4b7483b3f400fbf" }
+        { file = "spi/html_markdown.spi"; sha256 = "d4cd3f78d7a8006e54a8d7267a22b7b3a67887e24c910b58cec0c877002fbaf1" }
+        { file = "spi/html_page.spi"; sha256 = "fb150593c9ef0496e7230508630cc3e17a125ef068a5faf2e9b3ed278ab4db2c" }
+        { file = "spi/ipynb.spi"; sha256 = "29726a3456504299a652a71ad37f79c4148a413c4bba71cc6ac9edef4dc426aa" }
+        { file = "spi/json_value.spi"; sha256 = "0493df718d282fdf25b53753733d1646e1102b8fc98753824e53255604bbe434" }
+        { file = "spi/lisp.spi"; sha256 = "31ca24cf8514f34d54065c567d4abc06ab38235ed76d1830a4b9691b662b056e" }
+        { file = "spi/livemd.spi"; sha256 = "3a1e03fc2cb936f9ac0c45edde4ad3b47612a13c2ac1121a69595bb2c481c098" }
+        { file = "spi/main.spi"; sha256 = "ad6e30d14d9b0c2c4d728a591aea920999d8dddaf42e6c95a688fa7d2da17c72" }
+        { file = "spi/main_shape.spi"; sha256 = "10d14e78108a36e07f196f993769c8df13d0d7b16c5b7e90a859c3b6e2d5b9da" }
+        { file = "spi/main_text.spi"; sha256 = "d24b1380677af1c02d02865ec061f9140b93a7a5f390c5ec477b63fd4bddd3e9" }
+        { file = "spi/manifest.spi"; sha256 = "5bc43c08d03c190a48e83d192d24a971f84955c667404aac89cbd12d10f31a87" }
+        { file = "spi/memo.spi"; sha256 = "0886b33b77be015d624e3f849fbe6752635c2cef36ab66d6e29638e7b53db093" }
+        { file = "spi/memo_bounds.spi"; sha256 = "c4687644a2211608a35ccf93d37ae67d774cc85a6fd9012e49c6678d9bc670c2" }
+        { file = "spi/memo_context.spi"; sha256 = "430c45be1586480ea4e6e347e3f13744f22aaba4c9d7a424834bb262b0a0075a" }
+        { file = "spi/memo_key.spi"; sha256 = "874930304959261479809a31d3a637a2ed013bf529867dcf4c930eb1fc3fe855" }
+        { file = "spi/memo_store.spi"; sha256 = "7df159c4c1d10c4bae87543b61b830e53065c113fbfb6305a643ee265d8b3bc7" }
+        { file = "spi/memory_guard.spi"; sha256 = "835431fb120a47ac6832d8bd184f90536e932a1da4d0941cb7f02333346d0f2e" }
+        { file = "spi/missing_notes.spi"; sha256 = "dc640027cfff1fc05284aa3b9306d60c52587312204f5a087e214b449a94b6d4" }
+        { file = "spi/mount_place.spi"; sha256 = "c9ed12cca5498ac1039e1d6e80d9c03a2838a3856d5931e49ccffc192d16c1be" }
+        { file = "spi/mount_plan.spi"; sha256 = "4879c2ef98bf0a39e07df3a3eb4205898c45860da4c677d30a8294c85cded1aa" }
+        { file = "spi/mount_stats.spi"; sha256 = "1ec83b716887e06fc9f8a18a7157c826ccc9c153647936fb43b8bc8c404d30ae" }
+        { file = "spi/mount_text.spi"; sha256 = "1a5adbfbb9c7f7dbad757f3b841c344624bb7aef64d33c0c4469b6949dd9ae01" }
+        { file = "spi/notebook.spi"; sha256 = "e878e43b46b005e874694b21779fa3d540bf27b58b7f21b3410fa7cf98cd7f8f" }
+        { file = "spi/package_reach.spi"; sha256 = "62dc657a21278951ac95339cba10caa1e53c3766b80bb171f9389ba3a878a7c1" }
+        { file = "spi/package_write.spi"; sha256 = "83d44970203e758a7f96feba81bb437a90731d20cd5e02f426ca75bf4de841ab" }
+        { file = "spi/phase_clock.spi"; sha256 = "b72a2228137bb970a0ff803074905c37a49243e1a03d7b1b1eb48d3d3d81cd79" }
+        { file = "spi/prepared.spi"; sha256 = "f02070f2af3ff7d569ebcb90dd2b2a0f4696f2f9200af1a86e06404c51c86319" }
+        { file = "spi/report_row.spi"; sha256 = "5c8a8cd3b9bbcba49de80c621ffac09c2bab95372f7e785728a14e0eed5dbb95" }
+        { file = "spi/report_tail.spi"; sha256 = "dd090b1b010cd4dc4590a266ee69165f8a515265351b6c1644cc6070d9871c63" }
+        { file = "spi/run_result.spi"; sha256 = "f73be7f92f6b03c7a345228abc71e73711cb663aaa464135a14cc65d5dbdf707" }
+        { file = "spi/runner_edges.spi"; sha256 = "4f5db55fc1e2421c34717ec6792a71b46504b20cc3b1b5f2841d78f6e60ef489" }
+        { file = "spi/runner_loop.spi"; sha256 = "367b06e4bcae0fcc8ea142c343fbb80626826d115d751cc008bd818c142bd336" }
+        { file = "spi/shown_text.spi"; sha256 = "aea6ee27459bf27826a992e4575777580c798a7447bcf4828c570301be765953" }
+        { file = "spi/slot_table.spi"; sha256 = "82f709942bce1fdd6e3c8647e6914b3800036812e39485e02a7e4d6194dc1b20" }
+        { file = "spi/source_blocks.spi"; sha256 = "a2222672bc47b953c574cbaeac106c66cbdef494d0bfc38b5594126cdde58dc7" }
+        { file = "spi/source_map.spi"; sha256 = "21411b24c601d8d431fd1dd0aa5b195d1f5a1eed0a3443820372b3aee94f3193" }
+        { file = "spi/source_stamp.spi"; sha256 = "19d70a61a8e55176817fe228a70f1e534a0d811e618e69406ea9ace2376f73a0" }
+        { file = "spi/tables.spi"; sha256 = "382422856a9ec7fb8d5f18b87e6cf4b41206aea4f27440708547cbefdbe1d43c" }
+        { file = "spi/target_agree.spi"; sha256 = "c1bbe4720aa2095e31ec89a07e39f893cbaa7cab5cb5db81eb2e39c82006313e" }
+        { file = "spi/target_record.spi"; sha256 = "8ede3ea55e46f84c76aeb699bb55486ebb54b92c0245a9c8bf922ee58affb391" }
+        { file = "spi/targets.spi"; sha256 = "8705f2279b3d3e7f9efb63c645257e6e96d7eaea3ffc827d42a64543bac74359" }
+        { file = "spi/temp_sweep.spi"; sha256 = "1851e2dd977b9ae294f121297d400abcd0ae5118ff9f231beea41ac143c22750" }
+        { file = "spi/text.spi"; sha256 = "3bc2cb20cce34bc357ee5c87acffc822f2342c07c58c566bc025d523f7068ccf" }
+        { file = "spi/tool_env.spi"; sha256 = "c585dd3b592b838e2abf779b655d1560ad9a033e2f4566fb94cdbf55195a91b2" }
+        { file = "spi/tool_lookup.spi"; sha256 = "884e0ad045674aecd13dde49cc8a2e1ab63ce07927b1fcf971b8621312578923" }
+        { file = "spi/toolchain.spi"; sha256 = "77ba7ef84b33940645c8a89e4c245b26b5c13c9377128929d4b5c9a240882584" }
+        { file = "spi/type_trial.spi"; sha256 = "1edd06fe28b2429f41806a0138f7eb6478d5f6050c544a62ec9e2ba6c56955d4" }
+        { file = "spi/verdict_text.spi"; sha256 = "173668f6700947cc01c3de1aa34ef814126ec9bb1b21d0969ac5767bf4981b1e" }
+        { file = "spi/verdicts.spi"; sha256 = "38780e9f8febcef72baa77baa715512dc00c31359d94a7131cd14fdffa84d2f4" }
+        { file = "spi/watch_probe.spi"; sha256 = "75f7d7723f4de4f007c66600d9fe5e700097652281ed451e044efb3149bc3543" }
+    ]
+
+///> rust
+///> fsharp
+///> gleam
+:# corpus_v1_lists_every_frozen_file_once_with_a_full_sha256 =
+    := c = corpus_v1 ()
+    (listm.length c : i32, listm'.filter (\ (x : corpus_file) => (sm'.length x.sha256 : i32) <> 64) c |> listm.length : i32)
+    |> _assert_eq (79, 0)

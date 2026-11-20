@@ -67,3 +67,87 @@
     := rows = "1\t2\t:= a =\n3\t3\t:# t =\n4\t4\ttest_ok =\n9\t9\t:= g ="
     split_blocks ":= a =\n 1\n:# t =\ntest_ok" rows
     |> _assert_eq "b6::= a =l6::= a =l2: 1b9:test_ok =l7:test_okb6::= g ="
+
+:~ inputs_per_call () : i32 = 150i32
+
+:~ ^ taken (n : i32) (xs : list string) : list string =
+    ?= xs ?|
+    | x :: rest => ? n <= 0i32 ?> [] |: x :: taken (n - 1i32) rest
+    | [] => []
+
+:~ ^ chunked (n : i32) (xs : list string) : list (list string) =
+    ?= xs ?|
+    | [] => []
+    | _ => taken n xs :: chunked n (memo_store::dropped n xs)
+
+///> gleam
+:# texts_go_to_the_compiler_in_chunks_of_at_most_n =
+    (chunked 2i32 [ "a"; "b"; "c" ], chunked 2i32 []) |> _assert_eq ([ [ "a"; "b" ]; [ "c" ] ], [])
+
+:~ pair_field (tsv : string) (i : i32) (t : string) : string = field "t" t ++ field "r" (input_rows tsv (text::show_i32 i))
+
+:~ ^ chunk_pairs (tsv : string) (i : i32) (texts : list string) (acc : string) : string =
+    ?= texts ?|
+    | [] => acc
+    | t :: rest => chunk_pairs tsv (i + 1i32) rest (acc ++ pair_field tsv i t)
+
+///> gleam
+:# each_text_pairs_with_the_rows_of_its_numbered_input =
+    := tsv = "1\t1\t2\t3\t4\tinl a () =\n2\t1\t1\t1\t1\ttest x =\n"
+    chunk_pairs tsv 1i32 [ "p"; "q" ] "" |> _assert_eq "t1:pr14:2\t4\tinl a () =t1:qr12:1\t1\ttest x ="
+
+:~ input_at (dir : string) (i : i32) (t : string) : string =
+    := path = erlang_file::joined_path dir (text::show_i32 i ++ ".spi")
+    erlang_file::file_written path t |> ignore
+    path
+
+:~ ^ written_inputs (dir : string) (i : i32) (texts : list string) (acc : list string) : list string =
+    ?= texts ?|
+    | [] => listm::rev acc
+    | t :: rest => written_inputs dir (i + 1i32) rest (input_at dir i t :: acc)
+
+:~ temp_root () : string = toolchain::first_set [ toolchain::beam_env "TMPDIR"; toolchain::beam_env "TEMP"; toolchain::beam_env "TMP"; "/tmp" ]
+
+:~ unique_text () : string = erlang_term::integer_text (erlang_term::apply "erlang" "unique_integer" [ erlang_term::list_term [ erlang_term::atom "positive" ] ])
+
+:~ scratch_dir () : string = erlang_file::joined_path (temp_root ()) ("spiral-source-blocks-" ++ unique_text ())
+
+:~ blocks_argv (dll : string) (out : string) (inputs : list string) : list string = dll :: "--source-blocks" :: out :: inputs
+
+:~ ran_ok (run : process::captured) (out : string) : bool = run::ran && run::code = 0i32 && erlang_file::regular_file out
+
+:~ blocks_run (dotnet : string) (dll : string) (out : string) (dir : string) (texts : list string) : process::captured =
+    process::captured_by dotnet (blocks_argv dll out (written_inputs dir 1i32 texts [])) !+
+
+:~ pairs_from (out : string) (texts : list string) : string = chunk_pairs (erlang_file::file_text out) 1i32 texts ""
+
+:~ blocks_in (dotnet : string) (dll : string) (dir : string) (texts : list string) : option string =
+    := out = erlang_file::joined_path dir "blocks.tsv"
+    := run = blocks_run dotnet dll out dir texts
+    ? ran_ok run out ?> Some (pairs_from out texts) |: None
+
+:~ made_dir (dir : string) : () = erlang_term::apply "filelib" "ensure_path" [ erlang_term::charlist dir ] |> ignore
+
+:~ wiped_dir (dir : string) : () = erlang_term::apply "file" "del_dir_r" [ erlang_term::of dir ] |> ignore
+
+:~ chunk_wire (dotnet : string) (dll : string) (texts : list string) : option string =
+    := dir = scratch_dir ()
+    made_dir dir
+    := wire = blocks_in dotnet dll dir texts
+    wiped_dir dir
+    wire
+
+:~ ^ chunks_wire (dotnet : string) (dll : string) (cs : list (list string)) (acc : string) : string =
+    ?= cs ?|
+    | [] => acc
+    | c :: rest =>
+        ?= chunk_wire dotnet dll c ?|
+        | Some w => chunks_wire dotnet dll rest (acc ++ w)
+        | None => "x0:"
+
+:~ of_texts_wire (dotnet : string) (dll : string) (texts : list string) : string =
+    ? toolchain::host_has dotnet dll "source-blocks" ?> chunks_wire dotnet dll (chunked (inputs_per_call ()) texts) "" |: "x0:"
+
+///> gleam
+:# a_host_without_the_source_blocks_capability_is_unavailable =
+    (of_texts_wire "" "/no/such.dll" [ "a" ], of_texts_wire "/no/dotnet" "/no/such.dll" []) |> _assert_eq ("x0:", "x0:")

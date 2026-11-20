@@ -1,0 +1,47 @@
+///- --package .
+:< erlang_term
+:# memo_key static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ get (m : term) (k : string) : term = erlang_term::apply "maps" "get" [ atom k; m ]
+
+:~ get_or (m : term) (k : string) (d : term) : term = erlang_term::apply "maps" "get" [ atom k; m; d ]
+
+:~ hex_hash (t : term) : string = memo_bounds::hex_lower (mount_text::term_hash t)
+
+:~ is_unavailable (bounds : term) : bool = erlang_term::equal bounds (atom "unavailable")
+
+:~ whole_of (context : term) (step : term) : bool =
+    erlang_term::equal (get_or step "whole_source_key" (atom "false")) (atom "true") || is_unavailable (get context "bounds")
+
+:~ reached (program : string) (bounds : term) : string =
+    := found = mount_text::rows_for program bounds
+    ? mount_text::is_ok_tuple found ?> memo::reached_program_wire program (erlang_file::text_of (erlang_term::element_at 2i32 found)) |: program
+
+:~ per_test () : bool = toolchain::beam_env "SPIRAL_CELLS_PER_TEST" <> "0"
+
+:~ base_of (context : term) (step : term) : term =
+    ? per_test () ?> erlang_term::tuple [ get context "base"; atom "per_test"; get_or step "test_name" (atom "nil") ] |: get context "base"
+
+:~ program_of (context : term) (step : term) (source : string) : string = ? whole_of context step ?> source |: reached source (get context "bounds")
+
+:~ packages_of (context : term) (step : term) (source : string) (program : string) : term =
+    package_reach::packages_print (get context "packages") source program (whole_of context step)
+
+:~ real_of (step : term) : term = get_or step "real" (erlang_term::of "")
+
+:~ key_term (base : term) (program : string) (real_part : term) (builder_lines : term) (packages : term) : term =
+    erlang_term::tuple [ base; erlang_term::of program; real_part; builder_lines; packages ]
+
+:~ step_term (context : term) (step : term) (builder_lines : term) (source : string) (program : string) : term =
+    key_term (base_of context step) program (real_of step) builder_lines (packages_of context step source program)
+
+:~ memo_key (context : term) (step : term) (builder_lines : term) : string =
+    := source = erlang_file::text_of (get step "program")
+    hex_hash (step_term context step builder_lines source (program_of context step source))
+
+///> gleam
+:# a_hash_is_lowercase_sha256_hex_of_the_term =
+    (text::length (hex_hash (atom "x")), hex_hash (atom "x") = hex_hash (atom "x"), hex_hash (atom "x") = hex_hash (atom "y")) |> _assert_eq (64i32, !+, !-)

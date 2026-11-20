@@ -1,0 +1,123 @@
+:< sm'_operators
+:< cell_budget_ruled
+
+:= rust_walk () : () =
+    global """
+        pub fn cells_budget_walk(root: &str) -> std::rc::Rc<str> {
+            fn walk(p: &std::path::Path, top: bool, out: &mut Vec<String>) {
+                let meta = if top { std::fs::metadata(p) } else { std::fs::symlink_metadata(p) };
+                let Ok(meta) = meta else { return };
+                if meta.is_dir() {
+                    let skip = ["target", "node_modules", "deps", "bin", "obj", "_build", ".git", ".history"];
+                    if !top && p.file_name().map(|n| skip.contains(&n.to_string_lossy().as_ref())).unwrap_or(false) { return }
+                    let mut entries: Vec<std::path::PathBuf> = std::fs::read_dir(p).map(|es| es.flatten().map(|e| e.path()).collect()).unwrap_or_default();
+                    entries.sort();
+                    for path in entries { walk(&path, false, out) }
+                } else if meta.is_file() && (top || p.extension().map(|x| x == "spi" || x == "spir" || x == "livemd").unwrap_or(false)) {
+                    out.push(p.to_string_lossy().replace('\\', "/"))
+                }
+            }
+            let mut out = Vec::new();
+            walk(std::path::Path::new(root), true, &mut out);
+            out.sort();
+            out.dedup();
+            out.join("\n").into()
+        }
+        """
+
+:= rust_imports () : () =
+    global """
+        pub fn cells_budget_imports(file: &str, source: &str) -> std::rc::Rc<str> {
+            let lib = std::env::var("SPIRAL_LIB").map(std::path::PathBuf::from).unwrap_or_else(|_| std::env::current_exe().ok().and_then(|e| e.ancestors().nth(6).map(|p| p.join("lib").join("spiral"))).unwrap_or_default());
+            let dir = std::path::Path::new(file).parent().map(|p| p.to_path_buf()).unwrap_or_default();
+            let mut out = Vec::new();
+            for line in source.lines() {
+                let Some(rest) = line.strip_prefix(":<") else { continue };
+                let name_start = rest.trim_start();
+                if name_start.len() == rest.len() { continue }
+                let name: String = name_start.chars().take_while(|c| c.is_ascii_alphanumeric() || *c == '_' || *c == '\'').collect();
+                if !name.chars().next().map(|c| c.is_ascii_lowercase() || c == '_').unwrap_or(false) { continue }
+                for candidate in [dir.join(format!("{name}.spi")), lib.join(format!("{name}.spi"))] {
+                    if candidate.is_file() { out.push(candidate.to_string_lossy().replace('\\', "/")) }
+                }
+            }
+            out.join("\n").into()
+        }
+        """
+
+:~ files_of (path : string) : list string =
+    rust_walk ()
+    ($'cells_budget_walk(&*!path)' : string) |> sm'::split_list "\n" |> listm'::filter (\ (l : string) => l <> "")
+
+:~ lines_of (text : string) : list string = sm'::split_list "\n" text |> listm'::filter (\ (l : string) => l <> "")
+
+:~ declared (source : string) : list string = lines_of (cell_budget_ruled.nominals_wire source)
+
+:~ imported (path : string) (source : string) : list string =
+    rust_imports ()
+    lines_of ($'cells_budget_imports(&*!path, &*!source)' : string)
+    |> listm'::collect (\ (f : string) => declared (file_system::read_all_text f))
+
+:~ distinct (names : list string) : list string =
+    listm::fold (\ (acc : list string) (n : string) => ? listm'::contains n acc ?> acc |: n :: acc) [] names |> listm::rev
+
+:~ nominals_of (path : string) (source : string) : string =
+    distinct (listm::append (declared source) (imported path source)) |> sm'::concat_list "\n"
+
+:~ row_of (row : string) : string * string =
+    ?= sm'::split_list "\t" row ?|
+    | kind :: rest => kind, sm'::concat_list "\t" rest
+    | [] => "", row
+
+:~ file_rows (granular : bool) (path : string) : list (string * string) =
+    := source = file_system::read_all_text path
+    := nominals = ? granular ?> nominals_of path source |: ""
+    lines_of (cell_budget_ruled.findings_wire granular nominals path source) |> listm::map row_of
+
+:~ kind_rows (path : string) : string =
+    := source = file_system::read_all_text path
+    cell_budget_ruled.kind_rows_wire (nominals_of path source) source
+
+:~ kinds_line (files : list string) : string =
+    files |> listm::map kind_rows |> sm'::concat_list "\n" |> cell_budget_ruled.kinds_line_of_rows
+
+:~ kinds () : list string = [ "autolink"; "cashtag"; "hashtag"; "mention"; "over_budget" ]
+
+:~ count_of (kind : string) (rows : list (string * string)) : i32 =
+    listm::fold (\ n ((k, _) : string * string) => ? k = kind ?> n + 1i32 |: n) 0i32 rows
+
+:~ by_kind (rows : list (string * string)) : string =
+    kinds ()
+    |> listm::map (\ (k : string) => k, count_of k rows)
+    |> listm'::filter (\ ((_, n) : string * i32) => n > 0i32)
+    |> listm::map (\ ((k, n) : string * i32) => k ++# " " ++# sm'::show n)
+    |> sm'::concat_list ", "
+
+:~ report_line (rows : list (string * string)) (files : i32) : string =
+    := kinds = by_kind rows
+    := found = (listm::length rows : i32)
+    "cell-budget report: " ++# sm'::show found ++# " finding(s) in " ++# sm'::show files ++# " file(s)"
+    ++# (? kinds = "" ?> "" |: " (" ++# kinds ++# ")")
+
+:~ refused (over : i32) : i32 =
+    console::write_error_line ("cell-budget: " ++# sm'::show over ++# " definition(s) over the cell budget; split them")
+    1i32
+
+:~ printed_stamps () : i32 =
+    cell_budget_sources::stamps () |> listm::iter (\ s => console::write_line (cell_budget_sources::stamp_line s))
+    0i32
+
+:= budget (args : list string) : i32 =
+    := check = listm'::contains "--check" args
+    := granular = listm'::contains "--granular" args
+    := files = args |> listm'::filter (\ (a : string) => a <> "--check" && a <> "--granular") |> listm'::collect files_of
+    := rows = files |> listm'::collect (file_rows granular)
+    rows |> listm::iter (\ ((_, line) : string * string) => console::write_line line)
+    console::write_line (report_line rows (listm::length files))
+    ? granular ?> console::write_line (kinds_line files) |: ()
+    := over = count_of "over_budget" rows
+    ? check && over > 0i32 ?> refused over |: 0i32
+
+:= main () : i32 =
+    := args = env::command_line_arguments ()
+    ? listm'::contains "--version" args ?> printed_stamps () |: budget args

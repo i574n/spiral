@@ -399,11 +399,10 @@
 :# the_beam_reports_some_memory =
     (beam_memory_mb () > 0i32, beam_memory_mb () < 1048576i32) |> _assert_eq (!+, !+)
 
-:= charlist_text (c : erlang_term::term) : string =
-    erlang_term::apply "unicode" "characters_to_binary" [ c ] |> erlang_term::cast
+:= pause (ms : i32) : () = erlang_term::apply "timer" "sleep" [ erlang_term::of ms ] |> ignore
 
 := plain_arguments () : list string =
-    erlang_term::apply "init" "get_plain_arguments" [] |> erlang_term::items_of |> listm::map charlist_text
+    erlang_term::apply "init" "get_plain_arguments" [] |> erlang_term::items_of |> listm::map erlang_term::charlist_text
 
 ///> gleam
 :# plain_arguments_are_texts =
@@ -417,8 +416,6 @@
 := trial_key () : erlang_term::term =
     erlang_term::tuple [ erlang_term::atom "spiral_process_dictionary_trial"; erlang_term::of 7i32 ]
 
-:= is_undefined (t : erlang_term::term) : bool = erlang_term::equal t (erlang_term::atom "undefined")
-
 := stored_after (key : erlang_term::term) (value : i32) : i32 =
     dictionary_put key (erlang_term::of value) |> ignore
     dictionary_get key |> erlang_term::cast
@@ -427,4 +424,4 @@
 :# the_process_dictionary_keeps_a_value_by_key =
     := key = trial_key ()
     := before = dictionary_get key
-    (is_undefined before, stored_after key 3i32) |> _assert_eq (!+, 3i32)
+    (erlang_term::is_atom "undefined" before, stored_after key 3i32) |> _assert_eq (!+, 3i32)

@@ -1,0 +1,37 @@
+///- --package .
+:< erlang_term
+:# missing_notes static =
+    :< testing
+
+:~ shown (t : term) : string =
+    ? erlang_term::is_binary t ?> erlang_term::cast t
+    |: ? erlang_term::equal t (atom "nil") ?> "" |: erlang_term::apply "erlang" "atom_to_binary" [ t ] |> erlang_term::cast
+
+:~ raw_of (pair : term) : term = field_or_nil "raw" (erlang_term::element_at 1i32 pair)
+
+:~ note_line (pair : term) : string =
+    shown (raw_of pair) ^^ ": unavailable on this machine (" ^^ shown (field_or_nil "message" (erlang_term::element_at 2i32 pair)) ^^ ")"
+
+:~ joined (stdout : string) (notes : string) : string = ? notes = "" ?> stdout |: ? stdout = "" ?> notes |: stdout ^^ "\n" ^^ notes
+
+:~ with_unavailable (result : term) (pairs : list term) : term =
+    erlang_term::apply "maps" "put" [ atom "unavailable"; erlang_term::list_term (listm::map raw_of pairs); result ]
+
+:~ notes_of (pairs : list term) : string = sm'::concat_list "\n" (listm::map note_line pairs)
+
+:~ stdout_of (result : term) (pairs : list term) : term = erlang_term::of (joined (shown (field_or_nil "stdout" result)) (notes_of pairs))
+
+:~ with_missing (result : term) (missing : term) : term =
+    := pairs = erlang_term::items_of missing
+    erlang_term::apply "maps" "put" [ atom "stdout"; stdout_of result pairs; with_unavailable result pairs ]
+
+:~ gone (raw : string) (message : string) : term =
+    erlang_term::tuple [ map_of [ pair "raw" (erlang_term::of raw) ]; map_of [ pair "message" (erlang_term::of message) ] ]
+
+///> gleam
+:# notes_join_after_existing_stdout_and_stand_alone_when_it_is_empty =
+    (joined "out" "n", joined "" "n", joined "out" "") |> _assert_eq ("out\nn", "n", "out")
+
+///> gleam
+:# a_missing_builder_reads_as_unavailable_with_its_reason =
+    note_line (gone "rust" "no rustc") |> _assert_eq "rust: unavailable on this machine (no rustc)"

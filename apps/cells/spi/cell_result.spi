@@ -1,0 +1,89 @@
+///- --package .
+:< erlang_term
+:# cell_result static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:== trm = erlang_term::term
+
+:~ cr_str (m : trm) (field : string) : string = erlang_term::cast (field_or_nil field m)
+
+:~ cr_islist (t : trm) : bool = erlang_term::apply "erlang" "is_list" [ t ] |> erlang_term::cast
+
+:~ cr_isatom (t : trm) : bool = erlang_term::apply "erlang" "is_atom" [ t ] |> erlang_term::cast
+
+:~ cr_text (m : trm) (field : string) : string =
+    := v = field_or_nil field m
+    ? cr_isatom v ?> erlang_term::cast (erlang_term::apply "erlang" "atom_to_binary" [ v ]) |: erlang_term::cast v
+
+:~ shown_stdout (print_code : bool) (generated : string) (stdout : string) : string =
+    ? print_code ?> generated ++ (? stdout = "" ?> "" |: "\n" ++ stdout) |: stdout
+
+:~ ^ cr_value (chunks : list trm) (acc : trm) : trm =
+    ?= chunks ?|
+    | [] => acc
+    | c :: rest =>
+        := v = field_or_nil "value" c
+        cr_value rest (? is_atom "nil" v ?> acc |: v)
+
+:~ ^ cr_status (chunks : list trm) : trm =
+    ?= chunks ?|
+    | [] => erlang_term::of 0i32
+    | c :: rest =>
+        := s = field_or_nil "exit_status" c
+        ? is_atom "nil" s ?> cr_status rest
+        |? (erlang_term::cast s : i32) = 0i32 ?> cr_status rest
+        |: s
+
+:~ cr_block (c : trm) : string = "." ++ cr_text c "ext" ++ " (" ++ cr_text c "tool" ++ ")\n" ++ cr_str c "stdout"
+
+:~ cr_stdout (chunks : list trm) : string =
+    ?= chunks ?|
+    | one :: [] => cr_str one "stdout"
+    | _ => sm'::concat_list "\n" (listm::map cr_block chunks)
+
+:~ cr_disp (c : trm) : list trm =
+    := d = field_or_nil "displays" c
+    ? cr_islist d ?> erlang_term::items_of d |: []
+
+:~ ^ cr_displays (chunks : list trm) (acc : list trm) : list trm =
+    ?= chunks ?|
+    | [] => acc
+    | c :: rest => cr_displays rest (listm::append acc (cr_disp c))
+
+:~ cr_f1 (chunks : list trm) : list trm =
+    [
+        pair "value" (cr_value chunks (erlang_term::atom "nil"))
+        pair "exit_status" (cr_status chunks)
+    ]
+
+:~ cr_f2 (chunks : list trm) : list trm =
+    [
+        pair "stdout" (erlang_term::of (cr_stdout chunks))
+        pair "displays" (erlang_term::list_term (cr_displays chunks []))
+    ]
+
+:~ assemble_core (chunks_term : trm) : trm =
+    := chunks = erlang_term::items_of chunks_term
+    map_of (listm::append (cr_f1 chunks) (cr_f2 chunks))
+
+:~ chunk (v : trm) (s : i32) (out : string) : trm =
+    map_of [ pair "value" v; pair "exit_status" (erlang_term::of s); pair "stdout" (erlang_term::of out); pair "ext" (erlang_term::atom "rs"); pair "tool" (erlang_term::of "rustc") ]
+
+:~ core_view (core : trm) : string * string * i32 =
+    (binary_text (field_or_nil "stdout" core), binary_text (field_or_nil "value" core), (erlang_term::cast (field_or_nil "exit_status" core) : i32))
+
+:~ three_chunks () : trm = list_term [ chunk (erlang_term::of "1") 0i32 "a"; chunk (erlang_term::atom "nil") 3i32 "b"; chunk (erlang_term::of "2") 4i32 "c" ]
+
+///> gleam
+:# shown_stdout_prefixes_the_generated_code_only_when_asked =
+    (shown_stdout !+ "code" "out", shown_stdout !+ "code" "", shown_stdout !- "code" "out") |> _assert_eq ("code\nout", "code", "out")
+
+///> gleam
+:# one_chunk_keeps_its_stdout_value_and_status =
+    core_view (assemble_core (list_term [ chunk (erlang_term::of "7") 0i32 "hi" ])) |> _assert_eq ("hi", "7", 0i32)
+
+///> gleam
+:# several_chunks_label_each_block_keep_the_last_value_and_the_first_failure =
+    core_view (assemble_core (three_chunks ())) |> _assert_eq (".rs (rustc)\na\n.rs (rustc)\nb\n.rs (rustc)\nc", "2", 3i32)

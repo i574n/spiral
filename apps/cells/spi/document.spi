@@ -286,6 +286,39 @@
     | LineDone => []
     | LineGot (count, next) => read_cells src next (text::parse_i32 count) []
 
+:== trm = erlang_term::term
+
+:~ dc_akv (key : string) (v : trm) : trm = erlang_term::tuple [ erlang_term::atom key; v ]
+
+:~ dc_sv (key : string) (s : string) : trm = erlang_term::tuple [ erlang_term::atom key; erlang_term::of s ]
+
+:~ dc_map (xs : list trm) : trm = erlang_term::apply "maps" "from_list" [ erlang_term::list_term xs ]
+
+:~ cell_kvs (k : cell_kind) : list trm =
+    ?= k ?|
+    | CodeIn lang => [ dc_akv "kind" (erlang_term::atom "code"); dc_sv "language" lang ]
+    | _ => [ dc_akv "kind" (erlang_term::atom (kind_text k)) ]
+
+:~ cell_map (c : cell_kind * string) : trm =
+    := (k, s) = c
+    dc_map (dc_sv "source" s :: cell_kvs k)
+
+:~ decode_cells (w : string) : trm = erlang_term::list_term (listm::map cell_map (load w))
+
+:~ ec_get (m : trm) (field : string) : trm = erlang_term::apply "maps" "get" [ erlang_term::atom field; m; erlang_term::atom "nil" ]
+
+:~ ec_kind (m : trm) : cell_kind =
+    := k = ec_get m "kind"
+    ? erlang_term::equal k (erlang_term::atom "code")
+    ?> CodeIn (erlang_term::cast (ec_get m "language"))
+    |: kind_of (erlang_term::cast (erlang_term::apply "erlang" "atom_to_binary" [ k ]))
+
+:~ ec_cell (m : trm) : cell_kind * string = ec_kind m, erlang_term::cast (ec_get m "source")
+
+:~ encode_cells (clist : trm) : string =
+    := cs = listm::map ec_cell (erlang_term::items_of clist)
+    text::show_i32 (count_cells cs) ++ "\n" ++ emit_cells cs
+
 :| test_policy =
     | DropTests
     | KeepTests
@@ -1065,3 +1098,343 @@
     := fails = \ (spi, header) => text::contains (from_spi spi "") (failing header)
     listm::map fails [ ("test b = 1\n", "test b = 1"); ("test c\n    1 |> ignore\n", "test c"); ("test e unknown_flag =\n    1\n", "test e unknown_flag ="); ("test\td =\n    1\n", "test\td =") ]
     |> _assert_eq [ !+; !+; !+; !+ ]
+
+:~ ends_nl (s : string) : bool = text::length s > 0i32 && text::byte_at s (text::length s - 1i32) = 10i32
+
+:~ emit_cell_text (k : cell_kind) (source : string) : string =
+    ?= k ?|
+    | ImportCell => "#!import " ++ source
+    | CodeIn lang => "#!" ++ lang ++ "\n\n" ++ source
+    | _ => "#!" ++ kind_text k ++ "\n\n" ++ source
+
+:~ cell_text (src : string) : string =
+    := joined = sm'::concat_list "\n\n" (listm::map (\ (k, s) => emit_cell_text k s) (load src))
+    ? ends_nl joined ?> joined |: joined ++ "\n"
+
+///> gleam
+:# cells_render_back_to_dib_bang_sections =
+    := dib = "#!markdown\n\n# demo\n\n#!spiral\n\ninl x = 1\n\n#!import a/b.spi\n\n#!python\n\nprint(1)\n"
+    cell_text (parse_dib dib) |> _assert_eq "#!markdown\n\n# demo\n\n#!spiral\n\ninl x = 1\n\n#!import a/b.spi\n\n#!python\n\nprint(1)\n"
+
+:~ ^ cs_sep (n : i32) (i : i32) : string = ? i > 0i32 && (((n - i) % 3i32) = 0i32) ?> "_" |: ""
+
+:~ ^ cs_grouped (s : string) (i : i32) (acc : string) : string =
+    := n = text::length s
+    ? i >= n ?> acc |: cs_grouped s (i + 1i32) (acc ++ cs_sep n i ++ text::one s i)
+
+:~ ^ cs_group_int (s : string) : string = ? text::length s <= 5i32 ?> s |: cs_grouped s 0i32 ""
+
+:~ ^ cs_show_i64 (n : i64) : string = cs_group_int (erlang_term::integer_text (erlang_term::of n))
+
+:~ ^ cs_init_if_empty_last (xs : list string) : list string =
+    ?= listm::rev xs ?|
+    | "" :: rest => listm::rev rest
+    | _ => xs
+
+:~ ^ cs_heredoc_line (line : string) : string = ? line = "" ?> "" |: "  " ++ line
+
+:~ ^ cs_heredoc_body (source : string) : string =
+    sm'::concat_list "\n" (listm::map cs_heredoc_line (cs_init_if_empty_last (sm'::split_list "\n" source)))
+
+:~ ^ cs_needs_inspect (source : string) : bool = text::contains source "\"\"\"" || text::contains source "\r"
+
+:~ ^ cs_esc_at (source : string) (i : i32) : string =
+    := c = text::byte_at source i
+    ? c = 34i32
+    ?> "\\\""
+    |? c = 92i32
+    ?> "\\\\"
+    |? c = 10i32
+    ?> "\\n"
+    |? c = 13i32
+    ?> "\\r"
+    |? c = 9i32
+    ?> "\\t"
+    |? c = 35i32 && i + 1i32 < text::length source && text::byte_at source (i + 1i32) = 123i32
+    ?> "\\#"
+    |: text::slice_len source i 1i32
+
+:~ ^ cs_inspect_go (source : string) (i : i32) (acc : string) : string =
+    ? i >= text::length source ?> acc |: cs_inspect_go source (i + 1i32) (acc ++ cs_esc_at source i)
+
+:~ ^ cs_string_literal (source : string) : string =
+    ? cs_needs_inspect source
+    ?> "\"" ++ cs_inspect_go source 0i32 "" ++ "\""
+    |: "~S\"\"\"\n" ++ cs_heredoc_body source ++ "\n  \"\"\""
+
+:~ ^ cs_indent2 (text_in : string) : string =
+    := nl = text::find_from text_in "\n" 0i32
+    ? nl < 0i32 ?> "  " ++ text_in |: "  " ++ text::take text_in nl ++ text::drop text_in nl
+
+:~ cell_source (source : string) (timeout_ms : i64) (print_code : bool) : string =
+    ? text::trim source = ""
+    ?> ""
+    |:
+        := t_opt = ? timeout_ms >= 0i64 ?> [ "timeout: " ++ cs_show_i64 timeout_ms ] |: []
+        := p_opt = ? print_code ?> [ "print_code: true" ] |: []
+        := args = sm'::concat_list ",\n" (listm::map cs_indent2 (cs_string_literal source :: listm::append t_opt p_opt))
+        "Spiral.Cells.eval!(\n" ++ args ++ "\n)"
+
+///> gleam
+:# cell_source_heredoc_with_both_options =
+    cell_source "inl x = 1\ninl y = 2" 300000i64 !+
+    |> _assert_eq "Spiral.Cells.eval!(\n  ~S\"\"\"\n  inl x = 1\n  inl y = 2\n  \"\"\",\n  timeout: 300_000,\n  print_code: true\n)"
+
+///> gleam
+:# cell_source_one_option_drops_print_code =
+    cell_source "a b" 300000i64 !-
+    |> _assert_eq "Spiral.Cells.eval!(\n  ~S\"\"\"\n  a b\n  \"\"\",\n  timeout: 300_000\n)"
+
+///> gleam
+:# cell_source_zero_options =
+    cell_source "a b" -1i64 !-
+    |> _assert_eq "Spiral.Cells.eval!(\n  ~S\"\"\"\n  a b\n  \"\"\"\n)"
+
+///> gleam
+:# cell_source_blank_source_is_empty =
+    (cell_source "" 300000i64 !+, cell_source "   \n  " 300000i64 !+) |> _assert_eq ("", "")
+
+///> gleam
+:# cell_source_trailing_newline_drops_the_empty_last_line =
+    cell_source "a\n" 300000i64 !- |> _assert_eq (cell_source "a" 300000i64 !-)
+
+///> gleam
+:# cell_source_inspect_fallback_when_source_has_triple_quotes =
+    cell_source "x = \"\"\"q\"\"\"" -1i64 !-
+    |> _assert_eq "Spiral.Cells.eval!(\n  \"x = \\\"\\\"\\\"q\\\"\\\"\\\"\"\n)"
+
+:~ ^ es_rstrip_nl (s : string) : string =
+    := n = text::length s
+    ? n > 0i32 && text::byte_at s (n - 1i32) = 10i32 ?> es_rstrip_nl (text::take s (n - 1i32)) |: s
+
+:~ es_unindent (line : string) : string = ? text::starts_with line "  " ?> text::drop line 2i32 |: line
+
+:~ es_heredoc_source (rest : string) : string =
+    := term = text::find_from rest "\n  \"\"\"" 0i32
+    := body = ? term < 0i32 ?> rest |: text::take rest term
+    es_rstrip_nl (sm'::concat_list "\n" (listm::map es_unindent (sm'::split_list "\n" body)))
+
+:~ ^ es_find_close (s : string) (i : i32) : i32 =
+    ? i >= text::length s
+    ?> -1i32
+    |? text::byte_at s i = 92i32
+    ?> es_find_close s (i + 2i32)
+    |? text::byte_at s i = 34i32
+    ?> i
+    |: es_find_close s (i + 1i32)
+
+:~ es_unesc_char (s : string) (i : i32) : string =
+    := d = text::byte_at s (i + 1i32)
+    ? d = 110i32 ?> "\n" |? d = 114i32 ?> "\r" |? d = 116i32 ?> "\t" |: text::slice_len s (i + 1i32) 1i32
+
+:~ es_unesc_step (s : string) (i : i32) (n : i32) : string * i32 =
+    ? text::byte_at s i = 92i32 && i + 1i32 < n ?> (es_unesc_char s i, i + 2i32) |: (text::slice_len s i 1i32, i + 1i32)
+
+:~ ^ es_unesc_go (s : string) (i : i32) (acc : string) : string =
+    := n = text::length s
+    ? i >= n ?> acc |:
+        := piece, next = es_unesc_step s i n
+        es_unesc_go s next (acc ++ piece)
+
+:~ es_inspect_source (rest : string) : string =
+    := close = es_find_close rest 1i32
+    := body = ? close < 0i32 ?> "" |: text::slice_len rest 1i32 (close - 1i32)
+    es_rstrip_nl (es_unesc_go body 0i32 "")
+
+:~ es_form (rest : string) : option string =
+    ? text::starts_with rest "~S\"\"\"\n"
+    ?> Some (es_heredoc_source (text::drop rest 6i32))
+    |? text::starts_with rest "\""
+    ?> Some (es_inspect_source rest)
+    |: None
+
+:~ eval_source (code : string) : option string =
+    := pfx = "Spiral.Cells.eval!(\n  "
+    ? text::starts_with code pfx = !-
+    ?> None
+    |: es_form (text::drop code (text::length pfx))
+
+///> gleam
+:# eval_source_round_trips_the_heredoc_form =
+    (eval_source (cell_source "inl x = 1\ninl y = 2" 300000i64 !+), eval_source (cell_source "a b" -1i64 !-))
+    |> _assert_eq (Some "inl x = 1\ninl y = 2", Some "a b")
+
+///> gleam
+:# eval_source_round_trips_the_inspect_fallback =
+    eval_source (cell_source "x = \"\"\"q\"\"\"" -1i64 !-) |> _assert_eq (Some "x = \"\"\"q\"\"\"")
+
+///> gleam
+:# eval_source_rejects_a_plain_cell =
+    (eval_source "just some text", eval_source "```elixir\nfoo\n```") |> _assert_eq (None, None)
+
+:~ lmd_field (w : string) : string * string =
+    := colon = text::find_from w ":" 0i32
+    := n = text::parse_i32 (text::take w colon)
+    := after = text::drop w (colon + 1i32)
+    (text::take after n, text::drop after n)
+
+:~ lmd_triple (w : string) : (string * string * string) * string =
+    := kind, r1 = lmd_field w
+    := language, r2 = lmd_field r1
+    := source, r3 = lmd_field r2
+    ((kind, language, source), r3)
+
+:~ lmd_simple_kind (kind : string) : cell_kind =
+    ? kind = "import" ?> ImportCell |? kind = "fsharp" ?> FsharpCode |? kind = "spiral" ?> SpiralCode |? kind = "markdown" ?> Markdown |: OtherKind kind
+
+:~ ^ lmd_rows_onto (w : string) (acc : cells) : cells =
+    ? w = ""
+    ?> acc
+    |:
+        := triple, rest = lmd_triple w
+        := kind, language, source = triple
+        lmd_rows_onto rest (lmd_cell_onto kind language source acc)
+
+:& :~ lmd_cell_onto (kind : string) (language : string) (source : string) (acc : cells) : cells =
+    ? kind = "code"
+    ?> (CodeIn language, source) :: acc
+    |? kind = "elixir"
+    ?> lmd_elixir_onto language source acc
+    |: (lmd_simple_kind kind, source) :: acc
+
+:& :~ lmd_elixir_onto (language : string) (source : string) (acc : cells) : cells =
+    ?= eval_source source ?|
+    | Some spi => (SpiralCode, spi) :: acc
+    | None => lmd_rows_onto (livemd::markdown language) acc
+
+:~ parse_livemd (text_in : string) : string = wire (lmd_rows_onto (livemd::cells text_in) [])
+
+///> gleam
+:# parse_livemd_recovers_a_spiral_smart_cell =
+    parse_livemd ("```elixir\n" ++ cell_source "inl x = 1" 300000i64 !- ++ "\n```") |> _assert_eq (wire [ (SpiralCode, "inl x = 1") ])
+
+///> gleam
+:# parse_livemd_treats_a_plain_elixir_fence_as_markdown =
+    parse_livemd "```elixir\nIO.puts(1)\n```" |> _assert_eq (wire [ (Markdown, "```elixir\nIO.puts(1)\n```") ])
+
+:~ sc_head () : string = "{\"chunks\":null,\"kind\":\"Elixir.Spiral.Cells.SmartCell\",\"attrs\":{\"timeout\":300,\"source\":"
+
+:~ sc_tail (pc : string) : string = ",\"print_code\":" ++ pc ++ "},\"livebook_object\":\"smart_cell\"}"
+
+:~ rc_smartcell_json (source : string) (print_code : bool) : string =
+    sc_head () ++ json_value::elixir_quoted source ++ sc_tail (? print_code ?> "true" |: "false")
+
+///> gleam
+:# rc_smartcell_json_freezes_the_elixir_map_hash_order =
+    rc_smartcell_json "" !+ |> _assert_eq "{\"chunks\":null,\"kind\":\"Elixir.Spiral.Cells.SmartCell\",\"attrs\":{\"timeout\":300,\"source\":\"\",\"print_code\":true},\"livebook_object\":\"smart_cell\"}"
+
+:~ rc_wrap (json : string) (body : string) : string = "<!-- livebook:" ++ json ++ " -->\n\n```elixir\n" ++ body ++ "\n```"
+
+:~ render_spiral (source : string) : string =
+    := print_code = text::contains source "--print-code"
+    rc_wrap (text::replace (rc_smartcell_json source print_code) "-->" "--\\u003e") (cell_source source 300000i64 print_code)
+
+:~ rc_code_block (lang : string) (source : string) : string = "<!-- livebook:{\"spiral_code\":\"" ++ lang ++ "\"} -->\n\n```" ++ lang ++ "\n" ++ source ++ "\n```"
+
+:~ rc_fsharp (source : string) : string = "```fsharp\n" ++ source ++ "\n```"
+
+:~ rc_import (source : string) : string = "`#!import " ++ source ++ "`"
+
+:~ render_cell (c : cell_kind * string) : string =
+    := k, source = c
+    ?= k ?|
+    | SpiralCode => render_spiral source
+    | FsharpCode => rc_fsharp source
+    | ImportCell => rc_import source
+    | CodeIn lang => rc_code_block lang source
+    | _ => source
+
+:~ tl_is_text (k : cell_kind) : bool = ?= k ?| Markdown => !+ | ImportCell => !+ | _ => !-
+
+:~ tl_canonical (c : cell_kind * string) : cell_kind * string =
+    := k, s = c
+    ?= k ?|
+    | Markdown => (k, text::trim s)
+    | ImportCell => (k, s)
+    | _ => (k, es_rstrip_nl s)
+
+:~ break_md () : string = "<!-- livebook:{\"break_markdown\":true} -->"
+
+:~ tl_piece (prev_text : bool) (k : cell_kind) (part : string) : string = ? prev_text && tl_is_text k ?> break_md () ++ "\n\n" ++ part |: part
+
+:~ ^ tl_go (xs : cells) (prev_text : bool) (acc : rows) : rows =
+    ?= xs ?|
+    | [] => acc
+    | c :: rest =>
+        := k, _ = c
+        tl_go rest (tl_is_text k) (snoc acc (tl_piece prev_text k (render_cell c)))
+
+:~ tl_newline (s : string) : string = ? text::length s > 0i32 && text::byte_at s (text::length s - 1i32) = 10i32 ?> s |: s ++ "\n"
+
+:~ to_livemd (wire_in : string) : string =
+    := canon = listm::map tl_canonical (load wire_in)
+    tl_newline (sm'::concat_list "\n\n" (tl_go canon !- []))
+
+///> gleam
+:# render_cell_emits_fsharp_and_import =
+    (render_cell (FsharpCode, "let x = 1"), render_cell (ImportCell, "a/b.spi")) |> _assert_eq ("```fsharp\nlet x = 1\n```", "`#!import a/b.spi`")
+
+///> gleam
+:# render_cell_emits_a_code_block =
+    render_cell (CodeIn "python", "print(1)") |> _assert_eq "<!-- livebook:{\"spiral_code\":\"python\"} -->\n\n```python\nprint(1)\n```"
+
+///> gleam
+:# to_livemd_round_trips_a_spiral_smart_cell =
+    parse_livemd (to_livemd (wire [ (SpiralCode, "inl x = 1") ])) |> _assert_eq (wire [ (SpiralCode, "inl x = 1") ])
+
+///> gleam
+:# to_livemd_separates_adjacent_text_cells_with_a_break =
+    to_livemd (wire [ (ImportCell, "a/b.spi"); (Markdown, "one") ]) |> _assert_eq ("one\n\n<!-- livebook:{\"break_markdown\":true} -->\n\n`#!import a/b.spi`\n")
+
+:~ doc_of (clist : trm) : trm = dc_map [ dc_akv "cells" clist ]
+
+:~ doc_cells (doc : trm) : trm = ec_get doc "cells"
+
+:~ parse_dib_doc (text : string) : trm = doc_of (decode_cells (parse_dib text))
+
+:~ parse_spi_doc (spi : string) (spir : string) : trm = doc_of (decode_cells (from_spi spi spir))
+
+:~ parse_spi_bounded_doc (spi : string) (spir : string) (spi_bounds : string) (spir_bounds : string) : trm = doc_of (decode_cells (from_spi_bounded spi spir spi_bounds spir_bounds))
+
+:~ parse_livemd_doc (text : string) : trm = doc_of (decode_cells (parse_livemd text))
+
+:~ to_livemd_doc (doc : trm) : string = to_livemd (encode_cells (doc_cells doc))
+
+:~ to_cell_text_doc (doc : trm) : string = cell_text (encode_cells (doc_cells doc))
+
+:~ to_spir_doc (doc : trm) : string = to_spir (encode_cells (doc_cells doc))
+
+:~ to_spi_doc (doc : trm) : string = to_spi (encode_cells (doc_cells doc))
+
+:~ to_spi_tested_doc (doc : trm) : string = to_spi_tested (encode_cells (doc_cells doc))
+
+:~ to_spir_tested_doc (doc : trm) : string = to_spir_tested (encode_cells (doc_cells doc))
+
+:~ td_int (s : string) : trm = erlang_term::of (text::parse_i32 s)
+
+:~ td_map (index : string) (name : string) (mode : string) (realm : string) (symbol : string) (title : string) : trm =
+    dc_map [ dc_akv "index" (td_int index); dc_sv "name" name; dc_sv "mode" mode; dc_sv "realm" realm; dc_sv "symbol" symbol; dc_sv "title" title ]
+
+:~ td_row (line : string) (acc : list trm) : list trm =
+    ?= sm'::split_list "\t" line ?|
+    | index :: name :: mode :: realm :: symbol :: rest => td_map index name mode realm symbol (sm'::concat_list "\t" rest) :: acc
+    | _ => acc
+
+:~ ^ td_go (lines : list string) (acc : list trm) : list trm =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | line :: rest => td_go rest (td_row line acc)
+
+:~ tests_doc (doc : trm) : trm = erlang_term::list_term (td_go (sm'::split_list "\n" (test_index (encode_cells (doc_cells doc)))) [])
+
+:~ tg_row (line : string) (acc : list trm) : list trm =
+    ?= sm'::split_list "\t" line ?|
+    | ln :: r1 :: rrest => erlang_term::tuple [ td_int ln; erlang_term::of (sm'::concat_list "\t" (r1 :: rrest)) ] :: acc
+    | _ => acc
+
+:~ ^ tg_go (lines : list string) (acc : list trm) : list trm =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | line :: rest => tg_go rest (tg_row line acc)
+
+:~ target_gaps_doc (spi : string) : trm = erlang_term::list_term (tg_go (sm'::split_list "\n" (target_gaps spi)) [])

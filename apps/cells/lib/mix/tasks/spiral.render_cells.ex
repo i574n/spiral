@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.Spiral.RenderCells do
   use Mix.Task
-  alias Spiral.Cells.Document
+  alias Spiral.Cells.Domain
 
   @shortdoc "Render .livemd notebooks as the cell text the spiral CLI's `export` reads"
 
@@ -22,7 +22,7 @@ defmodule Mix.Tasks.Spiral.RenderCells do
       dir = Path.join(out, Integer.to_string(n))
       File.mkdir_p!(dir)
       cells = Path.join(dir, Path.basename(path, ".livemd") <> ".cells")
-      File.write!(cells, path |> File.read!() |> Document.parse_livemd() |> Document.to_cell_text())
+      File.write!(cells, path |> File.read!() |> Domain.parse_livemd_doc() |> Domain.to_cell_text_doc())
     end)
 
     Mix.shell().info("#{length(paths)} notebooks rendered as cell text in #{out}")

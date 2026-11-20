@@ -58,29 +58,37 @@
     pi / 2 |> cos
     |> _assert_approx_eq None 0.00000000000000006123233995736766f64
 
+:= gleam_atan2 (y : f64) (x : f64) : f64 =
+    global """
+        @external(erlang, "math", "atan2")
+        fn spiral_math_atan2(y: Float, x: Float) -> Float
+        """
+    $'spiral_math_atan2(!y, !x)' : float
+
+:= python_atan2 (y : f64) (x : f64) : f64 =
+    global "import math"
+    $'math.atan2(!y, !x)' : float
+
+:= c_atan2 (y : f64) (x : f64) : f64 =
+    global "#include <tgmath.h>"
+    $'atan2(!y, !x)' : float
+
+:= cpp_atan2 (y : f64) (x : f64) : f64 =
+    global "#include <cmath>"
+    $'std::atan2(!y, !x)' : float
+
 /// ## fsharp
 := atan2 (y : f64) (x : f64) : f64 =
     backend_switch {
-        Gleam = \ () =>
-            global """
-                @external(erlang, "math", "atan2")
-                fn spiral_math_atan2(y: Float, x: Float) -> Float
-                """
-            $'spiral_math_atan2(!y, !x)' : float
+        Gleam = \ () => (gleam_atan2 y x : f64)
         Lua = \ () => $'math.atan2(!y, !x)' : float
         Fsharp = \ () => $'System.Math.Atan2 (!y, !x)' : float
-        Python = \ () =>
-            global "import math"
-            $'math.atan2(!y, !x)' : float
+        Python = \ () => (python_atan2 y x : f64)
         Rust = \ () => $'(!y).atan2(!x)' : float
         Zig = \ () => $'std.math.atan2(!y, !x)' : float
         Lean = \ () => $'Float.atan2 !y !x ' : float
-        C = \ () =>
-            global "#include <tgmath.h>"
-            $'atan2(!y, !x)' : float
-        Cpp = \ () =>
-            global "#include <cmath>"
-            $'std::atan2(!y, !x)' : float
+        C = \ () => (c_atan2 y x : f64)
+        Cpp = \ () => (cpp_atan2 y x : f64)
         Pascal = \ () => $'ArcTan2(!y, !x)' : float
         Wasm = \ () => $'(call $math_atan2 !y !x)' : float
         TypeScript = \ () => $'Math.atan2(!y, !x)' : float
@@ -96,26 +104,34 @@
     0 |> atan2 1
     |> _assert_eq 1.5707963267948966
 
+:= gleam_floor \* t {float}. (n : t) : t =
+    global "import gleam/float"
+    n |> $'float.floor' : t
+
+:= python_floor \* t {float}. (n : t) : t =
+    global "import math"
+    $'math.floor(!n)' : t
+
+:= c_floor \* t {float}. (n : t) : t =
+    global "#include <tgmath.h>"
+    $'floor(!n)' : t
+
+:= cpp_floor \* t {float}. (n : t) : t =
+    global "#include <cmath>"
+    $'std::floor(!n)' : t
+
 /// ## floor
 := floor \* t {float}. (n : t) : t =
     backend_switch {
-        Gleam = \ () =>
-            global "import gleam/float"
-            n |> $'float.floor' : t
+        Gleam = \ () => (gleam_floor n : t)
         Lua = \ () => n |> $'math.floor' : t
         Fsharp = \ () => n |> $'floor' : t
-        Python = \ () =>
-            global "import math"
-            $'math.floor(!n)' : t
+        Python = \ () => (python_floor n : t)
         Rust = \ () => $'!n.floor()' : t
         Zig = \ () => $'@@floor(!n)' : t
         Lean = \ () => $'(!n).floor' : t
-        C = \ () =>
-            global "#include <tgmath.h>"
-            $'floor(!n)' : t
-        Cpp = \ () =>
-            global "#include <cmath>"
-            $'std::floor(!n)' : t
+        C = \ () => (c_floor n : t)
+        Cpp = \ () => (cpp_floor n : t)
         Pascal = \ () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
         Wasm = \ () => $'(`t.floor !n)' : t
         TypeScript = \ () => $'Math.floor(!n)' : t
@@ -131,26 +147,34 @@
     0.6 |> floor
     |> _assert_eq 0f64
 
+:= gleam_ceil \* t {float}. (n : t) : t =
+    global "import gleam/float"
+    n |> $'float.ceiling' : t
+
+:= python_ceil \* t {float}. (n : t) : t =
+    global "import math"
+    n |> $'math.ceil' : t
+
+:= c_ceil \* t {float}. (n : t) : t =
+    global "#include <tgmath.h>"
+    $'ceil(!n)' : t
+
+:= cpp_ceil \* t {float}. (n : t) : t =
+    global "#include <cmath>"
+    $'std::ceil(!n)' : t
+
 /// ## ceil
 := ceil \* t {float}. (n : t) : t =
     backend_switch {
-        Gleam = \ () =>
-            global "import gleam/float"
-            n |> $'float.ceiling' : t
+        Gleam = \ () => (gleam_ceil n : t)
         Lua = \ () => n |> $'math.ceil' : t
         Fsharp = \ () => n |> $'ceil' : t
-        Python = \ () =>
-            global "import math"
-            n |> $'math.ceil' : t
+        Python = \ () => (python_ceil n : t)
         Rust = \ () => $'!n.ceil()' : t
         Zig = \ () => $'@@ceil(!n)' : t
         Lean = \ () => $'(!n).ceil' : t
-        C = \ () =>
-            global "#include <tgmath.h>"
-            $'ceil(!n)' : t
-        Cpp = \ () =>
-            global "#include <cmath>"
-            $'std::ceil(!n)' : t
+        C = \ () => (c_ceil n : t)
+        Cpp = \ () => (cpp_ceil n : t)
         Pascal = \ () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
         Wasm = \ () => $'(`t.ceil !n)' : t
         TypeScript = \ () => $'Math.ceil(!n)' : t

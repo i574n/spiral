@@ -1,10 +1,12 @@
 ///- --package .
 :# run_result static =
     :< testing
+    :< json_tree
     :< json_value
 
 := (++) (left : string) (right : string) : string = left ^^ right
 
+:< json_tree
 :< json_value
 
 :| output =
@@ -81,24 +83,34 @@
     | Some x => json_truthy x
     | None => !-
 
-:~ got (key : string) (row : json) : json = ?= json_value::field key row ?| Some v => v | None => JNull
+:~ got (key : string) (row : json) : json = ?= json_tree::field key row ?| Some v => v | None => JNull
 
-:~ row_text (key : string) (row : json) : string = ?= json_value::field key row ?| Some (JStr t) => t | _ => ""
+:~ row_text (key : string) (row : json) : string = ?= json_tree::field key row ?| Some (JStr t) => t | _ => ""
 
 :~ failed (row : json) : bool = row_text "status" row = "failed"
 
-:~ has (key : string) (row : json) : bool = truthy (json_value::field key row)
+:~ has (key : string) (row : json) : bool = truthy (json_tree::field key row)
 
 :~ keyed (keep : json -> bool) (pick : json -> json) (rows : list json) : json =
     JObj (rows |> listm'::filter keep |> listm::map (\ r => (row_text "name" r, pick r)))
 
 :~ failing_targets (row : json) : list json =
-    ?= json_value::field "targets" row ?|
+    ?= json_tree::field "targets" row ?|
     | Some (JArr ts) => ts |> listm'::filter failed |> listm::map (got "target")
     | _ => []
 
 :~ target_failures (row : json) : list (string * json) =
     ?= failing_targets row ?|
+    | [] => []
+    | ts => [ (row_text "name" row, JArr ts) ]
+
+:~ unsupported_of (row : json) : list json =
+    ?= json_tree::field "targets" row ?|
+    | Some (JArr ts) => ts |> listm'::filter (\ t => row_text "status" t = "unsupported") |> listm::map (got "target")
+    | _ => []
+
+:~ target_unsupported (row : json) : list (string * json) =
+    ?= unsupported_of row ?|
     | [] => []
     | ts => [ (row_text "name" row, JArr ts) ]
 
@@ -115,7 +127,7 @@
 :~ pre_output (kind : string) (body : string) : string = "<pre class=\"output" ++ kind ++ "\">" ++ html_page::html_escape body ++ "</pre>\n"
 
 :~ data_html (data : json) : string =
-    := mime (m : string) : option json = json_value::field m data
+    := mime (m : string) : option json = json_tree::field m data
     ? present (mime "image/svg+xml")
     ?> "<div class=\"plot\">" ++ joined_lines (mime "image/svg+xml") ++ "</div>\n"
     |? present (mime "text/html")
@@ -127,10 +139,10 @@
     |: ""
 
 :~ output_html (output_json : string) : string =
-    ?= json_value::parse output_json ?|
-    | Some o ?& present (json_value::field "text" o) => pre_output "" (joined_lines (json_value::field "text" o))
-    | Some o ?& present (json_value::field "traceback" o) => pre_output " error" (joined_lines (json_value::field "traceback" o))
-    | Some o => ?= json_value::field "data" o ?| Some d => data_html d | None => ""
+    ?= json_tree::parse output_json ?|
+    | Some o ?& present (json_tree::field "text" o) => pre_output "" (joined_lines (json_tree::field "text" o))
+    | Some o ?& present (json_tree::field "traceback" o) => pre_output " error" (joined_lines (json_tree::field "traceback" o))
+    | Some o => ?= json_tree::field "data" o ?| Some d => data_html d | None => ""
     | None => ""
 
 ///> gleam
@@ -161,7 +173,7 @@
 
 :~ ms_of (v : option json) : option i32 =
     ?= v ?|
-    | Some (JNum n) ?& text::length n > 0i32 && json_value::digits_end n 0i32 = text::length n => Some (text::parse_i32 n)
+    | Some (JNum n) ?& text::length n > 0i32 && json_tree::digits_end n 0i32 = text::length n => Some (text::parse_i32 n)
     | _ => None
 
 :~ timed (label : string) (v : option json) : list string = ?= ms_of v ?| Some ms => [ label ++ ms_text ms ] | None => []
@@ -172,14 +184,14 @@
     | _ => []
 
 :~ target_part (t : json) : list string =
-    ?= json_value::field "target" t ?|
-    | Some (JStr name) => [ name ++ " " ++ row_text "status" t ++ sm'::concat_list "" (timed " " (json_value::field "ms" t)) ]
+    ?= json_tree::field "target" t ?|
+    | Some (JStr name) => [ name ++ " " ++ row_text "status" t ++ sm'::concat_list "" (timed " " (json_tree::field "ms" t)) ]
     | _ => []
 
-:~ targets_of (test : json) : list json = ?= json_value::field "targets" test ?| Some (JArr ts) => ts | _ => []
+:~ targets_of (test : json) : list json = ?= json_tree::field "targets" test ?| Some (JArr ts) => ts | _ => []
 
 :~ badge_html (test : json) : string =
-    ?= (json_value::field "name" test, json_value::field "status" test) ?|
+    ?= (json_tree::field "name" test, json_tree::field "status" test) ?|
     | (Some (JStr name), Some (JStr status)) =>
         := kind = ? status = "passed" || status = "failed" ?> status |: "other"
         "<span class=\"badge " ++ kind ++ "\">test " ++ html_page::html_escape name ++ ": " ++ html_page::html_escape status ++ "</span>\n"
@@ -191,10 +203,10 @@
     | _ => "<div class=\"meta\">" ++ html_page::html_escape (sm'::concat_list " · " parts) ++ "</div>\n"
 
 :~ cell_head_html (metadata_json : string) : string =
-    := m = ?= json_value::parse metadata_json ?| Some v => v | None => JObj []
-    := test = ?= json_value::field "spiral_test" m ?| Some t => t | None => JObj []
+    := m = ?= json_tree::parse metadata_json ?| Some v => v | None => JObj []
+    := test = ?= json_tree::field "spiral_test" m ?| Some t => t | None => JObj []
     := targets = listm'::collect target_part (targets_of test)
-    badge_html test ++ meta_html (listm::append (timed "" (json_value::field "duration_ms" m)) (listm::append (phase_parts (json_value::field "phases_ms" m)) targets))
+    badge_html test ++ meta_html (listm::append (timed "" (json_tree::field "duration_ms" m)) (listm::append (phase_parts (json_tree::field "phases_ms" m)) targets))
 
 ///> gleam
 :# a_test_cell_head_keeps_the_old_badge_and_adds_its_timings =
@@ -276,9 +288,9 @@
     | JStr t => elixir_quoted t
     | JArr items => "[" ++ sm'::concat_list "," (listm::map elixir_render items) ++ "]"
     | JObj members => "{" ++ sm'::concat_list "," (listm::map (\ (k, x) => elixir_quoted k ++ ":" ++ elixir_render x) members) ++ "}"
-    | other => json_value::render other
+    | other => json_tree::render other
 
-:~ sorted_render (text : string) : string = ?= json_value::parse text ?| Some v => elixir_render (sorted_json v) | None => ""
+:~ sorted_render (text : string) : string = ?= json_tree::parse text ?| Some v => elixir_render (sorted_json v) | None => ""
 
 ///> gleam
 :# sorted_render_orders_keys_by_bytes_at_every_depth =
@@ -289,17 +301,53 @@
     sorted_render escaped |> _assert_eq escaped
 
 :~ summary_fields (rows_json : string) : string =
-    := rows = ?= json_value::parse rows_json ?| Some (JArr items) => items | _ => []
+    := rows = ?= json_tree::parse rows_json ?| Some (JArr items) => items | _ => []
     := failed_tests = JArr (rows |> listm'::filter failed |> listm::map (got "name"))
     := refused = keyed (has "accept_refused") (got "accept_refused") rows
     := targets = JObj (listm'::collect target_failures rows)
     := messages = keyed (\ r => failed r && has "message" r) (got "message") rows
     := mismatches = keyed (\ r => failed r && has "actual" r) mismatch rows
     := sites = keyed (has "accepted_site") (got "accepted_site") rows
-    json_value::render (JObj [ ("failed_tests", failed_tests); ("accept_refused", refused); ("failed_targets", targets); ("failed_messages", messages); ("mismatches", mismatches); ("accepted_sites", sites) ])
+    := unsupported = JObj (listm'::collect target_unsupported rows)
+    json_tree::render
+        (JObj
+            [
+                ("failed_tests", failed_tests)
+                ("accept_refused", refused)
+                ("failed_targets", targets)
+                ("failed_messages", messages)
+                ("mismatches", mismatches)
+                ("accepted_sites", sites)
+                ("unsupported_targets", unsupported)
+            ])
+
+:~ optional_target (optional : list string) (target : json) : bool =
+    ?= target ?| JStr t => listm'::exists' (\ o => o = t) optional | _ => !-
+
+:~ blocked_in (file : string) (optional : list string) ((test, targets) : string * json) : list string =
+    ?= targets ?|
+    | JArr ts =>
+        ts
+        |> listm'::filter (\ x => optional_target optional x |> not)
+        |> listm::map (\ x => file ++ ": " ++ test ++ " needs " ++ (?= x ?| JStr t => t | _ => "?") ++ ", which is unsupported here")
+    | _ => []
+
+:~ gate_blocked_line (optional : list string) (line : string) : list string =
+    := prefix = "spiral-tests file "
+    ? text::starts_with line prefix |> not ?> [] |:
+        ?= json_tree::parse (text::drop line (text::length prefix)) ?|
+        | Some report =>
+            ?= json_tree::field "unsupported_targets" report ?|
+            | Some (JObj entries) => listm'::collect (blocked_in (row_text "file" report) optional) entries
+            | _ => []
+        | None => []
+
+:~ gate_blocked (optional_text : string) (lines : list string) : list string =
+    := optional = sm'::split_list "," optional_text |> listm'::filter (\ o => o <> "")
+    listm'::collect (gate_blocked_line optional) lines
 
 :~ num_text (key : string) (row : json) : option string =
-    ?= json_value::field key row ?| Some (JNum n) => Some n | _ => None
+    ?= json_tree::field key row ?| Some (JNum n) => Some n | _ => None
 
 :~ source_file (path : string) (realm : string) : string =
     := n = text::length path
@@ -333,7 +381,7 @@
     | _ => []
 
 :~ file_object (file : string) (rows : list json) (with_headroom : bool) : json =
-    := summary = ?= json_value::parse (summary_fields (json_value::render (JArr rows))) ?| Some (JObj m) => m | _ => []
+    := summary = ?= json_tree::parse (summary_fields (json_tree::render (JArr rows))) ?| Some (JObj m) => m | _ => []
     JObj (listm::append (counts_members rows) (listm::append [ ("file", JStr file) ] (listm::append summary (? with_headroom ?> headroom_members rows |: []))))
 
 :~ ^ has_text (x : string) (xs : list string) : bool = ?= xs ?| y :: rest => y = x || has_text x rest | [] => !-
@@ -350,7 +398,7 @@
 :~ total_object (files : list json) : json =
     := keys = [ "discovered"; "executed"; "passed"; "failed"; "accepted"; "built"; "static"; "preludes"; "skipped"; "unsupported"; "filtered"; "not_run"; "memo_hits" ]
     := sums = listm::map (\ k => (k, JNum (text::show_i32 (listm::fold (\ n f => n + count_of k f) 0i32 files)))) keys
-    := reason_of (f : json) : list (string * json) = ?= json_value::field "no_agree_reasons" f ?| Some (JObj m) => m | _ => []
+    := reason_of (f : json) : list (string * json) = ?= json_tree::field "no_agree_reasons" f ?| Some (JObj m) => m | _ => []
     := all = listm'::collect reason_of files
     := names = listm::fold (\ acc (k, _) => ? has_text k acc ?> acc |: listm::append acc [ k ]) [] all
     := merged = listm::map (\ k => (k, JNum (text::show_i32 (listm::fold (\ n (k2, v) => ? k2 = k ?> n + (?= v ?| JNum t => text::parse_i32 t | _ => 0i32) |: n) 0i32 all)))) names
@@ -364,8 +412,8 @@
     | _ => []
 
 :~ summary_lines_json ((reports_json : string), (warn : string)) : string =
-    := reports = ?= json_value::parse reports_json ?| Some (JArr rs) => rs | _ => []
-    := files = listm'::collect (\ rep => files_of (row_text "path" rep) (?= json_value::field "tests" rep ?| Some (JArr ts) => ts | _ => [])) reports
+    := reports = ?= json_tree::parse reports_json ?| Some (JArr rs) => rs | _ => []
+    := files = listm'::collect (\ rep => files_of (row_text "path" rep) (?= json_tree::field "tests" rep ?| Some (JArr ts) => ts | _ => [])) reports
     := file_lines = listm::map (\ f => "spiral-tests file " ++ elixir_render (sorted_json f)) files
     sm'::concat_list "\n" (listm::append file_lines (listm::append (listm'::collect (warning_of warn) files) [ "spiral-tests total " ++ elixir_render (sorted_json (total_object files)) ]))
 
@@ -373,12 +421,12 @@
     ?= v ?| Some (JStr t) => t | Some (JNum n) => n | Some (JBool b) => (? b ?> "true" |: "false") | _ => ""
 
 :~ metric_row (stem : string) (test : json) (target : json) : string =
-    := f (key : string) (from : json) = cell_text (json_value::field key from)
+    := f (key : string) (from : json) = cell_text (json_tree::field key from)
     sm'::concat_list "\t" [ stem; f "name" test; f "target" target; f "status" target; f "ms" target; f "memo" test ]
 
 :~ metrics_tsv (reports_json : string) : string =
-    := reports = ?= json_value::parse reports_json ?| Some (JArr rs) => rs | _ => []
-    := tests_of (rep : json) : list json = ?= json_value::field "tests" rep ?| Some (JArr ts) => ts | _ => []
+    := reports = ?= json_tree::parse reports_json ?| Some (JArr rs) => rs | _ => []
+    := tests_of (rep : json) : list json = ?= json_tree::field "tests" rep ?| Some (JArr ts) => ts | _ => []
     := rows_of (rep : json) = listm'::collect (\ t => ? row_text "mode" t = "test" ?> listm::map (metric_row (row_text "stem" rep) t) (targets_of t) |: []) (tests_of rep)
     sm'::concat_list "\n" ("File\tTest\tTarget\tStatus\tMs\tMemo" :: listm'::collect rows_of reports) ++ "\n"
 
@@ -390,7 +438,7 @@
 ///> gleam
 :# an_empty_file_summarises_to_empty_fields =
     (summary_fields "[]", summary_fields "")
-    |> _assert_eq ("{\"failed_tests\":[],\"accept_refused\":{},\"failed_targets\":{},\"failed_messages\":{},\"mismatches\":{},\"accepted_sites\":{}}", "{\"failed_tests\":[],\"accept_refused\":{},\"failed_targets\":{},\"failed_messages\":{},\"mismatches\":{},\"accepted_sites\":{}}")
+    |> _assert_eq ("{\"failed_tests\":[],\"accept_refused\":{},\"failed_targets\":{},\"failed_messages\":{},\"mismatches\":{},\"accepted_sites\":{},\"unsupported_targets\":{}}", "{\"failed_tests\":[],\"accept_refused\":{},\"failed_targets\":{},\"failed_messages\":{},\"mismatches\":{},\"accepted_sites\":{},\"unsupported_targets\":{}}")
 
 ///> gleam
 :# summary_fields_keep_failed_rows_messages_with_tabs_targets_and_sites =
@@ -399,4 +447,16 @@
     := c = "{\"name\":\"c\",\"status\":\"accepted\",\"accepted_site\":\"t.spi:4\",\"accept_refused\":null}"
     := d = "{\"name\":\"d\",\"status\":\"failed\",\"accept_refused\":\"exit-code step\",\"message\":null}"
     summary_fields ("[" ++ a ++ "," ++ b ++ "," ++ c ++ "," ++ d ++ "]")
-    |> _assert_eq "{\"failed_tests\":[\"a\",\"d\"],\"accept_refused\":{\"d\":\"exit-code step\"},\"failed_targets\":{\"a\":[\"rust\"]},\"failed_messages\":{\"a\":\"x\\u0009y\\u000az\"},\"mismatches\":{\"a\":{\"actual\":\"1\",\"expected\":\"2\"}},\"accepted_sites\":{\"c\":\"t.spi:4\"}}"
+    |> _assert_eq "{\"failed_tests\":[\"a\",\"d\"],\"accept_refused\":{\"d\":\"exit-code step\"},\"failed_targets\":{\"a\":[\"rust\"]},\"failed_messages\":{\"a\":\"x\\u0009y\\u000az\"},\"mismatches\":{\"a\":{\"actual\":\"1\",\"expected\":\"2\"}},\"accepted_sites\":{\"c\":\"t.spi:4\"},\"unsupported_targets\":{}}"
+
+///> gleam
+:# an_unsupported_target_is_named_in_the_summary =
+    := a = "{\"name\":\"a\",\"status\":\"unsupported\",\"targets\":[{\"target\":\"cuda\",\"status\":\"unsupported\"},{\"target\":\"rust\",\"status\":\"passed\"}]}"
+    summary_fields ("[" ++ a ++ "]")
+    |> _assert_eq "{\"failed_tests\":[],\"accept_refused\":{},\"failed_targets\":{},\"failed_messages\":{},\"mismatches\":{},\"accepted_sites\":{},\"unsupported_targets\":{\"a\":[\"cuda\"]}}"
+
+///> gleam
+:# a_gate_blocks_an_unsupported_target_unless_it_is_listed_optional =
+    := line = "spiral-tests file {\"file\":\"f.spi\",\"unsupported_targets\":{\"a\":[\"cuda\"]}}"
+    (gate_blocked "" [ line; "other" ], gate_blocked "cuda" [ line ], gate_blocked "wgsl,cuda" [ line ])
+    |> _assert_eq ([ "f.spi: a needs cuda, which is unsupported here" ], [], [])

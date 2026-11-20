@@ -76,7 +76,17 @@ pub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {
 
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
-  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  case value >= 0 - half && value < half {
+    True -> value
+    False -> int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  }
+}
+
+pub fn spiral_wrap_i32(value: Int) -> Int {
+  case value >= -2147483648 && value <= 2147483647 {
+    True -> value
+    False -> spiral_wrap_signed(value, 32)
+  }
 }
 
 
@@ -95,9 +105,9 @@ pub fn loop0 (v0: SpiralArray(Int), v1: SpiralRef(Mut0)) {
     case method0(v1) {
         True -> {
             let v3 = spiral_ref_get(v1).l0
-            let v4 = spiral_wrap_signed(v3 * 5, 32)
+            let v4 = spiral_wrap_i32(v3 * 5)
             spiral_array_set(v0, v3, v4)
-            let v5 = spiral_wrap_signed(v3 + 1, 32)
+            let v5 = spiral_wrap_i32(v3 + 1)
             spiral_ref_set(v1, Mut0(l0: v5))
             loop0(v0, v1)
         }
@@ -117,7 +127,7 @@ pub fn loop1 (v6: SpiralRef(Mut1), v7: SpiralRef(Mut1), v9: SpiralRef(Mut2)) {
             case v13 {
                 True -> {
                     let v14 = spiral_ref_get(v7).l0
-                    let v15 = spiral_wrap_signed(v14 + 1, 32)
+                    let v15 = spiral_wrap_i32(v14 + 1)
                     spiral_ref_set(v7, Mut1(l0: v15))
                     Nil
                 }
@@ -126,7 +136,7 @@ pub fn loop1 (v6: SpiralRef(Mut1), v7: SpiralRef(Mut1), v9: SpiralRef(Mut2)) {
             let v16 = spiral_ref_get(v9).l0
             let v17 = Uh0Cons(v11, v16)
             spiral_ref_set(v9, Mut2(l0: v17))
-            let v18 = spiral_wrap_signed(v11 + 1, 32)
+            let v18 = spiral_wrap_i32(v11 + 1)
             spiral_ref_set(v6, Mut1(l0: v18))
             loop1(v6, v7, v9)
         }
@@ -153,12 +163,12 @@ pub fn main() {
                                     Uh0Cons(v26, v27) -> {
                                         case v27  {
                                             Uh0Nil -> {
-                                                let v28 = spiral_wrap_signed(v20 * 64, 32)
-                                                let v29 = spiral_wrap_signed(v22 * 16, 32)
-                                                let v30 = spiral_wrap_signed(v28 + v29, 32)
-                                                let v31 = spiral_wrap_signed(v24 * 4, 32)
-                                                let v32 = spiral_wrap_signed(v30 + v31, 32)
-                                                spiral_wrap_signed(v32 + v26, 32)
+                                                let v28 = spiral_wrap_i32(v20 * 64)
+                                                let v29 = spiral_wrap_i32(v22 * 16)
+                                                let v30 = spiral_wrap_i32(v28 + v29)
+                                                let v31 = spiral_wrap_i32(v24 * 4)
+                                                let v32 = spiral_wrap_i32(v30 + v31)
+                                                spiral_wrap_i32(v32 + v26)
                                             }
                                             _ -> -1
                                         }
@@ -175,9 +185,9 @@ pub fn main() {
             _ -> -1
         }
     let v39 = spiral_ref_get(v7).l0
-    let v40 = spiral_wrap_signed(v38 + v39, 32)
+    let v40 = spiral_wrap_i32(v38 + v39)
     let v41 = spiral_array_get(v0, 2)
-    let v42 = spiral_wrap_signed(v40 + v41, 32)
+    let v42 = spiral_wrap_i32(v40 + v41)
     let v43 = spiral_array_get(v0, 1)
-    spiral_wrap_signed(v42 - v43, 32)
+    spiral_wrap_i32(v42 - v43)
 }

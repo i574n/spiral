@@ -1,0 +1,151 @@
+///- --package .
+:< erlang_term
+:# phase_clock static =
+    :< testing
+
+:~ is (name : string) (t : term) : bool = erlang_term::equal t (atom name)
+
+:~ erl (f : string) (args : list term) : term = erlang_term::apply "erlang" f args
+
+:~ is_int (t : term) : bool = erl "is_integer" [ t ] |> erlang_term::cast
+
+:~ non_negative (ms : term) : bool = is_int ms && (erl ">=" [ ms; erlang_term::of 0i32 ] |> erlang_term::cast)
+
+:~ pd_get (key : string) : term = erl "get" [ atom key ]
+
+:~ pd_put (key : string) (value : term) : () = erl "put" [ atom key; value ] |> ignore
+
+:~ bumped (phases : term) (name : term) (ms : term) : term =
+    erlang_term::apply "maps" "put" [ name; erl "+" [ erlang_term::apply "maps" "get" [ name; phases; erlang_term::of 0i32 ]; ms ]; phases ]
+
+:~ stretch_deadline (ms : term) : () =
+    := deadline = pd_get "spiral_cells_deadline"
+    ? is_int deadline ?> pd_put "spiral_cells_deadline" (erl "+" [ deadline; ms ]) |: ()
+
+:~ waits (name : term) : bool = is "slot_wait_ms" name || is "queue_ms" name
+
+:~ record (name : term) (ms : term) (phases : term) : () =
+    pd_put "spiral_cells_phases" (bumped phases name ms)
+    ? waits name ?> stretch_deadline ms |: ()
+
+:~ add_phase (name : term) (ms : term) : term =
+    := phases = pd_get "spiral_cells_phases"
+    ? non_negative ms && erlang_term::is_map phases ?> record name ms phases |: ()
+    atom "ok"
+
+:~ reset (phases : term) (deadline : term) : () =
+    pd_put "spiral_cells_phases" phases
+    pd_put "spiral_cells_deadline" deadline
+
+:~ add_wait (name : term) (ms : term) : term =
+    := phases = pd_get "spiral_cells_phases"
+    ? erlang_term::is_map phases ?> pd_put "spiral_cells_phases" (bumped phases name ms) |: ()
+    stretch_deadline ms
+    atom "ok"
+
+:~ budget_deadline (fallback : term) : term =
+    := stored = pd_get "spiral_cells_deadline"
+    ? is_int stored ?> stored |? is "infinity" stored ?> atom "infinity" |: fallback
+
+:~ budget_remaining (fallback : term) (now_ms : term) : term =
+    := d = budget_deadline fallback
+    ? is "infinity" d ?> atom "infinity" |: erl "max" [ erl "-" [ d; now_ms ]; erlang_term::of 0i32 ]
+
+:~ empty () : term = erlang_term::apply "maps" "new" []
+
+:~ phase (name : string) : term = erlang_term::apply "maps" "get" [ atom name; pd_get "spiral_cells_phases"; atom "nil" ]
+
+:~ int_is (t : term) (n : i32) : bool = erlang_term::equal t (erlang_term::of n)
+
+:~ two_slot_waits () : () =
+    reset (empty ()) (erlang_term::of 100i32)
+    add_phase (atom "slot_wait_ms") (erlang_term::of 5i32) |> ignore
+    add_phase (atom "slot_wait_ms") (erlang_term::of 7i32) |> ignore
+
+:~ unrelated_and_negative () : () =
+    reset (empty ()) (erlang_term::of 100i32)
+    add_phase (atom "compile_ms") (erlang_term::of 9i32) |> ignore
+    add_phase (atom "queue_ms") (erlang_term::of -1i32) |> ignore
+
+///> gleam
+:# slot_waits_accumulate =
+    two_slot_waits ()
+    int_is (phase "slot_wait_ms") 12i32 |> _assert_eq !+
+
+///> gleam
+:# a_slot_wait_pushes_the_deadline_back =
+    two_slot_waits ()
+    int_is (pd_get "spiral_cells_deadline") 112i32 |> _assert_eq !+
+
+///> gleam
+:# a_negative_time_records_nothing =
+    unrelated_and_negative ()
+    is "nil" (phase "queue_ms") |> _assert_eq !+
+
+///> gleam
+:# other_phases_leave_the_deadline_alone =
+    unrelated_and_negative ()
+    int_is (pd_get "spiral_cells_deadline") 100i32 |> _assert_eq !+
+
+///> gleam
+:# without_a_phase_map_nothing_is_recorded =
+    reset (atom "undefined") (atom "undefined")
+    (add_phase (atom "queue_ms") (erlang_term::of 3i32) |> is "ok", pd_get "spiral_cells_phases" |> is "undefined") |> _assert_eq (!+, !+)
+
+:~ a_rust_wait () : () =
+    reset (empty ()) (erlang_term::of 100i32)
+    add_wait (atom "rust_lock_wait_ms") (erlang_term::of 8i32) |> ignore
+
+///> gleam
+:# a_wait_phase_stretches_the_deadline_even_when_unrelated =
+    a_rust_wait ()
+    (int_is (phase "rust_lock_wait_ms") 8i32, int_is (pd_get "spiral_cells_deadline") 108i32) |> _assert_eq (!+, !+)
+
+///> gleam
+:# budget_remaining_counts_down_from_the_stored_deadline =
+    reset (empty ()) (erlang_term::of 100i32)
+    int_is (budget_remaining (erlang_term::of 999i32) (erlang_term::of 30i32)) 70i32 |> _assert_eq !+
+
+///> gleam
+:# budget_remaining_is_infinity_when_the_stored_deadline_is =
+    reset (empty ()) (atom "infinity")
+    is "infinity" (budget_remaining (erlang_term::of 50i32) (erlang_term::of 10i32)) |> _assert_eq !+
+
+///> gleam
+:# budget_remaining_falls_back_when_no_deadline_is_stored =
+    reset (atom "undefined") (atom "undefined")
+    int_is (budget_remaining (erlang_term::of 80i32) (erlang_term::of 20i32)) 60i32 |> _assert_eq !+
+
+:~ taken_queue () : term =
+    := queued = erl "erase" [ atom "spiral_cells_queue_ms" ]
+    ? is "undefined" queued || is "nil" queued ?> erlang_term::of 0i32 |: queued
+
+:~ charge_queue () : term =
+    := queue = taken_queue ()
+    ? erlang_term::is_map (pd_get "spiral_cells_phases") ?> add_phase (atom "queue_ms") queue |> ignore |: stretch_deadline queue
+    atom "ok"
+
+:~ queued (ms : i32) (phases : term) : () =
+    reset phases (erlang_term::of 100i32)
+    pd_put "spiral_cells_queue_ms" (erlang_term::of ms)
+
+:~ charged_twice () : () =
+    queued 4i32 (empty ())
+    charge_queue () |> ignore
+    charge_queue () |> ignore
+
+///> gleam
+:# a_queue_wait_is_charged_once_as_a_phase =
+    charged_twice ()
+    int_is (phase "queue_ms") 4i32 |> _assert_eq !+
+
+///> gleam
+:# a_charged_queue_wait_stretches_the_deadline_once =
+    charged_twice ()
+    int_is (pd_get "spiral_cells_deadline") 104i32 |> _assert_eq !+
+
+///> gleam
+:# without_a_phase_map_the_queue_wait_still_stretches_the_deadline =
+    queued 6i32 (atom "undefined")
+    charge_queue () |> ignore
+    int_is (pd_get "spiral_cells_deadline") 106i32 |> _assert_eq !+

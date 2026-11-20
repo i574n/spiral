@@ -1,0 +1,400 @@
+///- --package .
+:< erlang_term
+:# package_reach static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ at (n : i32) (t : term) : term = erlang_term::element_at n t
+
+:~ ok_of (t : term) : bool = mount_text::is_ok_tuple t
+
+:~ lines_of (src : string) : list string = sm'::split_list "\n" src
+
+:== raw = { header_text : string; lines : list string }
+
+:~ raw_of (lines : list string) (s : memo::span) : raw = { header_text = s::header_text; lines = memo::lines_between lines 1i32 s [] }
+
+:~ kept_span (s : memo::span) : bool = not (source_blocks::test_header s::header_text)
+
+:~ split_raw (src : string) (rows : string) : list raw =
+    := lines = lines_of (text::replace src "\r\n" "\n")
+    listm::map (raw_of lines) (memo::keep kept_span (memo::spans_of rows))
+
+:~ compiled (src : string) (bounds : term) : list raw =
+    := found = mount_text::rows_for src bounds
+    ? ok_of found ?> split_raw src (at 2i32 found |> erlang_term::cast) |: [ { header_text = ""; lines = lines_of src } ]
+
+:== qlist = list (string * string)
+
+:== facts = { defn : bool; names : list string; ops : list string; unq : list string; quals : qlist; always : bool }
+
+:~ qual_of (token : string) : string * string =
+    := parts = sm'::split_list "." (text::replace token "::" ".")
+    (memo::dotted_init parts "", memo::last_part parts)
+
+:~ unq_of (names : list string) (rf : memo::refs) : list string =
+    memo::uniq_from (memo::keep (\ (t : string) => not (memo::has_text names t)) rf::unq) (dict::empty ()) []
+
+:~ quals_of (rf : memo::refs) : qlist = listm::map qual_of (memo::uniq_from rf::quals (dict::empty ()) [])
+
+:~ is_defn (sh : memo::shape) : bool = sh::kind = memo::Definition
+
+:~ always_of (sh : memo::shape) (header : string) : bool = not (is_defn sh) || memo::is_instance header
+
+:~ facts_with (header : string) (sh : memo::shape) (rf : memo::refs) : facts =
+    { defn = is_defn sh; names = sh::names; ops = sh::operators; unq = unq_of sh::names rf; quals = quals_of rf; always = always_of sh header }
+
+:~ facts_of (header : string) (code : string) : facts = facts_with header (memo::block_shape header code) (memo::refs_from code 0i32 [] [])
+
+:== piece = { body : string; code : string; f : facts }
+
+:~ piece_of (r : raw) : piece =
+    := body = sm'::concat_list "\n" r::lines
+    := code = memo::strip_comments body
+    { body; code; f = facts_of r::header_text code }
+
+:== modinfo = { module : string; scope : string; opened : bool; file : string }
+
+:== pblock = { id : term; print : term; scope : string; p : piece }
+
+:~ identity (p : piece) (print : term) : term =
+    := f = p::f
+    ? f::defn ?> list_term (listm::map str f::names) |: print
+
+:~ block_of (m : modinfo) (n : i32) (p : piece) : pblock =
+    := print = mount_text::sha256 (str p::body)
+    { id = tuple [ str m::module; identity p print; erlang_term::of n ]; print; scope = m::scope; p }
+
+:== opsl = list (string * i32)
+
+:== acc = { next : i32; blocks : dict::dict i32 pblock; names : memo::by_name; ops : opsl; always : list i32 }
+
+:~ empty_acc () : acc = { next = 0i32; blocks = dict::empty (); names = dict::empty (); ops = []; always = [] }
+
+:~ facts_in (b : pblock) : facts =
+    := p = b::p
+    p::f
+
+:~ with_ops (i : i32) (ops : opsl) (f : facts) : opsl = listm::fold (\ xs op => (op, i) :: xs) ops f::ops
+
+:~ with_always (i : i32) (a : acc) (f : facts) : list i32 = ? f::always ?> i :: a::always |: a::always
+
+:~ with_names (i : i32) (a : acc) (f : facts) : memo::by_name = listm::fold (memo::with_name i) a::names f::names
+
+:~ added (a : acc) (b : pblock) : acc =
+    := i = a::next
+    := f = facts_in b
+    { next = i + 1i32; blocks = dict::insert i b a::blocks; names = with_names i a f; ops = with_ops i a::ops f; always = with_always i a f }
+
+:== mstate = { seen : dict::dict string i32; a : acc }
+
+:~ ident_key (p : piece) : string =
+    := f = p::f
+    ? f::defn ?> "d " ++ memo::spaced f::names "" |: "o " ++ p::body
+
+:~ count_in (seen : dict::dict string i32) (k : string) : i32 = ?= dict::find k seen ?| Some n => n | None => 0i32
+
+:~ step_piece (m : modinfo) (st : mstate) (p : piece) : mstate =
+    := k = ident_key p
+    := n = count_in st::seen k
+    { seen = dict::insert k (n + 1i32) st::seen; a = added st::a (block_of m n p) }
+
+:~ fresh_state (a : acc) : mstate = { seen = dict::empty (); a }
+
+:~ sample_mod () : modinfo = { module = "a.spi"; scope = "a"; opened = !-; file = "" }
+
+:~ sample_raw () : raw = { header_text = ":~ f () ="; lines = [ ":~ f () = 1" ] }
+
+:~ sample_piece () : piece = piece_of (sample_raw ())
+
+///> gleam
+:# a_repeated_definition_name_counts_its_occurrences =
+    := st = listm::fold (step_piece (sample_mod ())) (fresh_state (empty_acc ())) [ sample_piece (); sample_piece () ]
+    := a = st::a
+    (count_in st::seen "d f", a::next) |> _assert_eq (2i32, 2i32)
+
+:~ normal (s : string) : string = text::replace s "\\" "/"
+
+:~ scope_of_name (name : string) : string = text::replace (normal name) "/" "."
+
+:~ mod_info (name : string) (ext : string) (opened : bool) (file : string) : modinfo =
+    { module = normal (name ++ ext); scope = scope_of_name name; opened; file }
+
+:~ mod_at (dir : string) (opened : bool) (name : string) (ext : string) : list modinfo =
+    := file = erlang_file::joined_path dir (name ++ ext)
+    ? erlang_file::regular_file file ?> [ mod_info name ext opened file ] |: []
+
+:~ mods_of (dir : string) (line : string) : list modinfo =
+    := opened = text::starts_with line "1"
+    := name = mount_text::tab_rest line
+    listm::append (mod_at dir opened name ".spi") (mod_at dir opened name ".spir")
+
+:~ modules_in (dir : string) (project : string) : list modinfo =
+    := lines = memo::keep (\ (l : string) => l <> "") (lines_of (memo::module_entries project))
+    listm::concat (listm::map (mods_of dir) lines)
+
+:~ read_or_empty (path : string) : string =
+    := r = erlang_term::apply "file" "read_file" [ str path ]
+    ? ok_of r ?> at 2i32 r |> erlang_term::cast |: ""
+
+:~ opens_of (code : string) : list string = memo::uniq_from (memo::opens_from code 0i32 []) (dict::empty ()) []
+
+:~ raw_text (r : raw) : string = sm'::concat_list "\n" r::lines
+
+:~ raws_text (raws : list raw) : string = sm'::concat_list "\n" (listm::map raw_text raws)
+
+:== opensd = dict::dict string (list string)
+
+:== bstate = { a : acc; scope_opens : opensd; opened : list string }
+
+:~ empty_bstate () : bstate = { a = empty_acc (); scope_opens = dict::empty (); opened = [] }
+
+:~ opened_after (st : bstate) (m : modinfo) : list string = ? m::opened ?> listm::append st::opened [ m::scope ] |: st::opened
+
+:== parts = { pieces : list piece; opens : list string }
+
+:~ parts_of (raws : list raw) : parts = { pieces = listm::map piece_of raws; opens = opens_of (raws_text raws) }
+
+:~ parts_table () : term =
+    := opts = erlang_term::list_term [ erlang_term::atom "set" ]
+    tables::ensure (erlang_term::atom "spiral_cells_package_parts") opts
+
+:~ parts_key (src : string) (bounds : term) : term = mount_text::term_hash (tuple [ str src; mount_text::rows_for src bounds ])
+
+:~ kept_parts (key : term) (p : parts) : parts =
+    erlang_term::apply "ets" "insert" [ parts_table (); tuple [ key; erlang_term::of p ] ] |> ignore
+    p
+
+:~ looked_parts (key : term) : list term = erlang_term::items_of (erlang_term::apply "ets" "lookup" [ parts_table (); key ])
+
+:~ cached_parts (src : string) (bounds : term) : parts =
+    := key = parts_key src bounds
+    ?= looked_parts key ?| row :: _ => at 2i32 row |> erlang_term::cast | [] => kept_parts key (parts_of (compiled src bounds))
+
+:~ parts_cache_on () : bool = toolchain::beam_env "SPIRAL_CELLS_PARTS_CACHE" <> "0"
+
+:~ parts_for (src : string) (bounds : term) : parts = ? parts_cache_on () ?> cached_parts src bounds |: parts_of (compiled src bounds)
+
+:~ opens_with (st : bstate) (m : modinfo) (ps : parts) : opensd = dict::insert m::scope ps::opens st::scope_opens
+
+:~ module_step (bounds : term) (st : bstate) (m : modinfo) : bstate =
+    := ps = parts_for (read_or_empty m::file) bounds
+    := ms = listm::fold (step_piece m) (fresh_state st::a) ps::pieces
+    { a = ms::a; scope_opens = opens_with st m ps; opened = opened_after st m }
+
+:== depl = list (string * term)
+
+:== pindex = { project : string; deps : depl; opened : list string; scope_opens : opensd; a : acc }
+
+:~ index_built (bounds : term) (d : string) (project : string) (deps : depl) : pindex =
+    := st = listm::fold (module_step bounds) (empty_bstate ()) (modules_in d project)
+    { project; deps; opened = st::opened; scope_opens = st::scope_opens; a = st::a }
+
+:| entry =
+    | Absent : string
+    | Whole : term
+    | Ready : pindex
+
+:~ entry_of (t : term) : entry = erlang_term::cast t
+
+:== bctx = { bounds : term; dotnet : string; dll : string }
+
+:== ecache = dict::dict string entry
+
+:== built = { entry : entry; cache : ecache }
+
+:~ stored (d : string) (e : entry) (c : ecache) : built = { entry = e; cache = dict::insert d e c }
+
+:== dstate = { deps : depl; cache : ecache }
+
+:~ no_deps (k : ecache) : dstate = { deps = []; cache = k }
+
+:~ deps_done (s : dstate) : depl = listm::rev s::deps
+
+:~ cache_of (s : dstate) : ecache = s::cache
+
+:~ dep_of (row : term) (b : built) : string * term = (at 1i32 row |> erlang_term::cast, erlang_term::of b::entry)
+
+:~ ^ index_of (c : bctx) (k : ecache) (dir : string) : built =
+    := d = mount_text::expanded dir (mount_text::cwd ())
+    ?= dict::find d k ?|
+    | Some e => { entry = e; cache = k }
+    | None => fresh_index c (dict::insert d (Absent "seen") k) d
+
+:& :~ fresh_index (c : bctx) (k : ecache) (d : string) : built =
+    ? mount_text::has_manifest d ?> manifest_index c k d |: stored d (Absent "missing") k
+
+:& :~ manifest_index (c : bctx) (k : ecache) (d : string) : built =
+    := project = mount_text::manifest_text d c::dotnet c::dll
+    := ds = deps_in c k d
+    stored d (Ready (index_built c::bounds d project (deps_done ds))) (cache_of ds)
+
+:& :~ deps_in (c : bctx) (k : ecache) (d : string) : dstate =
+    listm::fold (dep_step c) (no_deps k) (mount_text::declared_dependencies d c::dotnet c::dll)
+
+:& :~ dep_step (c : bctx) (st : dstate) (row : term) : dstate =
+    := b = index_of c st::cache (at 2i32 row |> erlang_term::cast)
+    { deps = dep_of row b :: st::deps; cache = b::cache }
+
+:~ scope_named (scope : string) (name : string) : bool =
+    := n = "." ++ name
+    scope = name || (text::length scope >= text::length n && text::drop scope (text::length scope - text::length n) = n)
+
+///> gleam
+:# a_scope_answers_to_its_name_and_its_last_dotted_parts =
+    (scope_named "a.b" "b", scope_named "a.b" "a.b", scope_named "ab" "b", scope_named "b" "a.b") |> _assert_eq (!+, !+, !-, !-)
+
+:~ block_at (x : pindex) (i : i32) : option pblock =
+    := a = x::a
+    dict::find i a::blocks
+
+:~ scope_at (x : pindex) (i : i32) : string = ?= block_at x i ?| Some b => b::scope | None => ""
+
+:~ named_ids (x : pindex) (n : string) : list i32 =
+    := a = x::a
+    memo::names_of a::names n
+
+:~ unq_ids (x : pindex) (scopes : list string) (n : string) : list i32 =
+    memo::keep (\ (i : i32) => memo::any (scope_named (scope_at x i)) scopes) (named_ids x n)
+
+:~ qual_ids (x : pindex) (q : string * string) : list i32 =
+    := m, n = q
+    memo::keep (\ (i : i32) => scope_named (scope_at x i) m) (named_ids x n)
+
+:~ resolve (x : pindex) (f : facts) (scopes : list string) : list i32 =
+    listm::append (listm::concat (listm::map (unq_ids x scopes) f::unq)) (listm::concat (listm::map (qual_ids x) f::quals))
+
+:~ op_hit (hay : string) (p : string * i32) : bool =
+    := op, i = p
+    text::contains hay op
+
+:~ op_ids (x : pindex) (hay : string) : list i32 =
+    := a = x::a
+    listm::map memo::pair_block (memo::keep (op_hit hay) a::ops)
+
+:~ opens_in (x : pindex) (scope : string) : list string = ?= dict::find scope x::scope_opens ?| Some xs => xs | None => []
+
+:~ next_ids (x : pindex) (b : pblock) : list i32 =
+    := p = b::p
+    := scopes = b::scope :: listm::append x::opened (opens_in x b::scope)
+    listm::append (resolve x p::f scopes) (op_ids x p::code)
+
+:~ next_at (x : pindex) (i : i32) : list i32 = ?= block_at x i ?| Some b => next_ids x b | None => []
+
+:~ ^ reach (x : pindex) (todo : list i32) (seen : dict::dict i32 ()) : dict::dict i32 () =
+    ?= todo ?|
+    | [] => seen
+    | i :: rest =>
+        ? dict::has i seen ?> reach x rest seen
+        |: reach x (listm::append (next_at x i) rest) (dict::insert i () seen)
+
+:~ seeds_of (x : pindex) (program : string) : list i32 =
+    := code = memo::strip_comments program
+    := a = x::a
+    := d = resolve x (facts_of "" code) (listm::append x::opened (opens_of code))
+    listm::append d (listm::append (op_ids x program) a::always)
+
+:~ reached_ids (x : pindex) (program : string) : list i32 = dict::keys (reach x (seeds_of x program) (dict::empty ()))
+
+:~ pair_of (x : pindex) (i : i32) : list term =
+    ?= block_at x i ?| Some b => [ tuple [ b::id; b::print ] ] | None => []
+
+:~ pairs_of (x : pindex) (ids : list i32) : term =
+    erlang_term::apply "lists" "sort" [ list_term (listm::concat (listm::map (pair_of x) ids)) ]
+
+:~ body_of (b : pblock) : string =
+    := p = b::p
+    p::body
+
+:~ body_at (x : pindex) (i : i32) : list string =
+    ?= block_at x i ?| Some b => [ body_of b ] | None => []
+
+:~ texts_of (x : pindex) (ids : list i32) : string = sm'::concat_list "\n" (listm::concat (listm::map (body_at x) ids))
+
+:~ all_ids (x : pindex) : list i32 =
+    := a = x::a
+    dict::keys a::blocks
+
+:~ dep_name (d : string * term) : term =
+    := n, t = d
+    str n
+
+:~ dep_entry (d : string * term) : entry =
+    := n, t = d
+    entry_of t
+
+:~ printed (x : pindex) (deps : list term) (ids : list i32) : term = tuple [ str x::project; list_term deps; pairs_of x ids ]
+
+:~ ^ full_print (e : entry) : term =
+    ?= e ?|
+    | Absent w => erlang_term::atom w
+    | Whole t => t
+    | Ready x => printed x (listm::map full_dep x::deps) (all_ids x)
+
+:& :~ full_dep (d : string * term) : term = tuple [ dep_name d; full_print (dep_entry d) ]
+
+:~ ^ reached_print (program : string) (e : entry) : term =
+    ?= e ?|
+    | Absent w => erlang_term::atom w
+    | Whole t => t
+    | Ready x => reached_index program x
+
+:& :~ reached_index (program : string) (x : pindex) : term =
+    := ids = reached_ids x program
+    := more = program ++ "\n" ++ texts_of x ids
+    printed x (listm::map (reached_dep more) x::deps) ids
+
+:& :~ reached_dep (program : string) (d : string * term) : term = tuple [ dep_name d; reached_print program (dep_entry d) ]
+
+:~ paths_of (program : string) : list string = memo::keep (\ (p : string) => p <> "") (sm'::split_list " " (memo::package_wire program))
+
+:~ uniq_paths (programs : list string) : list string =
+    memo::uniq_from (listm::concat (listm::map paths_of programs)) (dict::empty ()) []
+
+:~ unbounded (c : bctx) : bool = erlang_term::equal c::bounds (erlang_term::atom "unavailable")
+
+:~ whole_entry (c : bctx) (k : ecache) (path : string) : built = { entry = Whole (mount_text::tree_print path c::bounds c::dotnet c::dll); cache = k }
+
+:~ entry_for (c : bctx) (k : ecache) (path : string) : built = ? unbounded c ?> whole_entry c k path |: index_of c k path
+
+:== istate = { rows : list term; cache : ecache }
+
+:~ index_step (c : bctx) (st : istate) (path : string) : istate =
+    := b = entry_for c st::cache path
+    { rows = tuple [ str path; erlang_term::of b::entry ] :: st::rows; cache = b::cache }
+
+:~ texts_in (programs : term) : list string = listm::map erlang_file::text_of (erlang_term::items_of programs)
+
+:~ indexed (c : bctx) (paths : list string) : istate = listm::fold (index_step c) { rows = []; cache = dict::empty () } paths
+
+:~ package_indexes (programs : term) (bounds : term) (dotnet : string) (dll : string) : term =
+    := st = indexed { bounds; dotnet; dll } (uniq_paths (texts_in programs))
+    erlang_term::apply "maps" "from_list" [ list_term st::rows ]
+
+:~ entry_in (packages : term) (path : string) : entry =
+    := found = erlang_term::apply "maps" "find" [ str path; packages ]
+    ? ok_of found ?> entry_of (at 2i32 found) |: Absent "nil"
+
+:~ package_print (packages : term) (program : string) (whole : bool) (path : string) : term =
+    := e = entry_in packages path
+    tuple [ str path; ? whole ?> full_print e |: reached_print program e ]
+
+:~ packages_print (packages : term) (step_program : string) (program : string) (whole : bool) : term =
+    list_term (listm::map (package_print packages program whole) (paths_of step_program))
+
+:~ none_dir_program () : string = "///- --package /no/such/dir\n"
+
+:~ no_bounds () : term = erlang_term::apply "maps" "new" []
+
+:~ two_dir_program () : string = "///- --package /no/such/dir --package /other\n"
+
+:~ shown_prints () : string =
+    := packages = package_indexes (list_term [ str (none_dir_program ()) ]) (no_bounds ()) "" ""
+    erlang_term::inspect (packages_print packages (two_dir_program ()) "" !-)
+
+///> gleam
+:# a_missing_package_prints_missing_and_an_unknown_path_prints_nil =
+    shown_prints () |> _assert_eq "[#(\"/no/such/dir\", Missing), #(\"/other\", Nil)]"

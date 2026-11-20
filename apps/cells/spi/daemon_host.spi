@@ -1,0 +1,469 @@
+///- --package .
+:< erlang_term
+:# daemon_host static =
+    :< testing
+
+:< sm'_operators
+
+:< file_lock
+
+:~ stat_pair (info : erlang_term::term) : i32 * i32 = (nth 6i32 info |> erlang_term::cast), (nth 2i32 info |> erlang_term::cast)
+
+:~ file_stat (path : string) : option (i32 * i32) =
+    := r = apply "file" "read_file_info" [ erlang_term::of path; toolchain::posix_opts () ]
+    ? is_ok r ?> Some (stat_pair (nth 2i32 r)) |: None
+
+:~ core_dll_of (dll : string) : string =
+    erlang_file::joined_path (erlang_file::text_of_call "filename" "dirname" [ erlang_term::of dll ]) "SpiralCompilerCore.dll"
+
+:~ dll_tag (dll : string) : string =
+    ?= file_stat dll ?|
+    | Some stat =>
+        := mtime, size = stat
+        daemon::dll_stamp_text mtime size (file_stat (core_dll_of dll))
+    | None => "none"
+
+:~ text_file (path : string) : option string =
+    := r = apply "file" "read_file" [ erlang_term::of path ]
+    ? is_ok r ?> Some (nth 2i32 r |> erlang_term::cast) |: None
+
+:~ tasklist_working_kb (pid : string) : i32 =
+    := out = process::captured_by "tasklist" [ "/FI"; "PID eq " ++# pid; "/FO"; "CSV"; "/NH" ] !+
+    ? out::code = 0i32 ?> daemon::tasklist_kb out::stdout pid |: -1i32
+
+:~ proc_working_kb (pid : string) : i32 =
+    ?= text_file ("/proc/" ++# pid ++# "/status") ?|
+    | Some status => daemon::vm_rss_kb status
+    | None => -1i32
+
+:~ working_set_mb (os_pid : i32) : i32 =
+    := pid = erlang_term::integer_text (erlang_term::of os_pid)
+    := kb = ? toolchain::on_windows () ?> tasklist_working_kb pid |: proc_working_kb pid
+    ? kb < 0i32 ?> -1i32 |: kb / 1024i32
+
+:~ own_os_pid () : i32 = (apply "erlang" "binary_to_integer" [ erlang_term::of (os_pid ()) ] |> erlang_term::cast)
+
+:~ env_pair (key : string) (value : string) : erlang_term::term = erlang_term::tuple [ erlang_term::charlist key; erlang_term::charlist value ]
+
+:~ quiet_dotnet_env () : list erlang_term::term = [ env_pair "DOTNET_NOLOGO" "1"; env_pair "DOTNET_CLI_TELEMETRY_OPTOUT" "1" ]
+
+:~ server_env () : list erlang_term::term =
+    := parent = env_pair "SPIRAL_SERVER_PARENT_PID" (os_pid ())
+    [ env_pair "SPIRAL_ATTENTION_SERVER" "0"; parent; env_pair "SPIRAL_SERVER_IDLE_EXIT_SECONDS" "600" ]
+
+:~ dotnet_root_env (dotnet : string) : erlang_term::term =
+    env_pair "DOTNET_ROOT" (erlang_file::text_of_call "filename" "dirname" [ erlang_term::of dotnet ])
+
+:~ dir_env (dotnet : string) (workspace : string) (package_dir : string) : list erlang_term::term =
+    [ dotnet_root_env dotnet; env_pair "SPIRAL_WORKSPACE_ROOT" workspace; env_pair "SPIRAL_COMPILER_PACKAGE_DIR" package_dir ]
+
+:~ port_env (dotnet : string) (workspace : string) (package_dir : string) : erlang_term::term =
+    := dirs = dir_env dotnet workspace package_dir
+    erlang_term::list_term (listm::append dirs (listm::append (quiet_dotnet_env ()) (server_env ())))
+
+///> gleam
+:# a_missing_dll_has_no_tag =
+    (dll_tag "/no/such/SpiralCompiler.dll", file_stat "/no/such/file") |> _assert_eq ("none", None)
+
+///> gleam
+:# a_live_process_has_a_working_set_and_a_dead_one_has_none =
+    (working_set_mb (own_os_pid ()) > 0i32, working_set_mb 999999999i32) |> _assert_eq (!+, -1i32)
+
+:~ env_value (env : erlang_term::term) (i : i32) : string =
+    erlang_file::text_of_call "unicode" "characters_to_binary" [ erlang_term::element_at 2i32 (erlang_term::item_at i env) ]
+
+///> gleam
+:# the_port_env_sets_eight_variables_from_dotnet_root =
+    := env = port_env "/opt/dotnet/dotnet" "/w" "/p"
+    (erlang_term::count_of env, env_value env 0i32) |> _assert_eq (8i32, "/opt/dotnet")
+
+:~ path_term (path : string) : erlang_term::term = erlang_term::of path
+
+:~ inside (dir : string) (name : string) : string = erlang_file::joined_path dir name
+
+:~ done (r : erlang_term::term) : bool = equal r (atom "ok") || is_ok r
+
+:~ ok_call (m : string) (f : string) (paths : list string) : bool = done (apply m f (listm::map path_term paths))
+
+:~ core_hash (mtime : i32) (size : i32) ((cm, cs) : i32 * i32) : i32 =
+    := four = erlang_term::tuple (listm::map (\ (n : i32) => erlang_term::of n) [ size; mtime; cs; cm ])
+    apply "erlang" "phash2" [ four ] |> erlang_term::cast
+
+:~ stamp_with (mtime : i32) (size : i32) (core : option (i32 * i32)) : i32 * i32 =
+    ?= core ?|
+    | Some c => ((? mtime > fst c ?> mtime |: fst c), core_hash mtime size c)
+    | None => (mtime, size)
+
+:~ dll_stamp (dll : string) : option (i32 * i32) =
+    ?= file_stat dll ?|
+    | Some (mtime, size) => Some (stamp_with mtime size (file_stat (core_dll_of dll)))
+    | None => None
+
+:~ stamp_term (dll : string) : erlang_term::term = ?= dll_stamp dll ?| Some stamp => erlang_term::of stamp | None => atom "nil"
+
+:~ placed (src : string) (dst : string) : bool =
+    gleam_project::ensured_dir_of dst
+    ? gleam_project::is_dir src ?> ok_call "filelib" "ensure_dir" [ inside dst "x" ] |: ok_call "file" "copy" [ src; dst ]
+
+:~ entry_copied (from : string) (into : string) (rel : string) : bool = placed (inside from rel) (inside into rel)
+
+:~ tree_copied (from : string) (into : string) : bool =
+    listm::fold (\ ok rel => entry_copied from into rel && ok) !+ (gleam_project::relative_entries from)
+
+:~ unique () : string = erlang_term::integer_text (apply "erlang" "unique_integer" [ erlang_term::list_term [ atom "positive" ] ])
+
+:~ still_stamped (dll : string) (stamp : i32 * i32) : bool = ?= dll_stamp dll ?| Some now => now = stamp | None => !-
+
+:~ complete_of (dir : string) : string = inside dir ".complete"
+
+:~ sealed (dir : string) : bool = erlang_file::regular_file (complete_of dir)
+
+:~ sealed_into (staging : string) (dir : string) : bool =
+    erlang_file::file_written (complete_of staging) "" && ok_call "file" "rename" [ staging; dir ]
+
+:~ staged (dll : string) (staging : string) (dir : string) (stamp : i32 * i32) : bool =
+    ? tree_copied (erlang_file::dir_name dll) staging && still_stamped dll stamp ?> sealed_into staging dir |: !-
+
+:~ copied (dll : string) (dir : string) (stamp : i32 * i32) : () =
+    := staging = dir ++# "." ++# unique ()
+    ? staged dll staging dir stamp ?> () |: gleam_project::removed staging
+
+:~ pin_dir (root : string) (stamp : i32 * i32) : string = inside root (daemon::dll_stamp_text (fst stamp) (snd stamp) None)
+
+:~ ensured_pin (dll : string) (dir : string) (stamp : i32 * i32) : bool =
+    ? sealed dir ?> () |: copied dll dir stamp
+    sealed dir
+
+:~ pinned (dll : string) (root : string) : option (string * string) =
+    ?= dll_stamp dll ?|
+    | Some stamp =>
+        := dir = pin_dir root stamp
+        ? ensured_pin dll dir stamp ?> Some (dir, inside dir (erlang_file::base_name dll)) |: None
+    | None => None
+
+:~ trashed (old : string) : () =
+    := trash = old ++# ".trash" ++# unique ()
+    ? ok_call "file" "rename" [ old; trash ] ?> gleam_project::removed trash |: ()
+
+:~ trashed_if (name : string) (stale : string -> bool) (old : string) : () =
+    ? daemon::prunable name (erlang_file::base_name old) && stale old ?> trashed old |: ()
+
+:~ slashed (root : string) : string =
+    erlang_file::text_of_call "string" "replace" [ path_term root; path_term "\\"; path_term "/"; atom "all" ]
+
+:~ pruned (keep : string) (stale : string -> bool) (root : string) : () =
+    erlang_file::matching_paths (inside (slashed root) "*") |> listm::iter (trashed_if (erlang_file::base_name keep) stale)
+
+:~ shadow_dll (dll : string) (root : string) : string =
+    ?= pinned dll root ?|
+    | Some (dir, target) =>
+        pruned dir (\ _ => !+) root
+        target
+    | None => dll
+
+:~ complete_mtime (dir : string) : option i32 = ?= file_stat (complete_of dir) ?| Some (m, _) => Some m | None => None
+
+:~ pin_stale_at (now : i32) (old : string) : bool = daemon::pin_stale now (complete_mtime old)
+
+:~ touched (path : string) : () = apply "file" "change_time" [ path_term path; apply "calendar" "local_time" [] ] |> ignore
+
+:~ gate_pin (dll : string) (root : string) (now : i32) : erlang_term::term =
+    ?= pinned dll root ?|
+    | Some (dir, target) =>
+        touched (complete_of dir)
+        pruned dir (pin_stale_at now) root
+        path_term target
+    | None => atom "nil"
+
+:~ written_in (dir : string) (name : string) (content : string) : string =
+    erlang_file::file_written (inside dir name) content |> ignore
+    inside dir name
+
+:~ test_dir (name : string) : string = erlang_file::dir_name (erlang_file::test_cache_file (name ++# "/x"))
+
+:~ fake_build (name : string) : string =
+    := dir = test_dir (name ++# "/net11.0")
+    written_in dir "SpiralCompilerCore.dll" "core" |> ignore
+    written_in dir "SpiralCompiler.dll" "v1"
+
+///> gleam
+:# a_shadow_copy_is_made_once_and_reused =
+    := dll = fake_build "shadow"
+    := first = shadow_dll dll (test_dir "shadow-pins")
+    (first <> dll, erlang_file::file_text first, shadow_dll dll (test_dir "shadow-pins") = first) |> _assert_eq (!+, "v1", !+)
+
+///> gleam
+:# a_missing_dll_keeps_its_path_and_has_no_pin =
+    := gone = "/no/such/SpiralCompiler.dll"
+    (shadow_dll gone "/no/such/pins", erlang_term::equal (gate_pin gone "/no/such/pins" 0i32) (atom "nil")) |> _assert_eq (gone, !+)
+
+:~ calling (calls : term) (name : string) (args : list term) : term =
+    apply "erlang" "apply" [ apply "maps" "get" [ atom name; calls ]; erlang_term::list_term args ]
+
+:~ sent (sock : term) (line : term) : () =
+    apply "gen_tcp" "send" [ sock; erlang_term::list_term [ line; erlang_term::of "\n" ] ] |> ignore
+
+:~ closed (sock : term) : () = apply "gen_tcp" "close" [ sock ] |> ignore
+
+:~ command_tag (cmd : term) : string = erlang_file::text_of_call "erlang" "atom_to_binary" [ nth 1i32 cmd ]
+
+:~ continuing (tag : string) : bool = tag = "hello" || tag = "status" || tag = "pool"
+
+:~ answer_name (tag : string) : string = ? tag = "hello" ?> "banner" |: tag
+
+:~ retired (sock : term) (calls : term) (cmd : term) : () =
+    calling calls "retire" [] |> ignore
+    sent sock (nth 2i32 cmd)
+    closed sock
+
+:~ retire_after (calls : term) (after : term) : () = ? equal after (atom "retire") ?> calling calls "retire" [] |> ignore |: ()
+
+:~ notebook_answered (sock : term) (calls : term) (cmd : term) : () =
+    := reply = calling calls "notebook" [ nth 2i32 cmd ]
+    erlang_term::items_of (nth 1i32 reply) |> listm::iter (sent sock)
+    closed sock
+    retire_after calls (nth 2i32 reply)
+
+:~ compiled_answer (sock : term) (calls : term) (cmd : term) : () =
+    sent sock (calling calls "compile" [ nth 2i32 cmd ])
+    closed sock
+
+:~ finished (sock : term) (calls : term) (tag : string) (cmd : term) : () =
+    ? tag = "retire" ?> retired sock calls cmd
+    |? tag = "notebook" ?> notebook_answered sock calls cmd
+    |? tag = "compile" ?> compiled_answer sock calls cmd
+    |: closed sock
+
+:~ next_command (sock : term) : term =
+    := r = apply "gen_tcp" "recv" [ sock; erlang_term::of 0i32; erlang_term::of 60000i32 ]
+    ? is_ok r ?> daemon::incoming_term (erlang_file::text_of (nth 2i32 r)) |: daemon::incoming_tag "unknown" []
+
+:~ ^ served (sock : term) (calls : term) : () =
+    := cmd = next_command sock
+    := tag = command_tag cmd
+    ? continuing tag
+    ?>
+        sent sock (calling calls (answer_name tag) [])
+        served sock calls
+    |: finished sock calls tag cmd
+
+:~ waiting_handler (sock : term) (calls : term) : term =
+    := serve = nullary (erlang_term::of (\ () => served sock calls))
+    evaluated "fun() -> receive go -> Serve() end end." [ ("Serve", serve) ]
+
+:~ hand_over_text (r : term) : string = "could not hand a client socket over: " ++# daemon::shown_term (nth 2i32 r) ++# "\n"
+
+:~ refused_hand_over (sock : term) (pid : term) (r : term) : () =
+    erlang_file::put_text (hand_over_text r)
+    apply "erlang" "exit" [ pid; atom "kill" ] |> ignore
+    closed sock
+
+:~ started (pid : term) : () = apply "erlang" "send" [ pid; atom "go" ] |> ignore
+
+:~ handed_over (sock : term) (calls : term) : () =
+    := pid = apply "erlang" "spawn" [ waiting_handler sock calls ]
+    := r = apply "gen_tcp" "controlling_process" [ sock; pid ]
+    ? equal r (atom "ok") ?> started pid |: refused_hand_over sock pid r
+
+:~ ^ accepting (listen : term) (calls : term) : () =
+    := r = apply "gen_tcp" "accept" [ listen ]
+    ? is_ok r
+    ?>
+        handed_over (nth 2i32 r) calls
+        accepting listen calls
+    |? equal (nth 2i32 r) (atom "closed") ?> ()
+    |: accepting listen calls
+
+///> gleam
+:# hello_status_and_pool_keep_the_connection_open =
+    (continuing "hello", continuing "status", continuing "pool", continuing "retire", continuing "compile") |> _assert_eq (!+, !+, !+, !-, !-)
+
+///> gleam
+:# hello_is_answered_by_the_banner =
+    (answer_name "hello", answer_name "status", answer_name "pool") |> _assert_eq ("banner", "status", "pool")
+
+:| port_wait =
+    | PortReady : i32
+    | PortFailed : string
+    | PortRetry
+
+:~ exhausted_why (regular : bool) (reading : i32) : port_wait =
+    PortFailed (? regular && reading = -1i32 ?> "compiler_port" |: "timeout")
+
+:~ still_waiting (regular : bool) (gone : bool) : port_wait = ? gone && not regular ?> PortFailed "exited" |: PortRetry
+
+:~ port_wait_step (regular : bool) (reading : i32) (left : i32) (gone : bool) : port_wait =
+    ? regular && reading >= 0i32 ?> PortReady reading
+    |? left <= 0i32 ?> exhausted_why regular reading
+    |: still_waiting regular gone
+
+///> gleam
+:# a_port_file_number_is_ready_and_a_blank_file_retries =
+    (port_wait_step !+ 4242i32 9i32 !-, port_wait_step !+ -1i32 9i32 !-, port_wait_step !+ -2i32 9i32 !+) |> _assert_eq (PortReady 4242i32, PortRetry, PortRetry)
+
+///> gleam
+:# an_exhausted_wait_names_why =
+    (port_wait_step !+ -1i32 0i32 !-, port_wait_step !+ -2i32 0i32 !-, port_wait_step !- -2i32 0i32 !+) |> _assert_eq (PortFailed "compiler_port", PortFailed "timeout", PortFailed "timeout")
+
+///> gleam
+:# a_dead_port_without_a_file_stops_waiting =
+    (port_wait_step !- -2i32 9i32 !+, port_wait_step !- -2i32 9i32 !-) |> _assert_eq (PortFailed "exited", PortRetry)
+
+:~ port_gone (port : term) : bool = equal (apply "erlang" "port_info" [ port ]) (atom "undefined")
+
+:~ port_reading (port_file : string) : i32 =
+    ?= text_file port_file ?|
+    | Some text => daemon::file_number text
+    | None => -2i32
+
+:~ port_wait_now (port : term) (file : string) (left : i32) : port_wait =
+    := regular = erlang_file::regular_file file
+    := reading = ? regular ?> port_reading file |: -2i32
+    port_wait_step regular reading left (port_gone port)
+
+:~ waited_term (tag : string) (value : term) : term = erlang_term::tuple [ atom tag; value ]
+
+:~ napped () : () = apply "timer" "sleep" [ erlang_term::of 50i32 ] |> ignore
+
+:~ ^ awaited_port (port : term) (file : string) (left : i32) : term =
+    ?= port_wait_now port file left ?|
+    | PortReady n => waited_term "ok" (erlang_term::of n)
+    | PortFailed why => waited_term "error" (atom why)
+    | PortRetry => retried_port port file left
+
+:& :~ retried_port (port : term) (file : string) (left : i32) : term =
+    napped ()
+    awaited_port port file (left - 50i32)
+
+:~ dead_port () : term =
+    := p = erlang_port::erl_halt_port ()
+    erlang_port::exit_text_within p 50i32 |> ignore
+    erlang_port::term_of p
+
+:~ written_port_file () : string =
+    := file = erlang_file::test_cache_file "c7b15-port-bridge"
+    erlang_file::file_written file "4242\n" |> ignore
+    file
+
+///> gleam
+:# a_written_port_file_is_read =
+    daemon::shown_term (awaited_port (dead_port ()) (written_port_file ()) 1000i32) |> _assert_eq "{ok,4242}"
+
+///> gleam
+:# a_dead_port_without_a_file_ends_the_wait =
+    daemon::shown_term (awaited_port (dead_port ()) "/no/such/c7b15-port" 1000i32) |> _assert_eq "{error,exited}"
+
+:~ keyed (key : string) (value : term) : term = erlang_term::tuple [ atom key; value ]
+
+:~ port_flags () : list term = listm::map atom [ "binary"; "exit_status"; "hide"; "stderr_to_stdout" ]
+
+:~ argv_term (args : list string) : term = erlang_term::list_term (listm::map erlang_term::of args)
+
+:~ port_options (args : list string) (dir : string) (env : term) : list term =
+    listm::append (port_flags ()) [ keyed "args" (argv_term args); keyed "cd" (erlang_term::of dir); keyed "env" env ]
+
+:~ sent_to (server : term) (message : term) : () = apply "erlang" "send" [ server; message ] |> ignore
+
+:~ exit_sent (server : term) (token : term) (status : term) : () =
+    sent_to server (erlang_term::tuple [ atom "compiler_exit"; token; status ])
+
+:~ event_in (got : erlang_port::received) : term = erlang_port::message_event (erlang_port::received_message got (atom "none"))
+
+:~ port_message (port : term) : option term =
+    := got = erlang_port::receive_within (erlang_port::selector_of (erlang_term::cast port)) 60000i32
+    ? erlang_port::received_some got ?> Some (event_in got) |: None
+
+:~ logged (server : term) (event : term) : () =
+    ? erlang_port::event_kind event = "data" ?> sent_to server (keyed "log" (erlang_port::event_value event)) |: ()
+
+:~ ^ drained (port : term) (server : term) (token : term) : () =
+    ?= port_message port ?|
+    | Some event ?& erlang_term::is_tuple event => drain_event port server token event
+    | _ => drained port server token
+
+:& :~ drain_event (port : term) (server : term) (token : term) (event : term) : () =
+    ? erlang_port::event_kind event = "exit_status" ?> exit_sent server token (erlang_port::event_value event) |:
+        logged server event
+        drained port server token
+
+:~ drainer_of (port : term) (server : term) (token : term) : term =
+    apply "erlang" "spawn_link" [ nullary (erlang_term::of (\ () => drained port server token)) ]
+
+:~ pid_or_nil (port : term) : term =
+    := info = apply "erlang" "port_info" [ port; atom "os_pid" ]
+    ? equal info (atom "undefined") ?> atom "nil" |: nth 2i32 info
+
+///> gleam
+:# a_closed_port_has_no_os_pid =
+    daemon::shown_term (pid_or_nil (dead_port ())) |> _assert_eq "nil"
+
+:~ port_and_pid (p : erlang_port::port) : term = erlang_term::tuple [ erlang_port::term_of p; pid_or_nil (erlang_port::term_of p) ]
+
+:~ drain_connected (p : erlang_port::port) (server : term) (token : term) : () =
+    := port = erlang_port::term_of p
+    apply "erlang" "port_connect" [ port; drainer_of port server token ] |> ignore
+
+:~ compiler_opened (exe : string) (args : list string) (dir : string) (env : term) (server : term) (token : term) : term =
+    := p = erlang_port::open_executable (erlang_term::of exe) (port_options args dir env)
+    drain_connected p server token
+    port_and_pid p
+
+:~ erl_path () : string = erlang_file::text_of (apply "os" "find_executable" [ erlang_term::charlist "erl" ])
+
+:~ erl_opened (expression : string) (token : term) : term =
+    := args = [ "-noshell"; "-eval"; expression ]
+    compiler_opened (erl_path ()) args "." (erlang_term::list_term []) (apply "erlang" "self" []) token
+
+:~ received_by (source : string) : term = apply "erlang" "apply" [ evaluated source []; erlang_term::list_term [] ]
+
+///> gleam
+:# an_opened_compiler_reports_its_exit_to_the_server =
+    erl_opened "halt(3)." (atom "c7b15c") |> ignore
+    received_by "fun() -> receive {compiler_exit, c7b15c, S} -> S after 30000 -> timeout end end." |> daemon::shown_term |> _assert_eq "3"
+
+///> gleam
+:# compiler_output_reaches_the_server_as_log_messages =
+    erl_opened "io:put_chars(\"hi\"), halt(0)." (atom "c7b15d") |> ignore
+    received_by "fun() -> receive {log, D} -> D after 30000 -> timeout end end." |> daemon::shown_term |> _assert_eq "<<\"hi\">>"
+
+:~ loopback () : term = erlang_term::tuple [ erlang_term::of 127i32; erlang_term::of 0i32; erlang_term::of 0i32; erlang_term::of 1i32 ]
+
+:~ socket_flags () : list term = [ atom "binary"; keyed "packet" (atom "line"); keyed "active" (atom "false"); keyed "ip" (loopback ()) ]
+
+:~ listen_limits () : list term =
+    [ keyed "reuseaddr" (atom "true"); keyed "backlog" (erlang_term::of 128i32); keyed "packet_size" (erlang_term::of 8000000i32) ]
+
+:~ listen_flags () : list term = listm::append (socket_flags ()) (listen_limits ())
+
+:~ accept_with (listen : term) (server : term) (make_calls : term) : () =
+    accepting listen (apply "erlang" "apply" [ make_calls; erlang_term::list_term [ server; listen ] ])
+
+:~ acceptor_for (listen : term) (server : term) (make_calls : term) : term =
+    := run = nullary (erlang_term::of (\ () => accept_with listen server make_calls))
+    apply "erlang" "spawn_link" [ evaluated "fun() -> receive go -> A() end end." [ ("A", run) ] ]
+
+:~ listening (listen : term) (acceptor : term) : term =
+    erlang_term::tuple [ atom "ok"; listen; nth 2i32 (apply "inet" "port" [ listen ]); acceptor ]
+
+:~ listen_handed (listen : term) (server : term) (make_calls : term) : term =
+    := acceptor = acceptor_for listen server make_calls
+    := r = apply "gen_tcp" "controlling_process" [ listen; acceptor ]
+    ? equal r (atom "ok") ?> listening listen acceptor |: r
+
+:~ daemon_listened (port : i32) (server : term) (make_calls : term) : term =
+    := r = apply "gen_tcp" "listen" [ erlang_term::of port; erlang_term::list_term (listen_flags ()) ]
+    ? is_ok r ?> listen_handed (nth 2i32 r) server make_calls |: r
+
+:~ dropped (pid : term) : () =
+    apply "erlang" "unlink" [ pid ] |> ignore
+    apply "erlang" "exit" [ pid; atom "kill" ] |> ignore
+
+:~ listened_port (r : term) : i32 =
+    closed (nth 2i32 r)
+    dropped (nth 4i32 r)
+    erlang_term::cast (nth 3i32 r)
+
+///> gleam
+:# a_daemon_listens_on_a_free_loopback_port =
+    := r = daemon_listened 0i32 (apply "erlang" "self" []) (evaluated "fun(_, _) -> #{} end." [])
+    (listened_port r > 0i32) |> _assert_eq !+

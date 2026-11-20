@@ -1,0 +1,91 @@
+///- --package .
+:< erlang_term
+:# prepared static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ ^ split_n (s : string) (n : i32) (acc : list string) : list string =
+    := at = text::find_char s 0i32 '\n'
+    ? n <= 1i32 || at < 0i32 ?> listm::rev (s :: acc) |: split_n (text::drop s (at + 1i32)) (n - 1i32) (text::take s at :: acc)
+
+:~ nth_or (xs : list string) (i : i32) : string = ?= memo::nth i xs ?| Some x => x | None => ""
+
+:~ timeout_term (t : string) : term = ? t = "-" ?> atom "nil" |: erlang_term::of (text::parse_i32 t)
+
+:~ packages_term (p : string) : term = erlang_term::list_term (? p = "" ?> [] |: listm::map str (sm'::split_list "\t" p))
+
+:~ generated (g : string) : bool = g = "1" || g = "2"
+
+:~ flags_part (parts : list string) : list term =
+    [ pair "print_code" (erlang_term::of (nth_or parts 0i32 = "1")); pair "timeout" (timeout_term (nth_or parts 1i32)) ]
+
+:~ main_part (parts : list string) : list term =
+    [ pair "generated_main" (erlang_term::of (generated (nth_or parts 2i32))); pair "no_value" (erlang_term::of (nth_or parts 2i32 = "2")) ]
+
+:~ tail_part (parts : list string) : list term = [ pair "packages" (packages_term (nth_or parts 3i32)); pair "code" (str (nth_or parts 4i32)) ]
+
+:~ ok_of (rest : string) : term =
+    := parts = split_n rest 5i32 []
+    erlang_term::tuple [ atom "ok"; map_of (listm::append (flags_part parts) (listm::append (main_part parts) (tail_part parts))) ]
+
+:~ shown (s : string) : string = verdict_text::elixir_inspect s
+
+:~ dib_text () : string = "Spiral cell code must not contain lines starting with \"#!\""
+
+:~ backend_text (payload : string) : string = "unknown Spiral backend " ++ shown payload ++ ", expected rust"
+
+:~ quoted_prefix (kind : string) : string =
+    ? kind = "directive" ?> "unknown Spiral directive: "
+    |? kind = "timeout" ?> "expected --timeout to be a positive integer (ms), got: "
+    |: "builder arguments are not used: "
+
+:~ message (kind : string) (payload : string) : string =
+    ? kind = "dib" ?> dib_text () |? kind = "flag" ?> "unknown kernel flag " ++ payload |? kind = "backend" ?> backend_text payload |: quoted_prefix kind ++ shown payload
+
+:~ error_of (rest : string) : term =
+    := parts = split_n rest 2i32 []
+    erlang_term::tuple [ atom "error"; str (message (nth_or parts 0i32) (nth_or parts 1i32)) ]
+
+:~ prepare_term (code : string) : term =
+    := wire = directives::prepare code
+    ? text::starts_with wire "ok\n" ?> ok_of (text::drop wire 3i32) |: error_of (text::drop wire 6i32)
+
+///> gleam
+:# a_backend_error_quotes_the_backend_like_inspect =
+    message "backend" "haskell" |> _assert_eq "unknown Spiral backend \"haskell\", expected rust"
+
+///> gleam
+:# the_wire_splits_into_at_most_n_parts =
+    split_n "a\nb\nc\nd" 2i32 [] |> _assert_eq [ "a"; "b\nc\nd" ]
+
+:~ is_tag (name : string) (t : term) : bool = erlang_term::equal (element_at 1i32 t) (atom name)
+
+:~ mget (m : term) (k : string) : term = erlang_term::apply "maps" "get" [ atom k; m ]
+
+:~ mput (m : term) (k : string) (v : term) : term = erlang_term::apply "maps" "put" [ atom k; v; m ]
+
+:~ raise_arg (msg : term) : term = erlang_term::apply "erlang" "error" [ map_of [ pair "__struct__" (atom "Elixir.ArgumentError"); pair "__exception__" (atom "true"); pair "message" msg ] ]
+
+:~ want_print (opts : term) (m : term) : term =
+    := flag = erlang_term::apply "proplists" "get_value" [ atom "print_code"; opts; atom "nil" ]
+    erlang_term::of (erlang_term::equal flag (erlang_term::of !+) || (erlang_term::cast (mget m "print_code") : bool))
+
+:~ finish_prep (m : term) (builders : term) (opts : term) : term =
+    := m1 = mput m "timeout" (directives::scale_budget (mget m "timeout"))
+    mput (mput m1 "builders" builders) "print_code" (want_print opts m)
+
+:~ run2 (builders : term) (body : string) (opts : term) : term =
+    := prep = prepare_term body
+    ? is_tag "error" prep ?> raise_arg (element_at 2i32 prep) |: finish_prep (element_at 2i32 prep) builders opts
+
+:~ prepare_run (code : string) (opts : term) : term =
+    := bs = builders::split_term code
+    ? is_tag "error" bs ?> raise_arg (element_at 2i32 bs) |: run2 (element_at 2i32 bs) (erlang_term::cast (element_at 3i32 bs) : string) opts
+
+///> gleam
+:# prepare_run_wraps_a_bare_expr_in_main =
+    := r = prepare_run "1i32" (erlang_term::list_term [])
+    (erlang_term::cast (mget r "code") : string) |> _assert_eq "inl main () : i32 =\n    1i32\n"

@@ -1,0 +1,371 @@
+///- --package .
+:# ast static =
+    :< testing
+
+:== pos = { line : i32; character : i32 }
+
+:== range = pos * pos
+
+:== global_id = { package_id : i32; module_id : i32; tag : i32 }
+
+:| prim_type =
+    | UInt8T
+    | UInt16T
+    | UInt32T
+    | UInt64T
+    | Int8T
+    | Int16T
+    | Int32T
+    | Int64T
+    | Float32T
+    | Float64T
+    | BoolT
+    | StringT
+    | CharT
+
+:| layout = Heap | HeapMutable | StackMutable | HeapRefs | StackRefs
+
+:| fun_type = FtVanilla | FtPointer | FtClosure
+
+:| union_layout = UStack | UHeap
+
+:| pattern_compilation_error =
+    | DisjointOrPatternVar
+    | DuplicateTermVar
+    | DuplicateTypeVar
+    | ShadowedVar
+    | DuplicateRecordSymbol
+    | DuplicateRecordInjection
+
+:| parser_error =
+    | TypeVarsNeedToBeExplicitForExists
+    | InvalidPattern : pattern_compilation_error
+    | ExpectedKeyword : tokens::token_keyword
+    | ExpectedStringOpen
+    | ExpectedStringClose
+    | ExpectedMacroOpen
+    | ExpectedMacroClose
+    | ExpectedMacroVar
+    | ExpectedMacroTypeVar
+    | ExpectedMacroTypeLitVar
+    | ExpectedEscapedChar : bool
+    | ExpectedText
+    | ExpectedUnescapedChar
+    | ExpectedAnyOperator
+    | ExpectedOperator : string
+    | ExpectedAnyUnaryOperator
+    | ExpectedUnaryOperator : string
+    | ExpectedUnit
+    | ExpectedVar
+    | ExpectedVarOrOpAsNameOfRecStatement
+    | ExpectedVarOrOpAsNameOfGlobalStatement
+    | ExpectedSmallVar
+    | KeywordAsName : tokens::token_keyword
+    | ExpectedBigVar
+    | ExpectedLit
+    | ExpectedSymbolPaired
+    | SymbolPairedShouldStartWithUppercaseInTypeScope
+    | ExpectedSymbol
+    | ExpectedParenthesis : tokens::parenthesis * tokens::parenthesis_state
+    | ExpectedMacroExpression : tokens::macro_kind * tokens::parenthesis_state
+    | ExpectedOpenParenthesis
+    | ExpectedStatement
+    | ExpectedEob
+    | ExpectedFunctionAsBodyOfRecStatement
+    | ExpectedSinglePatternWhenStatementNameIsNorVarOrOp
+    | ExpectedGlobalFunction
+    | ExpectedExpression
+    | InbuiltOpNotFound
+    | UnknownOperator
+    | UnexpectedEob
+    | MalformedTestHeader
+    | RawStringLineUnderIndented
+    | UnexpectedAndInlRec
+    | ForallNotAllowed
+    | TypecaseNotAllowed
+    | MetavarNotAllowed
+    | TermNotAllowed
+    | UnknownError
+    | DuplicateRecordTypeVar
+    | DuplicateForallVar
+    | DuplicateExistsVar
+    | DuplicateConstraint
+    | DuplicateTermRecordSymbol
+    | DuplicateTermRecordInjection
+    | DuplicateRecFunctionName
+    | BottomUpNumberParseError : string * string
+    | ExpectedPairedSymbolInUnion
+    | DuplicateUnionKey
+    | MetavarShadowedByVar
+    | VarShadowedByMetavar
+    | ListLiteralsNotAllowedInBottomUp
+    | ArrayLiteralsNotAllowedInBottomUp
+    | ForallNotAllowedInTypecase
+    | ExistsNotAllowedInTypecase
+
+:| ^ raw_kind_expr =
+    | RawKindWildcard
+    | RawKindStar
+    | RawKindFun : raw_kind_expr * raw_kind_expr
+
+:== named = range * string
+
+:== hovar = range * (string * raw_kind_expr)
+
+:== type_var = hovar * list named
+
+:| ^ raw_macro =
+    | RawMacroText : range * string
+    | RawMacroTerm : range * raw_expr * tokens::macro_term_mode
+    | RawMacroType : range * raw_texpr
+    | RawMacroTypeLit : range * raw_texpr
+:& :| raw_record_with =
+    | RawRecordWithSymbol : named * raw_expr
+    | RawRecordWithSymbolModify : named * raw_expr
+    | RawRecordWithInjectVar : named * raw_expr
+    | RawRecordWithInjectVarModify : named * raw_expr
+:& :| pat_record_member =
+    | PatRecordMembersSymbol : named * pattern
+    | PatRecordMembersInjectVar : named * pattern
+:& :| pattern =
+    | PatB : range
+    | PatE : range
+    | PatVar : named
+    | PatDyn : range * pattern
+    | PatUnbox : range * string * pattern
+    | PatExists : range * list named * pattern
+    | PatAnnot : range * pattern * raw_texpr
+    | PatPair : range * pattern * pattern
+    | PatSymbol : named
+    | PatRecordMembers : range * list pat_record_member
+    | PatOr : range * pattern * pattern
+    | PatAnd : range * pattern * pattern
+    | PatValue : range * tokens::literal
+    | PatDefaultValue : named
+    | PatWhen : range * pattern * raw_expr
+    | PatNominal : range * named * list named * pattern
+    | PatArray : range * list pattern
+    | PatFilledDefaultValue : range * string * raw_texpr
+:& :| raw_expr =
+    | RawB : range
+    | RawV : range * string * bool
+    | RawLit : range * tokens::literal
+    | RawDefaultLit : named
+    | RawSymbol : named
+    | RawType : range * raw_texpr
+    | RawMatch : range * raw_expr * list (pattern * raw_expr)
+    | RawFun : range * list (pattern * raw_expr)
+    | RawForall : range * type_var * raw_expr
+    | RawExists : range * (range * option (list raw_texpr)) * raw_expr
+    | RawRecBlock : range * list (named * raw_expr) * raw_expr
+    | RawRecordWith : range * list raw_expr * list raw_record_with * list raw_record_without
+    | RawOp : range * ops::op * list raw_expr
+    | RawJoinPoint : range * option named * raw_expr * option string
+    | RawAnnot : range * raw_expr * raw_texpr
+    | RawTypecase : range * raw_texpr * list (raw_texpr * raw_expr)
+    | RawOpen : range * named * list named * raw_expr
+    | RawApply : range * raw_expr * raw_expr
+    | RawIfThenElse : range * raw_expr * raw_expr * raw_expr
+    | RawIfThen : range * raw_expr * raw_expr
+    | RawTypeIfThenElse : range * raw_texpr * raw_texpr * raw_expr * raw_expr
+    | RawTypeIfThen : range * raw_texpr * raw_texpr * raw_expr
+    | RawPair : range * raw_expr * raw_expr
+    | RawSeq : range * raw_expr * raw_expr
+    | RawHeapMutableSet : range * raw_expr * list raw_expr * raw_expr
+    | RawReal : range * raw_expr
+    | RawMacro : range * list raw_macro
+    | RawArray : range * list raw_expr
+    | RawLayoutIndex : range * raw_expr
+    | RawMissingBody : range
+    | RawFilledForall : range * string * raw_expr
+:& :| raw_record_without =
+    | RawRecordWithoutSymbol : named
+    | RawRecordWithoutInjectVar : named
+:& :| raw_texpr =
+    | RawTWildcard : range
+    | RawTB : range
+    | RawTMetaVar : named
+    | RawTLit : range * tokens::literal
+    | RawTVar : named
+    | RawTPair : range * raw_texpr * raw_texpr
+    | RawTFun : range * raw_texpr * raw_texpr * fun_type
+    | RawTArray : range * raw_texpr
+    | RawTRecord : range * list ((i32 * string) * raw_texpr)
+    | RawTSymbol : named
+    | RawTApply : range * raw_texpr * raw_texpr
+    | RawTForall : range * type_var * raw_texpr
+    | RawTExists : range * list type_var * raw_texpr
+    | RawTPrim : range * prim_type
+    | RawTTerm : range * raw_expr
+    | RawTMacro : range * list raw_macro
+    | RawTUnion : range * list ((i32 * string) * (bool * raw_texpr)) * union_layout * raw_texpr
+    | RawTLayout : range * raw_texpr * layout
+    | RawTTypecase : range * raw_texpr * list (raw_texpr * raw_texpr)
+    | RawTFilledNominal : range * global_id
+
+:~ joined ((a, _) : range) ((_, b) : range) : range = a, b
+
+:~ range_of_hovar ((r, _) : hovar) : range = r
+
+:~ range_of_type_var ((h, _) : type_var) : range = range_of_hovar h
+
+:~ hovar_name ((_, (name, _)) : hovar) : string = name
+
+:~ type_var_name ((h, _) : type_var) : string = hovar_name h
+
+:~ range_of_record_with (x : raw_record_with) : range =
+    ?= x ?|
+    | RawRecordWithSymbol ((r, _), _) => r
+    | RawRecordWithSymbolModify ((r, _), _) => r
+    | RawRecordWithInjectVar ((r, _), _) => r
+    | RawRecordWithInjectVarModify ((r, _), _) => r
+
+:~ range_of_record_without (x : raw_record_without) : range =
+    ?= x ?|
+    | RawRecordWithoutSymbol (r, _) => r
+    | RawRecordWithoutInjectVar (r, _) => r
+
+:~ range_of_pattern (x : pattern) : range =
+    ?= x ?|
+    | PatB r => r
+    | PatE r => r
+    | PatVar (r, _) => r
+    | PatDyn (r, _) => r
+    | PatUnbox (r, _, _) => r
+    | PatExists (r, _, _) => r
+    | PatAnnot (r, _, _) => r
+    | PatPair (r, _, _) => r
+    | PatSymbol (r, _) => r
+    | PatRecordMembers (r, _) => r
+    | PatOr (r, _, _) => r
+    | PatAnd (r, _, _) => r
+    | PatValue (r, _) => r
+    | PatDefaultValue (r, _) => r
+    | PatWhen (r, _, _) => r
+    | PatNominal (r, _, _, _) => r
+    | PatArray (r, _) => r
+    | PatFilledDefaultValue (r, _, _) => r
+
+:~ range_of_pat_record_member (x : pat_record_member) : range =
+    ?= x ?|
+    | PatRecordMembersSymbol ((r, _), p) => joined r (range_of_pattern p)
+    | PatRecordMembersInjectVar ((r, _), p) => joined r (range_of_pattern p)
+
+:~ range_of_expr (x : raw_expr) : range =
+    ?= x ?|
+    | RawB r => r
+    | RawV (r, _, _) => r
+    | RawLit (r, _) => r
+    | RawDefaultLit (r, _) => r
+    | RawSymbol (r, _) => r
+    | RawType (r, _) => r
+    | RawMatch (r, _, _) => r
+    | RawFun (r, _) => r
+    | RawForall (r, _, _) => r
+    | RawExists (r, _, _) => r
+    | RawRecBlock (r, _, _) => r
+    | RawRecordWith (r, _, _, _) => r
+    | RawOp (r, _, _) => r
+    | RawJoinPoint (r, _, _, _) => r
+    | RawAnnot (r, _, _) => r
+    | RawTypecase (r, _, _) => r
+    | RawOpen (r, _, _, _) => r
+    | RawApply (r, _, _) => r
+    | RawIfThenElse (r, _, _, _) => r
+    | RawIfThen (r, _, _) => r
+    | RawTypeIfThenElse (r, _, _, _, _) => r
+    | RawTypeIfThen (r, _, _, _) => r
+    | RawPair (r, _, _) => r
+    | RawSeq (r, _, _) => r
+    | RawHeapMutableSet (r, _, _, _) => r
+    | RawReal (r, _) => r
+    | RawMacro (r, _) => r
+    | RawArray (r, _) => r
+    | RawLayoutIndex (r, _) => r
+    | RawMissingBody r => r
+    | RawFilledForall (r, _, _) => r
+
+:~ rawv ((r, x) : named) : raw_expr = RawV (r, x, !+)
+
+:~ range_of_texpr (x : raw_texpr) : range =
+    ?= x ?|
+    | RawTWildcard r => r
+    | RawTB r => r
+    | RawTMetaVar (r, _) => r
+    | RawTLit (r, _) => r
+    | RawTVar (r, _) => r
+    | RawTPair (r, _, _) => r
+    | RawTFun (r, _, _, _) => r
+    | RawTArray (r, _) => r
+    | RawTRecord (r, _) => r
+    | RawTSymbol (r, _) => r
+    | RawTApply (r, _, _) => r
+    | RawTForall (r, _, _) => r
+    | RawTExists (r, _, _) => r
+    | RawTPrim (r, _) => r
+    | RawTTerm (r, _) => r
+    | RawTMacro (r, _) => r
+    | RawTUnion (r, _, _, _) => r
+    | RawTLayout (r, _, _) => r
+    | RawTTypecase (r, _, _) => r
+    | RawTFilledNominal (r, _) => r
+
+:~ ^ range_of_texpr_gadt_constructor (x : raw_texpr) : range =
+    ?= x ?|
+    | RawTForall (_, _, body) => range_of_texpr_gadt_constructor body
+    | RawTFun (_, _, result, _) => range_of_texpr result
+    | _ => range_of_texpr x
+
+:~ ^ range_of_texpr_gadt_body (x : raw_texpr) : range =
+    ?= x ?|
+    | RawTForall (_, _, body) => range_of_texpr_gadt_body body
+    | RawTFun (_, domain, _, _) => range_of_texpr domain
+    | _ => range_of_texpr x
+
+:| parsed_operator =
+    | ParsedSequence
+    | ParsedAnd : range
+    | ParsedOr : range
+    | ParsedPair
+    | ParsedHeapMutableSet
+    | ParsedStringConcat
+    | ParsedNamed : named
+
+:~ parsed_of (r : range) (x : string) : parsed_operator =
+    ? x = "." ?> ParsedSequence
+    |? x = "&&" ?> ParsedAnd r
+    |? x = "||" ?> ParsedOr r
+    |? x = "," ?> ParsedPair
+    |? x = "<-" ?> ParsedHeapMutableSet
+    |? x = "^^" ?> ParsedStringConcat
+    |: ParsedNamed (r, x)
+
+:~ at (line : i32) (from : i32) (near_to : i32) : range = { line = line; character = from }, { line = line; character = near_to }
+
+///> rust
+///> fsharp
+///> gleam
+:# a_record_member_range_spans_its_symbol_and_pattern =
+    range_of_pat_record_member (PatRecordMembersSymbol ((at 0 2 5, "a"), PatVar (at 0 8 9, "x"))) |> _assert_eq (at 0 2 9)
+
+///> rust
+///> fsharp
+///> gleam
+:# a_gadt_constructor_range_skips_foralls_to_the_result_and_the_body_to_the_domain =
+    := hv = (at 0 0 1, ("a", RawKindStar)), []
+    := t = RawTForall (at 0 0 20, hv, RawTFun (at 0 4 20, RawTVar (at 0 4 7, "int"), RawTVar (at 0 11 20, "result"), FtVanilla))
+    (range_of_texpr_gadt_constructor t, range_of_texpr_gadt_body t) |> _assert_eq (at 0 11 20, at 0 4 7)
+
+///> rust
+///> fsharp
+///> gleam
+:# every_expression_and_type_carries_its_own_range =
+    := r = at 1 0 3
+    [ range_of_expr (RawB r); range_of_expr (RawSeq (r, RawB (at 2 0 1), RawB (at 3 0 1))); range_of_expr (rawv (r, "x")); range_of_texpr (RawTPrim (r, Int32T)) ] |> _assert_eq [ r; r; r; r ]
+
+///> rust
+///> fsharp
+///> gleam
+:# separators_parse_to_their_own_operators_and_the_rest_keep_their_name =
+    := r = at 0 1 3
+    [ parsed_of r "."; parsed_of r "&&"; parsed_of r "^^"; parsed_of r "|>" ] |> _assert_eq [ ParsedSequence; ParsedAnd r; ParsedStringConcat; ParsedNamed (r, "|>") ]

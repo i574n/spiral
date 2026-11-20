@@ -74,7 +74,7 @@ defmodule Spiral.Cells.NotebookCli do
         main = Path.expand(main)
         source = File.read!(main)
         package = Path.dirname(main)
-        header = if Spiral.Cells.Manifest.exists?(package), do: "///- --package #{package}\n\n", else: ""
+        header = if Spiral.Cells.Domain.manifest_exists(package), do: "///- --package #{package}\n\n", else: ""
         dir = Path.join(System.tmp_dir!(), "spiral-trial-#{:erlang.phash2({main, source})}")
         File.mkdir_p!(dir)
         path = Path.join(dir, "trial.spi")
@@ -84,18 +84,9 @@ defmodule Spiral.Cells.NotebookCli do
   end
 
   @doc false
-  def trial_notebook(main_text, targets) do
-    directives = Enum.map_join(targets, "", &"///> #{String.downcase(&1)}\n")
-    String.trim_trailing(main_text, "\n") <> "\n\n" <> directives <> "test trial =\n    main ()\n"
-  end
+  def trial_notebook(main_text, targets), do: Spiral.Cells.Domain.trial_notebook(main_text, targets)
 
-  defp test_names(opts) do
-    opts
-    |> Keyword.get_values(:test)
-    |> Enum.flat_map(&String.split(&1, ",", trim: true))
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(&(&1 == ""))
-  end
+  defp test_names(opts), do: Spiral.Cells.Domain.test_names(Keyword.get_values(opts, :test))
 
   defp run_paths(paths, tests, filters, opts) do
     receipt = if opts[:build_only], do: Path.join(System.tmp_dir!(), "spiral-cells-build-only-#{System.unique_integer([:positive])}.txt")
@@ -163,7 +154,7 @@ defmodule Spiral.Cells.NotebookCli do
 
   defp load_text do
     with {:win32, _} <- :os.type(),
-         {text, 0} <- System.cmd("powershell", ["-NoProfile", "-Command", "(Get-CimInstance Win32_Processor | Measure-Object LoadPercentage -Average).Average"], stderr_to_stdout: true) do
+         {text, 0} <- System.cmd("pwsh", ["-NoProfile", "-NonInteractive", "-Command", "(Get-CimInstance Win32_Processor | Measure-Object LoadPercentage -Average).Average"], stderr_to_stdout: true) do
       "cpu #{String.trim(text)}%"
     else
       {:unix, _} -> with {:ok, text} <- File.read("/proc/loadavg"), do: "loadavg " <> hd(String.split(text)), else: (_ -> "")
@@ -186,42 +177,17 @@ defmodule Spiral.Cells.NotebookCli do
 
   def tests_by_path(paths, tests, names), do: tests_by_known_names(paths, tests, names)
 
-  defp tests_by_known_names(paths, tests, names) do
-    known = Map.new(paths, &{&1, names.(&1)})
-
-    case Enum.reject(tests, fn test -> Enum.any?(known, fn {_path, in_file} -> Enum.any?(in_file, &test_matches?(test, &1)) end) end) do
-      [] -> {:ok, Map.new(known, fn {path, in_file} -> {path, Enum.filter(in_file, fn name -> Enum.any?(tests, &test_matches?(&1, name)) end)} end)}
-      unknown -> {:error, "unknown test #{Enum.join(unknown, ", ")}: no --path has it"}
-    end
-  end
+  defp tests_by_known_names(paths, tests, names), do: Spiral.Cells.Domain.select_tests(Enum.map(paths, &{&1, names.(&1)}), tests)
 
   defp pattern?(test), do: String.contains?(test, "*")
 
-  defp test_matches?(test, name) do
-    if pattern?(test) do
-      body = test |> String.split("*") |> Enum.map_join(".*", &Regex.escape/1)
-      Regex.match?(Regex.compile!("\\A" <> body <> "\\z"), name)
-    else
-      test == name
-    end
-  end
+  defp nil_if_empty(""), do: nil
+  defp nil_if_empty(text), do: text
 
   @doc false
-  def livemd_target(path, opts) do
-    cond do
-      opts[:livemd] != true -> nil
-      opts[:output_path] -> Path.rootname(opts[:output_path]) <> ".livemd"
-      opts[:output_dir] -> Path.join(opts[:output_dir], Path.basename(path) <> ".livemd")
-      true -> path <> ".livemd"
-    end
-  end
+  def livemd_target(path, opts),
+    do: nil_if_empty(Spiral.Cells.Domain.cli_livemd_target(path, opts[:livemd] == true, opts[:output_path] || "", opts[:output_dir] || ""))
 
   @doc false
-  def output_path(path, opts) do
-    cond do
-      opts[:output_path] -> opts[:output_path]
-      opts[:output_dir] -> Path.join(opts[:output_dir], Path.basename(path) <> ".ipynb")
-      true -> nil
-    end
-  end
+  def output_path(path, opts), do: nil_if_empty(Spiral.Cells.Domain.cli_output_path(path, opts[:output_path] || "", opts[:output_dir] || ""))
 end

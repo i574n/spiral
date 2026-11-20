@@ -14,92 +14,88 @@ enum UH1 {
 }
 fn size_3(mut v0: Rc<UH1>) -> i32 {
     match Rc::unwrap_or_clone(v0) {
-        UH1::UH1_App(v5, v6) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<UH1> = v6;
-            let v7: i32 = size_3(v5);
+        UH1::UH1_App(t_v5, t_v6) => {
+            let t_v5: Rc<UH1> = t_v5;
+            let t_v6: Rc<UH1> = t_v6;
+            let v7: i32 = size_3(t_v5);
             let v8: i32 = 1i32.wrapping_add(v7);
-            let v9: i32 = size_3(v6);
+            let v9: i32 = size_3(t_v6);
             let v10: i32 = v8.wrapping_add(v9);
             v10
         }
-        UH1::UH1_Lam(v2) => {
-            let v2: Rc<UH1> = v2;
-            let v3: i32 = size_2(v2);
+        UH1::UH1_Lam(body_v2) => {
+            let body_v2: Rc<UH1> = body_v2;
+            let v3: i32 = size_2(body_v2);
             let v4: i32 = 1i32.wrapping_add(v3);
             v4
         }
-        UH1::UH1_Var(v1) => {
-            let v1: Rc<UH0> = v1;
+        UH1::UH1_Var(_) => {
             1i32
         }
     }
 }
 fn size_2(mut v0: Rc<UH1>) -> i32 {
     match Rc::unwrap_or_clone(v0) {
-        UH1::UH1_App(v5, v6) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<UH1> = v6;
-            let v7: i32 = size_3(v5);
+        UH1::UH1_App(t_v5, t_v6) => {
+            let t_v5: Rc<UH1> = t_v5;
+            let t_v6: Rc<UH1> = t_v6;
+            let v7: i32 = size_3(t_v5);
             let v8: i32 = 1i32.wrapping_add(v7);
-            let v9: i32 = size_3(v6);
+            let v9: i32 = size_3(t_v6);
             let v10: i32 = v8.wrapping_add(v9);
             v10
         }
-        UH1::UH1_Lam(v2) => {
-            let v2: Rc<UH1> = v2;
-            let v3: i32 = size_2(v2);
+        UH1::UH1_Lam(body_v2) => {
+            let body_v2: Rc<UH1> = body_v2;
+            let v3: i32 = size_2(body_v2);
             let v4: i32 = 1i32.wrapping_add(v3);
             v4
         }
-        UH1::UH1_Var(v1) => {
-            let v1: Rc<UH0> = v1;
+        UH1::UH1_Var(_) => {
             1i32
         }
     }
 }
 fn size_1(mut v0: Rc<UH1>) -> i32 {
     match Rc::unwrap_or_clone(v0) {
-        UH1::UH1_App(v5, v6) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<UH1> = v6;
-            let v7: i32 = size_1(v5);
+        UH1::UH1_App(t_v5, t_v6) => {
+            let t_v5: Rc<UH1> = t_v5;
+            let t_v6: Rc<UH1> = t_v6;
+            let v7: i32 = size_1(t_v5);
             let v8: i32 = 1i32.wrapping_add(v7);
-            let v9: i32 = size_1(v6);
+            let v9: i32 = size_1(t_v6);
             let v10: i32 = v8.wrapping_add(v9);
             v10
         }
-        UH1::UH1_Lam(v2) => {
-            let v2: Rc<UH1> = v2;
-            let v3: i32 = size_2(v2);
+        UH1::UH1_Lam(body_v2) => {
+            let body_v2: Rc<UH1> = body_v2;
+            let v3: i32 = size_2(body_v2);
             let v4: i32 = 1i32.wrapping_add(v3);
             v4
         }
-        UH1::UH1_Var(v1) => {
-            let v1: Rc<UH0> = v1;
+        UH1::UH1_Var(_) => {
             1i32
         }
     }
 }
-fn size_0(mut v0: Rc<UH1>) -> i32 {
-    match Rc::unwrap_or_clone(v0) {
-        UH1::UH1_App(v5, v6) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<UH1> = v6;
-            let v7: i32 = size_1(v5);
+fn size_0(mut v0: &Rc<UH1>) -> i32 {
+    match &**v0 {
+        UH1::UH1_App(t_v5, t_v6) => {
+            let t_v5: Rc<UH1> = t_v5.clone();
+            let t_v6: Rc<UH1> = t_v6.clone();
+            let v7: i32 = size_1(t_v5);
             let v8: i32 = 1i32.wrapping_add(v7);
-            let v9: i32 = size_1(v6);
+            let v9: i32 = size_1(t_v6);
             let v10: i32 = v8.wrapping_add(v9);
             v10
         }
-        UH1::UH1_Lam(v2) => {
-            let v2: Rc<UH1> = v2;
-            let v3: i32 = size_2(v2);
+        UH1::UH1_Lam(body_v2) => {
+            let body_v2: Rc<UH1> = body_v2.clone();
+            let v3: i32 = size_2(body_v2);
             let v4: i32 = 1i32.wrapping_add(v3);
             v4
         }
-        UH1::UH1_Var(v1) => {
-            let v1: Rc<UH0> = v1;
+        UH1::UH1_Var(_) => {
             1i32
         }
     }
@@ -112,8 +108,8 @@ fn spiral_main() -> i32 {
     let v4: Rc<UH1> = Rc::new(UH1::UH1_Var(v3));
     let v5: Rc<UH1> = Rc::new(UH1::UH1_Lam(v4));
     let v6: Rc<UH1> = Rc::new(UH1::UH1_App(v1, v5));
-    let v7: Rc<UH1> = Rc::new(UH1::UH1_Lam(v6));
-    size_0(v7)
+    let t_v7: Rc<UH1> = Rc::new(UH1::UH1_Lam(v6));
+    size_0(&t_v7)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

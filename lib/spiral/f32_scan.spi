@@ -18,11 +18,15 @@
 := previous_state (s : scan_dims) (h : floats) (t : i32) (d : i32) (n : i32) : f32 =
     ? t = 0 ?> 0.0f32 |: index h (state_at s (t - 1) d n)
 
-:= state_step (s : scan_dims) (p : scan_inputs) (h : floats) (y : floats) (t : i32) (d : i32) (n : i32) : () =
+:= state_now (s : scan_dims) (p : scan_inputs) (h : floats) (t : i32) (d : i32) (n : i32) : f32 =
     := xd, tn = channel_at s t d, t * s::states + n
     := delta = softplus (index p::dt xd)
     := decay = exp (delta * index p::a (d * s::states + n))
-    := now = decay * previous_state s h t d n + delta * index p::b tn * index p::x xd
+    decay * previous_state s h t d n + delta * index p::b tn * index p::x xd
+
+:= state_step (s : scan_dims) (p : scan_inputs) (h : floats) (y : floats) (t : i32) (d : i32) (n : i32) : () =
+    := xd, tn = channel_at s t d, t * s::states + n
+    := now = state_now s p h t d n
     set h (state_at s t d n) now
     set y xd (index y xd + index p::c tn * now)
 
@@ -51,22 +55,49 @@
 
 := add_at (o : floats) (i : i32) (v : f32) : () = set o i (index o i + v)
 
+:= back_factors (s : scan_dims) (p : scan_inputs) (h : floats) (t : i32) (d : i32) (n : i32) : f32 * f32 * f32 =
+    := delta = softplus (index p::dt (channel_at s t d))
+    delta, exp (delta * index p::a (d * s::states + n)), previous_state s h t d n
+
+:= add_output_grads
+    (s : scan_dims) (h : floats) (dy : floats) (g : scan_grads) (t : i32) (d : i32) (n : i32)
+    (total : f32) (prev : f32) (decay : f32) (delta : f32)
+    : ()
+    =
+    := xd, tn = channel_at s t d, t * s::states + n
+    add_at g::dc tn (index dy xd * index h (state_at s t d n))
+    add_at g::da (d * s::states + n) (total * prev * decay * delta)
+
+:= add_input_grads (s : scan_dims) (p : scan_inputs) (g : scan_grads) (t : i32) (d : i32) (n : i32) (total : f32) (delta : f32) : () =
+    := xd, tn = channel_at s t d, t * s::states + n
+    add_at g::db tn (total * delta * index p::x xd)
+    add_at g::dx xd (total * delta * index p::b tn)
+
+:= add_state_grads
+    (s : scan_dims) (p : scan_inputs) (h : floats) (dy : floats) (g : scan_grads) (t : i32) (d : i32) (n : i32)
+    (total : f32) (prev : f32) (decay : f32) (delta : f32)
+    : ()
+    =
+    add_output_grads s h dy g t d n total prev decay delta
+    add_input_grads s p g t d n total delta
+
+:= state_total (s : scan_dims) (p : scan_inputs) (dy : floats) (carry : floats) (t : i32) (d : i32) (n : i32) : f32 =
+    index dy (channel_at s t d) * index p::c (t * s::states + n) + index carry (d * s::states + n)
+
+:= delta_part (s : scan_dims) (p : scan_inputs) (t : i32) (d : i32) (n : i32) (total : f32) (prev : f32) (decay : f32) : f32 =
+    := xd, dn, tn = channel_at s t d, d * s::states + n, t * s::states + n
+    total * (prev * decay * index p::a dn + index p::b tn * index p::x xd)
+
 := state_back
     (s : scan_dims) (p : scan_inputs) (h : floats) (dy : floats) (g : scan_grads) (carry : floats)
     (t : i32) (d : i32) (n : i32)
     : f32
     =
-    := xd, dn, tn = channel_at s t d, d * s::states + n, t * s::states + n
-    := delta = softplus (index p::dt xd)
-    := decay = exp (delta * index p::a dn)
-    := prev = previous_state s h t d n
-    := total = index dy xd * index p::c tn + index carry dn
-    add_at g::dc tn (index dy xd * index h (state_at s t d n))
-    add_at g::da dn (total * prev * decay * delta)
-    add_at g::db tn (total * delta * index p::x xd)
-    add_at g::dx xd (total * delta * index p::b tn)
-    set carry dn (total * decay)
-    total * (prev * decay * index p::a dn + index p::b tn * index p::x xd)
+    := delta, decay, prev = back_factors s p h t d n
+    := total = state_total s p dy carry t d n
+    add_state_grads s p h dy g t d n total prev decay delta
+    set carry (d * s::states + n) (total * decay)
+    delta_part s p t d n total prev decay
 
 :~ ^ states_back
     (s : scan_dims) (p : scan_inputs) (h : floats) (dy : floats) (g : scan_grads) (carry : floats)
@@ -77,16 +108,18 @@
         := part = state_back s p h dy g carry t d n
         states_back s p h dy g carry t d (n + 1) (acc + part)
 
+:= add_channel_grads (s : scan_dims) (p : scan_inputs) (dy : floats) (g : scan_grads) (t : i32) (d : i32) (d_delta : f32) : () =
+    := xd = channel_at s t d
+    add_at g::ddt xd (d_delta * f32_grads::sigmoid (index p::dt xd))
+    add_at g::dx xd (index dy xd * index p::skip d)
+    add_at g::dskip d (index dy xd * index p::x xd)
+
 :~ ^ channels_back
     (s : scan_dims) (p : scan_inputs) (h : floats) (dy : floats) (g : scan_grads) (carry : floats) (t : i32) (d : i32)
     : ()
     =
     ? d < s::channels ?>
-        := xd = channel_at s t d
-        := d_delta = states_back s p h dy g carry t d 0 0.0f32
-        add_at g::ddt xd (d_delta * f32_grads::sigmoid (index p::dt xd))
-        add_at g::dx xd (index dy xd * index p::skip d)
-        add_at g::dskip d (index dy xd * index p::x xd)
+        add_channel_grads s p dy g t d (states_back s p h dy g carry t d 0 0.0f32)
         channels_back s p h dy g carry t (d + 1)
 
 :~ ^ steps_back (s : scan_dims) (p : scan_inputs) (h : floats) (dy : floats) (g : scan_grads) (carry : floats) (t : i32) : () =
@@ -112,15 +145,23 @@
 
 := sc_dims () : scan_dims = { steps = 3; channels = 2; states = 2 }
 
-:= sc_inputs () : scan_inputs =
-    {
-        x = f32_kernels::floats_of [ 0.5f32; -1.0f32; 1.5f32; 0.25f32; -0.75f32; 2.0f32 ]
-        dt = f32_kernels::floats_of [ 0.1f32; -0.4f32; 0.8f32; 0.3f32; -1.2f32; 0.6f32 ]
-        a = f32_kernels::floats_of [ -0.5f32; -1.5f32; -0.25f32; -2.0f32 ]
-        b = f32_kernels::floats_of [ 1.0f32; -0.5f32; 0.75f32; 0.2f32; -1.25f32; 0.4f32 ]
-        c = f32_kernels::floats_of [ 0.3f32; 1.1f32; -0.6f32; 0.9f32; 0.45f32; -0.8f32 ]
-        skip = f32_kernels::floats_of [ 0.7f32; -0.3f32 ]
-    }
+:= sc_x () : list f32 = [ 0.5f32; -1.0f32; 1.5f32; 0.25f32; -0.75f32; 2.0f32 ]
+
+:= sc_dt () : list f32 = [ 0.1f32; -0.4f32; 0.8f32; 0.3f32; -1.2f32; 0.6f32 ]
+
+:= sc_a () : list f32 = [ -0.5f32; -1.5f32; -0.25f32; -2.0f32 ]
+
+:= sc_b () : list f32 = [ 1.0f32; -0.5f32; 0.75f32; 0.2f32; -1.25f32; 0.4f32 ]
+
+:= sc_c () : list f32 = [ 0.3f32; 1.1f32; -0.6f32; 0.9f32; 0.45f32; -0.8f32 ]
+
+:= sc_skip () : list f32 = [ 0.7f32; -0.3f32 ]
+
+:= scan_inputs_of (x : list f32) (dt : list f32) (a : list f32) (b : list f32) (c : list f32) (skip : list f32) : scan_inputs =
+    := f = f32_kernels::floats_of
+    { x = f x; dt = f dt; a = f a; b = f b; c = f c; skip = f skip }
+
+:= sc_inputs () : scan_inputs = scan_inputs_of (sc_x ()) (sc_dt ()) (sc_a ()) (sc_b ()) (sc_c ()) (sc_skip ())
 
 := sc_dy () : floats = f32_kernels::floats_of [ 1.0f32; -0.5f32; 0.25f32; 2.0f32; -1.5f32; 0.75f32 ]
 
@@ -161,32 +202,26 @@
     := p = sc_inputs ()
     sc_numeric (\ e => { p with skip = f32_grads::nudged p::skip k e })
 
+:= close_to (grad : floats) (numeric : i32 -> f32) : bool = f32_grads::all_close grad numeric 0
+
+:= vanishing_dims () : scan_dims = { steps = 1; channels = 1; states = 1 }
+
+:= vanishing_inputs () : scan_inputs = scan_inputs_of [ 2.0f32 ] [ -40.0f32 ] [ -1.0f32 ] [ 1.0f32 ] [ 1.0f32 ] [ 0.5f32 ]
+
 ///> c
 ///> rust
 :# selective_scan_input_and_step_gradients_match_central_differences =
     := g = sc_grads ()
-    (f32_grads::all_close g::dx x_numeric 0, f32_grads::all_close g::ddt dt_numeric 0, f32_grads::all_close g::dskip skip_numeric 0)
-    |> _assert_eq (!+, !+, !+)
+    (close_to g::dx x_numeric, close_to g::ddt dt_numeric, close_to g::dskip skip_numeric) |> _assert_eq (!+, !+, !+)
 
 ///> c
 ///> rust
 :# selective_scan_transition_and_projection_gradients_match_central_differences =
     := g = sc_grads ()
-    (f32_grads::all_close g::da a_numeric 0, f32_grads::all_close g::db b_numeric 0, f32_grads::all_close g::dc c_numeric 0)
-    |> _assert_eq (!+, !+, !+)
+    (close_to g::da a_numeric, close_to g::db b_numeric, close_to g::dc c_numeric) |> _assert_eq (!+, !+, !+)
 
 ///> c
 ///> rust
 :# a_vanishing_step_scan_reduces_to_the_skip_path =
-    := s = { steps = 1; channels = 1; states = 1 }
-    := p =
-        {
-            x = f32_kernels::floats_of [ 2.0f32 ]
-            dt = f32_kernels::floats_of [ -40.0f32 ]
-            a = f32_kernels::floats_of [ -1.0f32 ]
-            b = f32_kernels::floats_of [ 1.0f32 ]
-            c = f32_kernels::floats_of [ 1.0f32 ]
-            skip = f32_kernels::floats_of [ 0.5f32 ]
-        }
-    := y, _ = selective_scan s p
+    := y, _ = selective_scan (vanishing_dims ()) (vanishing_inputs ())
     (abs (index y 0 - 1.0f32) < 0.0001f32) |> _assert_eq !+

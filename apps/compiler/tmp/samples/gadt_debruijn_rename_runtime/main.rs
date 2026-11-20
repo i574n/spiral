@@ -59,226 +59,222 @@ fn closure3(mut v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>) -> Rc<dyn Fn(Rc<UH0>) -> Rc<
         }
     })
 }
-fn rename_5(mut v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: Rc<UH1>) -> Rc<UH1> {
+fn rename_5(mut ren_v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: Rc<UH1>) -> Rc<UH1> {
     match Rc::unwrap_or_clone(v1) {
-        UH1::UH1_App(v9, v10) => {
-            let v9: Rc<UH1> = v9;
-            let v10: Rc<UH1> = v10;
-            let v11: Rc<UH1> = rename_5(v0.clone(), v9);
-            let v12: Rc<UH1> = rename_5(v0, v10);
+        UH1::UH1_App(t_v9, t_v10) => {
+            let t_v9: Rc<UH1> = t_v9;
+            let t_v10: Rc<UH1> = t_v10;
+            let v11: Rc<UH1> = rename_5(ren_v0.clone(), t_v9);
+            let v12: Rc<UH1> = rename_5(ren_v0, t_v10);
             Rc::new(UH1::UH1_App(v11, v12))
         }
-        UH1::UH1_Lam(v5) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure3(v0);
-            let v7: Rc<UH1> = rename_4(v6, v5);
+        UH1::UH1_Lam(body_v5) => {
+            let body_v5: Rc<UH1> = body_v5;
+            let ren_v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure3(ren_v0);
+            let v7: Rc<UH1> = rename_4(ren_v6, body_v5);
             Rc::new(UH1::UH1_Lam(v7))
         }
-        UH1::UH1_Var(v2) => {
-            let v2: Rc<UH0> = v2;
-            let v3: Rc<UH0> = v0(v2);
+        UH1::UH1_Var(v_v2) => {
+            let v_v2: Rc<UH0> = v_v2;
+            let v3: Rc<UH0> = ren_v0(v_v2);
             Rc::new(UH1::UH1_Var(v3))
         }
     }
 }
-fn rename_4(mut v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: Rc<UH1>) -> Rc<UH1> {
+fn rename_4(mut ren_v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: Rc<UH1>) -> Rc<UH1> {
     match Rc::unwrap_or_clone(v1) {
-        UH1::UH1_App(v9, v10) => {
-            let v9: Rc<UH1> = v9;
-            let v10: Rc<UH1> = v10;
-            let v11: Rc<UH1> = rename_5(v0.clone(), v9);
-            let v12: Rc<UH1> = rename_5(v0, v10);
+        UH1::UH1_App(t_v9, t_v10) => {
+            let t_v9: Rc<UH1> = t_v9;
+            let t_v10: Rc<UH1> = t_v10;
+            let v11: Rc<UH1> = rename_5(ren_v0.clone(), t_v9);
+            let v12: Rc<UH1> = rename_5(ren_v0, t_v10);
             Rc::new(UH1::UH1_App(v11, v12))
         }
-        UH1::UH1_Lam(v5) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure3(v0);
-            let v7: Rc<UH1> = rename_4(v6, v5);
+        UH1::UH1_Lam(body_v5) => {
+            let body_v5: Rc<UH1> = body_v5;
+            let ren_v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure3(ren_v0);
+            let v7: Rc<UH1> = rename_4(ren_v6, body_v5);
             Rc::new(UH1::UH1_Lam(v7))
         }
-        UH1::UH1_Var(v2) => {
-            let v2: Rc<UH0> = v2;
-            let v3: Rc<UH0> = v0(v2);
+        UH1::UH1_Var(v_v2) => {
+            let v_v2: Rc<UH0> = v_v2;
+            let v3: Rc<UH0> = ren_v0(v_v2);
             Rc::new(UH1::UH1_Var(v3))
         }
     }
 }
-fn rename_3(mut v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: Rc<UH1>) -> Rc<UH1> {
+fn rename_3(mut ren_v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: Rc<UH1>) -> Rc<UH1> {
     match Rc::unwrap_or_clone(v1) {
-        UH1::UH1_App(v9, v10) => {
-            let v9: Rc<UH1> = v9;
-            let v10: Rc<UH1> = v10;
-            let v11: Rc<UH1> = rename_3(v0.clone(), v9);
-            let v12: Rc<UH1> = rename_3(v0, v10);
+        UH1::UH1_App(t_v9, t_v10) => {
+            let t_v9: Rc<UH1> = t_v9;
+            let t_v10: Rc<UH1> = t_v10;
+            let v11: Rc<UH1> = rename_3(ren_v0.clone(), t_v9);
+            let v12: Rc<UH1> = rename_3(ren_v0, t_v10);
             Rc::new(UH1::UH1_App(v11, v12))
         }
-        UH1::UH1_Lam(v5) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure2(v0);
-            let v7: Rc<UH1> = rename_4(v6, v5);
+        UH1::UH1_Lam(body_v5) => {
+            let body_v5: Rc<UH1> = body_v5;
+            let ren_v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure2(ren_v0);
+            let v7: Rc<UH1> = rename_4(ren_v6, body_v5);
             Rc::new(UH1::UH1_Lam(v7))
         }
-        UH1::UH1_Var(v2) => {
-            let v2: Rc<UH0> = v2;
-            let v3: Rc<UH0> = v0(v2);
+        UH1::UH1_Var(v_v2) => {
+            let v_v2: Rc<UH0> = v_v2;
+            let v3: Rc<UH0> = ren_v0(v_v2);
             Rc::new(UH1::UH1_Var(v3))
         }
     }
 }
-fn rename_2(mut v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: &Rc<UH1>) -> Rc<UH1> {
+fn rename_2(mut ren_v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: &Rc<UH1>) -> Rc<UH1> {
     match &**v1 {
-        UH1::UH1_App(v9, v10) => {
-            let v9: Rc<UH1> = v9.clone();
-            let v10: Rc<UH1> = v10.clone();
-            let v11: Rc<UH1> = rename_3(v0.clone(), v9);
-            let v12: Rc<UH1> = rename_3(v0, v10);
+        UH1::UH1_App(t_v9, t_v10) => {
+            let t_v9: Rc<UH1> = t_v9.clone();
+            let t_v10: Rc<UH1> = t_v10.clone();
+            let v11: Rc<UH1> = rename_3(ren_v0.clone(), t_v9);
+            let v12: Rc<UH1> = rename_3(ren_v0, t_v10);
             Rc::new(UH1::UH1_App(v11, v12))
         }
-        UH1::UH1_Lam(v5) => {
-            let v5: Rc<UH1> = v5.clone();
-            let v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure2(v0);
-            let v7: Rc<UH1> = rename_4(v6, v5);
+        UH1::UH1_Lam(body_v5) => {
+            let body_v5: Rc<UH1> = body_v5.clone();
+            let ren_v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure2(ren_v0);
+            let v7: Rc<UH1> = rename_4(ren_v6, body_v5);
             Rc::new(UH1::UH1_Lam(v7))
         }
-        UH1::UH1_Var(v2) => {
-            let v2: Rc<UH0> = v2.clone();
-            let v3: Rc<UH0> = v0(v2);
+        UH1::UH1_Var(v_v2) => {
+            let v_v2: Rc<UH0> = v_v2.clone();
+            let v3: Rc<UH0> = ren_v0(v_v2);
             Rc::new(UH1::UH1_Var(v3))
         }
     }
 }
-fn rename_1(mut v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: Rc<UH1>) -> Rc<UH1> {
+fn rename_1(mut ren_v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: Rc<UH1>) -> Rc<UH1> {
     match Rc::unwrap_or_clone(v1) {
-        UH1::UH1_App(v9, v10) => {
-            let v9: Rc<UH1> = v9;
-            let v10: Rc<UH1> = v10;
-            let v11: Rc<UH1> = rename_1(v0.clone(), v9);
-            let v12: Rc<UH1> = rename_1(v0, v10);
+        UH1::UH1_App(t_v9, t_v10) => {
+            let t_v9: Rc<UH1> = t_v9;
+            let t_v10: Rc<UH1> = t_v10;
+            let v11: Rc<UH1> = rename_1(ren_v0.clone(), t_v9);
+            let v12: Rc<UH1> = rename_1(ren_v0, t_v10);
             Rc::new(UH1::UH1_App(v11, v12))
         }
-        UH1::UH1_Lam(v5) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure1(v0);
-            let v7: Rc<UH1> = rename_2(v6, &v5);
+        UH1::UH1_Lam(body_v5) => {
+            let body_v5: Rc<UH1> = body_v5;
+            let ren_v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure1(ren_v0);
+            let v7: Rc<UH1> = rename_2(ren_v6, &body_v5);
             Rc::new(UH1::UH1_Lam(v7))
         }
-        UH1::UH1_Var(v2) => {
-            let v2: Rc<UH0> = v2;
-            let v3: Rc<UH0> = v0(v2);
+        UH1::UH1_Var(v_v2) => {
+            let v_v2: Rc<UH0> = v_v2;
+            let v3: Rc<UH0> = ren_v0(v_v2);
             Rc::new(UH1::UH1_Var(v3))
         }
     }
 }
-fn rename_0(mut v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: &Rc<UH1>) -> Rc<UH1> {
+fn rename_0(mut ren_v0: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>>, mut v1: &Rc<UH1>) -> Rc<UH1> {
     match &**v1 {
-        UH1::UH1_App(v9, v10) => {
-            let v9: Rc<UH1> = v9.clone();
-            let v10: Rc<UH1> = v10.clone();
-            let v11: Rc<UH1> = rename_1(v0.clone(), v9);
-            let v12: Rc<UH1> = rename_1(v0, v10);
+        UH1::UH1_App(t_v9, t_v10) => {
+            let t_v9: Rc<UH1> = t_v9.clone();
+            let t_v10: Rc<UH1> = t_v10.clone();
+            let v11: Rc<UH1> = rename_1(ren_v0.clone(), t_v9);
+            let v12: Rc<UH1> = rename_1(ren_v0, t_v10);
             Rc::new(UH1::UH1_App(v11, v12))
         }
-        UH1::UH1_Lam(v5) => {
-            let v5: Rc<UH1> = v5.clone();
-            let v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure1(v0);
-            let v7: Rc<UH1> = rename_2(v6, &v5);
+        UH1::UH1_Lam(body_v5) => {
+            let body_v5: Rc<UH1> = body_v5.clone();
+            let ren_v6: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure1(ren_v0);
+            let v7: Rc<UH1> = rename_2(ren_v6, &body_v5);
             Rc::new(UH1::UH1_Lam(v7))
         }
-        UH1::UH1_Var(v2) => {
-            let v2: Rc<UH0> = v2.clone();
-            let v3: Rc<UH0> = v0(v2);
+        UH1::UH1_Var(v_v2) => {
+            let v_v2: Rc<UH0> = v_v2.clone();
+            let v3: Rc<UH0> = ren_v0(v_v2);
             Rc::new(UH1::UH1_Var(v3))
         }
     }
 }
 fn size_9(mut v0: Rc<UH1>) -> i32 {
     match Rc::unwrap_or_clone(v0) {
-        UH1::UH1_App(v5, v6) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<UH1> = v6;
-            let v7: i32 = size_9(v5);
+        UH1::UH1_App(t_v5, t_v6) => {
+            let t_v5: Rc<UH1> = t_v5;
+            let t_v6: Rc<UH1> = t_v6;
+            let v7: i32 = size_9(t_v5);
             let v8: i32 = 1i32.wrapping_add(v7);
-            let v9: i32 = size_9(v6);
+            let v9: i32 = size_9(t_v6);
             let v10: i32 = v8.wrapping_add(v9);
             v10
         }
-        UH1::UH1_Lam(v2) => {
-            let v2: Rc<UH1> = v2;
-            let v3: i32 = size_8(v2);
+        UH1::UH1_Lam(body_v2) => {
+            let body_v2: Rc<UH1> = body_v2;
+            let v3: i32 = size_8(body_v2);
             let v4: i32 = 1i32.wrapping_add(v3);
             v4
         }
-        UH1::UH1_Var(v1) => {
-            let v1: Rc<UH0> = v1;
+        UH1::UH1_Var(_) => {
             1i32
         }
     }
 }
 fn size_8(mut v0: Rc<UH1>) -> i32 {
     match Rc::unwrap_or_clone(v0) {
-        UH1::UH1_App(v5, v6) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<UH1> = v6;
-            let v7: i32 = size_9(v5);
+        UH1::UH1_App(t_v5, t_v6) => {
+            let t_v5: Rc<UH1> = t_v5;
+            let t_v6: Rc<UH1> = t_v6;
+            let v7: i32 = size_9(t_v5);
             let v8: i32 = 1i32.wrapping_add(v7);
-            let v9: i32 = size_9(v6);
+            let v9: i32 = size_9(t_v6);
             let v10: i32 = v8.wrapping_add(v9);
             v10
         }
-        UH1::UH1_Lam(v2) => {
-            let v2: Rc<UH1> = v2;
-            let v3: i32 = size_8(v2);
+        UH1::UH1_Lam(body_v2) => {
+            let body_v2: Rc<UH1> = body_v2;
+            let v3: i32 = size_8(body_v2);
             let v4: i32 = 1i32.wrapping_add(v3);
             v4
         }
-        UH1::UH1_Var(v1) => {
-            let v1: Rc<UH0> = v1;
+        UH1::UH1_Var(_) => {
             1i32
         }
     }
 }
 fn size_7(mut v0: Rc<UH1>) -> i32 {
     match Rc::unwrap_or_clone(v0) {
-        UH1::UH1_App(v5, v6) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<UH1> = v6;
-            let v7: i32 = size_7(v5);
+        UH1::UH1_App(t_v5, t_v6) => {
+            let t_v5: Rc<UH1> = t_v5;
+            let t_v6: Rc<UH1> = t_v6;
+            let v7: i32 = size_7(t_v5);
             let v8: i32 = 1i32.wrapping_add(v7);
-            let v9: i32 = size_7(v6);
+            let v9: i32 = size_7(t_v6);
             let v10: i32 = v8.wrapping_add(v9);
             v10
         }
-        UH1::UH1_Lam(v2) => {
-            let v2: Rc<UH1> = v2;
-            let v3: i32 = size_8(v2);
+        UH1::UH1_Lam(body_v2) => {
+            let body_v2: Rc<UH1> = body_v2;
+            let v3: i32 = size_8(body_v2);
             let v4: i32 = 1i32.wrapping_add(v3);
             v4
         }
-        UH1::UH1_Var(v1) => {
-            let v1: Rc<UH0> = v1;
+        UH1::UH1_Var(_) => {
             1i32
         }
     }
 }
-fn size_6(mut v0: Rc<UH1>) -> i32 {
-    match Rc::unwrap_or_clone(v0) {
-        UH1::UH1_App(v5, v6) => {
-            let v5: Rc<UH1> = v5;
-            let v6: Rc<UH1> = v6;
-            let v7: i32 = size_7(v5);
+fn size_6(mut v0: &Rc<UH1>) -> i32 {
+    match &**v0 {
+        UH1::UH1_App(t_v5, t_v6) => {
+            let t_v5: Rc<UH1> = t_v5.clone();
+            let t_v6: Rc<UH1> = t_v6.clone();
+            let v7: i32 = size_7(t_v5);
             let v8: i32 = 1i32.wrapping_add(v7);
-            let v9: i32 = size_7(v6);
+            let v9: i32 = size_7(t_v6);
             let v10: i32 = v8.wrapping_add(v9);
             v10
         }
-        UH1::UH1_Lam(v2) => {
-            let v2: Rc<UH1> = v2;
-            let v3: i32 = size_8(v2);
+        UH1::UH1_Lam(body_v2) => {
+            let body_v2: Rc<UH1> = body_v2.clone();
+            let v3: i32 = size_8(body_v2);
             let v4: i32 = 1i32.wrapping_add(v3);
             v4
         }
-        UH1::UH1_Var(v1) => {
-            let v1: Rc<UH0> = v1;
+        UH1::UH1_Var(_) => {
             1i32
         }
     }
@@ -291,10 +287,10 @@ fn spiral_main() -> i32 {
     let v4: Rc<UH1> = Rc::new(UH1::UH1_Var(v3));
     let v5: Rc<UH1> = Rc::new(UH1::UH1_Lam(v4));
     let v6: Rc<UH1> = Rc::new(UH1::UH1_App(v1, v5));
-    let v7: Rc<UH1> = Rc::new(UH1::UH1_Lam(v6));
-    let v8: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure0();
-    let v9: Rc<UH1> = rename_0(v8, &v7);
-    size_6(v9)
+    let t_v7: Rc<UH1> = Rc::new(UH1::UH1_Lam(v6));
+    let ren_v8: Rc<dyn Fn(Rc<UH0>) -> Rc<UH0>> = closure0();
+    let weakened_v9: Rc<UH1> = rename_0(ren_v8, &t_v7);
+    size_6(&weakened_v9)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

@@ -1,0 +1,479 @@
+///- --package .
+:< sm'_operators
+
+:# terms static =
+    :< testing
+
+:== term_env = { top_down : bool; operator_floor : option i32; continuation_column : option i32 }
+
+:~ top_env () : term_env = { top_down = !+; operator_floor = None; continuation_column = None }
+
+:~ lowest_binding () : i32 = -1000000i32
+
+:~ annot_flags (e : term_env) : parse_types::type_flags = { allow_wildcard = e::top_down; allow_typecase_metavars = !-; allow_term = e::top_down = !- }
+
+:~ floor_or_col (floor : option i32) (c : cursor::cursor) : i32 =
+    := at = parse_types::col c
+    ?= floor ?|
+    | Some f => ? f < at ?> f |: at
+    | None => at
+
+:~ joined_exprs (a : ast::raw_expr) (b : ast::raw_expr) : ast::range = ast::joined (ast::range_of_expr a) (ast::range_of_expr b)
+
+:~ ^ fold_apply (a : ast::raw_expr) (xs : list ast::raw_expr) : ast::raw_expr =
+    ?= xs ?|
+    | [] => a
+    | b :: rest => fold_apply (ast::RawApply (joined_exprs a b, a, b)) rest
+
+:~ ^ fold_tuple (a : ast::raw_expr) (xs : list ast::raw_expr) : ast::raw_expr =
+    ?= xs ?|
+    | [] => a
+    | b :: rest => fold_tuple (ast::RawPair (joined_exprs a b, a, b)) rest
+
+:~ tuple_of (xs : list ast::raw_expr) (r : ast::range) : ast::raw_expr =
+    ?= xs ?|
+    | [] => ast::RawB r
+    | x :: rest => fold_tuple x rest
+
+:~ ^ fold_list (r : ast::range) (xs : list ast::raw_expr) : ast::raw_expr =
+    ?= xs ?|
+    | [] => ast::rawv (r, "Nil")
+    | a :: rest => ast::RawApply (r, ast::rawv (r, "Cons"), ast::RawPair (r, a, fold_list r rest))
+
+:~ ^ fold_seq (xs : list ast::raw_expr) : ast::raw_expr =
+    ?= xs ?|
+    | [ x ] => x
+    | a :: rest =>
+        := b = fold_seq rest
+        ast::RawSeq (joined_exprs a b, a, b)
+    | [] => ast::RawB (cursor::origin ())
+
+:~ ^ concat_lists (xs : list (list ast::raw_expr)) : list ast::raw_expr =
+    ?= xs ?|
+    | [] => []
+    | a :: rest => listm::append a (concat_lists rest)
+
+:~ ^ collect_args (args : list ast::raw_expr) (x : ast::raw_expr) : ast::raw_expr * list ast::raw_expr =
+    ?= x ?|
+    | ast::RawApply (_, f, a) => collect_args (a :: args) f
+    | f => f, args
+
+:~ apply_operator (parsed : ast::parsed_operator) (left : ast::raw_expr) (right : ast::raw_expr) : ast::raw_expr =
+    := r = joined_exprs left right
+    ?= parsed ?|
+    | ast::ParsedSequence => ast::RawSeq (r, left, right)
+    | ast::ParsedAnd s => ast::RawIfThenElse (r, left, right, ast::RawLit (s, tokens::LitBool !-))
+    | ast::ParsedOr s => ast::RawIfThenElse (r, left, ast::RawLit (s, tokens::LitBool !+), right)
+    | ast::ParsedPair => ast::RawPair (r, left, right)
+    | ast::ParsedStringConcat => ast::RawAnnot (r, ast::RawOp (r, ops::StaticStringConcat, [ left; right ]), ast::RawTPrim (r, ast::StringT))
+    | ast::ParsedHeapMutableSet =>
+        := (target, args) = collect_args [] left
+        ast::RawHeapMutableSet (r, target, args, right)
+    | ast::ParsedNamed (s, name) => ast::RawApply (r, ast::RawApply (ast::joined r s, ast::rawv (s, name), left), right)
+
+:~ read_operator (c : cursor::cursor) : cursor::step (i32 * ops::associativity * ast::parsed_operator) =
+    ?= cursor::current c ?|
+    | Some (r, tokens::TokOperator (x, _)) =>
+        ? ops::is_separator x ?> cursor::Failed ([], c)
+        |:
+            ?= ops::precedence_associativity x ?|
+            | Some (p, a) => cursor::Took ((p, a, ast::parsed_of r x), cursor::advance c)
+            | None => cursor::Failed ([ (r, ast::UnknownOperator) ], cursor::advance c)
+    | Some (r, _) => cursor::Failed ([ (r, ast::ExpectedAnyOperator) ], c)
+    | None => cursor::Failed ([], c)
+
+:~ read_default (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    cursor::take c (\ r t => ?= t ?| | tokens::TokDefaultValue x ?& e::top_down => Some (ast::RawDefaultLit (r, x)) | _ => None) ast::ExpectedLit
+
+:~ type_expr (c : cursor::cursor) : cursor::step ast::raw_texpr =
+    := var = cursor::map_p (\ ((r, x) : ast::named) => ast::RawTVar (r, x)) parse_types::read_small_var
+    := value = cursor::map_p (\ ((r, x) : ast::range * tokens::literal) => ast::RawTLit (r, x)) parse_types::read_value
+    := text = cursor::map_p (\ ((a, s, b) : ast::range * string * ast::range) => ast::RawTLit (ast::joined a b, tokens::LitString s)) parse_types::read_string
+    := inner = cursor::rounds_p (parse_types::root_type { allow_wildcard = !-; allow_typecase_metavars = !-; allow_term = !+ })
+    cursor::alt_p var (cursor::alt_p value (cursor::alt_p text inner)) c
+
+:~ join_point (is_let : bool) (name : option string) (x : ast::raw_expr) : ast::raw_expr =
+    ?= x ?|
+    | ast::RawJoinPoint (a, b, body, _) => ast::RawJoinPoint (a, b, body, name)
+    | ast::RawAnnot (r, a, t) ?& is_let => ast::RawAnnot (r, ast::RawJoinPoint (r, None, ast::RawAnnot (r, a, t), name), t)
+    | _ ?& is_let => ast::RawJoinPoint (ast::range_of_expr x, None, x, name)
+    | _ => x
+
+:== ranged_expr = ast::range * ast::raw_expr
+
+:~ if_part ((cr, cond) : ranged_expr) ((tr_range, tr) : ranged_expr) (otherwise : option ranged_expr) : ranged_expr =
+    ?= otherwise ?|
+    | Some (fr, fl) => fr, ast::RawIfThenElse (ast::joined cr fr, cond, tr, fl)
+    | None => tr_range, ast::RawIfThen (ast::joined cr tr_range, cond, tr)
+
+:~ ^ fold_elifs (xs : list (ranged_expr * ranged_expr)) (otherwise : option ranged_expr) : option ranged_expr =
+    ?= xs ?|
+    | [] => otherwise
+    | (cond, tr) :: rest => Some (if_part cond tr (fold_elifs rest otherwise))
+
+:== clause = ast::pattern * ast::raw_expr
+
+:~ ^ bound_vars (p : ast::pattern) : list string =
+    ?= p ?|
+    | ast::PatVar (_, x) => [ x ]
+    | ast::PatDyn (_, x) => bound_vars x
+    | ast::PatAnnot (_, x, _) => bound_vars x
+    | ast::PatNominal (_, _, _, x) => bound_vars x
+    | ast::PatUnbox (_, _, x) => bound_vars x
+    | ast::PatWhen (_, x, _) => bound_vars x
+    | ast::PatExists (_, _, x) => bound_vars x
+    | ast::PatPair (_, x, y) => listm::append (bound_vars x) (bound_vars y)
+    | ast::PatAnd (_, x, y) => listm::append (bound_vars x) (bound_vars y)
+    | ast::PatOr (_, x, _) => bound_vars x
+    | ast::PatArray (_, l) => bound_list l
+    | ast::PatRecordMembers (_, l) => bound_members l
+    | _ => []
+
+:& :~ bound_list (xs : list ast::pattern) : list string =
+    ?= xs ?|
+    | [] => []
+    | x :: rest => listm::append (bound_vars x) (bound_list rest)
+
+:& :~ bound_members (xs : list ast::pat_record_member) : list string =
+    ?= xs ?|
+    | [] => []
+    | ast::PatRecordMembersSymbol (_, x) :: rest => listm::append (bound_vars x) (bound_members rest)
+    | ast::PatRecordMembersInjectVar (_, x) :: rest => listm::append (bound_vars x) (bound_members rest)
+
+:~ ^ type_directed (p : ast::pattern) : bool =
+    ?= p ?|
+    | ast::PatAnnot _ => !+
+    | ast::PatExists _ => !+
+    | ast::PatFilledDefaultValue _ => !+
+    | ast::PatDefaultValue _ => !+
+    | ast::PatNominal _ => !+
+    | ast::PatDyn (_, x) => type_directed x
+    | ast::PatUnbox (_, _, x) => type_directed x
+    | ast::PatWhen (_, x, _) => type_directed x
+    | ast::PatPair (_, x, y) => type_directed x || type_directed y
+    | ast::PatOr (_, x, y) => type_directed x || type_directed y
+    | ast::PatAnd (_, x, y) => type_directed x || type_directed y
+    | ast::PatRecordMembers (_, l) => members_directed l
+    | ast::PatArray (_, l) => list_directed l
+    | _ => !-
+
+:& :~ list_directed (xs : list ast::pattern) : bool =
+    ?= xs ?|
+    | [] => !-
+    | x :: rest => type_directed x || list_directed rest
+
+:& :~ members_directed (xs : list ast::pat_record_member) : bool =
+    ?= xs ?|
+    | [] => !-
+    | ast::PatRecordMembersSymbol (_, x) :: rest => type_directed x || members_directed rest
+    | ast::PatRecordMembersInjectVar (_, x) :: rest => type_directed x || members_directed rest
+
+:~ trivial_body (x : ast::raw_expr) : bool =
+    ?= x ?|
+    | ast::RawLit _ => !+
+    | ast::RawV _ => !+
+    | ast::RawSymbol _ => !+
+    | ast::RawB _ => !+
+    | _ => !-
+
+:~ lifted (p : ast::pattern) (body : ast::raw_expr) : bool =
+    ?= p ?|
+    | ast::PatOr _ => trivial_body body = !- && type_directed p = !-
+    | _ => !-
+
+:~ ^ distinct_from (xs : list string) (seen : list string) : list string =
+    ?= xs ?|
+    | [] => listm::rev seen
+    | x :: rest => ? listm'::contains x seen ?> distinct_from rest seen |: distinct_from rest (x :: seen)
+
+:~ ^ fold_parameters (r : ast::range) (acc : ast::pattern * ast::raw_expr) (xs : list string) : ast::pattern * ast::raw_expr =
+    ?= xs ?|
+    | [] => acc
+    | y :: rest =>
+        := (pattern, argument) = acc
+        fold_parameters r (ast::PatPair (r, pattern, ast::PatVar (r, y)), ast::RawPair (r, argument, ast::rawv (r, y))) rest
+
+:~ parameters (r : ast::range) (vars : list string) : ast::pattern * ast::raw_expr =
+    ?= vars ?|
+    | [] => ast::PatB r, ast::RawB r
+    | x :: rest => fold_parameters r (ast::PatVar (r, x), ast::rawv (r, x)) rest
+
+:~ ^ lift_clauses (r : ast::range) (k : i32) (cs : list clause) (joins : list (string * ast::raw_expr)) : list clause * list (string * ast::raw_expr) =
+    ?= cs ?|
+    | [] => [], listm::rev joins
+    | (p, body) :: rest =>
+        ? lifted p body ?>
+            := name = " or " ++# sm'::format k
+            := (parameter, argument) = parameters r (distinct_from (bound_vars p) [])
+            := join_fn = ast::RawFun (r, [ (parameter, ast::RawJoinPoint (r, None, body, None)) ])
+            := (more, all) = lift_clauses r (k + 1i32) rest ((name, join_fn) :: joins)
+            (p, ast::RawApply (r, ast::rawv (r, name), argument)) :: more, all
+        |:
+            := (more, all) = lift_clauses r k rest joins
+            (p, body) :: more, all
+
+:~ ^ wrap_joins (r : ast::range) (joins : list (string * ast::raw_expr)) (inner : ast::raw_expr) : ast::raw_expr =
+    ?= joins ?|
+    | [] => inner
+    | (name, join_fn) :: rest => ast::RawMatch (r, join_fn, [ (ast::PatVar (r, name), wrap_joins r rest inner) ])
+
+:~ lift (r : ast::range) (scrutinee : ast::raw_expr) (cs : list clause) : ast::raw_expr =
+    := (lowered, joins) = lift_clauses r 0i32 cs []
+    wrap_joins r joins (ast::RawMatch (r, scrutinee, lowered))
+
+:~ ^ fold_funs (pats : list ast::pattern) (body : ast::raw_expr) : ast::raw_expr =
+    ?= pats ?|
+    | [] => body
+    | p :: rest =>
+        := inner = fold_funs rest body
+        ast::RawFun (ast::joined (ast::range_of_pattern p) (ast::range_of_expr inner), [ (p, inner) ])
+
+:~ ^ fold_foralls (vars : list ast::type_var) (body : ast::raw_expr) : ast::raw_expr =
+    ?= vars ?|
+    | [] => body
+    | a :: rest =>
+        := inner = fold_foralls rest body
+        ast::RawForall (ast::joined (ast::range_of_type_var a) (ast::range_of_expr inner), a, inner)
+
+:~ ^ concat_found (xs : list cursor::failure) : cursor::failure =
+    ?= xs ?|
+    | [] => []
+    | a :: rest => listm::append a (concat_found rest)
+
+:~ ^ root_term (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := i = parse_types::col c
+    cursor::map_p fold_seq (cursor::many1_p (parse_types::indented i (\ a b => a = b) (operators e))) c
+
+:& :~ expressions (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := next = root_term e
+    := value = cursor::map_p (\ ((r, x) : ast::range * tokens::literal) => ast::RawLit (r, x)) parse_types::read_value
+    := default_value = read_default e
+    := var = cursor::map_p ast::rawv cursor::read_var
+    := join_form = cursor::map_p (join_point !+ None) (cursor::right_p (cursor::skip_keyword tokens::SpecJoin) next)
+    := backend_join = cursor::map_p (\ ((a, b) : ast::named * ast::raw_expr) => ast::RawJoinPoint (ast::range_of_expr b, Some a, b, None)) (cursor::right_p (cursor::skip_keyword tokens::SpecJoinBackend) (cursor::pair_p cursor::read_big_var next))
+    := real_form = cursor::map_p (\ (x : ast::raw_expr) => ast::RawReal (ast::range_of_expr x, x)) (cursor::right_p (cursor::skip_keyword tokens::SpecReal) (root_term { e ?| top_down = !- }))
+    := symbol = cursor::map_p (\ (a : ast::named) => ast::RawSymbol a) parse_types::read_symbol
+    := rounds_item = cursor::alt_p (cursor::map_p ast::rawv cursor::read_op) next
+    := rounds = cursor::map_p (\ ((r, xs) : ast::range * list ast::raw_expr) => tuple_of xs r) (cursor::ranged_p (cursor::rounds_p (cursor::sep_by_p rounds_item (cursor::skip_op ","))))
+    := list = \ c =>
+        ?= cursor::ranged_p (cursor::squares_p (sequence_body e)) c ?|
+        | cursor::Took ((r, xs), after) =>
+            := (from, _) = r
+            ? e::top_down ?> cursor::Took (fold_list (from, from) xs, after) |: cursor::Failed ([ (r, ast::ListLiteralsNotAllowedInBottomUp) ], after)
+        | cursor::Failed (er, at) => cursor::Failed (er, at)
+    := text = cursor::map_p (\ ((a, s, b) : ast::range * string * ast::range) => ast::RawLit (ast::joined a b, tokens::LitString s)) parse_types::read_string
+    cursor::alt_p value (cursor::alt_p default_value (cursor::alt_p var (cursor::alt_p join_form (cursor::alt_p backend_join (cursor::alt_p real_form (cursor::alt_p symbol (cursor::alt_p (match_or_function e) (cursor::alt_p rounds (cursor::alt_p list (cursor::alt_p (type_if_then_else e) (cursor::alt_p (if_then_else e) (cursor::alt_p (fun_form e) (cursor::alt_p (forall_form e) text))))))))))))) c
+
+:& :~ pattern_when (e : term_env) (c : cursor::cursor) : cursor::step ast::pattern =
+    := guard = cursor::opt_p (cursor::right_p (cursor::skip_keyword tokens::SpecWhen) (root_term e))
+    := guarded = \ ((a, b) : ast::pattern * option ast::raw_expr) => ?= b ?| | Some x => ast::PatWhen (ast::joined (ast::range_of_pattern a) (ast::range_of_expr x), a, x) | None => a
+    cursor::map_p guarded (cursor::pair_p patterns::root_pattern guard) c
+
+:& :~ annotated (e : term_env) (sep : string) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := ty = cursor::opt_p (cursor::right_p (cursor::skip_op ":") (parse_types::root_type (annot_flags e)))
+    := body = cursor::pair_p (cursor::skip_op sep) (cursor::opt_p (root_term e))
+    := build = \ ((a, (r, b)) : option ast::raw_texpr * (ast::range * option ast::raw_expr)) =>
+        := x = ?= b ?| | Some x => x | None => ast::RawMissingBody r
+        ?= a ?| | Some t => ast::RawAnnot (ast::joined (ast::range_of_expr x) (ast::range_of_texpr t), x, t) | None => x
+    cursor::map_p build (cursor::pair_p ty body) c
+
+:& :~ fun_form (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    ?= cursor::right_p (cursor::skip_keyword tokens::SpecFun) (cursor::pair_p (cursor::many1_p patterns::root_pattern_pair) (annotated e "=>")) c ?|
+    | cursor::Took ((pats, body), after) =>
+        ?= patterns::patterns_validate pats ?|
+        | [] => cursor::Took (fold_funs pats body, after)
+        | er => cursor::Failed (er, after)
+    | cursor::Failed (er, at) => cursor::Failed (er, at)
+
+:& :~ forall_form (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    ? e::top_down ?> cursor::Failed ([], c)
+    |:
+        ?= cursor::pair_p parse_types::forall_p (cursor::pair_p (cursor::many_p patterns::root_pattern_pair) (annotated e "=>")) c ?|
+        | cursor::Took ((vars, (pats, body)), after) =>
+            ?= patterns::patterns_validate pats ?|
+            | [] => cursor::Took (fold_foralls vars (fold_funs pats body), after)
+            | er => cursor::Failed (er, after)
+        | cursor::Failed (er, at) => cursor::Failed (er, at)
+
+:& :~ clauses (e : term_env) (allow_empty : bool) (c : cursor::cursor) : cursor::step (list clause) =
+    := bar = parse_types::bar (parse_types::col c)
+    := one = cursor::pair_p (pattern_when e) (cursor::right_p (cursor::skip_op "=>") (root_term e))
+    := items = ? allow_empty ?> cursor::sep_by_p one bar |: cursor::sep_by1_p one bar
+    ?= cursor::right_p (parse_types::optional_p bar) items c ?|
+    | cursor::Took (l, after) =>
+        ?= concat_found (listm::map (\ ((a, _) : clause) => patterns::patterns_validate [ a ]) l) ?|
+        | [] => cursor::Took (l, after)
+        | er => cursor::Failed (er, after)
+    | cursor::Failed (er, at) => cursor::Failed (er, at)
+
+:& :~ match_or_function (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := function_form = cursor::map_p (\ ((r, l) : ast::range * list clause) => ast::RawFun (r, l)) (cursor::ranged_p (cursor::right_p (cursor::skip_keyword tokens::SpecFunction) (clauses e !-)))
+    := match_form = \ (c : cursor::cursor) =>
+        := scrutinee = root_term { e ?| continuation_column = Some (parse_types::col c) }
+        := head = cursor::left_p (cursor::right_p (cursor::skip_keyword tokens::SpecMatch) scrutinee) (cursor::skip_keyword tokens::SpecWith)
+        cursor::map_p (\ ((r, (a, cs)) : ast::range * (ast::raw_expr * list clause)) => lift r a cs) (cursor::ranged_p (cursor::pair_p head (clauses e !+))) c
+    cursor::alt_p function_form match_form c
+
+:& :~ if_then_else (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := i = parse_types::col c
+    := part = \ (k : tokens::token_keyword) => cursor::ranged_p (cursor::right_p (cursor::skip_keyword k) (root_term e))
+    := aligned = \ (k : tokens::token_keyword) => parse_types::indented i (\ a b => a <= b) (part k)
+    := head = cursor::pair_p (part tokens::SpecIf) (aligned tokens::SpecThen)
+    := elifs = cursor::many_p (cursor::pair_p (aligned tokens::SpecElif) (aligned tokens::SpecThen))
+    := build = \ ((((cond, tr), more), otherwise) : ((ranged_expr * ranged_expr) * list (ranged_expr * ranged_expr)) * option ranged_expr) => snd (if_part cond tr (fold_elifs more otherwise))
+    cursor::map_p build (cursor::pair_p (cursor::pair_p head elifs) (cursor::opt_p (aligned tokens::SpecElse))) c
+
+:& :~ type_if_then_else (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := i = parse_types::col c
+    := annot = parse_types::root_type (annot_flags e)
+    := opening = cursor::attempt_p (cursor::right_p (cursor::skip_keyword tokens::SpecIf) (cursor::skip_keyword tokens::SpecType))
+    := head = parse_types::indented i (\ a b => a <= b) (cursor::ranged_p (cursor::right_p opening (cursor::pair_p annot (cursor::right_p (cursor::skip_op "=") annot))))
+    := part = \ (k : tokens::token_keyword) => parse_types::indented i (\ a b => a <= b) (cursor::ranged_p (cursor::right_p (cursor::skip_keyword k) (root_term e)))
+    := build = \ ((((cr, (a, b)), (tr_range, tr)), otherwise) : ((ast::range * (ast::raw_texpr * ast::raw_texpr)) * ranged_expr) * option ranged_expr) =>
+        ?= otherwise ?|
+        | Some (fr, fl) => ast::RawTypeIfThenElse (ast::joined cr fr, a, b, tr, fl)
+        | None => ast::RawTypeIfThen (ast::joined cr tr_range, a, b, tr)
+    cursor::map_p build (cursor::pair_p (cursor::pair_p head (part tokens::SpecThen)) (cursor::opt_p (part tokens::SpecElse))) c
+
+:& :~ application_tight (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := next = expressions e
+    cursor::bind_p next (\ a => cursor::map_p (fold_apply a) (cursor::many_p (parse_types::expr_tight next))) c
+
+:& :~ sequence_body (e : term_env) (c : cursor::cursor) : cursor::step (list ast::raw_expr) =
+    := i = parse_types::col c
+    cursor::map_p concat_lists (cursor::many_p (parse_types::indented i (\ a b => a = b) (cursor::sep_by1_p (operators e) (cursor::skip_op ";")))) c
+
+:& :~ inbuilt_op (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := tuple_binding = ?= ops::inbuilt_operators "," ?| | Some (p, _) => p | None => 0i32
+    := argument = operator_chain { e ?| top_down = !- } tuple_binding
+    ?= cursor::ranged_p (cursor::pair_p cursor::read_big_var (cursor::rounds_p (cursor::sep_by_p argument (cursor::skip_op ",")))) c ?|
+    | cursor::Took ((r, ((ra, a), b)), after) =>
+        ?= ops::op_of_name a ?|
+        | Some op => cursor::Took (ast::RawOp (r, op, b), after)
+        | None => cursor::Failed ([ (ra, ast::InbuiltOpNotFound) ], after)
+    | cursor::Failed (er, at) => cursor::Failed (er, at)
+
+:& :~ unary_op (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := next = application_tight e
+    := array = \ (o : ast::range) (c : cursor::cursor) =>
+        ? e::top_down ?> cursor::map_p (\ ((_, xs) : ast::range * list ast::raw_expr) => ast::RawApply (o, ast::RawV (o, "array", !+), ast::RawArray (o, xs))) (cursor::ranged_p (cursor::squares_p (sequence_body e))) c
+        |: cursor::Failed ([ (o, ast::ArrayLiteralsNotAllowedInBottomUp) ], c)
+    := bottom_up_only = \ (p : cursor::cursor -> cursor::step ast::raw_expr) (c : cursor::cursor) => ? e::top_down ?> cursor::Failed ([], c) |: p c
+    := typed = cursor::map_p (\ ((r, x) : ast::range * ast::raw_texpr) => ast::RawType (r, x)) (cursor::ranged_p type_expr)
+    := type_to_var = \ (o : ast::range) => cursor::map_p (\ ((r, x) : ast::range * ast::raw_texpr) => ast::RawOp (ast::joined o r, ops::TypeToVar, [ ast::RawType (r, x) ])) (cursor::ranged_p type_expr)
+    := after = \ ((o, a) : ast::named) =>
+        ? a = ";" ?> array o
+        |? a = "!!!!" ?> inbuilt_op e
+        |? a = "`" ?> bottom_up_only typed
+        |? a = "``" ?> bottom_up_only (type_to_var o)
+        |? a = "`$" ?> cursor::map_p (\ ((r, x) : ast::named) => ast::RawV (r, x, !-)) cursor::read_var
+        |: cursor::map_p (\ (b : ast::raw_expr) => ast::RawApply (ast::joined o (ast::range_of_expr b), ast::rawv (o, "~" ++# a), b)) next
+    cursor::alt_p (cursor::bind_p cursor::read_unary_op after) next c
+
+:& :~ application (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := column = floor_or_col e::continuation_column c
+    := next = unary_op { e ?| continuation_column = None }
+    cursor::bind_p next (\ a => cursor::map_p (fold_apply a) (cursor::many_p (parse_types::indented column (\ x y => x < y) next))) c
+
+:& :~ operators (e : term_env) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    := i = parse_types::col c
+    := annotation = cursor::opt_p (parse_types::indented i (\ a b => a <= b) (cursor::right_p (cursor::skip_op ":") (parse_types::root_type (annot_flags e))))
+    := annotate = \ ((a, b) : ast::raw_expr * option ast::raw_texpr) => ?= b ?| | Some t => ast::RawAnnot (ast::joined (ast::range_of_expr a) (ast::range_of_texpr t), a, t) | None => a
+    cursor::map_p annotate (cursor::pair_p (operator_chain e (lowest_binding ())) annotation) c
+
+:& :~ operator_chain (e : term_env) (rbp_floor : i32) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    tdop { e ?| operator_floor = None } (floor_or_col e::operator_floor c) rbp_floor c
+
+:& :~ tdop (e : term_env) (i : i32) (rbp : i32) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    cursor::bind_p (application e) (chain_loop e i rbp) c
+
+:& :~ chain_loop (e : term_env) (i : i32) (rbp : i32) (left : ast::raw_expr) (c : cursor::cursor) : cursor::step ast::raw_expr =
+    ?= parse_types::indented i (\ a b => a <= b) read_operator c ?|
+    | cursor::Took ((prec, assoc, parsed), next) =>
+        ? rbp < prec ?>
+            := right_binding = ?= assoc ?| | ops::AssocRight => prec - 1i32 | _ => prec
+            ?= tdop e i right_binding next ?|
+            | cursor::Took (right, after) => chain_loop e i rbp (apply_operator parsed left right) after
+            | cursor::Failed (er, at) => cursor::Failed (er, at)
+        |: cursor::Took (left, c)
+    | cursor::Failed (er, at) => ? cursor::consumed c at ?> cursor::Failed (er, at) |: cursor::Took (left, c)
+
+:~ ^ expr_text (x : ast::raw_expr) : string =
+    ?= x ?|
+    | ast::RawB _ => "()"
+    | ast::RawV (_, n, plain) => ? plain ?> n |: "$" ++# n
+    | ast::RawLit (_, tokens::LitString s) => "\"" ++# s ++# "\""
+    | ast::RawLit (_, tokens::LitInt32 n) => sm'::format n
+    | ast::RawLit (_, tokens::LitBool b) => ? b ?> "true" |: "false"
+    | ast::RawLit _ => "lit"
+    | ast::RawDefaultLit (_, s) => s
+    | ast::RawSymbol (_, s) => "." ++# s
+    | ast::RawApply (_, a, b) => "(" ++# expr_text a ++# " " ++# expr_text b ++# ")"
+    | ast::RawPair (_, a, b) => "(" ++# expr_text a ++# ", " ++# expr_text b ++# ")"
+    | ast::RawSeq (_, a, b) => "(" ++# expr_text a ++# "; " ++# expr_text b ++# ")"
+    | ast::RawIfThenElse (_, a, b, otherwise) => "if(" ++# expr_text a ++# ", " ++# expr_text b ++# ", " ++# expr_text otherwise ++# ")"
+    | ast::RawIfThen (_, a, b) => "if(" ++# expr_text a ++# ", " ++# expr_text b ++# ")"
+    | ast::RawTypeIfThenElse (_, a, b, tr, fl) => "tif(" ++# parse_types::type_text a ++# " = " ++# parse_types::type_text b ++# ", " ++# expr_text tr ++# ", " ++# expr_text fl ++# ")"
+    | ast::RawTypeIfThen (_, a, b, tr) => "tif(" ++# parse_types::type_text a ++# " = " ++# parse_types::type_text b ++# ", " ++# expr_text tr ++# ")"
+    | ast::RawJoinPoint (_, backend, body, _) => "join " ++# (?= backend ?| | Some (_, n) => n ++# " " | None => "") ++# expr_text body
+    | ast::RawAnnot (_, a, t) => "(" ++# expr_text a ++# " : " ++# parse_types::type_text t ++# ")"
+    | ast::RawOp (_, _, xs) => "op(" ++# sm'::concat_list ", " (listm::map expr_text xs) ++# ")"
+    | ast::RawArray (_, xs) => ";[" ++# sm'::concat_list "; " (listm::map expr_text xs) ++# "]"
+    | ast::RawReal (_, a) => "real " ++# expr_text a
+    | ast::RawHeapMutableSet (_, t, xs, v) => "set(" ++# expr_text t ++# " [" ++# sm'::concat_list "; " (listm::map expr_text xs) ++# "] " ++# expr_text v ++# ")"
+    | ast::RawFun (_, cs) => "fun(" ++# sm'::concat_list "; " (listm::map clause_text cs) ++# ")"
+    | ast::RawMatch (_, a, cs) => "match(" ++# expr_text a ++# ": " ++# sm'::concat_list "; " (listm::map clause_text cs) ++# ")"
+    | ast::RawForall (_, ((_, (n, _)), _), b) => "forall " ++# n ++# ". " ++# expr_text b
+    | ast::RawMissingBody _ => "missing"
+    | _ => "?"
+
+:& :~ clause_text ((p, body) : clause) : string =
+    := head = ?= p ?| | ast::PatWhen (_, a, w) => patterns::pattern_text a ++# " when " ++# expr_text w | _ => patterns::pattern_text p
+    head ++# " => " ++# expr_text body
+
+:~ shown_term (text : string) : string =
+    ?= root_term (top_env ()) (cursor::line_cursor text) ?|
+    | cursor::Took (x, next) => ? (listm::length next::rest : i32) = 0i32 ?> expr_text x |: expr_text x ++# " +rest"
+    | cursor::Failed (e, _) => "fail " ++# sm'::format (listm::length e : i32)
+
+///> rust
+///> fsharp
+///> gleam
+:# operators_bind_by_precedence_and_associativity_like_the_reference =
+    (shown_term "a + b * c", shown_term "a |> f |> g", shown_term "a, b, c", shown_term "a = b && c", shown_term "a && b || c", shown_term "1 + 2")
+    |> _assert_eq ("((+ a) ((* b) c))", "((|> ((|> a) f)) g)", "(a, (b, c))", "if(((= a) b), c, false)", "if(if(a, b, false), true, c)", "((+ 1) 2)")
+
+///> rust
+///> fsharp
+///> gleam
+:# application_tuples_lists_and_annotations_build_the_reference_shapes =
+    (shown_term "f x y", shown_term "f(x)", shown_term "(a, b)", shown_term "()", shown_term "[a; b]", shown_term "x : i32")
+    |> _assert_eq ("((f x) y)", "(f x)", "(a, b)", "()", "(Cons (a, (Cons (b, Nil))))", "(x : i32)")
+
+///> rust
+///> fsharp
+///> gleam
+:# unary_forms_and_a_dangling_operator_follow_the_reference =
+    (shown_term ";[a; b]", shown_term "!!!!Dyn(x)", shown_term "real x", shown_term "a +", shown_term "\"s\" .x")
+    |> _assert_eq ("(array ;[a; b])", "op(x)", "real x", "fail 0", "(\"s\" .x)")
+
+///> rust
+///> fsharp
+///> gleam
+:# conditionals_and_join_points_follow_the_reference =
+    (shown_term "? a ?> b |: c", shown_term "if a then b elif c then d else e", shown_term "? a ?> b", shown_term "join f x", shown_term "join_backend Rust x", shown_term "? :== a = b ?> x |: y")
+    |> _assert_eq ("if(a, b, c)", "if(a, b, if(c, d, e))", "if(a, b)", "join (f x)", "join Rust x", "tif(a = b, x, y)")
+
+///> rust
+///> fsharp
+///> gleam
+:# lambdas_and_their_validation_follow_the_reference =
+    (shown_term "fun x => x", shown_term "fun x y => x", shown_term "fun x : i32 => x", shown_term "fun x x => x", shown_term "real forall a. x => x")
+    |> _assert_eq ("fun(x => x)", "fun(x => fun(y => x))", "fun(x => (x : i32))", "fail 1", "real forall a. fun(x => x)")
+
+///> rust
+///> fsharp
+///> gleam
+:# matches_functions_guards_and_or_pattern_joins_follow_the_reference =
+    (shown_term "?= a ?| | Some x => x | None => b", shown_term "function | A => 1 | B => 2", shown_term "?= a ?| | x ?& f x => x", shown_term "?= a ?| | A x | B x => f x", shown_term "?= a ?| | A x | B x => x")
+    |> _assert_eq ("match(a: Some(x) => x; None(_) => b)", "fun(A(_) => 1; B(_) => 2)", "match(a: x when (f x) => x)", "match(fun(x => join (f x)):  or 0 => match(a: (A(x) | B(x)) => ( or 0 x)))", "match(a: (A(x) | B(x)) => x)")

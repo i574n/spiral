@@ -17,11 +17,6 @@
     | Constant : f32
     | WarmupCosine : cosine
 
-:= zeros (n : i32) : floats =
-    := o : floats = create n
-    f32_kernels::zero_from o 0 n 0
-    o
-
 := decayed (c : cosine) (it : i32) : f32 =
     := ratio : f32 = conv (it - c::warmup) / conv (c::decay_steps - c::warmup)
     c::floor + 0.5f32 * (1.0f32 + cos (3.14159265f32 * ratio)) * (c::peak - c::floor)
@@ -34,7 +29,7 @@
     | Constant lr => lr
     | WarmupCosine c => cosine_lr c it
 
-:= zero_moments (n : i32) : moments = { m = zeros n; v = zeros n; step = 0 }
+:= zero_moments (n : i32) : moments = { m = f32_grads::zeros n; v = f32_grads::zeros n; step = 0 }
 
 := bias_at (o : adamw) (step : i32) : bias =
     { c1 = 1.0f32 - o::beta1 ** conv step; c2 = 1.0f32 - o::beta2 ** conv step }

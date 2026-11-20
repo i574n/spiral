@@ -88,8 +88,7 @@
     ?> 0i32 - digits s (at + 1i32) (sm::length s) 0i32
     |: digits s at (sm::length s) 0i32
 
-:~ text_between (s : string) (from : i32) (until : i32) : string =
-    ? until <= from ?> "" |: sm::slice s { from = from; to = until - 1i32 }
+:~ text_between (s : string) (from : i32) (until : i32) : string = sm'::slice_or_empty from until s
 :~ hex_letter_high (c : char) : i32 =
     ? c = 'd' || c = 'D'
     ?> 13i32

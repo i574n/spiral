@@ -782,7 +782,7 @@
     := split = arguments |> optionm'::default_value "" |> split_args |> resultm::get
     := args = split |> am'::to_list_base' |> listm'::unbox
     := found = executable_term file_name
-    ? erlang_term::equal found (erlang_term::atom "false")
+    ? erlang_term::is_atom "false" found
     ?> -1i32, "process.execute_with_options: " ++# file_name ++# " is not on PATH"
     |:
         := port = erlang_port::open_executable found (gleam_port_options options args)
@@ -910,7 +910,7 @@
 
 := gleam_captured (program : string) (args : list string) (merged : bool) : captured =
     := found = erlang_term::apply "os" "find_executable" [ erlang_term::charlist program ]
-    ? erlang_term::equal found (erlang_term::atom "false")
+    ? erlang_term::is_atom "false" found
     ?> not_run ()
     |:
         := argv = erlang_term::tuple [ erlang_term::atom "args"; gleam_argv args ]
@@ -1073,7 +1073,7 @@
             := p = gleam_started_port s
             := key = exit_key p
             := kept = erlang_process::dictionary_get key
-            ? erlang_term::equal kept (erlang_term::atom "undefined") ?>
+            ? erlang_term::is_atom "undefined" kept ?>
                 := deadline = date_time::monotonic_milliseconds () + conv ms
                 := outcome = gleam_waited (erlang_port::selector_of p) (gleam_started_log s) deadline
                 ?= outcome ?|

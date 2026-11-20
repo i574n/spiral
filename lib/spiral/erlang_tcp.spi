@@ -1,11 +1,12 @@
 :< sm'_operators
+:< erlang_term
 
 :# erlang_tcp static =
     :< testing
 
-:! socket = erlang_term::term
+:! socket = term
 
-:! listener = erlang_term::term
+:! listener = term
 
 :| tcp_failure =
     | Refused
@@ -17,115 +18,105 @@
     | Forever
     | WithinMs : i32
 
-:= element (index : i32) (tuple : erlang_term::term) : erlang_term::term =
-    erlang_term::apply "erlang" "element" [ erlang_term::of index; tuple ]
-
-:= is_atom (name : string) (t : erlang_term::term) : bool = erlang_term::equal t (erlang_term::atom name)
-
-:= failure_of (reason : erlang_term::term) : tcp_failure =
+:= failure_of (reason : term) : tcp_failure =
     ? is_atom "econnrefused" reason
     ?> Refused
     |? is_atom "timeout" reason
     ?> TimedOut
     |? is_atom "closed" reason
     ?> Closed
-    |: Failed (erlang_term::inspect reason)
+    |: Failed (inspect reason)
 
-:= is_ok (t : erlang_term::term) : bool = erlang_term::equal t (erlang_term::atom "ok")
+:= outcome_of (t : term) : result term tcp_failure =
+    ? is_atom "ok" (element_at 1i32 t) ?> Ok (element_at 2i32 t) |: Error (failure_of (element_at 2i32 t))
 
-:= outcome_of (t : erlang_term::term) : result erlang_term::term tcp_failure =
-    ? is_ok (element 1i32 t) ?> Ok (element 2i32 t) |: Error (failure_of (element 2i32 t))
+:= done_of (t : term) : result () tcp_failure = ? is_atom "ok" t ?> Ok () |: Error (failure_of (element_at 2i32 t))
 
-:= done_of (t : erlang_term::term) : result () tcp_failure = ? is_ok t ?> Ok () |: Error (failure_of (element 2i32 t))
+:= wait_term (w : tcp_wait) : term =
+    ?= w ?| Forever => atom "infinity" | WithinMs ms => of ms
 
-:= wait_term (w : tcp_wait) : erlang_term::term =
-    ?= w ?| Forever => erlang_term::atom "infinity" | WithinMs ms => erlang_term::of ms
+:= line_framing () : list term =
+    [ pair "packet" (atom "line"); pair "active" (atom "false") ]
 
-:= option_pair (key : string) (value : erlang_term::term) : erlang_term::term =
-    erlang_term::tuple [ erlang_term::atom key; value ]
+:= line_options () : list term =
+    atom "binary"
+    :: listm::append (line_framing ()) [ pair "packet_size" (of 8000000i32) ]
 
-:= line_framing () : list erlang_term::term =
-    [ option_pair "packet" (erlang_term::atom "line"); option_pair "active" (erlang_term::atom "false") ]
+:= loopback () : term = [ 127i32; 0i32; 0i32; 1i32 ] |> listm::map of |> tuple
 
-:= line_options () : list erlang_term::term =
-    erlang_term::atom "binary"
-    :: listm::append (line_framing ()) [ option_pair "packet_size" (erlang_term::of 8000000i32) ]
-
-:= loopback () : erlang_term::term = [ 127i32; 0i32; 0i32; 1i32 ] |> listm::map erlang_term::of |> erlang_term::tuple
-
-:= connect_args (port : i32) (timeout_ms : i32) : list erlang_term::term =
-    [ loopback (); erlang_term::of port; erlang_term::list_term (line_options ()); erlang_term::of timeout_ms ]
+:= connect_args (port : i32) (timeout_ms : i32) : list term =
+    [ loopback (); of port; list_term (line_options ()); of timeout_ms ]
 
 := connect_local (port : i32) (timeout_ms : i32) : result socket tcp_failure =
-    erlang_term::apply "gen_tcp" "connect" (connect_args port timeout_ms) |> outcome_of |> resultm::map socket
+    apply "gen_tcp" "connect" (connect_args port timeout_ms) |> outcome_of |> resultm::map socket
 
-:= raw (s : socket) : erlang_term::term = ?= s ?| socket t => t
+:= raw (s : socket) : term = ?= s ?| socket t => t
 
 := send_line (s : socket) (line : string) : result () tcp_failure =
-    erlang_term::apply "gen_tcp" "send" [ raw s; erlang_term::of (line ++# "\n") ] |> done_of
+    apply "gen_tcp" "send" [ raw s; of (line ++# "\n") ] |> done_of
 
-:= trimmed (t : erlang_term::term) : string = erlang_term::apply "string" "trim" [ t ] |> erlang_term::cast
+:= trimmed (t : term) : string = apply "string" "trim" [ t ] |> cast
 
 := receive_line (s : socket) (w : tcp_wait) : result string tcp_failure =
-    erlang_term::apply "gen_tcp" "recv" [ raw s; erlang_term::of 0i32; wait_term w ]
+    apply "gen_tcp" "recv" [ raw s; of 0i32; wait_term w ]
     |> outcome_of
     |> resultm::map trimmed
 
 := receive_line_within (s : socket) (ms : i32) : result string tcp_failure = receive_line s (WithinMs ms)
 
 := close (s : socket) : () =
-    := closed = erlang_term::apply "gen_tcp" "close" [ raw s ]
+    := closed = apply "gen_tcp" "close" [ raw s ]
     ()
 
 := listen_local () : result listener tcp_failure =
-    := opts = erlang_term::list_term (listm::append (line_options ()) [ option_pair "ip" (loopback ()) ])
-    erlang_term::apply "gen_tcp" "listen" [ erlang_term::of 0i32; opts ] |> outcome_of |> resultm::map listener
+    := opts = list_term (listm::append (line_options ()) [ pair "ip" (loopback ()) ])
+    apply "gen_tcp" "listen" [ of 0i32; opts ] |> outcome_of |> resultm::map listener
 
-:= listener_raw (l : listener) : erlang_term::term = ?= l ?| listener t => t
+:= listener_raw (l : listener) : term = ?= l ?| listener t => t
 
 := listener_port (l : listener) : i32 =
-    ?= erlang_term::apply "inet" "port" [ listener_raw l ] |> outcome_of ?|
-    | Ok port => erlang_term::cast port
+    ?= apply "inet" "port" [ listener_raw l ] |> outcome_of ?|
+    | Ok port => cast port
     | Error _ => 0i32
 
 := accept (l : listener) (w : tcp_wait) : result socket tcp_failure =
-    erlang_term::apply "gen_tcp" "accept" [ listener_raw l; wait_term w ] |> outcome_of |> resultm::map socket
+    apply "gen_tcp" "accept" [ listener_raw l; wait_term w ] |> outcome_of |> resultm::map socket
 
 := stop_listening (l : listener) : () =
-    := closed = erlang_term::apply "gen_tcp" "close" [ listener_raw l ]
+    := closed = apply "gen_tcp" "close" [ listener_raw l ]
     ()
 
-:= raw_options () : list erlang_term::term =
+:= raw_options () : list term =
     [
-        erlang_term::atom "binary"
-        option_pair "packet" (erlang_term::atom "raw")
-        option_pair "active" (erlang_term::atom "false")
+        atom "binary"
+        pair "packet" (atom "raw")
+        pair "active" (atom "false")
     ]
 
-:= raw_listen_options () : erlang_term::term =
-    := extra = [ option_pair "reuseaddr" (erlang_term::atom "true"); option_pair "ip" (loopback ()) ]
-    erlang_term::list_term (listm::append (raw_options ()) extra)
+:= raw_listen_options () : term =
+    := extra = [ pair "reuseaddr" (atom "true"); pair "ip" (loopback ()) ]
+    list_term (listm::append (raw_options ()) extra)
 
 := listen_raw_local_on (port : i32) : result listener tcp_failure =
-    erlang_term::apply "gen_tcp" "listen" [ erlang_term::of port; raw_listen_options () ]
+    apply "gen_tcp" "listen" [ of port; raw_listen_options () ]
     |> outcome_of
     |> resultm::map listener
 
 := listen_raw_local () : result listener tcp_failure =
-    erlang_term::apply "gen_tcp" "listen" [ erlang_term::of 0i32; raw_listen_options () ]
+    apply "gen_tcp" "listen" [ of 0i32; raw_listen_options () ]
     |> outcome_of
     |> resultm::map listener
 
 := receive_chunk (s : socket) (w : tcp_wait) : result string tcp_failure =
-    := got = erlang_term::apply "gen_tcp" "recv" [ raw s; erlang_term::of 0i32; wait_term w ]
-    got |> outcome_of |> resultm::map (\ t => erlang_term::cast t)
+    := got = apply "gen_tcp" "recv" [ raw s; of 0i32; wait_term w ]
+    got |> outcome_of |> resultm::map (\ t => cast t)
 
 := receive_chunk_within (s : socket) (ms : i32) : result string tcp_failure = receive_chunk s (WithinMs ms)
 
 := accept_forever (l : listener) : result socket tcp_failure = accept l Forever
 
 := send_text (s : socket) (text : string) : result () tcp_failure =
-    erlang_term::apply "gen_tcp" "send" [ raw s; erlang_term::of text ] |> done_of
+    apply "gen_tcp" "send" [ raw s; of text ] |> done_of
 
 := failure \* t. (r : result t tcp_failure) : option tcp_failure =
     ?= r ?|

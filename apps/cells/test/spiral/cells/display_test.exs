@@ -1,7 +1,7 @@
 defmodule Spiral.Cells.DisplayTest do
   use ExUnit.Case, async: false
 
-  alias Spiral.Cells.{Display, Notebook, Result}
+  alias Spiral.Cells.Notebook
 
   @rust "fn spiral_main() -> i32 {\n    0\n}\nfn main() {\n    std::process::exit(spiral_main());\n}\n"
   @svg "<svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>"
@@ -14,67 +14,67 @@ defmodule Spiral.Cells.DisplayTest do
       "before\nSPIRAL_CELLS_DISPLAY_BEGIN\nimage/svg+xml\n<svg>\n</svg>\nSPIRAL_CELLS_DISPLAY_END\nafter\n"
 
     assert {[%{mime: "image/svg+xml", data: "<svg>\n</svg>"}], "before\nafter\n"} =
-             Display.extract(stdout)
+             Spiral.Cells.Domain.extract(stdout)
 
     assert {[%{mime: "text/html", data: "<b>x</b>"}], "a"} =
-             Display.extract(
+             Spiral.Cells.Domain.extract(
                "a\r\nSPIRAL_CELLS_DISPLAY_BEGIN\r\ntext/html\r\n<b>x</b>\r\nSPIRAL_CELLS_DISPLAY_END"
              )
 
-    assert {[], "plain\r\ntext"} = Display.extract("plain\r\ntext")
+    assert {[], "plain\r\ntext"} = Spiral.Cells.Domain.extract("plain\r\ntext")
 
     assert {[], "x\nSPIRAL_CELLS_DISPLAY_BEGIN\ntext/html\nhalf"} =
-             Display.extract("x\nSPIRAL_CELLS_DISPLAY_BEGIN\ntext/html\nhalf")
+             Spiral.Cells.Domain.extract("x\nSPIRAL_CELLS_DISPLAY_BEGIN\ntext/html\nhalf")
   end
 
   test "a printed plot json block becomes an svg plot; a failed render stays visible as text" do
     json = ~s(["c", "x", "y", [["s", [1.0, 2.0], [3.0, 4.0]]]])
     stdout = "a\nSPIRAL_CELLS_DISPLAY_BEGIN\napplication/vnd.spiral.plot+json\n#{json}\nSPIRAL_CELLS_DISPLAY_END\nb\n"
-    {displays, kept} = Display.extract(stdout)
+    {displays, kept} = Spiral.Cells.Domain.extract(stdout)
     assert kept == "a\nb\n"
-    assert [%{mime: "image/svg+xml", data: "<svg>" <> _}] = Display.render_values(displays, render_plot: &fake_svg/1)
+    assert [%{mime: "image/svg+xml", data: "<svg>" <> _}] = Spiral.Cells.Domain.display_render_values(displays, render_plot: &fake_svg/1)
 
-    failed = Display.render_values(displays, render_plot: fn _ -> {:error, "no plot tool"} end)
+    failed = Spiral.Cells.Domain.display_render_values(displays, render_plot: fn _ -> {:error, "no plot tool"} end)
     assert [%{mime: "text/plain", data: "plot not rendered: no plot tool"}] = failed
-    assert [%{mime: "text/html", data: "<b/>"}] = Display.render_values([%{mime: "text/html", data: "<b/>"}], [])
+    assert [%{mime: "text/html", data: "<b/>"}] = Spiral.Cells.Domain.display_render_values([%{mime: "text/html", data: "<b/>"}], [])
   end
 
   test "plot frames become one animated svg; an empty frame list stays visible as text" do
     frame = ~s(["wave", "x", "y", [["0", [0.0, 1.0], [0.0, 0.5]]]])
     frames = %{mime: "application/vnd.spiral.plot-frames+json", data: "[#{frame}, #{frame}]"}
-    assert [%{mime: "image/svg+xml", data: svg}] = Display.render_values([frames], render_plot: &fake_svg/1)
+    assert [%{mime: "image/svg+xml", data: svg}] = Spiral.Cells.Domain.display_render_values([frames], render_plot: &fake_svg/1)
     assert length(String.split(svg, "<animate ")) == 3
     assert svg =~ ~s(keyTimes="0;0.5000;1.0000")
 
     empty = %{mime: "application/vnd.spiral.plot-frames+json", data: "[]"}
-    assert [%{mime: "text/plain", data: "plot frames not rendered: no frames"}] = Display.render_values([empty], [])
+    assert [%{mime: "text/plain", data: "plot frames not rendered: no frames"}] = Spiral.Cells.Domain.display_render_values([empty], [])
   end
 
   test "a line plot value becomes an svg display; other values stay values" do
     assert {nil, [%{mime: "image/svg+xml", data: svg}]} =
-             Display.from_value(@plot, render_plot: &fake_svg/1)
+             Spiral.Cells.Domain.display_from_value(@plot, render_plot: &fake_svg/1)
 
     assert svg ==
              ~S|<svg>["square","x","y",[["square",[-1.0,0.0,1.0e-7],[1.0,0.0,150.0]]]]</svg>|
 
-    assert {nil, [_, _]} = Display.from_value("[#{@plot}, #{@plot}]", render_plot: &fake_svg/1)
-    assert {"(1, 2)", []} = Display.from_value("(1, 2)", render_plot: &fake_svg/1)
-    assert {"[]", []} = Display.from_value("[]", render_plot: &fake_svg/1)
+    assert {nil, [_, _]} = Spiral.Cells.Domain.display_from_value("[#{@plot}, #{@plot}]", render_plot: &fake_svg/1)
+    assert {"(1, 2)", []} = Spiral.Cells.Domain.display_from_value("(1, 2)", render_plot: &fake_svg/1)
+    assert {"[]", []} = Spiral.Cells.Domain.display_from_value("[]", render_plot: &fake_svg/1)
 
     nan_plot = ~S|("c", "x", "y", [("s", [0.0], [NaN])])|
-    assert {^nan_plot, []} = Display.from_value(nan_plot, render_plot: &fake_svg/1)
+    assert {^nan_plot, []} = Spiral.Cells.Domain.display_from_value(nan_plot, render_plot: &fake_svg/1)
 
     assert {@plot, []} =
-             Display.from_value(@plot, render_plot: fn _ -> {:error, "no plot tool"} end)
+             Spiral.Cells.Domain.display_from_value(@plot, render_plot: fn _ -> {:error, "no plot tool"} end)
 
-    assert {nil, []} = Display.from_value(nil, [])
+    assert {nil, []} = Spiral.Cells.Domain.display_from_value(nil, [])
   end
 
   test "a host Rust cell's plot value and display blocks reach the result" do
     output =
       "SPIRAL_CELLS_DISPLAY_BEGIN\nimage/svg+xml\n#{@svg}\nSPIRAL_CELLS_DISPLAY_END\nline\nSPIRAL_CELLS_VALUE:#{@plot}\n"
 
-    assert {:ok, %Result{value: nil, stdout: "line", displays: displays}} =
+    assert {:ok, %{value: nil, stdout: "line", displays: displays}} =
              Spiral.Cells.run("///> rust\n1i32",
                compile: fn _ -> {:ok, @rust} end,
                rustc: fn _ -> :ok end,
@@ -86,15 +86,12 @@ defmodule Spiral.Cells.DisplayTest do
              displays
   end
 
-  test "displays render as Cells outputs and as display_data in the ipynb" do
+  test "displays render as Cells outputs" do
     assert %Kino.Image{mime_type: "image/svg+xml"} =
              Spiral.Cells.display_kino(%{mime: "image/svg+xml", data: @svg})
 
     assert %Kino.JS{module: Kino.HTML} =
              Spiral.Cells.display_kino(%{mime: "text/html", data: "<b>x</b>"})
-
-    assert %{"output_type" => "display_data", "data" => %{"image/svg+xml" => [_ | _]}} =
-             Notebook.display_output(%{mime: "image/svg+xml", data: "<svg>\n</svg>"})
   end
 
   test "a notebook cell's display lands in the ipynb" do

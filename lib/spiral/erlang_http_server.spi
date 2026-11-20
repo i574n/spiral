@@ -7,8 +7,6 @@
 
 := pieces (sep : string) (s : string) : list string = ? s = "" ?> [] |: sm'::split_list sep s
 
-:= cut (start : i32) (len : i32) (s : string) : string = sm'::substring start len s
-
 := head_end (s : string) : i32 = sm'::index_of "\r\n\r\n" s
 
 := after_prefix (prefix : string) (line : string) : string =
@@ -28,16 +26,16 @@
 
 := complete (acc : string) : bool =
     := at = head_end acc
-    at >= 0i32 && erlang_term::byte_size_of acc >= at + 4i32 + content_length (cut 0i32 at acc)
+    at >= 0i32 && erlang_term::byte_size_of acc >= at + 4i32 + content_length (sm'::substring 0i32 at acc)
 
 := split_once (sep : string) (s : string) : string * string =
     := i = sm'::index_of sep s
     := rest = i + sm'::length sep
-    ? i < 0i32 ?> s, "" |: cut 0i32 i s, sm'::substring rest (sm'::length s - rest) s
+    ? i < 0i32 ?> s, "" |: sm'::substring 0i32 i s, sm'::substring rest (sm'::length s - rest) s
 
 := upto (sep : string) (s : string) : string =
     := at = sm'::index_of sep s
-    ? at < 0i32 ?> s |: cut 0i32 at s
+    ? at < 0i32 ?> s |: sm'::substring 0i32 at s
 
 := first_line (head : string) : string = upto "\r\n" head
 
@@ -54,8 +52,6 @@
 := body_of (r : request) : string =
     := start = head_end r::raw + 4i32
     ? head_end r::raw < 0i32 ?> "" |: sm'::substring start (sm'::length r::raw - start) r::raw
-
-:= url_decoded (s : string) : string = url_query::url_decoded s
 
 := query_value (name : string) (query : string) : string = url_query::query_value name query
 

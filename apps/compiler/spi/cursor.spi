@@ -1,0 +1,290 @@
+///- --package .
+:< sm'_operators
+
+:# cursor static =
+    :< testing
+
+:== tok = ast::range * tokens::spiral_token
+
+:== cursor = { rest : list tok; at : i32; last : ast::range; firsts : list (i32 * i32) }
+
+:== failure = list (ast::range * ast::parser_error)
+
+:| step t =
+    | Took : t * cursor
+    | Failed : failure * cursor
+
+:~ origin () : ast::range = { line = 0i32; character = 0i32 }, { line = 0i32; character = 0i32 }
+
+:~ token_range (line : i32) ((span, token) : tokens::token_row) : tok =
+    ({ line = line; character = span::from }, { line = line; character = span::near_to }), token
+
+:~ ^ lines_from (line : i32) (lines : list (list tokens::token_row)) (acc : list tok) : list tok =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | rows :: more => lines_from (line + 1i32) more (listm::fold (\ (xs : list tok) (row : tokens::token_row) => token_range line row :: xs) acc rows)
+
+:~ ^ firsts_from (line : i32) (lines : list (list tokens::token_row)) (acc : list (i32 * i32)) : list (i32 * i32) =
+    ?= lines ?|
+    | [] => acc
+    | ((span, _) :: _) :: more => firsts_from (line + 1i32) more ((line, span::from) :: acc)
+    | [] :: more => firsts_from (line + 1i32) more acc
+
+:~ of_lines (first_line : i32) (lines : list (list tokens::token_row)) : cursor = { rest = lines_from first_line lines []; at = 0i32; last = origin (); firsts = firsts_from first_line lines [] }
+
+:~ ^ first_column_of_line (line : i32) (firsts : list (i32 * i32)) : i32 =
+    ?= firsts ?|
+    | [] => -1i32
+    | (l, column) :: more => ? l = line ?> column |: first_column_of_line line more
+
+:~ current (c : cursor) : option tok =
+    ?= c::rest ?|
+    | [] => None
+    | x :: _ => Some x
+
+:~ advance (c : cursor) : cursor =
+    ?= c::rest ?|
+    | [] => c
+    | (r, _) :: more => { rest = more; at = c::at + 1i32; last = r; firsts = c::firsts }
+
+:~ line_of (c : cursor) : i32 =
+    ?= c::rest ?|
+    | [] => -1i32
+    | ((from, _), _) :: _ => from::line
+
+:~ take \* t. (c : cursor) (pick : ast::range -> tokens::spiral_token -> option t) (error : ast::parser_error) : step t =
+    ?= c::rest ?|
+    | [] => Failed ([], c)
+    | (r, token) :: _ =>
+        ?= pick r token ?|
+        | Some v => Took (v, advance c)
+        | None => Failed ([ (r, error) ], c)
+
+:~ is_big (x : string) : bool =
+    := n = (sm'::length x : i32)
+    n > 0i32 && sm'::index 0i32 x >= 'A' && sm'::index 0i32 x <= 'Z'
+
+:~ skip_string_open (c : cursor) : step ast::range = take c (\ r t => ?= t ?| | tokens::TokStringOpen => Some r | _ => None) ast::ExpectedStringOpen
+
+:~ skip_string_close (c : cursor) : step ast::range = take c (\ r t => ?= t ?| | tokens::TokStringClose => Some r | _ => None) ast::ExpectedStringClose
+
+:~ skip_macro_open (c : cursor) : step ast::range = take c (\ r t => ?= t ?| | tokens::TokMacroOpen => Some r | _ => None) ast::ExpectedMacroOpen
+
+:~ skip_macro_close (c : cursor) : step ast::range = take c (\ r t => ?= t ?| | tokens::TokMacroClose => Some r | _ => None) ast::ExpectedMacroClose
+
+:~ skip_keyword (k : tokens::token_keyword) (c : cursor) : step tokens::token_keyword =
+    take c (\ _ t => ?= t ?| | tokens::TokKeyword k' ?& k' = k => Some k' | _ => None) (ast::ExpectedKeyword k)
+
+:~ skip_keyword_range (k : tokens::token_keyword) (c : cursor) : step ast::range =
+    take c (\ r t => ?= t ?| | tokens::TokKeyword k' ?& k' = k => Some r | _ => None) (ast::ExpectedKeyword k)
+
+:~ read_unary_op (c : cursor) : step ast::named =
+    take c (\ r t => ?= t ?| | tokens::TokUnaryOperator (x, _) => Some (r, x) | _ => None) ast::ExpectedAnyUnaryOperator
+
+:~ read_op (c : cursor) : step ast::named =
+    take c (\ r t => ?= t ?| | tokens::TokOperator (x, _) => Some (r, x) | _ => None) ast::ExpectedAnyOperator
+
+:~ skip_op (x : string) (c : cursor) : step ast::range =
+    take c (\ r t => ?= t ?| | tokens::TokOperator (y, _) ?& y = x => Some r | _ => None) (ast::ExpectedOperator x)
+
+:~ skip_unary_op (x : string) (c : cursor) : step string =
+    take c (\ _ t => ?= t ?| | tokens::TokUnaryOperator (y, _) ?& y = x => Some y | _ => None) (ast::ExpectedUnaryOperator x)
+
+:~ read_var (c : cursor) : step ast::named =
+    take c (\ r t => ?= t ?| | tokens::TokVar (x, _) => Some (r, x) | _ => None) ast::ExpectedVar
+
+:~ read_big_var (c : cursor) : step ast::named =
+    take c (\ r t => ?= t ?| | tokens::TokVar (x, _) ?& is_big x => Some (r, x) | _ => None) ast::ExpectedBigVar
+
+:~ read_macro_var (c : cursor) : step ast::raw_macro =
+    take c (\ r t =>
+        ?= t ?|
+        | tokens::TokMacroTermVar (x, mode) => Some (ast::RawMacroTerm (r, ast::rawv (r, x), mode))
+        | tokens::TokMacroTypeVar x => Some (ast::RawMacroType (r, ast::RawTVar (r, x)))
+        | tokens::TokMacroTypeLitVar x => Some (ast::RawMacroTypeLit (r, ast::RawTVar (r, x)))
+        | _ => None) ast::ExpectedMacroVar
+
+:~ read_macro_type_var (c : cursor) : step ast::raw_macro =
+    take c (\ r t =>
+        ?= t ?|
+        | tokens::TokMacroTypeVar x => Some (ast::RawMacroType (r, ast::RawTVar (r, x)))
+        | tokens::TokMacroTypeLitVar x => Some (ast::RawMacroTypeLit (r, ast::RawTVar (r, x)))
+        | _ => None) ast::ExpectedMacroTypeVar
+
+:~ text_piece (is_term_macro : bool) (t : tokens::spiral_token) : option string =
+    ?= t ?|
+    | tokens::TokText x => Some x
+    | tokens::TokEscapedVar ?& is_term_macro => Some "\\v"
+    | tokens::TokEscapedChar x => Some (sm'::of_char x)
+    | tokens::TokUnescapedChar x => Some (sm'::of_char x)
+    | _ => None
+
+:~ ^ text_loop (is_term_macro : bool) (c : cursor) (seen : option ast::range) (acc : string) : step (ast::range * string) =
+    ?= c::rest ?|
+    | [] => Failed ([], c)
+    | (r, t) :: _ =>
+        ?= text_piece is_term_macro t ?|
+        | Some piece =>
+            := joined = ?= seen ?| | Some a => ast::joined a r | None => r
+            text_loop is_term_macro (advance c) (Some joined) (acc ++# piece)
+        | None =>
+            ?= seen ?|
+            | Some a => Took ((a, acc), c)
+            | None => Failed ([ (r, ast::ExpectedText); (r, ast::ExpectedEscapedChar is_term_macro); (r, ast::ExpectedUnescapedChar) ], c)
+
+:~ read_text (is_term_macro : bool) (c : cursor) : step (ast::range * string) = text_loop is_term_macro c None ""
+
+:~ consumed (start : cursor) (now : cursor) : bool = now::at <> start::at
+
+:= map_p \* a b. (f : a -> b) (p : cursor -> step a) : cursor -> step b =
+    \ c =>
+        ?= p c ?|
+        | Took (v, next) => Took (f v, next)
+        | Failed (e, at) => Failed (e, at)
+
+:= bind_p \* a b. (p : cursor -> step a) (f : a -> cursor -> step b) : cursor -> step b =
+    \ c =>
+        ?= p c ?|
+        | Took (v, next) => f v next
+        | Failed (e, at) => Failed (e, at)
+
+:= pair_p \* a b. (p : cursor -> step a) (q : cursor -> step b) : cursor -> step (a * b) = bind_p p (\ x => map_p (\ y => x, y) q)
+
+:= left_p \* a b. (p : cursor -> step a) (q : cursor -> step b) : cursor -> step a = bind_p p (\ x => map_p (\ _ => x) q)
+
+:= right_p \* a b. (p : cursor -> step a) (q : cursor -> step b) : cursor -> step b = bind_p p (\ _ => q)
+
+:= opt_p \* a. (p : cursor -> step a) : cursor -> step (option a) =
+    \ c =>
+        ?= p c ?|
+        | Took (v, next) => Took (Some v, next)
+        | Failed (e, at) => ? consumed c at ?> Failed (e, at) |: Took (None, c)
+
+:= attempt_p \* a. (p : cursor -> step a) : cursor -> step a =
+    \ c =>
+        ?= p c ?|
+        | Took (v, next) => Took (v, next)
+        | Failed (e, _) => Failed (e, c)
+
+:= alt_p \* a. (p : cursor -> step a) (q : cursor -> step a) : cursor -> step a =
+    \ c =>
+        ?= p c ?|
+        | Took (v, next) => Took (v, next)
+        | Failed (ep, at_p) ?& consumed c at_p => Failed (ep, at_p)
+        | Failed (ep, _) =>
+            ?= q c ?|
+            | Took (v, next) => Took (v, next)
+            | Failed (eq, at_q) => ? consumed c at_q ?> Failed (eq, at_q) |: Failed (listm::append ep eq, at_q)
+
+:~ ^ many_loop \* a. (p : cursor -> step a) (c : cursor) (acc : list a) : step (list a) =
+    ?= p c ?|
+    | Took (v, next) => ? consumed c next ?> many_loop p next (v :: acc) |: failwith "many: the parser succeeded without consuming a token"
+    | Failed (e, at) => ? consumed c at ?> Failed (e, at) |: Took (listm::rev acc, c)
+
+:= many_p \* a. (p : cursor -> step a) : cursor -> step (list a) = \ c => many_loop p c []
+
+:= many1_p \* a. (p : cursor -> step a) : cursor -> step (list a) = bind_p p (\ x => map_p (\ rest => x :: rest) (many_p p))
+
+:= sep_by1_p \* a b. (p : cursor -> step a) (separator : cursor -> step b) : cursor -> step (list a) =
+    bind_p p (\ x => map_p (\ rest => x :: rest) (many_p (right_p separator p)))
+
+:= sep_by_p \* a b. (p : cursor -> step a) (separator : cursor -> step b) : cursor -> step (list a) =
+    \ c =>
+        ?= sep_by1_p p separator c ?|
+        | Took (v, next) => Took (v, next)
+        | Failed (e, at) => ? consumed c at ?> Failed (e, at) |: Took ([], c)
+
+:= ranged_p \* a. (p : cursor -> step a) : cursor -> step (ast::range * a) =
+    \ c =>
+        ?= p c ?|
+        | Took (v, next) =>
+            ?= current c ?|
+            | Some (first, _) ?& consumed c next => Took ((ast::joined first next::last, v), next)
+            | _ => failwith "ranged: the parser has to consume at least one token"
+        | Failed (e, at) => Failed (e, at)
+
+:~ skip_parenthesis (kind : tokens::parenthesis) (state : tokens::parenthesis_state) (c : cursor) : step () =
+    take c (\ _ t => ?= t ?| | tokens::TokParenthesis (k, s) ?& k = kind && s = state => Some () | _ => None) (ast::ExpectedParenthesis (kind, state))
+
+:= rounds_p \* a. (p : cursor -> step a) : cursor -> step a = left_p (right_p (skip_parenthesis tokens::Round tokens::Open) p) (skip_parenthesis tokens::Round tokens::Close)
+
+:= squares_p \* a. (p : cursor -> step a) : cursor -> step a = left_p (right_p (skip_parenthesis tokens::Square tokens::Open) p) (skip_parenthesis tokens::Square tokens::Close)
+
+:= curlies_p \* a. (p : cursor -> step a) : cursor -> step a = left_p (right_p (skip_parenthesis tokens::Curly tokens::Open) p) (skip_parenthesis tokens::Curly tokens::Close)
+
+:~ line_cursor (text : string) : cursor = of_lines 0i32 [ (tokens::tokenize_line (tokens::lex_state_init ()) text)::tokens ]
+
+:~ at0 (from : i32) (near_to : i32) : ast::range = { line = 0i32; character = from }, { line = 0i32; character = near_to }
+
+:~ took_value \* t. (s : step t) : option t =
+    ?= s ?|
+    | Took (v, _) => Some v
+    | Failed _ => None
+
+:~ next_of \* t. (s : step t) : cursor =
+    ?= s ?|
+    | Took (_, c) => c
+    | Failed (_, c) => c
+
+///> rust
+///> fsharp
+///> gleam
+:# a_macro_line_reads_open_text_borrowed_var_and_close_like_the_reference =
+    := c0 = line_cursor "$'ab\\n!&x'"
+    := s1 = skip_macro_open c0
+    := s2 = read_text !+ (next_of s1)
+    := s3 = read_macro_var (next_of s2)
+    := s4 = skip_macro_close (next_of s3)
+    := text = ?= took_value s2 ?| | Some (_, x) => x | None => "none"
+    := borrowed = ?= took_value s3 ?| | Some (ast::RawMacroTerm (_, _, tokens::TermBorrowed)) => !+ | _ => !-
+    := last = next_of s4
+    (text, borrowed, last::at, (listm::length last::rest : i32)) |> _assert_eq ("ab\n", !+, 5i32, 0i32)
+
+///> rust
+///> fsharp
+///> gleam
+:# a_mismatch_names_the_token_range_and_the_end_of_block_names_nothing =
+    := c = line_cursor "inl"
+    := wrong = read_var c
+    := at_end = read_var (advance c)
+    := wrong_errors = ?= wrong ?| | Failed (e, _) => (listm::length e : i32) | Took _ => -1i32
+    := end_errors = ?= at_end ?| | Failed (e, _) => (listm::length e : i32) | Took _ => -1i32
+    (wrong_errors, end_errors, line_of c, line_of (advance c)) |> _assert_eq (1i32, 0i32, 0i32, -1i32)
+
+///> rust
+///> fsharp
+///> gleam
+:# a_big_var_needs_an_uppercase_head_and_a_keyword_must_match =
+    := big = took_value (read_big_var (line_cursor "Some")) |> optionm::map snd
+    := small = took_value (read_big_var (line_cursor "some")) |> optionm::map snd
+    := kw = took_value (skip_keyword tokens::SpecInl (line_cursor "inl"))
+    := other = took_value (skip_keyword tokens::SpecLet (line_cursor "inl"))
+    (big, small, kw, other) |> _assert_eq (Some "Some", None, Some tokens::SpecInl, None)
+
+///> rust
+///> fsharp
+///> gleam
+:# alternatives_backtrack_only_when_nothing_was_consumed_and_merge_their_errors =
+    := c = line_cursor "x"
+    := neither = alt_p (skip_keyword tokens::SpecInl) (skip_keyword tokens::SpecLet) c
+    := merged = ?= neither ?| | Failed (e, at) => ((listm::length e : i32), at::at) | Took _ => (-1i32, -1i32)
+    := second = took_value (alt_p (map_p (\ _ => "kw") (skip_keyword tokens::SpecInl)) (map_p snd read_var) c)
+    (merged, second) |> _assert_eq ((2i32, 0i32), Some "x")
+
+///> rust
+///> fsharp
+///> gleam
+:# many_and_sep_by_stop_at_the_first_unconsumed_failure =
+    := names = took_value (many_p (map_p snd read_var) (line_cursor "a b c (")) |> optionm::map (\ (xs : list string) => sm'::concat_list "," xs)
+    := sep = took_value (sep_by_p (map_p snd read_var) (skip_op ",") (line_cursor "a, b, c")) |> optionm::map (\ (xs : list string) => sm'::concat_list "," xs)
+    := empty = took_value (sep_by_p (map_p snd read_var) (skip_op ",") (line_cursor "(")) |> optionm::map (\ (xs : list string) => (listm::length xs : i32))
+    (names, sep, empty) |> _assert_eq (Some "a,b,c", Some "a,b,c", Some 0i32)
+
+///> rust
+///> fsharp
+///> gleam
+:# ranged_spans_the_first_to_the_last_consumed_token_and_rounds_need_both_brackets =
+    := r = took_value (ranged_p (many1_p (map_p snd read_var)) (line_cursor "ab cd")) |> optionm::map fst
+    := inside = took_value (rounds_p (map_p snd read_var) (line_cursor "(x)"))
+    := open_only = took_value (rounds_p (map_p snd read_var) (line_cursor "(x"))
+    (r, inside, open_only) |> _assert_eq (Some (at0 0i32 5i32), Some "x", None)

@@ -1,10 +1,10 @@
 defmodule Spiral.Cells.TargetsZigReleaseTest do
   use ExUnit.Case, async: false
 
-  alias Spiral.Cells.{Targets, Toolchain}
+  alias Spiral.Cells.{Domain, Targets}
 
   test "with SPIRAL_CELLS_ZIG_RELEASE=1 a zig cell builds a ReleaseFast binary and reports build and run separately" do
-    zig = Toolchain.zig([])
+    zig = Domain.tool("zig", [])
 
     if is_binary(zig) and File.regular?(zig) do
       dir = Path.join(System.tmp_dir!(), "cells-zig-release-#{System.unique_integer([:positive])}")

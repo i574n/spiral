@@ -116,8 +116,6 @@
 := supervise_named (address : restart_name) : () =
     new OneForOne |> restart_tolerance 3i32 5i32 |> add (named_worker address |> with_restart Transient) |> start |> ignore
 
-:= pause (ms : i32) : () = erlang_term::apply "timer" "sleep" [ erlang_term::of ms ] |> ignore
-
 := count_after_bumps (inbox : restart_inbox) : i32 =
     otp_actor::send inbox Bump
     otp_actor::send inbox Bump
@@ -125,7 +123,7 @@
 
 := count_after_crash (inbox : restart_inbox) : i32 =
     otp_actor::send inbox Crash
-    pause 300i32
+    erlang_process::pause 300i32
     otp_actor::call inbox 5000i32 Ask
 
 := restart_counts (address : restart_name) : i32 * i32 =
@@ -145,11 +143,11 @@
 := intensity_probe (address : restart_name) (reply : erlang_process::subject erlang_process::pid) : () =
     := outcome = new OneForOne |> restart_tolerance 1i32 5i32 |> add (named_worker address |> with_restart Transient) |> start
     erlang_process::send reply (supervisor_pid outcome)
-    pause 10000i32
+    erlang_process::pause 10000i32
 
 := crash_and_check (address : restart_name) (watched : erlang_process::pid) : bool =
     otp_actor::send (erlang_process::named_subject address) Crash
-    pause 300i32
+    erlang_process::pause 300i32
     erlang_process::is_alive watched
 
 := intensity_outcome (address : restart_name) : bool * bool =

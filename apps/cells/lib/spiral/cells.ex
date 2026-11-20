@@ -1,36 +1,33 @@
 defmodule Spiral.Cells do
   alias Spiral.Cells.{
-    Builders,
-    Cell,
     CompilerClient,
-    Directives,
-    Display,
+    Domain,
     Mounts,
     ProcessError,
-    Result,
     Runner,
     SpiralError,
     Targets,
-    TimeoutError,
-    Toolchain
+    TimeoutError
   }
 
   @default_timeout 300_000
   @default_workspace_root Path.expand("../../../..", __DIR__)
+  @external_resource Path.expand("cells/console.spi", __DIR__)
+  @console File.read!(Path.expand("cells/console.spi", __DIR__))
 
-  @spec run(String.t(), keyword()) :: {:ok, Result.t()} | {:error, Exception.t()}
+  @spec run(String.t(), keyword()) :: {:ok, map()} | {:error, Exception.t()}
   def run(code, opts \\ []) when is_binary(code) do
     Process.put(:spiral_cells_last_targets, [])
 
     if String.trim(code) == "" do
-      {:ok, %Result{exit_status: 0, duration_ms: 0}}
+      {:ok, Domain.result_new(%{exit_status: 0, duration_ms: 0})}
     else
-      timeout = opts[:timeout] || Directives.scale_budget(@default_timeout)
+      timeout = opts[:timeout] || Domain.scale_budget(@default_timeout)
       validate_timeout!(timeout)
-      prepared = code |> Spiral.Cells.Lisp.expand(opts) |> Directives.prepare(opts)
+      prepared = Spiral.Cells.Domain.lisp_transpile(code, Spiral.Cells.Domain.tool("spl2spi", opts) || "") |> Domain.prepare_run(opts)
 
       case cell_builders(opts, prepared) do
-        [] -> {:error, %SpiralError{message: untargeted_cell_message()}}
+        [] -> {:error, Spiral.Cells.Domain.cells_spiral_error(untargeted_cell_message(), nil, nil)}
         builders -> run_targeted(builders, prepared, opts, timeout)
       end
     end
@@ -41,7 +38,7 @@ defmodule Spiral.Cells do
 
   defp run_targeted(builders, prepared, opts, timeout) do
     prepared =
-      if Enum.all?(builders, &Builders.host_rust?/1), do: own_main(prepared), else: prepared
+      if Enum.all?(builders, &Spiral.Cells.Domain.builders_host_rust/1), do: own_main(prepared), else: prepared
 
     timeout = prepared.timeout || timeout
     started = System.monotonic_time(:millisecond)
@@ -76,7 +73,7 @@ defmodule Spiral.Cells do
     end
   end
 
-  @spec eval!(String.t(), keyword()) :: Result.t() | atom()
+  @spec eval!(String.t(), keyword()) :: term()
   def eval!(code, opts \\ []) do
     if String.trim(code) == "" do
       Kino.nothing()
@@ -84,7 +81,7 @@ defmodule Spiral.Cells do
       case run(code, opts) do
         {:ok, result} ->
           show(result)
-          if result.value, do: result, else: Kino.nothing()
+          if result.value, do: Kino.Text.new(result.value, terminal: true), else: Kino.nothing()
 
         {:error, %SpiralError{result: result} = error} ->
           if result, do: show(result)
@@ -105,19 +102,7 @@ defmodule Spiral.Cells do
     end)
   end
 
-  defp record_target(builder, result, ms) do
-    status =
-      case result do
-        {:ok, %{exit_status: status}} when status not in [nil, 0] -> "failed"
-        {:ok, _} -> "passed"
-        {:error, %ProcessError{reason: :tool_missing}} -> "unsupported"
-        {:error, _} -> "failed"
-      end
-
-    row = %{target: builder.raw, status: status, ms: ms}
-    Process.put(:spiral_cells_targets, (Process.get(:spiral_cells_targets) || []) ++ [row])
-    result
-  end
+  defp record_target(builder, result, ms), do: Spiral.Cells.Domain.record_target(builder.raw, result, ms)
 
   @spec last_phases() :: map()
   def last_phases, do: Process.get(:spiral_cells_last_phases) || %{}
@@ -140,7 +125,7 @@ defmodule Spiral.Cells do
       System.get_env("SPIRAL_CELLS_WORKSPACE_ROOT") || @default_workspace_root
   end
 
-  defp show(%Result{stdout: stdout, html: html, displays: displays}) do
+  defp show(%{stdout: stdout, html: html, displays: displays}) do
     if stdout != "" do
       IO.write(if String.ends_with?(stdout, "\n"), do: stdout, else: stdout <> "\n")
     end
@@ -191,42 +176,11 @@ defmodule Spiral.Cells do
         assembled.()
 
       {first, other} ->
-        Process.put(
-          :spiral_cells_targets,
-          Enum.map(Process.get(:spiral_cells_targets) || [], fn row ->
-            if row.target == other.target, do: %{row | status: "disagrees"}, else: row
-          end)
-        )
-
-        {:error,
-         %ProcessError{
-           reason: :disagree,
-           message:
-             "#{if opts[:reference], do: "targets disagree with the reference #{first.target}", else: "targets disagree"}: #{first.target} printed #{inspect(shown(first))}, #{other.target} printed #{inspect(shown(other))}"
-         }}
+        Spiral.Cells.Domain.disagree_result(first, other, opts[:reference] != nil)
     end
   end
 
-  defp disagreement([_one], _prepared, _opts), do: nil
-
-  defp disagreement(chunks, prepared, opts) do
-    if opts[:agree] != true or prepared.print_code do
-      nil
-    else
-      case Enum.reject(chunks, &(shown(&1) == "")) do
-        [first | _] = shown_chunks ->
-          reference = Enum.find(shown_chunks, first, &(to_string(&1.target) == opts[:reference]))
-
-          case Enum.find(shown_chunks, &(shown(&1) != shown(reference))) do
-            nil -> nil
-            other -> {reference, other}
-          end
-
-        [] ->
-          nil
-      end
-    end
-  end
+  defp disagreement(chunks, prepared, opts), do: Spiral.Cells.Domain.disagreement(chunks, prepared.print_code, opts[:agree] == true, opts[:reference])
 
   @doc false
   def shown(chunk), do: Spiral.Cells.Domain.shown_text(chunk.stdout)
@@ -241,15 +195,15 @@ defmodule Spiral.Cells do
   def target_output(dir, %{tool: :gleam} = builder) do
     source_dir = Path.join([dir, "gleam", "src"])
     File.mkdir_p!(source_dir)
-    Path.join(source_dir, "main" <> Builders.ext(builder))
+    Path.join(source_dir, "main" <> Domain.builders_ext(builder))
   end
 
-  def target_output(dir, builder), do: Path.join(dir, "main" <> Builders.ext(builder))
+  def target_output(dir, builder), do: Path.join(dir, "main" <> Domain.builders_ext(builder))
 
   defp run_builder(builder, dir, spi, exe, prepared, opts, timeout, deadline) do
     output = target_output(dir, builder)
-    backend = Builders.backend(builder)
-    host = Builders.host_rust?(builder)
+    backend = Domain.builders_backend(builder)
+    host = Domain.builders_host_rust(builder)
     File.write!(spi, prepared.code)
 
     with {:ok, text, show_value} <-
@@ -262,7 +216,7 @@ defmodule Spiral.Cells do
       looked_up = System.monotonic_time(:millisecond)
 
       {result, memo} =
-        Spiral.Cells.Memo.code_result(opts, code_parts, fn ->
+        Spiral.Cells.Domain.memo_code_result(opts, code_parts, fn ->
           run_compiled(builder, output, backend, host, text, show_value, exe, prepared, opts, timeout, deadline)
         end)
 
@@ -284,15 +238,15 @@ defmodule Spiral.Cells do
         true ->
           File.write!(
             output,
-            if(backend == "Python + Cuda" and opts[:test_cell] != true, do: Cell.patch_python(text), else: text)
+            if(backend == "Python + Cuda" and opts[:test_cell] != true, do: Spiral.Cells.Domain.python_patched(text), else: text)
           )
 
           case in_slot(fn ->
                  timed(:target_ms, fn -> Targets.run(builder, output, opts, timeout, deadline) end)
                end) do
             {:ok, %{stdout: stdout} = ran} ->
-              {displays, stdout} = Display.extract(stdout)
-              displays = Display.render_values(displays, opts)
+              {displays, stdout} = Spiral.Cells.Domain.extract(stdout)
+              displays = Spiral.Cells.Domain.display_render_values(displays, opts)
 
               {:ok,
                chunk(
@@ -310,7 +264,7 @@ defmodule Spiral.Cells do
   end
 
   defp build_target(builder, true, text, show_value, rs, exe, opts, timeout, deadline) do
-    rust = Cell.patch_rust(text, show_value)
+    rust = Spiral.Cells.Domain.patch_rust(text, if(show_value, do: "1", else: "0"))
 
     with :ok <- reject_unpatched(rust),
          :ok <- File.write(rs, rust),
@@ -328,7 +282,7 @@ defmodule Spiral.Cells do
     end
   end
 
-  defp in_slot(fun) do    {result, _waited} = Spiral.Cells.Slots.run(fun, on_wait: &add_phase(:slot_wait_ms, &1))
+  defp in_slot(fun) do    {result, _waited} = Spiral.Cells.Domain.slots_run(fun, &add_phase(:slot_wait_ms, &1), nil)
     result
   end
 
@@ -343,41 +297,19 @@ defmodule Spiral.Cells do
     end
   end
 
-  defp add_phase(name, ms) when is_integer(ms) and ms >= 0 do
-    case Process.get(:spiral_cells_phases) do
-      %{} = phases ->
-        Process.put(:spiral_cells_phases, Map.update(phases, name, ms, &(&1 + ms)))
-
-        if name in [:slot_wait_ms, :queue_ms] do
-          case Process.get(:spiral_cells_deadline) do
-            deadline when is_integer(deadline) ->
-              Process.put(:spiral_cells_deadline, deadline + ms)
-
-            _ ->
-              :ok
-          end
-        end
-
-        :ok
-
-      _ ->
-        :ok
-    end
-  end
-
-  defp add_phase(_name, _ms), do: :ok
+  defp add_phase(name, ms), do: Spiral.Cells.Domain.add_phase(name, ms)
 
   defp run_host_rust(builder, text, show_value, rs, exe, prepared, opts, timeout, deadline) do
-    rust = timed(:patch_ms, fn -> Cell.patch_rust(text, show_value) end)
+    rust = timed(:patch_ms, fn -> Spiral.Cells.Domain.patch_rust(text, if(show_value, do: "1", else: "0")) end)
 
     with :ok <- reject_unpatched(rust),
          :ok <- File.write(rs, rust),
          :ok <- timed(:rustc_ms, fn -> rustc(rs, exe, opts, timeout, deadline) end),
          {:ok, ran} <- timed(:run_ms, fn -> execute(exe, opts, timeout, deadline) end) do
-      {value, stdout} = Cell.split_output(ran.output)
-      {displays, stdout} = Display.extract(stdout)
-      displays = Display.render_values(displays, opts)
-      {value, value_displays} = Display.from_value(value, opts)
+      {value, stdout} = Spiral.Cells.Domain.split_output(ran.output)
+      {displays, stdout} = Spiral.Cells.Domain.extract(stdout)
+      displays = Spiral.Cells.Domain.display_render_values(displays, opts)
+      {value, value_displays} = Spiral.Cells.Domain.display_from_value(value, opts)
 
       {:ok,
        chunk(
@@ -393,7 +325,7 @@ defmodule Spiral.Cells do
   defp chunk(builder, stdout, value, status, displays) do
     %{
       target: builder.raw,
-      ext: String.trim_leading(Builders.ext(builder), "."),
+      ext: String.trim_leading(Domain.builders_ext(builder), "."),
       tool: builder.tool,
       stdout: stdout,
       value: value,
@@ -403,63 +335,23 @@ defmodule Spiral.Cells do
   end
 
   defp shown_stdout(prepared, generated, stdout) do
-    if prepared.print_code do
-      generated <> if(stdout == "", do: "", else: "\n" <> stdout)
-    else
-      stdout
-    end
+    Spiral.Cells.Domain.shown_stdout(prepared.print_code, generated, stdout)
   end
 
-  defp assemble(chunks, missing, spi, started) do
-    result = assemble(chunks, spi, started)
-    unavailable = Enum.map(missing, fn {builder, _error} -> builder.raw end)
-
-    notes =
-      Enum.map_join(missing, "\n", fn {builder, error} ->
-        "#{builder.raw}: unavailable on this machine (#{error.message})"
-      end)
-
-    stdout =
-      cond do
-        notes == "" -> result.stdout
-        result.stdout == "" -> notes
-        true -> result.stdout <> "\n" <> notes
-      end
-
-    %{result | stdout: stdout, unavailable: unavailable}
-  end
+  defp assemble(chunks, missing, spi, started), do: Spiral.Cells.Domain.with_missing(assemble(chunks, spi, started), missing)
 
   defp assemble(chunks, spi, started) do
-    value =
-      Enum.reduce(chunks, nil, fn chunk, acc ->
-        if is_nil(chunk.value), do: acc, else: chunk.value
-      end)
+    core = Spiral.Cells.Domain.assemble_core(chunks)
 
-    status =
-      Enum.find_value(chunks, 0, fn chunk ->
-        if chunk.exit_status not in [nil, 0], do: chunk.exit_status
-      end)
-
-    stdout =
-      case chunks do
-        [one] ->
-          one.stdout
-
-        many ->
-          Enum.map_join(many, "\n", fn chunk ->
-            ".#{chunk.ext} (#{chunk.tool})\n" <> chunk.stdout
-          end)
-      end
-
-    %Result{
-      value: value,
-      stdout: stdout,
-      displays: Enum.flat_map(chunks, & &1.displays),
+    Domain.result_new(%{
+      value: core.value,
+      stdout: core.stdout,
+      displays: core.displays,
       source: File.read!(spi),
-      exit_status: status,
+      exit_status: core.exit_status,
       duration_ms: System.monotonic_time(:millisecond) - started,
       phases: phases()
-    }
+    })
   end
 
   defp phases do
@@ -474,8 +366,7 @@ defmodule Spiral.Cells do
   defp compile(dir, spi, output, backend, host, builder, prepared, opts, timeout, deadline) do
     show_value = not Map.get(prepared, :no_value, false)
     original = File.read!(spi)
-    test_block_main = String.contains?(original, "spiral_cells_test ()")
-    unit_first = opts[:test_cell] == true and prepared.generated_main and not test_block_main
+    unit_first = Spiral.Cells.Domain.compile_unit_first(opts[:test_cell] == true, prepared.generated_main, original)
 
     if unit_first do
       File.write!(spi, String.trim_trailing(original, "\n") <> "\n    0i32\n")
@@ -556,7 +447,7 @@ defmodule Spiral.Cells do
 
         cond do
           attempt == 1 and prepared.generated_main and
-              Cell.unit_result?(restore_type_lines(output_text)) ->
+              Spiral.Cells.Domain.unit_result(restore_type_lines(output_text)) == "1" ->
             retry.(String.trim_trailing(File.read!(spi), "\n") <> "\n    0i32\n")
 
           attempt == 1 and prepared.generated_main and
@@ -564,31 +455,16 @@ defmodule Spiral.Cells do
             retry.(show_value_main(File.read!(spi)))
 
           true ->
-            {:error, %SpiralError{message: clean(output_text, dir), details: File.read!(spi)}}
+            {:error, Spiral.Cells.Domain.cells_spiral_error(clean(output_text, dir), File.read!(spi), nil)}
         end
     end
   end
 
-  @main_head "inl main () : i32 =\n"
-
   @doc false
   def own_main(%{generated_main: false, code: code} = prepared) do
-    case code |> Spiral.Cells.Domain.main_span() |> String.split("\t") |> Enum.map(&Integer.parse/1) do
-      [{at, ""}, {len, ""}] ->
-        renamed =
-          binary_part(code, 0, at) <>
-            "inl spiral_cells_main () =" <> binary_part(code, at + len, byte_size(code) - at - len)
-
-        %{
-          prepared
-          | code:
-              String.trim_trailing(renamed) <> "\n\n" <> @main_head <> "    spiral_cells_main ()\n",
-            generated_main: true,
-            no_value: false
-        }
-
-      _ ->
-        prepared
+    case Spiral.Cells.Domain.own_main_code(code) do
+      "" -> prepared
+      owned -> %{prepared | code: owned, generated_main: true, no_value: false}
     end
   end
 
@@ -598,29 +474,14 @@ defmodule Spiral.Cells do
   def value_result?(output, code), do: Spiral.Cells.Domain.value_result(output, code)
 
   @doc false
-  def show_value_main(code) do
-    {at, len} = code |> :binary.matches(@main_head) |> List.last()
-    head = binary_part(code, 0, at + len)
-    body = binary_part(code, at + len, byte_size(code) - at - len) |> String.trim_trailing()
-
-    indented =
-      body
-      |> String.split("\n")
-      |> Enum.map_join("\n", fn line ->
-        if String.trim(line) == "", do: "", else: "    " <> line
-      end)
-
-    head <>
-      "    inl spiral_cells_value =\n" <>
-      indented <> "\n    console.show_value spiral_cells_value\n    0i32\n"
-  end
+  def show_value_main(code), do: Spiral.Cells.Domain.show_value_main(code)
 
   defp compile_default(spi, output, backend, opts, timeout, deadline) do
-    with :ok <- require_tool(Toolchain.dotnet(opts), "dotnet"),
-         :ok <- require_file(Toolchain.compiler_dll(opts), "Spiral compiler"),
+    with :ok <- require_tool(Domain.tool("dotnet", opts), "dotnet"),
+         :ok <- require_file(Domain.tool("compiler_dll", opts), "Spiral compiler"),
          :ok <-
            require_file(
-             Path.join(Toolchain.package_dir(opts), "core/package.spiproj"),
+             Path.join(Domain.tool("package_dir", opts), "core/package.spiproj"),
              "Spiral core package"
            ) do
       if shared_compiler?(opts) do
@@ -641,10 +502,10 @@ defmodule Spiral.Cells do
     source = opts[:test_source]
 
     if System.get_env("SPIRAL_CELLS_PER_TEST_TRACE") == "1" do
-      IO.puts(:stderr, "per-test trace / flag #{Directives.per_test_compile?()} name #{inspect(opts[:test_name])} source #{inspect(source)} real #{inspect(opts[:real])} spi #{req.spi}")
+      IO.puts(:stderr, "per-test trace / flag #{Domain.per_test_compile()} name #{inspect(opts[:test_name])} source #{inspect(source)} real #{inspect(opts[:real])} spi #{req.spi}")
     end
 
-    if Directives.per_test_compile?() and is_binary(opts[:test_name]) and is_binary(source) and
+    if Domain.per_test_compile() and is_binary(opts[:test_name]) and is_binary(source) and
          String.ends_with?(source, ".spi") and opts[:real] in [nil, ""] and not Spiral.Cells.Domain.static_opens_sibling(File.read!(source), source |> Path.expand() |> Path.dirname() |> Path.join("*.spi") |> Path.wildcard() |> Enum.map_join("\n", &Path.basename(&1, ".spi"))) do
       req |> Map.merge(%{spi: Path.expand(source), mtime: source_mtime(Path.expand(source), opts)}) |> Map.put(:test, opts[:test_name])
     else
@@ -679,25 +540,12 @@ defmodule Spiral.Cells do
     end
   end
 
-  defp charge_queue do
-    queue = Process.delete(:spiral_cells_queue_ms) || 0
-
-    case Process.get(:spiral_cells_phases) do
-      %{} ->
-        add_phase(:queue_ms, queue)
-
-      _ ->
-        case Process.get(:spiral_cells_deadline) do
-          ms when is_integer(ms) -> Process.put(:spiral_cells_deadline, ms + queue)
-          _ -> :ok
-        end
-    end
-  end
+  defp charge_queue, do: Spiral.Cells.Domain.charge_queue()
 
   defp one_shot_compile(spi, output, backend, opts, timeout, deadline) do
-    dotnet = Toolchain.dotnet(opts)
+    dotnet = Domain.tool("dotnet", opts)
 
-    case Runner.run(dotnet, [Toolchain.compiler_dll(opts), "--backend", backend, spi, output],
+    case Runner.run(dotnet, [Domain.tool("compiler_dll", opts), "--backend", backend, spi, output],
            timeout: budget(deadline),
            env: compiler_env(opts, dotnet)
          ) do
@@ -712,25 +560,11 @@ defmodule Spiral.Cells do
 
       {:error, reason} ->
         {:error,
-         %ProcessError{message: "could not start the Spiral compiler: #{inspect(reason)}"}}
+         Spiral.Cells.Domain.process_error("could not start the Spiral compiler: #{inspect(reason)}", nil, nil, nil)}
     end
   end
 
-  defp source_mtime(spi, opts) do
-    dirs =
-      case Spiral.Cells.Manifest.read(Path.dirname(spi)) do
-        {:ok, text} ->
-          dir = Spiral.Cells.Domain.package_dir_of(text)
-          if dir != "" and Path.type(dir) == :absolute, do: [dir], else: []
-
-        _ ->
-          []
-      end
-
-    Enum.reduce([Path.join(Toolchain.package_dir(opts), "core") | dirs], 0, fn dir, acc ->
-      max(acc, Mounts.newest(dir))
-    end)
-  end
+  defp source_mtime(spi, opts), do: Spiral.Cells.Domain.source_mtime_of(Path.join(Domain.tool("package_dir", opts), "core"), Spiral.Cells.Domain.manifest_read(Path.dirname(spi)))
 
   defp rustc(rs, exe, opts, timeout, deadline) do
     case invoke(opts[:rustc], %{rs_path: rs, exe_path: exe}, fn ->
@@ -739,14 +573,14 @@ defmodule Spiral.Cells do
       :ok -> :ok
       {:error, %TimeoutError{} = error} -> {:error, error}
       {:error, %ProcessError{} = error} -> {:error, error}
-      {:error, output} -> {:error, %ProcessError{message: "rustc failed\n\n#{output}"}}
+      {:error, output} -> {:error, Spiral.Cells.Domain.process_error("rustc failed\n\n#{output}", nil, nil, nil)}
     end
   end
 
   defp rustc_default(rs, exe, opts, timeout, deadline) do
-    with :ok <- require_tool(Toolchain.rustc(opts), "rustc"),
-         :ok <- ensure_rust_toolchain(Toolchain.rustc(opts), deadline) do
-      case Runner.run(Toolchain.rustc(opts), rustc_args(Toolchain.rustc(opts), rs, exe),
+    with :ok <- require_tool(Domain.tool("rustc", opts), "rustc"),
+         :ok <- ensure_rust_toolchain(Domain.tool("rustc", opts), deadline) do
+      case Runner.run(Domain.tool("rustc", opts), rustc_args(Domain.tool("rustc", opts), rs, exe),
              timeout: budget(deadline),
              env: [{"CARGO_MANIFEST_DIR", Path.dirname(rs)}]
            ) do
@@ -768,12 +602,10 @@ defmodule Spiral.Cells do
 
   @spec rust_channel() :: String.t()
   def rust_channel, do: @rust_channel
-  @rust_flags ["-C", "opt-level=2", "-A", "warnings", "--edition", "2024"]
 
   @spec rustc_args(String.t(), String.t(), String.t()) :: [String.t()]
   def rustc_args(rustc, rs, exe) do
-    toolchain = if rustup_proxy?(rustc), do: [@rust_toolchain], else: []
-    toolchain ++ @rust_flags ++ ["-o", exe, rs]
+    Spiral.Cells.Domain.rustc_args(rustup_proxy?(rustc), @rust_toolchain, exe, rs)
   end
 
   defp ensure_rust_toolchain(rustc, deadline) do
@@ -822,13 +654,13 @@ defmodule Spiral.Cells do
         {:ok, output}
 
       {:ok, %{exit_status: status, output: output}} ->
-        {:error, %ProcessError{message: "#{label} failed (exit #{status}); Rust cells need the #{@rust_toolchain} toolchain\n\n#{String.slice(output, -2000, 2000)}"}}
+        {:error, Spiral.Cells.Domain.process_error("#{label} failed (exit #{status}); Rust cells need the #{@rust_toolchain} toolchain\n\n#{String.slice(output, -2000, 2000)}", nil, nil, nil)}
 
       {:error, {:timeout, _info}} ->
-        {:error, %ProcessError{message: "#{label} did not finish within the cell's time budget"}}
+        {:error, Spiral.Cells.Domain.process_error("#{label} did not finish within the cell's time budget", nil, nil, nil)}
 
       {:error, reason} ->
-        {:error, %ProcessError{message: "#{label} could not start: #{inspect(reason)}"}}
+        {:error, Spiral.Cells.Domain.process_error("#{label} could not start: #{inspect(reason)}", nil, nil, nil)}
     end
   end
 
@@ -858,7 +690,7 @@ defmodule Spiral.Cells do
         {:error, error}
 
       {:error, reason} ->
-        {:error, %ProcessError{message: "could not run the cell: #{inspect(reason)}"}}
+        {:error, Spiral.Cells.Domain.process_error("could not run the cell: #{inspect(reason)}", nil, nil, nil)}
     end
   end
 
@@ -870,25 +702,25 @@ defmodule Spiral.Cells do
       {"DOTNET_ROOT", Path.dirname(dotnet)},
       {"DOTNET_NOLOGO", "1"},
       {"DOTNET_CLI_TELEMETRY_OPTOUT", "1"},
-      {"SPIRAL_WORKSPACE_ROOT", Toolchain.workspace(opts)},
-      {"SPIRAL_COMPILER_PACKAGE_DIR", Toolchain.package_dir(opts)}
+      {"SPIRAL_WORKSPACE_ROOT", Domain.tool("workspace", opts)},
+      {"SPIRAL_COMPILER_PACKAGE_DIR", Domain.tool("package_dir", opts)}
       | Keyword.get(opts, :env, [])
     ]
   end
 
-  defp require_tool(nil, name), do: {:error, %ProcessError{message: "`#{name}` was not found"}}
+  defp require_tool(nil, name), do: {:error, Spiral.Cells.Domain.process_error("`#{name}` was not found", nil, nil, nil)}
   defp require_tool(path, name) when is_binary(path), do: require_file(path, name)
 
   defp require_file(path, name) do
     if File.regular?(path),
       do: :ok,
-      else: {:error, %ProcessError{message: "#{name} was not found at #{path}"}}
+      else: {:error, Spiral.Cells.Domain.process_error("#{name} was not found at #{path}", nil, nil, nil)}
   end
 
   defp reject_unpatched(rust) do
     if String.contains?(rust, "__spiral_emit_rust") or String.contains?(rust, "emitRustExpr") do
       {:error,
-       %ProcessError{message: "generated Rust still holds an emit marker (__spiral_emit_rust)"}}
+       Spiral.Cells.Domain.process_error("generated Rust still holds an emit marker (__spiral_emit_rust)", nil, nil, nil)}
     else
       :ok
     end
@@ -896,57 +728,16 @@ defmodule Spiral.Cells do
 
   defp budget(:infinity), do: :infinity
 
-  defp budget(deadline) do
-    deadline =
-      case Process.get(:spiral_cells_deadline) do
-        ms when is_integer(ms) -> ms
-        :infinity -> :infinity
-        _ -> deadline
-      end
-
-    case deadline do
-      :infinity -> :infinity
-      ms -> max(ms - System.monotonic_time(:millisecond), 0)
-    end
-  end
+  defp budget(deadline), do: Spiral.Cells.Domain.budget_remaining(deadline, System.monotonic_time(:millisecond))
 
   defp restore_type_lines(output), do: Spiral.Cells.Domain.type_lines(output)
 
   defp clean(output, dir), do: Spiral.Cells.Domain.clean_paths(output, dir |> Path.expand() |> String.replace("\\", "/") |> String.trim_trailing("/"))
 
   @doc false
-  def notebook_package_text(names, imports, package_dir) do
-    text = Cell.package_project(names)
+  def notebook_package_text(names, imports, package_dir), do: Spiral.Cells.Domain.notebook_package_text(names, imports, package_dir || "")
 
-    text =
-      if imports == [] do
-        text
-      else
-        String.replace(text, "modules:\n", Enum.map_join(imports, "", &("    " <> &1 <> "\n")) <> "modules:\n", global: false)
-      end
-
-    if package_dir do
-      String.replace(text, "packageDir: .", "packageDir: " <> package_dir, global: false)
-    else
-      text
-    end
-  end
-
-  defp write_package(dir, names, imports, package_dir, real) do
-    text = notebook_package_text(names, imports, package_dir)
-
-    text =
-      if real in [nil, ""] do
-        text
-      else
-        File.write!(Path.join(dir, "main_real.spir"), String.trim_trailing(real) <> "\n")
-        Spiral.Cells.Domain.with_real_main(text)
-      end
-
-    File.write!(Path.join(dir, "package.spiproj"), text)
-    File.write!(Path.join(dir, "console.spi"), Cell.console_source())
-    :ok
-  end
+  defp write_package(dir, names, imports, package_dir, real), do: Spiral.Cells.Domain.write_package(dir, names, imports, package_dir || "", real, @console)
 
   defp mount_packages(_dir, [], _root, _workspace, _patches), do: {:ok, [], [], nil}
 
@@ -964,7 +755,7 @@ defmodule Spiral.Cells do
       {:ok, entries} ->
         case Mounts.ensure(entries) do
           {:ok, package_dir} -> {:ok, Enum.map(targets, &elem(&1, 1)), Mounts.qualified_imports(targets), package_dir}
-          {:error, message} -> {:error, %ProcessError{message: message}}
+          {:error, message} -> {:error, Spiral.Cells.Domain.process_error(message, nil, nil, nil)}
         end
 
       error ->
@@ -973,33 +764,10 @@ defmodule Spiral.Cells do
   end
 
   defp mount_entries(targets, sibling_names, patches) do
-    Enum.reduce_while(targets, {:ok, []}, fn {target, name}, {:ok, entries} ->
-      cond do
-        name in ["", "console", "main", "ready"] ->
-          {:halt,
-           {:error, %ProcessError{message: "package name #{inspect(name)} clashes with the cell"}}}
-
-        existing = Enum.find(entries, &(&1.name == name)) ->
-          {:halt, {:error, %ProcessError{message: "package #{name} is listed twice: #{existing.target} and #{target}"}}}
-
-        not Spiral.Cells.Manifest.exists?(target) ->
-          {:halt, {:error, %ProcessError{message: "Spiral package was not found at #{target}"}}}
-
-        true ->
-          shared = Mounts.share_mounted_deps?(target, sibling_names)
-          own = for {file, old, new} <- patches, Path.expand(Path.dirname(file)) == Path.expand(target), do: {Path.basename(file), old, new}
-
-          entry =
-            cond do
-              own != [] -> %{name: name, target: target, kind: :patched, patches: own, package_dir: if(shared, do: :siblings, else: :absolute)}
-              shared -> %{name: name, target: target, kind: :shadow}
-              Mounts.escapes_through_link?(target) -> %{name: name, target: target, kind: :patched, patches: [], package_dir: :absolute}
-              true -> %{name: name, target: target, kind: :link}
-            end
-
-          {:cont, {:ok, entries ++ [entry]}}
-      end
-    end)
+    case Spiral.Cells.Domain.mount_entries(targets, sibling_names, patches, Domain.tool("dotnet", []) || "", Domain.tool("compiler_dll", []) || "") do
+      {:ok, entries} -> {:ok, entries}
+      {:error, message} -> {:error, Spiral.Cells.Domain.process_error(message, nil, nil, nil)}
+    end
   end
 
   defp resolve_package(path, root, workspace), do: package_path(path, root, workspace)
@@ -1007,7 +775,7 @@ defmodule Spiral.Cells do
   defp expand_package(path, root) when is_binary(root), do: Path.expand(path, root)
   defp expand_package(path, _root), do: Path.expand(path)
 
-  defp package_project?(path), do: Spiral.Cells.Manifest.exists?(path)
+  defp package_project?(path), do: Spiral.Cells.Domain.manifest_exists(path)
 
   defp exe_name, do: if(match?({:win32, _}, :os.type()), do: "cell.exe", else: "cell")
 
@@ -1030,4 +798,16 @@ defmodule Spiral.Cells do
     raise ArgumentError,
           "expected :timeout to be a positive integer (ms) or :infinity, got: #{inspect(other)}"
   end
+end
+
+defmodule Spiral.Cells.SpiralError do
+  defexception [:message, :details, :result]
+end
+
+defmodule Spiral.Cells.TimeoutError do
+  defexception [:message, :timeout, :output]
+end
+
+defmodule Spiral.Cells.ProcessError do
+  defexception [:message, :exit_status, :output, :reason]
 end

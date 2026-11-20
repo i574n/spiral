@@ -1,0 +1,293 @@
+///- --package .
+:< sm'_operators
+
+:# patterns static =
+    :< testing
+
+:~ annot_flags () : parse_types::type_flags = { allow_wildcard = !+; allow_typecase_metavars = !-; allow_term = !- }
+
+:~ joined_patterns (a : ast::pattern) (b : ast::pattern) : ast::range = ast::joined (ast::range_of_pattern a) (ast::range_of_pattern b)
+
+:~ pair_of (a : ast::pattern) (b : ast::pattern) : ast::pattern = ast::PatPair (joined_patterns a b, a, b)
+
+:~ ^ fold_pairs (xs : list ast::pattern) : ast::pattern =
+    ?= xs ?|
+    | [ x ] => x
+    | a :: rest => pair_of a (fold_pairs rest)
+    | [] => ast::PatB (cursor::origin ())
+
+:~ list_pair (r : ast::range) (a : ast::pattern) (b : ast::pattern) : ast::pattern = ast::PatUnbox (r, "Cons", ast::PatPair (r, a, b))
+
+:~ ^ fold_list (r : ast::range) (xs : list ast::pattern) (tail : ast::pattern) : ast::pattern =
+    ?= xs ?|
+    | [] => tail
+    | a :: rest => list_pair r a (fold_list r rest tail)
+
+:~ ^ fold_cons (r : ast::range) (xs : list ast::pattern) : ast::pattern =
+    ?= xs ?|
+    | [ x ] => x
+    | a :: rest => list_pair r a (fold_cons r rest)
+    | [] => ast::PatB r
+
+:~ ^ fold_left (make : ast::range -> ast::pattern -> ast::pattern -> ast::pattern) (acc : ast::pattern) (xs : list ast::pattern) : ast::pattern =
+    ?= xs ?|
+    | [] => acc
+    | b :: rest => fold_left make (make (joined_patterns acc b) acc b) rest
+
+:~ reduce_left (make : ast::range -> ast::pattern -> ast::pattern -> ast::pattern) (xs : list ast::pattern) : ast::pattern =
+    ?= xs ?|
+    | a :: rest => fold_left make a rest
+    | [] => ast::PatB (cursor::origin ())
+
+:~ pat_pair_of (next : cursor::cursor -> cursor::step ast::pattern) (c : cursor::cursor) : cursor::step ast::pattern =
+    cursor::map_p fold_pairs (cursor::sep_by1_p next (cursor::skip_op ",")) c
+
+:~ last_of (xs : list ast::named) : ast::named =
+    ?= listm::rev xs ?|
+    | x :: _ => x
+    | [] => cursor::origin (), ""
+
+:~ exists_vars (c : cursor::cursor) : cursor::step (list ast::named) =
+    := vars = cursor::many_p (parse_types::read_small_var)
+    ?= cursor::left_p (cursor::right_p (cursor::skip_keyword tokens::SpecExists) vars) (cursor::skip_op ".") c ?|
+    | cursor::Took (q, next) =>
+        ?= parse_types::duplicates ast::DuplicateExistsVar q ?|
+        | [] => cursor::Took (q, next)
+        | er => cursor::Failed (er, next)
+    | cursor::Failed (e, at) => cursor::Failed (e, at)
+
+:~ ^ root_pattern_var_nominal_union (c : cursor::cursor) : cursor::step ast::pattern =
+    := big_unbox = cursor::map_p (\ ((r, a) : ast::named) => ast::PatUnbox (r, a, ast::PatE r)) cursor::read_big_var
+    := payload = cursor::opt_p (cursor::alt_p root_pattern_var big_unbox)
+    := after_var = \ ((r, a) : ast::named) =>
+        ? cursor::is_big a ?> cursor::map_p (\ (b : option ast::pattern) => ast::PatUnbox (r, a, ?= b ?| | Some p => p | None => ast::PatE r)) payload
+        |:
+            cursor::bind_p (cursor::many_p (parse_types::expr_tight parse_types::read_symbol)) (\ (syms : list ast::named) =>
+                ?= syms ?|
+                | [] => cursor::map_p (\ (b : option ast::pattern) => ?= b ?| | Some p => ast::PatNominal (ast::joined r (ast::range_of_pattern p), (r, a), [], p) | None => ast::PatVar (r, a)) payload
+                | _ =>
+                    := (case_range, case_name) = last_of syms
+                    ? cursor::is_big case_name ?>
+                        cursor::map_p (\ (b : option ast::pattern) => (\ (p : ast::pattern) => ast::PatNominal (ast::joined r (ast::range_of_pattern p), (r, a), syms, p)) (?= b ?| | Some p => p | None => ast::PatE case_range)) (cursor::opt_p root_pattern_var)
+                    |: cursor::map_p (\ (p : ast::pattern) => ast::PatNominal (ast::joined r (ast::range_of_pattern p), (r, a), syms, p)) root_pattern_var)
+    cursor::bind_p cursor::read_var after_var c
+
+:& :~ root_pattern_wildcard (c : cursor::cursor) : cursor::step ast::pattern =
+    cursor::map_p (\ r => ast::PatE r) (cursor::skip_keyword_range tokens::SpecWildcard) c
+
+:& :~ root_pattern_dyn (c : cursor::cursor) : cursor::step ast::pattern =
+    cursor::map_p (\ ((r, p) : ast::range * ast::pattern) => ast::PatDyn (r, p)) (cursor::ranged_p (cursor::right_p (cursor::skip_unary_op "~") root_pattern_var)) c
+
+:& :~ root_pattern_record (c : cursor::cursor) : cursor::step ast::pattern =
+    := inject = cursor::map_p (\ (a : ast::named) => !+, a) (cursor::right_p (cursor::skip_unary_op "$") parse_types::read_small_var)
+    := symbol = cursor::map_p (\ (a : ast::named) => !-, a) (cursor::ranged_p parse_types::record_var)
+    := item = cursor::map_p (\ (((is_inject, a), b) : (bool * ast::named) * option ast::pattern) =>
+        := p = ?= b ?| | Some x => x | None => ast::PatVar a
+        ? is_inject ?> ast::PatRecordMembersInjectVar (a, p) |: ast::PatRecordMembersSymbol (a, p)) (cursor::pair_p (cursor::alt_p inject symbol) (cursor::opt_p (cursor::right_p (cursor::skip_op "=") root_pattern_pair)))
+    cursor::map_p (\ ((r, xs) : ast::range * list ast::pat_record_member) => ast::PatRecordMembers (r, xs)) (cursor::ranged_p (cursor::curlies_p (cursor::many_p item))) c
+
+:& :~ root_pattern_type (c : cursor::cursor) : cursor::step ast::pattern =
+    := annotation = cursor::opt_p (cursor::right_p (cursor::skip_op ":") (parse_types::root_type (annot_flags ())))
+    cursor::map_p (\ ((a, b) : ast::pattern * option ast::raw_texpr) => ?= b ?| | Some t => ast::PatAnnot (ast::joined (ast::range_of_pattern a) (ast::range_of_texpr t), a, t) | None => a) (cursor::pair_p root_pattern annotation) c
+
+:& :~ root_pattern_rounds (c : cursor::cursor) : cursor::step ast::pattern =
+    := inner = cursor::alt_p (cursor::map_p (\ (a : ast::named) => ast::PatVar a) cursor::read_op) root_pattern_type
+    := body = cursor::alt_p (cursor::map_p (\ (x : ast::pattern) => \ (_ : ast::range) => x) inner) (\ c => cursor::Took ((\ (r : ast::range) => ast::PatB r), c))
+    cursor::map_p (\ ((r, f) : ast::range * (ast::range -> ast::pattern)) => f r) (cursor::ranged_p (cursor::rounds_p body)) c
+
+:& :~ pat_array (c : cursor::cursor) : cursor::step ast::pattern =
+    := items = cursor::ranged_p (cursor::squares_p (cursor::sep_by_p root_pattern_type (cursor::skip_op ";")))
+    cursor::map_p (\ ((r, xs) : ast::range * list ast::pattern) => ast::PatArray (r, xs)) (cursor::right_p (cursor::skip_unary_op ";") items) c
+
+:& :~ pat_list (c : cursor::cursor) : cursor::step ast::pattern =
+    := items = cursor::ranged_p (cursor::squares_p (cursor::sep_by_p root_pattern_type (cursor::skip_op ";")))
+    cursor::map_p (\ (((from, _), xs) : ast::range * list ast::pattern) => (\ (r : ast::range) => fold_list r xs (ast::PatUnbox (r, "Nil", ast::PatB r))) (from, from)) items c
+
+:& :~ pat_exists (c : cursor::cursor) : cursor::step ast::pattern =
+    cursor::map_p (\ ((r, (l, b)) : ast::range * (list ast::named * ast::pattern)) => ast::PatExists (r, l, b)) (cursor::ranged_p (cursor::pair_p exists_vars root_pattern)) c
+
+:& :~ pattern_body (c : cursor::cursor) : cursor::step ast::pattern =
+    := value = cursor::map_p (\ ((r, x) : ast::range * tokens::literal) => ast::PatValue (r, x)) parse_types::read_value
+    := text = cursor::map_p (\ ((a, s, b) : ast::range * string * ast::range) => ast::PatValue (ast::joined a b, tokens::LitString s)) parse_types::read_string
+    := symbol = cursor::map_p (\ (a : ast::named) => ast::PatSymbol a) parse_types::read_symbol
+    cursor::alt_p root_pattern_rounds (cursor::alt_p root_pattern_var_nominal_union (cursor::alt_p root_pattern_wildcard (cursor::alt_p root_pattern_dyn (cursor::alt_p value (cursor::alt_p text (cursor::alt_p root_pattern_record (cursor::alt_p symbol (cursor::alt_p pat_array (cursor::alt_p pat_list pat_exists))))))))) c
+
+:& :~ root_pattern (c : cursor::cursor) : cursor::step ast::pattern =
+    := pat_and = cursor::map_p (reduce_left (\ r a b => ast::PatAnd (r, a, b))) (cursor::sep_by1_p pattern_body (cursor::skip_op "&"))
+    := pat_cons = cursor::map_p (\ ((r, xs) : ast::range * list ast::pattern) => fold_cons r xs) (cursor::ranged_p (cursor::sep_by1_p (pat_pair_of pat_and) (cursor::skip_op "::")))
+    := pat_or = cursor::map_p (reduce_left (\ r a b => ast::PatOr (r, a, b))) (cursor::sep_by1_p pat_cons (cursor::skip_op "|"))
+    := pat_as = cursor::map_p (\ ((a, v) : ast::pattern * option ast::named) => ?= v ?| | Some (rv, x) => ast::PatAnd (ast::joined (ast::range_of_pattern a) rv, a, ast::PatVar (rv, x)) | None => a) (cursor::pair_p pat_or (cursor::opt_p (cursor::right_p (cursor::skip_keyword tokens::SpecAs) parse_types::read_small_var)))
+    pat_pair_of pat_as c
+
+:& :~ root_pattern_var (c : cursor::cursor) : cursor::step ast::pattern =
+    := var = cursor::map_p (\ (a : ast::named) => ast::PatVar a) parse_types::read_small_var
+    cursor::alt_p var (cursor::alt_p root_pattern_wildcard (cursor::alt_p root_pattern_dyn (cursor::alt_p root_pattern_rounds (cursor::alt_p root_pattern_record (cursor::alt_p pat_array (cursor::alt_p pat_list pat_exists)))))) c
+
+:& :~ root_pattern_pair (c : cursor::cursor) : cursor::step ast::pattern = pat_pair_of root_pattern_var c
+
+:== bound = string * ast::range
+
+:~ ^ has_bound (n : string) (xs : list bound) : bool =
+    ?= xs ?|
+    | [] => !-
+    | (m, _) :: rest => m = n || has_bound n rest
+
+:~ set_add ((n, r) : bound) (xs : list bound) : list bound = ? has_bound n xs ?> xs |: listm::append xs [ (n, r) ]
+
+:~ ^ union_bounds (a : list bound) (b : list bound) : list bound =
+    ?= b ?|
+    | [] => a
+    | x :: rest => union_bounds (set_add x a) rest
+
+:~ ^ filter_bounds (keep : bool) (a : list bound) (b : list bound) : list bound =
+    ?= a ?|
+    | [] => []
+    | (n, r) :: rest => ? has_bound n b = keep ?> (n, r) :: filter_bounds keep rest b |: filter_bounds keep rest b
+
+:~ ^ bounds_of (xs : list ast::named) (s : list bound) : list bound =
+    ?= xs ?|
+    | [] => s
+    | (r, x) :: rest => bounds_of rest (set_add (x, r) s)
+
+:== found = list (ast::range * ast::parser_error)
+
+:~ ^ report (error : ast::parser_error) (xs : list bound) (acc : found) : found =
+    ?= xs ?|
+    | [] => acc
+    | (_, r) :: rest => report error rest ((r, error) :: acc)
+
+:~ ^ add_vars (error : ast::parser_error) (xs : list bound) (vars : list bound) (acc : found) : list bound * found =
+    ?= xs ?|
+    | [] => vars, acc
+    | (n, r) :: rest => ? has_bound n vars ?> add_vars error rest vars ((r, error) :: acc) |: add_vars error rest (set_add (n, r) vars) acc
+
+:~ duplicate_of (is_type : bool) : ast::parser_error = ast::InvalidPattern (? is_type ?> ast::DuplicateTypeVar |: ast::DuplicateTermVar)
+
+:~ ^ validate_loop (is_type : bool) (pat : ast::pattern) (acc : found) : list bound * found =
+    ?= pat ?|
+    | ast::PatArray (_, xs) => validate_array is_type xs [] acc
+    | ast::PatExists (_, l, p) =>
+        ? is_type ?>
+            := s = bounds_of l []
+            := (sp, after) = validate_loop is_type p acc
+            union_bounds s sp, report (duplicate_of is_type) (filter_bounds !+ s sp) after
+        |: validate_loop is_type p acc
+    | ast::PatVar (r, x) => ? is_type ?> ([], acc) |: ([ (x, r) ], acc)
+    | ast::PatDyn (_, p) => validate_loop is_type p acc
+    | ast::PatAnnot (_, p, _) => validate_loop is_type p acc
+    | ast::PatNominal (_, _, _, p) => validate_loop is_type p acc
+    | ast::PatUnbox (_, _, p) => validate_loop is_type p acc
+    | ast::PatWhen (_, p, _) => validate_loop is_type p acc
+    | ast::PatRecordMembers (_, items) => validate_record is_type items [] [] [] acc
+    | ast::PatPair (_, a, b) => validate_both is_type a b acc
+    | ast::PatAnd (_, a, b) => validate_both is_type a b acc
+    | ast::PatOr (_, a, b) =>
+        := (sa, after_a) = validate_loop is_type a acc
+        := (sb, after_b) = validate_loop is_type b after_a
+        := disjoint = ast::InvalidPattern ast::DisjointOrPatternVar
+        sa, report disjoint (filter_bounds !- sb sa) (report disjoint (filter_bounds !- sa sb) after_b)
+    | _ => [], acc
+
+:& :~ validate_both (is_type : bool) (a : ast::pattern) (b : ast::pattern) (acc : found) : list bound * found =
+    := (sa, after_a) = validate_loop is_type a acc
+    := (sb, after_b) = validate_loop is_type b after_a
+    union_bounds sa sb, report (duplicate_of is_type) (filter_bounds !+ sb sa) after_b
+
+:& :~ validate_array (is_type : bool) (xs : list ast::pattern) (s : list bound) (acc : found) : list bound * found =
+    ?= xs ?|
+    | [] => s, acc
+    | x :: rest =>
+        := (sx, after) = validate_loop is_type x acc
+        validate_array is_type rest (union_bounds s sx) (report (duplicate_of is_type) (filter_bounds !+ s sx) after)
+
+:& :~ validate_record (is_type : bool) (items : list ast::pat_record_member) (symbols : list string) (injects : list string) (vars : list bound) (acc : found) : list bound * found =
+    ?= items ?|
+    | [] => vars, acc
+    | ast::PatRecordMembersSymbol ((r, keyword), name) :: rest =>
+        ? listm'::contains keyword symbols ?> validate_record is_type rest symbols injects vars ((r, ast::InvalidPattern ast::DuplicateRecordSymbol) :: acc)
+        |:
+            := (found_vars, after) = validate_loop is_type name acc
+            := (vars_after, added) = add_vars (duplicate_of is_type) found_vars vars after
+            validate_record is_type rest (keyword :: symbols) injects vars_after added
+    | ast::PatRecordMembersInjectVar ((r, var), name) :: rest =>
+        ? listm'::contains var injects ?> validate_record is_type rest symbols injects vars ((r, ast::InvalidPattern ast::DuplicateRecordInjection) :: acc)
+        |:
+            := (found_vars, after) = validate_loop is_type name acc
+            := (vars_after, added) = add_vars (duplicate_of is_type) found_vars vars after
+            validate_record is_type rest symbols (var :: injects) vars_after added
+
+:~ ^ validate_all (is_type : bool) (pats : list ast::pattern) (s : list bound) (acc : found) : found =
+    ?= pats ?|
+    | [] => acc
+    | x :: rest =>
+        := (sx, after) = validate_loop is_type x acc
+        validate_all is_type rest (union_bounds s sx) (report (ast::InvalidPattern ast::ShadowedVar) (filter_bounds !+ sx s) after)
+
+:~ patterns_validate (pats : list ast::pattern) : found = listm::rev (validate_all !- pats [] (validate_all !+ pats [] []))
+
+:~ validation_name (e : ast::parser_error) : string =
+    ?= e ?|
+    | ast::InvalidPattern (ast::DuplicateTermVar) => "dup"
+    | ast::InvalidPattern (ast::DuplicateTypeVar) => "dup type"
+    | ast::InvalidPattern (ast::DisjointOrPatternVar) => "disjoint"
+    | ast::InvalidPattern (ast::ShadowedVar) => "shadowed"
+    | ast::InvalidPattern (ast::DuplicateRecordSymbol) => "record symbol"
+    | ast::InvalidPattern (ast::DuplicateRecordInjection) => "record injection"
+    | _ => "other"
+
+:~ validation_of (texts : list string) : list (string * i32) =
+    := parsed = listm::map (\ (text : string) => ?= root_pattern (cursor::line_cursor text) ?| | cursor::Took (p, _) => p | cursor::Failed _ => ast::PatB (cursor::origin ())) texts
+    listm::map (\ (((from, _), er) : ast::range * ast::parser_error) => validation_name er, from::character) (patterns_validate parsed)
+
+:~ ^ pattern_text (p : ast::pattern) : string =
+    ?= p ?|
+    | ast::PatVar (_, x) => x
+    | ast::PatE _ => "_"
+    | ast::PatB _ => "()"
+    | ast::PatValue (_, tokens::LitString s) => "\"" ++# s ++# "\""
+    | ast::PatValue _ => "lit"
+    | ast::PatSymbol (_, x) => "." ++# x
+    | ast::PatPair (_, a, b) => "(" ++# pattern_text a ++# ", " ++# pattern_text b ++# ")"
+    | ast::PatUnbox (_, n, b) => n ++# "(" ++# pattern_text b ++# ")"
+    | ast::PatOr (_, a, b) => "(" ++# pattern_text a ++# " | " ++# pattern_text b ++# ")"
+    | ast::PatAnd (_, a, b) => "(" ++# pattern_text a ++# " & " ++# pattern_text b ++# ")"
+    | ast::PatDyn (_, a) => "~" ++# pattern_text a
+    | ast::PatAnnot (_, a, t) => "(" ++# pattern_text a ++# " : " ++# parse_types::type_text t ++# ")"
+    | ast::PatNominal (_, (_, n), syms, b) => n ++# sm'::concat_list "" (listm::map (\ ((_, s) : ast::named) => "." ++# s) syms) ++# "(" ++# pattern_text b ++# ")"
+    | ast::PatRecordMembers (_, xs) => "{" ++# sm'::concat_list "; " (listm::map (\ (m : ast::pat_record_member) => ?= m ?| | ast::PatRecordMembersSymbol ((_, n), q) => n ++# "=" ++# pattern_text q | ast::PatRecordMembersInjectVar ((_, n), q) => "$" ++# n ++# "=" ++# pattern_text q) xs) ++# "}"
+    | ast::PatArray (_, xs) => ";[" ++# sm'::concat_list "; " (listm::map pattern_text xs) ++# "]"
+    | ast::PatExists (_, l, b) => "exists " ++# sm'::concat_list " " (listm::map snd l) ++# ". " ++# pattern_text b
+    | _ => "?"
+
+:~ shown_pattern (text : string) : string =
+    ?= root_pattern (cursor::line_cursor text) ?|
+    | cursor::Took (p, next) => ? (listm::length next::rest : i32) = 0i32 ?> pattern_text p |: pattern_text p ++# " +rest"
+    | cursor::Failed (e, _) => "fail " ++# sm'::format (listm::length e : i32)
+
+///> rust
+///> fsharp
+///> gleam
+:# variables_unions_pairs_and_or_patterns_build_the_reference_shapes =
+    (shown_pattern "x", shown_pattern "Some x", shown_pattern "None", shown_pattern "a, b, c", shown_pattern "A | B", shown_pattern "x as y", shown_pattern "_")
+    |> _assert_eq ("x", "Some(x)", "None(_)", "(a, (b, c))", "(A(_) | B(_))", "(x & y)", "_")
+
+///> rust
+///> fsharp
+///> gleam
+:# lists_cons_records_literals_and_annotations_build_the_reference_shapes =
+    (shown_pattern "[a; b]", shown_pattern "a :: b :: rest", shown_pattern "{ a b = c }", shown_pattern "\"s\"", shown_pattern "(x : i32)", shown_pattern "()")
+    |> _assert_eq ("Cons((a, Cons((b, Nil(())))))", "Cons((a, Cons((b, rest))))", "{a=a; b=c}", "\"s\"", "(x : i32)", "()")
+
+///> rust
+///> fsharp
+///> gleam
+:# validation_reports_duplicates_disjoint_or_and_shadowing_where_the_reference_does =
+    (validation_of [ "x, y" ], validation_of [ "x, x" ], validation_of [ "A x | B y" ], validation_of [ "A x | B x" ], validation_of [ ";[x; x]" ], validation_of [ "x"; "x" ])
+    |> _assert_eq ([], [ ("dup", 3i32) ], [ ("disjoint", 2i32); ("disjoint", 8i32) ], [], [ ("dup", 2i32) ], [ ("shadowed", 0i32) ])
+
+///> rust
+///> fsharp
+///> gleam
+:# validation_checks_record_symbols_and_their_variables =
+    (validation_of [ "{ a = x b = x }" ], validation_of [ "{ a a }" ], validation_of [ "{ a b }" ])
+    |> _assert_eq ([ ("dup", 12i32) ], [ ("record symbol", 4i32); ("record symbol", 4i32) ], [])

@@ -2,20 +2,61 @@
 :< leptos
 :< sm'_operators
 
+:= open_database () =
+    := rexie : async::future_pin (resultm::result' wasm::rexie wasm::rexie_error) =
+        !\($'"Box::pin(rexie::Rexie::builder(\\\"database\\\").version(1).add_object_store(rexie::ObjectStore::new\
+            (\\\"store\\\")).build())"')
+    rexie
+    |> async::await
+    |> resultm::map_error' \ (x : wasm::rexie_error) => x |> sm'::format'
+
 := build_database () : async::future_pin (resultm::result' wasm::rexie sm'::std_string) =
     leptos::log "state_core.build_database ()"
 
     \ () =>
-        := rexie : async::future_pin (resultm::result' wasm::rexie wasm::rexie_error) =
-            !\($'"Box::pin(rexie::Rexie::builder(\\\"database\\\").version(1).add_object_store(rexie::ObjectStore::new\
-                (\\\"store\\\")).build())"')
-        rexie
-        |> async::await
-        |> resultm::map_error' \ (x : wasm::rexie_error) => x |> sm'::format'
+        open_database ()
     |> async::new_future
 
 := get_core_state_heap_key () =
     "core-state-heap"
+
+:= get_data_value rexie (id : string) =
+    := store_name = "store"
+    := store_names = am'::base ;[ store_name ]
+    := transaction =
+        rexie
+        |> store::transaction_read_only store_names
+        |> resultm::try'
+    := rexie_store =
+        transaction
+        |> store::transaction_store store_name
+        |> resultm::try'
+    rexie_store
+    |> store::store_get id
+    |> async::await
+    |> resultm::map_error' \ (x : wasm::rexie_error) => x |> sm'::format'
+    |> resultm::try'
+    |> optionm'::unbox
+
+:= get_data_decode \* t. mode_value : option t =
+    := mode_data =
+        mode_value
+        |> wasm::from_js_value
+        |> resultm::try'
+    ?= mode_data |> optionm'::unbox ?|
+    | Some mode_data =>
+        := data =
+            mode_data
+            |> sm'::deserialize_vec
+            |> resultm::try'
+            |> am'::from_vec
+        := data_len = length data
+        leptos::log ("state_core.get_data () / data_len: " ++# sm'::obj_to_string data_len)
+        data
+        |> \ (array x : array _) => x |> sm'::borsh_deserialize : resultm::result' t sm'::std_string
+        |> resultm::try'
+        |> Some
+    | None => None
 
 := get_data \* t (u : * -> *).
     (id : string) (rexie : u wasm::rexie)
@@ -24,48 +65,22 @@
     leptos::log ("state_core.get_data () / id: " ++# id)
     := rexie = ~~ rexie
     \ () =>
-        := store_name = "store"
-        := store_names = am'::base ;[ store_name ]
-        := transaction =
-            rexie
-            |> store::transaction_read_only store_names
-            |> resultm::try'
-        := rexie_store =
-            transaction
-            |> store::transaction_store store_name
-            |> resultm::try'
-        := mode_value =
-            rexie_store
-            |> store::store_get id
-            |> async::await
-            |> resultm::map_error' \ (x : wasm::rexie_error) => x |> sm'::format'
-            |> resultm::try'
-            |> optionm'::unbox
-        ?= mode_value ?|
-        | Some mode_value =>
-            := mode_data =
-                mode_value
-                |> wasm::from_js_value
-                |> resultm::try'
-            ?= mode_data |> optionm'::unbox ?|
-            | Some mode_data =>
-                := data =
-                    mode_data
-                    |> sm'::deserialize_vec
-                    |> resultm::try'
-                    |> am'::from_vec
-                := data_len = length data
-                leptos::log ("state_core.get_data () / data_len: " ++# sm'::obj_to_string data_len)
-                data
-                |> \ (array x : array _) => x |> sm'::borsh_deserialize : resultm::result' t sm'::std_string
-                |> resultm::try'
-                |> Some
-            | None => None
+        ?= get_data_value rexie id ?|
+        | Some mode_value => get_data_decode mode_value
         | None => None
         |> optionm'::box
         |> Ok
         |> resultm::box
     |> async::new_future_move
+
+:= put_data database (data_js_value : wasm::js_value) id =
+    inl transaction : wasm.rexie_transaction = !\\(database, $'"$0.transaction(&[\\\"store\\\"], \
+        rexie::TransactionMode::ReadWrite)?"')
+    := store : wasm::rexie_store = !\($'"!transaction.store(\\\"store\\\")?"')
+    (!\\(id, $'"true; !store.put(&!data_js_value, Some(&$0.into())).await?"') : bool) |> ignore
+    (!\($'"true; !transaction.done().await?"') : bool) |> ignore
+
+    Ok () |> resultm::box
 
 := set_data \* t (u : * -> *).
     (id : string) (data : t) (database : u wasm::rexie)
@@ -79,13 +94,7 @@
         := data_js_value : wasm::js_value = !\($'"serde_wasm_bindgen::to_value(&!data).unwrap()"')
         := id = ~~ id
         := id = id |> sm'::as_str
-        inl transaction : wasm.rexie_transaction = !\\(database, $'"$0.transaction(&[\\\"store\\\"], \
-            rexie::TransactionMode::ReadWrite)?"')
-        := store : wasm::rexie_store = !\($'"!transaction.store(\\\"store\\\")?"')
-        (!\\(id, $'"true; !store.put(&!data_js_value, Some(&$0.into())).await?"') : bool) |> ignore
-        (!\($'"true; !transaction.done().await?"') : bool) |> ignore
-
-        Ok () |> resultm::box
+        put_data database data_js_value id
     |> async::new_future_move
 
 :== core_state core_state_data =
@@ -374,7 +383,7 @@
                 ?= database |> optionm'::map' rust::unwrap_0 |> optionm'::unbox ?|
                 | Some database =>
                     requests
-                    |> am'::vec_map' \ request =>
+                    |> am'::vec_map \ request =>
                         database
                         |> get_data (get_key request)
                     |> async::try_join_all
@@ -642,7 +651,7 @@
             |> leptos::signal_get
             |> \ (array x) => x
             |> am'::to_vec
-            |> am'::vec_map' (resultm::map'' (optionm'::map map))
+            |> am'::vec_map (resultm::map'' (optionm'::map map))
             |> leptos::log_format \ log => "state_core.use_requests (20) / result func0 / result: " ++# log
         |> leptos::new_arc_memo
 

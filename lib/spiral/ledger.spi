@@ -28,7 +28,7 @@
 :! journal e p c = list (line e p c)
 
 := balanced \* e p c. (lines : list (line e p c)) : option (journal e p c) =
-    ? decimal::compare (side_total Debit lines) (side_total Credit lines) = 0i32 ?> Some (journal lines) |: None
+    ? money::same (side_total Debit lines) (side_total Credit lines) ?> Some (journal lines) |: None
 
 := lines_of \* e p c. ((journal lines) : journal e p c) : list (line e p c) = lines
 
@@ -94,52 +94,82 @@
 :! july_2026 = ()
 :! august_2026 = ()
 
-:= same (x : decimal::decimal) (y : decimal::decimal) : bool = decimal::compare x y = 0i32
-
 := brl (units : i64) : money::amount money::brl = money::amount_of money::Brl (decimal::of_int units)
+
+:= seller_buyer_sale () : journal seller july_2026 money::brl * journal buyer july_2026 money::brl =
+    intercompany "sales" "purchases" (brl 40i64)
+
+:= seller_seller_sale () : journal seller july_2026 money::brl * journal seller july_2026 money::brl =
+    intercompany "sales" "purchases" (brl 40i64)
+
+:= sale_with_tax () : list (line seller july_2026 money::brl) =
+    [ debit "cash" (brl 100i64); credit "sales" (brl 90i64); credit "tax payable" (brl 10i64) ]
+
+:= sale_without_tax () : list (line seller july_2026 money::brl) = [ debit "cash" (brl 100i64); credit "sales" (brl 90i64) ]
+
+:= even_sale () : journal seller july_2026 money::brl =
+    ?= balanced ([ debit "cash" (brl 100i64); credit "sales" (brl 100i64) ] : list (line seller july_2026 money::brl)) ?|
+    | Some j => j
+    | None => failwith "100 against 100 balances"
+
+:= brl_in_eur () : money::rate money::brl money::eur = money::rate_of money::Brl money::Eur { units = 17i64; scale = 2i32 }
+
+:= july_quote () : quote money::brl money::eur july_2026 = quoted (brl_in_eur ())
+
+:= august_quote () : quote money::brl money::eur august_2026 = quoted (brl_in_eur ())
+
+:= revalued_in_july (j : journal seller july_2026 money::brl) : option decimal::decimal =
+    ?= revalued money::HalfUp 2i32 (july_quote ()) j ?|
+    | Some eur => Some (turnover eur)
+    | None => None
+
+:= two_sale_book () : open_period seller july_2026 money::brl =
+    := left, right = seller_seller_sale ()
+    post right (post left (opened ()))
+
+:= mirror_problem \* p c. (left : journal seller p c) (right : journal buyer p c) : option string =
+    ? balances (lines_of left) = !- ?> Some "the seller's side balances"
+    |? balances (lines_of right) = !- ?> Some "the buyer's side balances"
+    |? money::same (turnover left) (turnover right) = !- ?> Some "both sides carry the same 40 BRL"
+    |: None
+
+:= sale_turnover () : decimal::decimal =
+    ?= balanced (sale_with_tax ()) ?|
+    | Some j => turnover j
+    | None => failwith "100 debit against 90 + 10 credit balances"
+
+:= revalued_even_sale () : decimal::decimal =
+    ?= revalued_in_july (even_sale ()) ?|
+    | Some t => t
+    | None => failwith "a two-line journal stays balanced after conversion"
 
 ///> rust
 :# a_journal_is_built_only_when_its_sides_balance =
-    := lines : list (line seller july_2026 money::brl) =
-        [ debit "cash" (brl 100i64); credit "sales" (brl 90i64); credit "tax payable" (brl 10i64) ]
-    ?= balanced lines ?|
-    | Some j => ? same (turnover j) (decimal::of_int 100i64) = !- ?> failwith "a 100 BRL sale turns over 100 BRL"
-    | None => failwith "100 debit against 90 + 10 credit balances"
-    ? balances ([ debit "cash" (brl 100i64); credit "sales" (brl 90i64) ] : list (line seller july_2026 money::brl))
-    ?> failwith "100 debit against 90 credit does not balance"
+    ? money::same (sale_turnover ()) (decimal::of_int 100i64) = !- ?> failwith "a 100 BRL sale turns over 100 BRL"
+
+///> rust
+:# an_unbalanced_journal_is_refused =
+    ? balances (sale_without_tax ()) ?> failwith "100 debit against 90 credit does not balance"
 
 ///> rust
 :# an_intercompany_sale_books_two_balanced_mirror_journals =
-    := left, right =
-        intercompany "sales" "purchases" (brl 40i64)
-        : journal seller july_2026 money::brl * journal buyer july_2026 money::brl
-    ? balances (lines_of left) = !- ?> failwith "the seller's side balances"
-    ? balances (lines_of right) = !- ?> failwith "the buyer's side balances"
-    ? same (turnover left) (turnover right) = !- ?> failwith "both sides carry the same 40 BRL"
+    := left, right = seller_buyer_sale ()
+    ?= mirror_problem left right ?|
+    | Some why => failwith why
+    | None => ()
 
 ///> rust
 :# a_closed_period_certifies_the_turnover_of_its_journals =
-    := left, right =
-        intercompany "sales" "purchases" (brl 40i64)
-        : journal seller july_2026 money::brl * journal seller july_2026 money::brl
-    := book = post right (post left (opened ()))
-    ? same (period_turnover (close book)) (decimal::of_int 80i64) = !- ?> failwith "two 40 BRL journals close at 80 BRL"
-    ? same (certified_turnover (certified Ifrs (close book))) (decimal::of_int 80i64) = !-
+    ? money::same (period_turnover (close (two_sale_book ()))) (decimal::of_int 80i64) = !- ?> failwith "two 40 BRL journals close at 80 BRL"
+
+///> rust
+:# an_ifrs_certificate_carries_the_closed_turnover =
+    ? money::same (certified_turnover (certified Ifrs (close (two_sale_book ())))) (decimal::of_int 80i64) = !-
     ?> failwith "an IFRS certificate carries the closed period's turnover"
 
 ///> rust
 :# a_journal_is_revalued_with_a_quote_of_its_own_period =
-    := sale =
-        balanced ([ debit "cash" (brl 100i64); credit "sales" (brl 100i64) ] : list (line seller july_2026 money::brl))
-    := july : quote money::brl money::eur july_2026 =
-        quoted (money::rate_of money::Brl money::Eur { units = 17i64; scale = 2i32 })
-    ?= sale ?|
-    | Some j =>
-        ?= revalued money::HalfUp 2i32 july j ?|
-        | Some eur =>
-            ? same (turnover eur) (decimal::of_int 17i64) = !- ?> failwith "100 BRL at 0.17 is 17 EUR on both sides"
-        | None => failwith "a two-line journal stays balanced after conversion"
-    | None => failwith "100 against 100 balances"
+    ? money::same (revalued_even_sale ()) (decimal::of_int 17i64) = !- ?> failwith "100 BRL at 0.17 is 17 EUR on both sides"
 
 ///> rust
 :# a_eur_line_does_not_join_a_brl_journal fails "Unification" =
@@ -147,16 +177,12 @@
 
 ///> rust
 :# a_buyer_journal_is_not_a_seller_journal fails "Unification" =
-    := left, right =
-        intercompany "sales" "purchases" (brl 40i64)
-        : journal seller july_2026 money::brl * journal buyer july_2026 money::brl
+    := left, right = seller_buyer_sale ()
     [ left; right ] |> ignore
 
 ///> rust
 :# a_closed_period_takes_no_more_journals fails "Unification" =
-    := left, _ =
-        intercompany "sales" "purchases" (brl 40i64)
-        : journal seller july_2026 money::brl * journal buyer july_2026 money::brl
+    := left, _ = seller_buyer_sale ()
     post left (close (post left (opened ()))) |> ignore
 
 ///> rust
@@ -166,9 +192,5 @@
 
 ///> rust
 :# a_july_journal_takes_no_august_quote fails "Unification" =
-    := left, _ =
-        intercompany "sales" "purchases" (brl 40i64)
-        : journal seller july_2026 money::brl * journal buyer july_2026 money::brl
-    := august : quote money::brl money::eur august_2026 =
-        quoted (money::rate_of money::Brl money::Eur { units = 17i64; scale = 2i32 })
-    revalued money::HalfUp 2i32 august left |> ignore
+    := left, _ = seller_buyer_sale ()
+    revalued money::HalfUp 2i32 (august_quote ()) left |> ignore

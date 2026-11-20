@@ -1,5 +1,5 @@
 defmodule Spiral.Cells.CompilerClient do
-  alias Spiral.Cells.{CompilerDaemon, FileLock, ProcessError, Runner}
+  alias Spiral.Cells.{CompilerDaemon, ProcessError, Runner}
 
   @spec compile(map(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def compile(req, opts \\ []) do
@@ -52,7 +52,7 @@ defmodule Spiral.Cells.CompilerClient do
     Enum.map(0..(size - 1), &(base_port() + &1))
   end
 
-  defp busy_table, do: Spiral.Cells.Tables.ensure(:spiral_cells_compiler_busy, [:set, write_concurrency: true])
+  defp busy_table, do: Spiral.Cells.Domain.tables_ensure(:spiral_cells_compiler_busy, [:set, write_concurrency: true])
 
   defp acquire_port do
     table = busy_table()
@@ -127,7 +127,7 @@ defmodule Spiral.Cells.CompilerClient do
   end
 
   defp start(port) do
-    case FileLock.with_lock(lock_path(port), fn -> start_locked(port) end, 240_000) do
+    case Spiral.Cells.Domain.with_lock(lock_path(port), fn -> start_locked(port) end, 240_000) do
       :ok ->
         :ok
 
@@ -212,7 +212,7 @@ defmodule Spiral.Cells.CompilerClient do
   end
 
   defp replace(port, _pid) do
-    case FileLock.with_lock(lock_path(port), fn -> start_locked(port) end, 240_000) do
+    case Spiral.Cells.Domain.with_lock(lock_path(port), fn -> start_locked(port) end, 240_000) do
       :ok ->
         :ok
 
@@ -292,35 +292,14 @@ defmodule Spiral.Cells.CompilerClient do
   end
 
   defp wait_up(port, deadline) do
-    case ping(port) do
-      {:ok, stamp, _pid} ->
-        cond do
-          stamp == CompilerDaemon.code_stamp() ->
-            :ok
+    late = System.monotonic_time(:millisecond) > deadline
+    stamp = Integer.to_string(CompilerDaemon.code_stamp())
 
-          System.monotonic_time(:millisecond) > deadline ->
-            {:error, process_error("compiler on port #{port} started with a different build")}
-
-          true ->
-            Process.sleep(100)
-            wait_up(port, deadline)
-        end
-
-      :down ->
-        if System.monotonic_time(:millisecond) > deadline do
-          {:error, process_error("compiler on port #{port} did not start\n#{log_tail(port)}")}
-        else
-          Process.sleep(100)
-          wait_up(port, deadline)
-        end
-
-      {:occupied, detail} ->
-        if handshake_pending?(detail) and System.monotonic_time(:millisecond) <= deadline do
-          Process.sleep(100)
-          wait_up(port, deadline)
-        else
-          {:error, process_error("port #{port} is already used by another program (#{detail})")}
-        end
+    case port |> Spiral.Cells.Domain.ping_wire() |> then(&Spiral.Cells.Domain.up_step_wire(port, &1, stamp, late)) |> String.split("\t", parts: 2) do
+      ["up"] -> :ok
+      ["retry"] -> (Process.sleep(100); wait_up(port, deadline))
+      ["down", why] -> {:error, process_error("#{why}\n#{log_tail(port)}")}
+      ["fail", why] -> {:error, process_error(why)}
     end
   end
 
@@ -358,11 +337,7 @@ defmodule Spiral.Cells.CompilerClient do
   defp spawn_daemon_unix(elixir, project, log, err, path, port) do
     detach = if System.find_executable("setsid"), do: "setsid", else: "nohup"
 
-    script =
-      case compiled_ebins() do
-        nil -> ~s(cd "$1" && #{detach} "$2" -S mix spiral.compiler_daemon </dev/null >"$3" 2>"$4" &)
-        ebins -> ~s|cd "$1" && #{detach} "$2" -pa "#{ebins}" -e 'Spiral.Cells.CompilerDaemon.serve_app()' </dev/null >"$3" 2>"$4" &|
-      end
+    script = Spiral.Cells.Domain.unix_spawn_script(detach, compiled_ebins() || "")
 
     env = [
       {"PATH", path},
@@ -387,7 +362,7 @@ defmodule Spiral.Cells.CompilerClient do
   defp spawn_daemon_windows(elixir, project, log, err, path, port) do
     script = Spiral.Cells.Domain.spawn_script(path, mix_env(), port, daemon_owner(), daemon_start(elixir, project, log, err, port))
 
-    case System.cmd("powershell.exe", ["-NoProfile", "-Command", script], stderr_to_stdout: true) do
+    case System.cmd("pwsh", ["-NoProfile", "-NonInteractive", "-Command", script], stderr_to_stdout: true) do
       {_out, 0} ->
         :ok
 
@@ -401,7 +376,7 @@ defmodule Spiral.Cells.CompilerClient do
   def daemon_owner do
     command = System.argv() |> Enum.join(" ") |> String.replace(["\t", "\r", "\n", "'", "\""], " ") |> String.slice(0, 160)
     job = System.get_env("KIT_JOB_ID")
-    "#{if job, do: "job #{job} "}os_pid #{System.pid()} argv #{command}"
+    "#{if job, do: "job #{job} "}os_pid #{System.pid()} launcher #{shell_launcher() || "none"} argv #{command}"
   end
 
   defp daemon_start(elixir, project, log, err, port) do
@@ -427,12 +402,9 @@ defmodule Spiral.Cells.CompilerClient do
 
   @doc false
   def default_shell_launcher do
-    with local when is_binary(local) <- System.get_env("LOCALAPPDATA"),
-         kit = Path.join(local, "kit/bin/kit.exe"),
-         true <- File.regular?(kit) do
-      kit
-    else
-      _ -> nil
+    case Spiral.Cells.Domain.default_shell_launcher(System.get_env("LOCALAPPDATA") || "") do
+      "" -> nil
+      launcher -> launcher
     end
   end
 
@@ -645,7 +617,7 @@ defmodule Spiral.Cells.CompilerClient do
       else: "dev"
   end
 
-  defp process_error(message), do: %ProcessError{message: message}
+  defp process_error(message), do: Spiral.Cells.Domain.process_error(message, nil, nil, nil)
 
   @doc """
   One `status` reply line as the fields `live_daemons/0` reports, every field nil when the line is not a status reply.

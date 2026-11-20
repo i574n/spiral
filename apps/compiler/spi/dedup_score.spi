@@ -1,0 +1,227 @@
+///- --package .
+:# dedup_score static =
+    :< testing
+
+:< sm'_operators
+
+:== copy = { group : i32; target : string }
+
+:| verdict =
+    | Duplicate : i32
+    | LibCopy : copy
+    | LocalWrapper : copy
+    | TypedPin : i32
+    | DomainAlias
+    | NameCollision
+
+:== gold_row = { file : string; line : i32; verdict : verdict }
+
+:== det_row = { group : string; target : string; file : string; line : i32 }
+
+:== report = { b3_precision : f64; b3_recall : f64; b3_f1 : f64; items : i32; pair_precision : f64; pair_recall : f64; lib_ok : i32; lib_total : i32; negatives : i32; gate_ready : bool }
+
+:~ group_of (v : verdict) : i32 =
+    ?= v ?|
+    | Duplicate g => g
+    | LibCopy c => c.group
+    | LocalWrapper c => c.group
+    | TypedPin g => g
+    | DomainAlias => -1
+    | NameCollision => -1
+
+:~ lib_target_of (v : verdict) : string =
+    ?= v ?|
+    | LibCopy c => c.target
+    | LocalWrapper c => c.target
+    | _ => ""
+
+:~ must_not_flag (v : verdict) : bool =
+    ?= v ?|
+    | TypedPin _ => true
+    | DomainAlias => true
+    | NameCollision => true
+    | _ => false
+
+:~ same_site (f1 : string) (l1 : i32) (f2 : string) (l2 : i32) : bool = l1 = l2 && f1 = f2
+
+:~ ^ gold_at (gold : list gold_row) (file : string) (line : i32) : option verdict =
+    ?= gold ?|
+    | [] => None
+    | r :: rest => ? same_site r.file r.line file line ?> Some r.verdict |: gold_at rest file line
+
+:~ ^ det_at (det : list det_row) (file : string) (line : i32) : option det_row =
+    ?= det ?|
+    | [] => None
+    | d :: rest => ? same_site d.file d.line file line ?> Some d |: det_at rest file line
+
+:~ count_if \* t. (keep : t -> bool) (xs : list t) : i32 = listm.length (listm'.filter keep xs)
+
+:~ judged_of (gold : list gold_row) (det : list det_row) : list (det_row * verdict) =
+    :~ ^ go (xs : list det_row) : list (det_row * verdict) =
+        ?= xs ?|
+        | [] => []
+        | d :: rest =>
+            ?= gold_at gold d.file d.line ?|
+            | Some v => (d, v) :: go rest
+            | None => go rest
+    go det
+
+:~ ratio (a : i32) (b : i32) : f64 = ? b = 0 ?> 0.0 |: (conv a : f64) / (conv b : f64)
+
+:~ in_gold_cluster (r : gold_row) (m : det_row * verdict) : bool =
+    := (d, v) = m
+    := g = group_of r.verdict
+    ? g >= 0 ?> group_of v = g |: same_site d.file d.line r.file r.line
+
+:~ b3 (gold : list gold_row) (det : list det_row) (judged : list (det_row * verdict)) : f64 * f64 * i32 =
+    :~ ^ go (rows : list gold_row) (p : f64) (r : f64) (n : i32) : f64 * f64 * i32 =
+        ?= rows ?|
+        | [] => (p, r, n)
+        | g :: rest =>
+            := grp = group_of g.verdict
+            ?= det_at det g.file g.line ?|
+            | Some d =>
+                := members = listm'.filter (\ (m : det_row * verdict) => (fst m).group = d.group) judged
+                := nd = listm::length members
+                := both = count_if (in_gold_cluster g) members
+                := ng = ? grp >= 0 ?> count_if (\ (x : gold_row) => group_of x.verdict = grp) gold |: 1
+                go rest (p + ratio both nd) (r + ratio both ng) (n + 1)
+            | None =>
+                ? grp >= 0 ?>
+                    := ng = count_if (\ (x : gold_row) => group_of x.verdict = grp) gold
+                    go rest (p + 1.0) (r + ratio 1 ng) (n + 1)
+                |: go rest p r n
+    := (p, r, n) = go gold 0.0 0.0 0
+    ? n = 0 ?> (0.0, 0.0, 0) |: (p / (conv n : f64), r / (conv n : f64), n)
+
+:~ gold_pairs (gold : list gold_row) (det : list det_row) : i32 * i32 =
+    :~ ^ outer (rows : list gold_row) (tp : i32) (fn : i32) : i32 * i32 =
+        ?= rows ?|
+        | [] => (tp, fn)
+        | a :: rest =>
+            := ga = group_of a.verdict
+            ? ga < 0 ?> outer rest tp fn
+            |:
+                := da = det_at det a.file a.line
+                :~ ^ inner (bs : list gold_row) (tp : i32) (fn : i32) : i32 * i32 =
+                    ?= bs ?|
+                    | [] => (tp, fn)
+                    | b :: more =>
+                        ? group_of b.verdict <> ga ?> inner more tp fn
+                        |:
+                            := hit =
+                                ?= da, det_at det b.file b.line ?|
+                                | Some x, Some y => x.group = y.group
+                                | _ => false
+                            ? hit ?> inner more (tp + 1) fn |: inner more tp (fn + 1)
+                := (tp2, fn2) = inner rest tp fn
+                outer rest tp2 fn2
+    outer gold 0 0
+
+:~ false_pair (a : det_row) (va : verdict) (m : det_row * verdict) : bool =
+    := (b, vb) = m
+    b.group = a.group && not (group_of va >= 0 && group_of va = group_of vb)
+
+:~ det_false_pairs (judged : list (det_row * verdict)) : i32 =
+    :~ ^ outer (ms : list (det_row * verdict)) (fp : i32) : i32 =
+        ?= ms ?|
+        | [] => fp
+        | (a, va) :: rest => outer rest (fp + count_if (false_pair a va) rest)
+    outer judged 0
+
+:~ lib_hit (det : list det_row) (g : gold_row) : bool =
+    ?= det_at det g.file g.line ?|
+    | Some d => d.target = lib_target_of g.verdict
+    | None => false
+
+:~ flagged_negative (det : list det_row) (g : gold_row) : bool =
+    ? must_not_flag g.verdict ?>
+        ?= det_at det g.file g.line ?|
+        | Some d => count_if (\ (x : det_row) => x.group = d.group) det > 1 || (d.target <> "" && d.target <> "-")
+        | None => false
+    |: false
+
+:~ score (gold : list gold_row) (det : list det_row) : report =
+    := judged = judged_of gold det
+    := (p, r, n) = b3 gold det judged
+    := (tp, fn) = gold_pairs gold det
+    := fp = det_false_pairs judged
+    := libs = listm'.filter (\ (g : gold_row) => lib_target_of g.verdict <> "") gold
+    := lib_ok = count_if (lib_hit det) libs
+    := negatives = count_if (flagged_negative det) gold
+    {
+        b3_precision = p
+        b3_recall = r
+        b3_f1 = ? p + r > 0.0 ?> 2.0 * p * r / (p + r) |: 0.0
+        items = n
+        pair_precision = ratio tp (tp + fp)
+        pair_recall = ratio tp (tp + fn)
+        lib_ok = lib_ok
+        lib_total = listm::length libs
+        negatives = negatives
+        gate_ready = p >= 0.95 && negatives = 0
+    }
+
+:~ report_lines (x : report) : list string =
+    := f (v : f64) = sm'.format_fixed 4 v
+    [
+        "bcubed_precision " ++# f x.b3_precision
+        "bcubed_recall " ++# f x.b3_recall
+        "bcubed_f1 " ++# f x.b3_f1
+        "judged_items " ++# sm'.show x.items
+        "pair_precision " ++# f x.pair_precision
+        "pair_recall " ++# f x.pair_recall
+        "lib_target_accuracy " ++# f (ratio x.lib_ok x.lib_total) ++# " (" ++# sm'.show x.lib_ok ++# "/" ++# sm'.show x.lib_total ++# ")"
+        "negatives_flagged " ++# sm'.show x.negatives
+        "gate_ready " ++# (? x.gate_ready ?> "yes" |: "no")
+    ]
+
+:~ sample_gold () : list gold_row =
+    [
+        { file = "a.spi"; line = 1; verdict = Duplicate 1 }
+        { file = "b.spi"; line = 1; verdict = Duplicate 1 }
+        { file = "c.spi"; line = 1; verdict = Duplicate 1 }
+        { file = "a.spi"; line = 5; verdict = LibCopy { group = 2; target = "lib::atom" } }
+        { file = "b.spi"; line = 5; verdict = LibCopy { group = 2; target = "lib::atom" } }
+        { file = "a.spi"; line = 9; verdict = NameCollision }
+        { file = "b.spi"; line = 9; verdict = NameCollision }
+        { file = "c.spi"; line = 9; verdict = DomainAlias }
+    ]
+
+:~ det (group : string) (target : string) (file : string) (line : i32) : det_row = { group = group; target = target; file = file; line = line }
+
+///> rust
+///> fsharp
+///> gleam
+:# a_perfect_detector_is_gate_ready =
+    := d = [ det "x" "-" "a.spi" 1; det "x" "-" "b.spi" 1; det "x" "-" "c.spi" 1; det "y" "lib::atom" "a.spi" 5; det "y" "lib::atom" "b.spi" 5 ]
+    := r = score (sample_gold ()) d
+    (sm'.format_fixed 4 r.b3_precision, sm'.format_fixed 4 r.b3_recall, r.lib_ok, r.negatives, r.gate_ready)
+    |> _assert_eq ("1.0000", "1.0000", 2, 0, true)
+
+///> rust
+///> fsharp
+///> gleam
+:# merging_a_name_collision_costs_precision_and_blocks_the_gate =
+    := d = [ det "x" "-" "a.spi" 1; det "x" "-" "b.spi" 1; det "x" "-" "c.spi" 1; det "y" "lib::atom" "a.spi" 5; det "y" "lib::atom" "b.spi" 5; det "z" "-" "a.spi" 9; det "z" "-" "b.spi" 9 ]
+    := r = score (sample_gold ()) d
+    (sm'.format_fixed 4 r.b3_precision, r.negatives, r.gate_ready, sm'.format_fixed 4 r.pair_precision)
+    |> _assert_eq ("0.8571", 2, false, "0.8000")
+
+///> rust
+///> fsharp
+///> gleam
+:# a_missed_copy_costs_recall_and_lib_target_accuracy =
+    := d = [ det "x" "-" "a.spi" 1; det "x" "-" "b.spi" 1; det "y" "lib::atom" "a.spi" 5 ]
+    := r = score (sample_gold ()) d
+    (sm'.format_fixed 4 r.b3_recall, r.lib_ok, sm'.format_fixed 4 r.pair_recall)
+    |> _assert_eq ("0.5333", 1, "0.2500")
+
+///> rust
+///> fsharp
+///> gleam
+:# a_domain_alias_with_a_lib_target_counts_as_a_flagged_negative =
+    := d = [ det "w" "lib::term" "c.spi" 9 ]
+    := r = score (sample_gold ()) d
+    (r.negatives, r.gate_ready)
+    |> _assert_eq (1, false)

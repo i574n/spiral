@@ -1,0 +1,19 @@
+:< sm'_operators
+
+:! source_sha256 = string
+
+:== source_stamp = { path : string; sha256 : source_sha256 }
+
+:= sha_text ((source_sha256 h) : source_sha256) : string = h
+
+:= stamp_table () : list (string * string) =
+    [
+        ("apps/cells/spi/cell_budget.spi", "c2887404a47b7b686ac349fb85cbdead65b7c3c0c3989954cd3a5e5c69ab7290");
+        ("apps/cells/spi/cell_budget_ruled.spi", "54b22ad763c186cbe30067d3b32e0c281f3334d8fb78acfcba355161c563f44d");
+        ("apps/cells/budget/cell_budget_cli.spi", "b297208d63dab2350bd3a8463a98d286faaf59035e479c6b0dd9172b31fd983d")
+    ]
+
+:= stamps () : list source_stamp =
+    stamp_table () |> listm::map (\ (path, sha256) => { path = path; sha256 = source_sha256 sha256 })
+
+:= stamp_line (s : source_stamp) : string = sha_text s::sha256 ++# "  " ++# s::path

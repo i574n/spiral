@@ -1,0 +1,90 @@
+///- --package .
+:# lisp static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ marker () : string = "///! lisp"
+
+:~ normalized (code : string) : string = text::replace code "\r\n" "\n"
+
+:~ ^ has_marker (lines : list string) : bool =
+    ?= lines ?|
+    | [] => !-
+    | line :: rest => ? text::trim line = marker () ?> !+ |: has_marker rest
+
+:~ is_lisp (code : string) : bool = has_marker (sm'::split_list "\n" (normalized code))
+
+:~ ^ before_marker (lines : list string) (acc : list string) : list string * list string =
+    ?= lines ?|
+    | [] => (listm::rev acc, [])
+    | line :: rest => ? text::trim line = marker () ?> (listm::rev acc, rest) |: before_marker rest (line :: acc)
+
+:~ ^ split_directives (lines : list string) (acc : list string) : list string * list string =
+    ?= lines ?|
+    | [] => (listm::rev acc, [])
+    | line :: rest => ? text::starts_with (text::trim line) "///" ?> split_directives rest (line :: acc) |: (listm::rev acc, lines)
+
+:~ uniq () : string =
+    erlang_term::integer_text (erlang_term::apply "erlang" "unique_integer" [ erlang_term::list_term [ erlang_term::atom "positive" ] ])
+
+:~ tmp_dir () : string =
+    := base = toolchain::first_set [ toolchain::beam_env "TMPDIR"; toolchain::beam_env "TEMP"; toolchain::beam_env "TMP"; "/tmp" ]
+    erlang_file::joined_path base ("spiral_cells_lisp_" ++ uniq ())
+
+:~ ensured (path : string) : () = erlang_term::apply "filelib" "ensure_dir" [ erlang_term::of path ] |> ignore
+
+:~ removed (dir : string) : () = erlang_term::apply "file" "del_dir_r" [ erlang_term::of dir ] |> ignore
+
+:~ failed (code : i32) (output : string) : string =
+    failwith ("Spiral.Cells.Lisp: spl2spi failed (exit " ++ text::show_i32 code ++ "): " ++ output)
+
+:~ write_forms (dir : string) (forms : string) : string =
+    := spl = erlang_file::joined_path dir "cell.spl"
+    := _ = ensured spl
+    := _ = erlang_file::file_written spl forms
+    spl
+
+:~ spl2spi_ran (spl2spi : string) (spl : string) (spi : string) : bool * i32 * string =
+    := out = process::captured_by spl2spi [ spl; spi ] !+
+    (out::ran && out::code = 0i32, out::code, out::stdout)
+
+:~ finish (dir : string) (spi : string) (ran : bool * i32 * string) : string =
+    := ok, code, stdout = ran
+    := content = ? ok ?> erlang_file::file_text spi |: ""
+    := _ = removed dir
+    ? ok ?> content |: failed code stdout
+
+:~ run_spl2spi (spl2spi : string) (forms : string) : string =
+    := dir = tmp_dir ()
+    := spl = write_forms dir forms
+    := spi = erlang_file::joined_path dir "cell.spi"
+    finish dir spi (spl2spi_ran spl2spi spl spi)
+
+:~ reassemble (before : list string) (directives : list string) (body : string) : string =
+    sm'::concat_list "\n" (listm::append before (listm::append directives [ body ]))
+
+:~ transpile (code : string) (spl2spi : string) : string =
+    := before, rest = before_marker (sm'::split_list "\n" (normalized code)) []
+    := directives, forms = split_directives rest []
+    reassemble before directives (run_spl2spi spl2spi (sm'::concat_list "\n" forms))
+
+:~ lisp_expand (code : string) (spl2spi : string) : string =
+    ? is_lisp code = !-
+    ?> code
+    |? spl2spi = ""
+    ?> failwith "Spiral.Cells.Lisp: spl2spi is missing; build it with apps/lisp/build.ps1"
+    |: transpile code spl2spi
+
+///> gleam
+:# detects_the_lisp_marker_and_passes_non_lisp_code_through_untouched =
+    (is_lisp "a\n///! lisp\n(foo)", is_lisp "no marker here", is_lisp "  ///! lisp  ", is_lisp "// ///! lisp", lisp_expand "plain code" "") |> _assert_eq (!+, !-, !+, !-, "plain code")
+
+///> gleam
+:# the_marker_split_keeps_before_lines_directives_and_forms_apart =
+    := before, rest = before_marker (sm'::split_list "\n" "a\n///! lisp\n///> x\n(f)") []
+    (before, split_directives rest []) |> _assert_eq ([ "a" ], ([ "///> x" ], [ "(f)" ]))
+
+///> gleam
+:# reassemble_joins_before_directives_and_the_transpiled_body =
+    reassemble [ "inl helper () = 1i32" ] [ "///> rust" ] "inl main () : i32 = 0i32" |> _assert_eq "inl helper () = 1i32\n///> rust\ninl main () : i32 = 0i32"

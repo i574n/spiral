@@ -1,4 +1,5 @@
 ///- --package .
+:< erlang_term
 :# targets static =
     :< testing
 
@@ -131,6 +132,99 @@
     | Some h => host_name h
     | None => ""
 
+:~ hk_field (cell : erlang_term::term) (k : string) : erlang_term::term = erlang_term::apply "maps" "get" [ erlang_term::atom k; cell; erlang_term::atom "nil" ]
+
+:~ hk_is (name : string) (t : erlang_term::term) : bool = erlang_term::equal t (erlang_term::atom name)
+
+:~ hk_nil () : erlang_term::term = erlang_term::atom "nil"
+
+:~ hk_atom (name : string) : erlang_term::term = erlang_term::apply "erlang" "binary_to_atom" [ erlang_term::of name; erlang_term::atom "utf8" ]
+
+:~ hk_pair (key : erlang_term::term) (language : string) : erlang_term::term = erlang_term::tuple [ key; erlang_term::of language ]
+
+:~ hk_lang (language : string) : erlang_term::term =
+    := name = host_language language
+    ? name = "" ?> hk_nil () |: hk_pair (hk_atom name) name
+
+:~ hk_code (language : erlang_term::term) : erlang_term::term =
+    ? erlang_term::is_binary language ?> hk_lang (erlang_term::cast language) |: hk_nil ()
+
+:~ host_key (cell : erlang_term::term) : erlang_term::term =
+    := kind = hk_field cell "kind"
+    ? hk_is "fsharp" kind ?> hk_pair (erlang_term::atom "fsharp") "fsharp" |? hk_is "code" kind ?> hk_code (hk_field cell "language") |: hk_nil ()
+
+:== trm = erlang_term::term
+
+:~ eo \* t. (x : t) : trm = erlang_term::of x
+
+:~ ea (s : string) : trm = erlang_term::atom s
+
+:~ nk (k : string) (v : trm) : trm = notebook::nb_kv k v
+
+:~ nm (xs : list trm) : trm = notebook::nb_map xs
+
+:~ hs_get (acc : trm) (key : trm) : string = erlang_term::cast (erlang_term::apply "maps" "get" [ key; acc; eo "" ])
+
+:~ hs_set (acc : trm) (key : trm) (src : string) : trm = erlang_term::apply "maps" "put" [ key; eo src; acc ]
+
+:~ hs_src (cell : trm) : string = erlang_term::cast (erlang_term::apply "maps" "get" [ erlang_term::atom "source"; cell; eo "" ])
+
+:~ host_step (i : i32) (lang : string) (src : string) : trm =
+    nm [ nk "index" (eo i); nk "timeout" (eo "-"); nk "kind" (erlang_term::atom "host"); nk "language" (eo lang); nk "source" (eo src) ]
+
+:~ hs_skip (k : trm) (fsi : bool) : bool = erlang_term::equal k (erlang_term::atom "nil") || (fsi && erlang_term::equal (element_at 1i32 k) (erlang_term::atom "fsharp"))
+
+:~ hs_emit (i : i32) (acc : trm) (steps : list trm) (cell : trm) (k : trm) : trm * list trm =
+    := key = element_at 1i32 k
+    := src = notebook::join_host (hs_get acc key) (hs_src cell)
+    hs_set acc key src, host_step i (cast (element_at 2i32 k)) src :: steps
+
+:~ hs_next (skip : bool) (i : i32) (acc : trm) (steps : list trm) (cell : trm) (k : trm) : trm * list trm =
+    ? skip ?> (acc, steps) |: hs_emit i acc steps cell k
+
+:~ hs_step2 (fsi : bool) (i : i32) (acc : trm) (steps : list trm) (cell : trm) : trm * list trm =
+    := k = host_key cell
+    hs_next (hs_skip k fsi) i acc steps cell k
+
+:~ ^ hs_go (cells : list trm) (fsi : bool) (i : i32) (acc : trm) (steps : list trm) : list trm =
+    ?= cells ?|
+    | [] => listm::rev steps
+    | cell :: rest =>
+        := acc2, steps2 = hs_step2 fsi i acc steps cell
+        hs_go rest fsi (i + 1i32) acc2 steps2
+
+:~ host_steps (cells : trm) (fsi : bool) : trm =
+    erlang_term::list_term (hs_go (erlang_term::items_of cells) fsi 0i32 (erlang_term::apply "maps" "new" []) [])
+
+:~ fsi_ignored (source : string) : bool =
+    := t = sm'::trim_start [] source
+    sm'::starts_with "///- " t && sm'::contains "--ignore" t
+
+:~ fs_step (i : i32) (knd : string) (src : string) : trm = nm [ nk "index" (eo i); nk "kind" (ea knd); nk "source" (eo src) ]
+
+:~ fs_is_fsharp (cell : trm) : bool =
+    := k = host_key cell
+    not (erlang_term::equal k (ea "nil")) && erlang_term::equal (element_at 1i32 k) (ea "fsharp")
+
+:~ fs_cell (i : i32) (cell : trm) (acc : list trm) : list trm =
+    := src = hs_src cell
+    ? hk_is "import" (hk_field cell "kind") ?> fs_step i "import" src :: acc |? fs_is_fsharp cell && not (fsi_ignored src) ?> fs_step i "fsharp" src :: acc |: acc
+
+:~ ^ fs_go (cells : list trm) (i : i32) (acc : list trm) : list trm =
+    ?= cells ?| [] => listm::rev acc | cell :: rest => fs_go rest (i + 1i32) (fs_cell i cell acc)
+
+:~ fs_fsi (collected : list trm) : list trm =
+    ?= collected ?|
+    | [] => []
+    | first :: _ => [ nm [ nk "index" (hk_field first "index"); nk "timeout" (eo "-"); nk "kind" (ea "fsi"); nk "cells" (erlang_term::list_term collected) ] ]
+
+:~ fsi_steps (cells : trm) (enabled : bool) : trm =
+    ? enabled ?> erlang_term::list_term (fs_fsi (fs_go (erlang_term::items_of cells) 0i32 [])) |: erlang_term::list_term []
+
+///> gleam
+:# fsi_ignored_needs_the_directive_and_the_flag =
+    (fsi_ignored "///- --test --ignore\ncode", fsi_ignored "///- --test\ncode", fsi_ignored "  ///- x --ignore y") |> _assert_eq (!+, !-, !+)
+
 :~ host_extension (name : string) : string =
     ?= host_of name ?|
     | Some h => host_file_extension h
@@ -142,6 +236,8 @@
     |: s
 
 :~ is_cl (basename : string) : bool = without_exe (text::lowercase basename) = "cl"
+
+:~ is_cl_text (basename : string) : string = ? is_cl basename ?> "true" |: "false"
 
 :| zig_mode =
     | ZigRun
@@ -240,3 +336,78 @@
     (duration_text budget, duration_text 1500i32, duration_text -1i32, duration_text 0i32) |> _assert_eq ("900s", "1500ms", "infinity", "0s")
     cell_timeout_text "F#" 3000i32 " (x2)" "fsi " |> _assert_eq "F# cell timed out after 3s (x2); the fsi process tree was killed."
     cell_timeout_text "Spiral" budget "" "" |> _assert_eq "Spiral cell timed out after 900s; the process tree was killed."
+
+:| run_outcome =
+    | Ran : i32 * string
+    | ToolMissing : string
+    | Failed : i32 * string
+
+:~ failed_text (shown : string) (status : i32) (output : string) : string =
+    "`" ++ shown ++ "` failed (exit " ++ text::show_i32 status ++ ")\n\n" ++ output
+
+:~ missing_text (shown : string) (note : string) (output : string) : string = "`" ++ shown ++ "` " ++ note ++ "\n\n" ++ output
+
+:~ declared_unsupported (unsupported : i32) (status : i32) : bool = unsupported <> 0i32 && status = unsupported
+
+:~ not_ran (shown : string) (unsupported : i32) (note : string) (status : i32) (output : string) : run_outcome =
+    ? declared_unsupported unsupported status ?> ToolMissing (missing_text shown note output) |: Failed (status, failed_text shown status output)
+
+:~ run_outcome_of (shown : string) (unsupported : i32) (note : string) (status : i32) (output : string) : run_outcome =
+    ? status = 0i32 ?> Ran (status, output) |: not_ran shown unsupported note status output
+
+:~ tagged (tag : string) (message : string) : erlang_term::term = erlang_term::tuple [ erlang_term::atom tag; erlang_term::of message ]
+
+:~ outcome_term (o : run_outcome) : erlang_term::term =
+    ?= o ?| Ran (code, out) => tagged "ran" out | ToolMissing m => tagged "missing" m | Failed (code, m) => tagged "failed" m
+
+:~ p_triple (exe : string) (shown : string) (args : list string) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::of exe; erlang_term::of shown; erlang_term::list_term (listm::map erlang_term::of args) ]
+
+:~ pascal_choice (dcc_ok : bool) (dcc : string) (fpc_ok : bool) (fpc : string) : erlang_term::term =
+    ? dcc_ok ?> p_triple dcc "dcc32" []
+    |? fpc_ok ?> p_triple fpc "fpc" [ "-Px86_64"; "-O2"; "-Mdelphi"; "-l-"; "-v0w" ]
+    |: erlang_term::atom "nil"
+
+:~ line_directive (dir : string) (base : string) : string = "# 1 \"" ++ dir ++ "/" ++ base ++ "\"\n"
+
+:~ stdout_kv (text : string) : erlang_term::term = erlang_term::tuple [ erlang_term::atom "stdout"; erlang_term::of (sm'::trim text) ]
+
+:~ emap1 (kv : erlang_term::term) : erlang_term::term = erlang_term::apply "maps" "from_list" [ erlang_term::list_term [ kv ] ]
+
+:~ mput (k : string) (v : erlang_term::term) (m : erlang_term::term) : erlang_term::term = erlang_term::apply "maps" "put" [ erlang_term::atom k; v; m ]
+
+:~ shown_map (text : string) (value : erlang_term::term) : erlang_term::term =
+    := base = emap1 (stdout_kv text)
+    ? erlang_term::is_binary value ?> mput "value" value base |: base
+
+:~ run_cwd_choice (spiral : bool) (root_nbdir : bool) (cwd_binary : bool) (args_empty : bool) (last_regular : bool) : i32 =
+    ? spiral && root_nbdir ?> 0i32
+    |? spiral ?> 1i32
+    |? cwd_binary ?> 2i32
+    |? args_empty ?> 3i32
+    |? last_regular ?> 4i32
+    |: 3i32
+
+///> gleam
+:# run_cwd_choice_prefers_root_then_nil_then_cwd =
+    (run_cwd_choice !+ !+ !- !- !-, run_cwd_choice !+ !- !+ !- !-, run_cwd_choice !- !- !+ !- !-) |> _assert_eq (0i32, 1i32, 2i32)
+
+///> gleam
+:# run_cwd_choice_workdir_tags_for_exe_and_last =
+    (run_cwd_choice !- !- !- !+ !-, run_cwd_choice !- !- !- !- !+, run_cwd_choice !- !- !- !- !-) |> _assert_eq (3i32, 4i32, 3i32)
+
+///> gleam
+:# a_zero_exit_runs_and_keeps_its_output =
+    run_outcome_of "naga" 0i32 "" 0i32 "ok" |> _assert_eq (Ran (0i32, "ok"))
+
+///> gleam
+:# a_declared_unsupported_exit_reads_as_a_missing_tool =
+    run_outcome_of "wgsl" 3i32 "found no adapter" 3i32 "none" |> _assert_eq (ToolMissing "`wgsl` found no adapter\n\nnone")
+
+///> gleam
+:# any_other_exit_fails_with_the_cli_message =
+    run_outcome_of "gcc" 0i32 "" 1i32 "boom" |> _assert_eq (Failed (1i32, "`gcc` failed (exit 1)\n\nboom"))
+
+///> gleam
+:# an_exit_other_than_the_declared_unsupported_one_still_fails =
+    run_outcome_of "spiral-wgsl" 3i32 "n" 2i32 "x" |> _assert_eq (Failed (2i32, "`spiral-wgsl` failed (exit 2)\n\nx"))

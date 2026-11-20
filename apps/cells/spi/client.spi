@@ -170,6 +170,12 @@
     "Start-Process -FilePath $env:ComSpec -WorkingDirectory " ++ ps_quoted project ++ " -WindowStyle Hidden -ArgumentList "
     ++ ps_quoted command
 
+:~ launcher_candidates (local : string) : list string = [ local ++ "/rig/bin/rig.exe"; local ++ "/kit/bin/kit.exe" ]
+
+:~ default_shell_launcher (local : string) : string =
+    ? local = "" ?> ""
+    |: listm::fold (\ (found : string) (c : string) => ? found = "" && erlang_file::regular_file c ?> c |: found) "" (launcher_candidates local)
+
 :~ launcher_line (launcher : string) (start : string) : string =
     "& " ++ ps_quoted launcher ++ " process start-under-shell $env:ComSpec /d /c " ++ ps_quoted start
     ++ " | Out-Null; exit $LASTEXITCODE"
@@ -179,6 +185,59 @@
 :~ spawn_script (path : string) (mix_env : string) (port : i32) (owner : string) (start : string) : string =
     "$env:PATH = " ++ ps_quoted path ++ "\n$env:MIX_ENV = '" ++ mix_env ++ "'\n$env:SPIRAL_CELLS_COMPILER_PORT = '"
     ++ text::show_i32 port ++ "'\n$env:SPIRAL_CELLS_DAEMON_OWNER = '" ++ owner ++ "'\n" ++ start ++ "\n"
+
+:~ unix_spawn_script (detach : string) (ebins : string) : string =
+    := run =
+        ? ebins = "" ?> " -S mix spiral.compiler_daemon"
+        |: " -pa \"" ++ ebins ++ "\" -e 'Spiral.Cells.CompilerDaemon.serve_app()'"
+    "cd \"$1\" && " ++ detach ++ " \"$2\"" ++ run ++ " </dev/null >\"$3\" 2>\"$4\" &"
+///> gleam
+:# unix_spawn_scripts_match_the_elixir_client =
+    unix_spawn_script "setsid" "" |> _assert_eq "cd \"$1\" && setsid \"$2\" -S mix spiral.compiler_daemon </dev/null >\"$3\" 2>\"$4\" &"
+    unix_spawn_script "nohup" "/l/*/ebin"
+    |> _assert_eq "cd \"$1\" && nohup \"$2\" -pa \"/l/*/ebin\" -e 'Spiral.Cells.CompilerDaemon.serve_app()' </dev/null >\"$3\" 2>\"$4\" &"
+
+:| up_step =
+    | Up
+    | Retry
+    | NeverStarted : string
+    | GaveUp : string
+
+:~ up_step_of (port : i32) (reply : string) (stamp : string) (late : bool) : up_step =
+    := on_port = " on port " ++ text::show_i32 port
+    := detail = text::drop reply (text::length "occupied\t")
+    ? reply = "down" && late
+    ?> NeverStarted ("compiler" ++ on_port ++ " did not start")
+    |? reply = "down"
+    ?> Retry
+    |? text::starts_with reply ("ok\t" ++ stamp ++ "\t")
+    ?> Up
+    |? text::starts_with reply "ok\t" && late
+    ?> GaveUp ("compiler" ++ on_port ++ " started with a different build")
+    |? text::starts_with reply "ok\t"
+    ?> Retry
+    |? (detail = ":timeout" || detail = ":closed") && not late
+    ?> Retry
+    |: GaveUp ("port " ++ text::show_i32 port ++ " is already used by another program (" ++ detail ++ ")")
+
+:~ up_step_wire (port : i32) (reply : string) (stamp : string) (late : bool) : string =
+    ?= up_step_of port reply stamp late ?|
+    | Up => "up"
+    | Retry => "retry"
+    | NeverStarted why => "down\t" ++ why
+    | GaveUp why => "fail\t" ++ why
+///> gleam
+:# a_startup_wait_is_up_only_on_this_build_and_retries_until_late =
+    up_step_wire 9i32 "ok\t17\t300" "17" true |> _assert_eq "up"
+    up_step_wire 9i32 "ok\t170\t300" "17" false |> _assert_eq "retry"
+    up_step_wire 9i32 "ok\t170\t300" "17" true |> _assert_eq "fail\tcompiler on port 9 started with a different build"
+    up_step_wire 9i32 "down" "17" false |> _assert_eq "retry"
+    up_step_wire 9i32 "down" "17" true |> _assert_eq "down\tcompiler on port 9 did not start"
+///> gleam
+:# an_occupied_port_waits_only_for_a_pending_handshake =
+    up_step_wire 9i32 "occupied\t:timeout" "17" false |> _assert_eq "retry"
+    up_step_wire 9i32 "occupied\t:closed" "17" true |> _assert_eq "fail\tport 9 is already used by another program (:closed)"
+    up_step_wire 9i32 "occupied\tHTTP/1.1 400" "17" false |> _assert_eq "fail\tport 9 is already used by another program (HTTP/1.1 400)"
 
 :| hello_probe =
     | ProbeDown
@@ -372,3 +431,8 @@
     := failed = compiler_session (erlang_tcp::listener_port (fake_status "spiral-session\terror\t9\tno\tmain")) (0i32 - 1i32) "gleam" "a.spi" "a.gleam" "adds"
     := waited = compiler_session (erlang_tcp::listener_port (fake_silent ())) 50i32 "rust" "a.spi" "a.rs" ""
     (ok, failed, waited) |> _assert_eq ("ok\tr7", "error\tno main", "timeout")
+
+///> gleam
+:# the_rig_launcher_is_preferred_over_the_kit_one =
+    (launcher_candidates "/l", default_shell_launcher "", default_shell_launcher "/surely/missing/1118")
+    |> _assert_eq ([ "/l/rig/bin/rig.exe"; "/l/kit/bin/kit.exe" ], "", "")

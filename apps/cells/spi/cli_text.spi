@@ -1,0 +1,108 @@
+///- --package .
+:< erlang_term
+:# cli_text static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ texts (t : term) : list string = listm::map erlang_file::text_of (erlang_term::items_of t)
+
+:~ ends_with (s : string) (p : string) : bool = text::length s >= text::length p && text::drop s (text::length s - text::length p) = p
+
+:~ ^ trim_tail_slash (s : string) : string = ? text::length s > 1i32 && ends_with s "/" ?> trim_tail_slash (text::take s (text::length s - 1i32)) |: s
+
+:~ ^ trim_head_slash (s : string) : string = ? text::starts_with s "/" ?> trim_head_slash (text::drop s 1i32) |: s
+
+:~ path_join (left : string) (right : string) : string = ? left = "" ?> right |: trim_tail_slash left ++ "/" ++ trim_head_slash right
+
+:~ rootname (p : string) : string = erlang_file::text_of (erlang_term::apply "filename" "rootname" [ str p ])
+
+:~ basename (p : string) : string = erlang_file::text_of (erlang_term::apply "filename" "basename" [ str p ])
+
+:~ livemd_target (path : string) (livemd : bool) (out_path : string) (out_dir : string) : string =
+    ? not livemd ?> "" |? out_path <> "" ?> rootname out_path ++ ".livemd" |? out_dir <> "" ?> path_join out_dir (basename path ++ ".livemd") |: path ++ ".livemd"
+
+:~ output_path (path : string) (out_path : string) (out_dir : string) : string =
+    ? out_path <> "" ?> out_path |? out_dir <> "" ?> path_join out_dir (basename path ++ ".ipynb") |: ""
+
+///> gleam
+:# livemd_and_ipynb_targets_follow_the_cli_flags =
+    (livemd_target "lib/math.spi" !+ "" "", livemd_target "lib/math.spi" !+ "t/math.spi.ipynb" "", livemd_target "lib/m.spi" !- "" "out")
+    |> _assert_eq ("lib/math.spi.livemd", "t/math.spi.livemd", "")
+
+///> gleam
+:# an_output_dir_joins_the_basename =
+    (output_path "C:/x/geometry.spi" "" "C:/out", output_path "C:/x/a.spi" "C:/o.ipynb" "C:/out", output_path "a.spi" "" "") |> _assert_eq ("C:/out/geometry.spi.ipynb", "C:/o.ipynb", "")
+
+:~ directive_of (target : string) : string = "///> " ++ text::lowercase target ++ "\n"
+
+:~ ^ trim_tail_newlines (s : string) : string = ? ends_with s "\n" ?> trim_tail_newlines (text::take s (text::length s - 1i32)) |: s
+
+:~ trial_notebook (main : string) (targets : list string) : string =
+    trim_tail_newlines main ++ "\n\n" ++ sm'::concat_list "" (listm::map directive_of targets) ++ "test trial =\n    main ()\n"
+
+:~ test_names (values : list string) : list string =
+    memo::keep (\ (s : string) => s <> "") (listm::map text::trim (listm::concat (listm::map (\ (v : string) => sm'::split_list "," v) values)))
+
+///> gleam
+:# test_flags_split_on_commas_and_drop_blanks =
+    test_names [ "a, b"; " ,c"; "" ] |> _assert_eq [ "a"; "b"; "c" ]
+
+:~ is_pattern (test : string) : bool = text::contains test "*"
+
+:~ ^ parts_in (s : string) (at : i32) (parts : list string) : bool =
+    ?= parts ?|
+    | [] => !+
+    | p :: rest => part_from s (text::find_from s p at) p rest
+
+:& :~ part_from (s : string) (found : i32) (p : string) (rest : list string) : bool = found >= 0i32 && parts_in s (found + text::length p) rest
+
+:~ fits (name : string) (first : string) (last : string) : bool =
+    text::length first + text::length last <= text::length name && text::starts_with name first && ends_with name last
+
+:~ glob_ok (name : string) (first : string) (last : string) (middle : list string) : bool =
+    := lo = text::length first
+    fits name first last && parts_in (text::slice_len name lo (text::length name - text::length last - lo)) 0i32 middle
+
+:== ends = { middle : list string; last : string }
+
+:~ ^ split_ends (parts : list string) (middle : list string) : ends =
+    ?= parts ?| p :: [] => { middle = listm::rev middle; last = p } | p :: rest => split_ends rest (p :: middle) | [] => { middle = listm::rev middle; last = "" }
+
+:~ glob_with (name : string) (first : string) (e : ends) : bool = glob_ok name first e::last e::middle
+
+:~ glob_match (test : string) (name : string) : bool =
+    ?= sm'::split_list "*" test ?| first :: rest => glob_with name first (split_ends rest []) | [] => name = ""
+
+:~ test_matches (test : string) (name : string) : bool = ? is_pattern test ?> glob_match test name |: test = name
+
+///> gleam
+:# a_star_matches_any_run_and_anchors_both_ends =
+    (test_matches "show*" "show_floats", test_matches "show_*" "show", test_matches "a*c*e" "abcde", test_matches "a*a" "a", test_matches "x" "x") |> _assert_eq (!+, !-, !+, !-, !+)
+
+:== known = { path : string; names : list string }
+
+:~ known_of (t : term) : known = { path = erlang_file::text_of (erlang_term::element_at 1i32 t); names = texts (erlang_term::element_at 2i32 t) }
+
+:~ has_test (ks : list known) (test : string) : bool = memo::any (\ (k : known) => memo::any (test_matches test) k::names) ks
+
+:~ wanted (tests : list string) (name : string) : bool = memo::any (\ (t : string) => test_matches t name) tests
+
+:~ kept_names (tests : list string) (k : known) : term = erlang_term::tuple [ str k::path; erlang_term::list_term (listm::map str (memo::keep (wanted tests) k::names)) ]
+
+:~ selected (tests : list string) (ks : list known) : term =
+    erlang_term::tuple [ erlang_term::atom "ok"; erlang_term::apply "maps" "from_list" [ erlang_term::list_term (listm::map (kept_names tests) ks) ] ]
+
+:~ unknown_text (unknown : list string) : string = "unknown test " ++ sm'::concat_list ", " unknown ++ ": no --path has it"
+
+:~ unknown_of (ks : list known) (ts : list string) : list string = memo::keep (\ (t : string) => not (has_test ks t)) ts
+
+:~ failed_with (unknown : list string) : term = erlang_term::tuple [ erlang_term::atom "error"; str (unknown_text unknown) ]
+
+:~ select_tests (known : term) (tests : term) : term =
+    := ks = listm::map known_of (erlang_term::items_of known)
+    := ts = texts tests
+    := unknown = unknown_of ks ts
+    ? listm::length unknown = 0i32 ?> selected ts ks |: failed_with unknown

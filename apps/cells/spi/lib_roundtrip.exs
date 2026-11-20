@@ -1,4 +1,4 @@
-alias Spiral.Cells.Document
+alias Spiral.Cells.Domain
 
 {lib, out, names} =
   case System.argv() do
@@ -7,7 +7,7 @@ alias Spiral.Cells.Document
   end
 
 File.mkdir_p!(out)
-through = fn spi, spir -> spi |> Document.parse_spi(spir) |> Document.to_livemd() |> Document.parse_livemd() end
+through = fn spi, spir -> spi |> Domain.parse_spi_doc(spir) |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc() end
 names = if names == [], do: lib |> Path.join("**/*.spi") |> Path.wildcard() |> Enum.map(&Path.relative_to(&1, lib)), else: names
 
 results =
@@ -17,9 +17,9 @@ results =
     spi = File.read!(spi_path)
     spir = if File.regular?(spir_path), do: File.read!(spir_path), else: ""
     back = through.(spi, spir)
-    {spi2, spir2} = {Document.to_spi_tested(back), Document.to_spir_tested(back)}
+    {spi2, spir2} = {Domain.to_spi_tested_doc(back), Domain.to_spir_tested_doc(back)}
     again = through.(spi2, spir2)
-    fixpoint = Document.to_spi_tested(again) == spi2 and (spir == "" or Document.to_spir_tested(again) == spir2)
+    fixpoint = Domain.to_spi_tested_doc(again) == spi2 and (spir == "" or Domain.to_spir_tested_doc(again) == spir2)
     canonical = spi2 == spi and (spir == "" or spir2 == spir)
     target = Path.join(out, name)
     File.mkdir_p!(Path.dirname(target))

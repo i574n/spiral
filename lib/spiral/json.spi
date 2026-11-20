@@ -24,71 +24,82 @@
 :~ ^ controls_from (c : i32) (t : string) : string =
     ? c >= 32i32 ?> t |: controls_from (c + 1i32) (sm'::replace (unicode::char_of c) (control_escape c) t)
 
-:= rust_quote (s : string) : string =
+:= rust_quote_global () : () =
     global """
-pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
-    let (q, b) = (char::from(34u8), char::from(92u8));
-    let mut out = String::from(q);
-    for c in s.chars() {
-        match c as u32 {
-            34 | 92 => { out.push(b); out.push(c); }
-            n @ (8 | 9 | 10 | 12 | 13) => { out.push(b); out.push(char::from(b"btn_fr"[(n - 8) as usize])); }
-            n if n < 32 => out.push_str(&format!("{b}u{n:04x}")),
-            _ => out.push(c),
+        pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
+            let (q, b) = (char::from(34u8), char::from(92u8));
+            let mut out = String::from(q);
+            for c in s.chars() {
+                match c as u32 {
+                    34 | 92 => { out.push(b); out.push(c); }
+                    n @ (8 | 9 | 10 | 12 | 13) => { out.push(b); out.push(char::from(b"btn_fr"[(n - 8) as usize])); }
+                    n if n < 32 => out.push_str(&format!("{b}u{n:04x}")),
+                    _ => out.push(c),
+                }
+            }
+            out.push(q);
+            std::rc::Rc::from(out.as_str())
         }
-    }
-    out.push(q);
-    std::rc::Rc::from(out.as_str())
-}
-"""
+        """
+
+:= rust_quote (s : string) : string =
+    rust_quote_global ()
     $'spiral_json_quote(&*!s)' : string
 
-:= gleam_quote (s : string) : string =
+:= gleam_quote_imports () : () =
     global "import gleam/string"
     global "import gleam/list"
     global "import gleam/int"
+
+:= gleam_quote_global () : () =
     global """
-pub fn spiral_json_cp(n: Int) -> String {
-  let assert Ok(c) = string.utf_codepoint(n)
-  string.from_utf_codepoints([c])
-}
+        pub fn spiral_json_cp(n: Int) -> String {
+          let assert Ok(c) = string.utf_codepoint(n)
+          string.from_utf_codepoints([c])
+        }
 
-pub fn spiral_json_hex2(n: Int) -> String {
-  let h = string.lowercase(int.to_base16(n))
-  case n < 16 {
-    True -> "0" <> h
-    False -> h
-  }
-}
+        pub fn spiral_json_hex2(n: Int) -> String {
+          let h = string.lowercase(int.to_base16(n))
+          case n < 16 {
+            True -> "0" <> h
+            False -> h
+          }
+        }
 
-pub fn spiral_json_escape(c: UtfCodepoint) -> String {
-  case string.utf_codepoint_to_int(c) {
-    34 -> spiral_json_cp(92) <> spiral_json_cp(34)
-    92 -> spiral_json_cp(92) <> spiral_json_cp(92)
-    8 -> spiral_json_cp(92) <> "b"
-    9 -> spiral_json_cp(92) <> "t"
-    10 -> spiral_json_cp(92) <> "n"
-    12 -> spiral_json_cp(92) <> "f"
-    13 -> spiral_json_cp(92) <> "r"
-    n if n < 32 -> spiral_json_cp(92) <> "u00" <> spiral_json_hex2(n)
-    _ -> string.from_utf_codepoints([c])
-  }
-}
+        pub fn spiral_json_escape(c: UtfCodepoint) -> String {
+          case string.utf_codepoint_to_int(c) {
+            34 -> spiral_json_cp(92) <> spiral_json_cp(34)
+            92 -> spiral_json_cp(92) <> spiral_json_cp(92)
+            8 -> spiral_json_cp(92) <> "b"
+            9 -> spiral_json_cp(92) <> "t"
+            10 -> spiral_json_cp(92) <> "n"
+            12 -> spiral_json_cp(92) <> "f"
+            13 -> spiral_json_cp(92) <> "r"
+            n if n < 32 -> spiral_json_cp(92) <> "u00" <> spiral_json_hex2(n)
+            _ -> string.from_utf_codepoints([c])
+          }
+        }
 
-pub fn spiral_json_quote(s: String) -> String {
-  let q = spiral_json_cp(34)
-  q <> string.concat(list.map(string.to_utf_codepoints(s), spiral_json_escape)) <> q
-}
-"""
+        pub fn spiral_json_quote(s: String) -> String {
+          let q = spiral_json_cp(34)
+          q <> string.concat(list.map(string.to_utf_codepoints(s), spiral_json_escape)) <> q
+        }
+        """
+
+:= gleam_quote (s : string) : string =
+    gleam_quote_imports ()
+    gleam_quote_global ()
     $'spiral_json_quote(!s)' : string
+
+:= portable_quote (s : string) : string =
+    := escaped = s |> sm'::replace "\\" "\\\\" |> sm'::replace "\"" "\\\"" |> controls_from 0i32
+    sm'::concat_list "" [ "\""; escaped; "\"" ]
 
 := quote (s : string) : string =
     run_target \|
         | Rust => \ () => rust_quote s
         | Gleam => \ () => gleam_quote s
-        | _ => \ () =>
-            := escaped = s |> sm'::replace "\\" "\\\\" |> sm'::replace "\"" "\\\"" |> controls_from 0i32
-            sm'::concat_list "" [ "\""; escaped; "\"" ]
+        | _ => \ () => portable_quote s
 
 := encode \* t. (x : t) : string = ~> json_real::encode (\ (s : string) => quote s) x
 
@@ -115,10 +126,12 @@ pub fn spiral_json_quote(s: String) -> String {
 
 :== weather_query = { location : string; days : i32; metric : bool }
 
+:= flat_record_reply () : string = "{\"location\":\"Cincinnati\",\"days\":3,\"metric\":true}"
+
 ///> c
 ///> rust
 :# decode_reads_a_flat_record =
-    := ~reply = "{\"location\":\"Cincinnati\",\"days\":3,\"metric\":true}"
+    := ~reply = flat_record_reply ()
     := q : weather_query = decode reply
     := bonus = ? q::metric ?> 100i32 |: 0i32
     q::days + bonus + sm::length q::location
@@ -175,21 +188,26 @@ pub fn spiral_json_quote(s: String) -> String {
 
 :== signup_envelope = { user : signup }
 
+:= signup_fields (e : signup_envelope) : string * string * string = e::user::username, e::user::email, e::user::password
+
+:= pretty_signup_reply () : string = "{\n  \"user\": {\n\t\"username\" : \"cmp1\",\r\n    \"email\":\t\"a@b.c\",\n    \"password\": \"pw\"\n  }\n}\n"
+
 ///> c
 ///> rust
 :# decode_reads_a_pretty_printed_body_with_newlines_tabs_and_spaces_around_colons =
-    := ~reply =
-        "{\n  \"user\": {\n\t\"username\" : \"cmp1\",\r\n    \"email\":\t\"a@b.c\",\n    \"password\": \"pw\"\n  }\n}\n"
+    := ~reply = pretty_signup_reply ()
     := e : signup_envelope = decode reply
-    (e::user::username, e::user::email, e::user::password) |> _assert_eq ("cmp1", "a@b.c", "pw")
+    signup_fields e |> _assert_eq ("cmp1", "a@b.c", "pw")
 
 :== numbered = { count : i32; on : bool; tags : list string; where : place }
 
+:= pretty_numbered_reply () : string =
+    "{ \"count\": 7,\n \"on\": true,\n \"tags\": [ \"x\",\n  \"y\" ],\n"
+    ^^ " \"where\": { \"city\": \"Natal\", \"days\": 2 } }"
+
 ///> rust
 :# decode_reads_pretty_printed_scalars_lists_and_nested_records =
-    := ~reply =
-        "{ \"count\": 7,\n \"on\": true,\n \"tags\": [ \"x\",\n  \"y\" ],\n"
-        ^^ " \"where\": { \"city\": \"Natal\", \"days\": 2 } }"
+    := ~reply = pretty_numbered_reply ()
     := n : numbered = decode reply
     (n::count, n::on, n::tags, n::where::city, n::where::days) |> _assert_eq (7i32, !+, [ "x"; "y" ], "Natal", 2i32)
 
@@ -242,19 +260,23 @@ pub fn spiral_json_quote(s: String) -> String {
     := u = ?= r::units ?| | Metric => 1i32 | Imperial => 2i32
     u + where_score r::where + other_score r::other
 
+:= union_reply () : string =
+    "{\"units\":\"Imperial\",\"where\":{\"TargetCity\":\"Recife\"},\"other\":{\"TargetGrid\":{\"row\":4,\"col\""
+    ^^ ":7}}}"
+
 ///> c
 ///> rust
 :# decode_reads_unions_by_case_name =
-    := ~reply =
-        "{\"units\":\"Imperial\",\"where\":{\"TargetCity\":\"Recife\"},\"other\":{\"TargetGrid\":{\"row\":4,\"col\""
-        ^^ ":7}}}"
+    := ~reply = union_reply ()
     target_score (decode reply) |> _assert_eq 4762i32
+
+:= pretty_union_reply () : string =
+    "{\n \"units\": \"Imperial\",\n \"where\": { \"TargetCity\" : \"Recife\" },\n \"other\": {\n"
+    ^^ "  \"TargetGrid\": { \"row\": 4, \"col\": 7 }\n }\n}"
 
 ///> rust
 :# decode_reads_pretty_printed_unions_by_case_name =
-    := ~reply =
-        "{\n \"units\": \"Imperial\",\n \"where\": { \"TargetCity\" : \"Recife\" },\n \"other\": {\n"
-        ^^ "  \"TargetGrid\": { \"row\": 4, \"col\": 7 }\n }\n}"
+    := ~reply = pretty_union_reply ()
     target_score (decode reply) |> _assert_eq 4762i32
 
 :| spot = SpotAt : i32 * i32 | SpotHere
@@ -328,9 +350,15 @@ pub fn spiral_json_quote(s: String) -> String {
     (a, b, c, q::flag) |> _assert_eq (12i32, "days", 7i32, !+)
 
 ///> rust
-:# quote_escapes_a_json_string_literal =
+:# quote_wraps_plain_text =
     testing::expect (quote "plain" = "\"plain\"") "plain text is only wrapped"
+
+///> rust
+:# quote_escapes_quotes_and_backslashes =
     testing::expect (quote "a\"b\\c" = "\"a\\\"b\\\\c\"") "quotes and backslashes are escaped"
+
+///> rust
+:# quote_escapes_newlines_and_tabs =
     testing::expect (quote "l1\nl2\tx" = "\"l1\\nl2\\tx\"") "newlines and tabs are escaped"
 
 :== measured = { amount : f64; height : u32 }

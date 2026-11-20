@@ -31,6 +31,13 @@ while ($true) {
 "$(Get-Date -Format HH:mm) clear: no running $AvoidJobPattern job and the dry run passes"
 $win = & $kit window request compiler-install 60 --label "compiler install $Name" 2>&1 | Select-Object -Last 1
 "$win"
+while ("$win" -notmatch 'request ok id=') {
+    if ("$win" -match 'id=(\S+)') { & $kit window release $Matches[1] 2>&1 | Out-Null }
+    if ((Get-Date) -gt $deadline) { "$(Get-Date -Format HH:mm) gave up after $MaxWaitMin min: the compiler-install window was never granted"; exit 3 }
+    Start-Sleep 120
+    $win = & $kit window request compiler-install 60 --label "compiler install $Name" 2>&1 | Select-Object -Last 1
+    "$win"
+}
 $winId = if ("$win" -match 'id=(\S+)') { $Matches[1] }
 try {
     pwsh -NoProfile -File $install @installArgs -Apply 2>&1 | Select-Object -Last 15

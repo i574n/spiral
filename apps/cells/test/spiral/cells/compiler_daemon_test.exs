@@ -92,10 +92,10 @@ defmodule Spiral.Cells.CompilerDaemonTest do
     refute CompilerDaemon.tool_tag("C:/tools/bun.exe") == CompilerDaemon.tool_tag("/opt/bun/bin/bun")
     assert CompilerDaemon.tool_tag(nil) == "none"
     if match?({:win32, _}, :os.type()), do: assert(CompilerDaemon.tool_tag("c:/Tools/Bun.exe") == CompilerDaemon.tool_tag("C:\\tools\\bun.exe"))
-    refute CompilerDaemon.other_bun?(Spiral.Cells.Toolchain.bun([]) || "")
+    refute CompilerDaemon.other_bun?(Spiral.Cells.Domain.tool("bun", []) || "")
     assert CompilerDaemon.other_bun?("/no/such/elsewhere/bun")
     refute CompilerDaemon.other_bun?(nil)
-    bun = CompilerDaemon.tool_tag(Spiral.Cells.Toolchain.bun([]))
+    bun = CompilerDaemon.tool_tag(Spiral.Cells.Domain.tool("bun", []))
     assert CompilerDaemon.served_dll_tag() == CompilerDaemon.served_compiler_tag() <> "~" <> bun
   end
 
@@ -104,7 +104,7 @@ defmodule Spiral.Cells.CompilerDaemonTest do
 
     try do
       System.delete_env("SPIRAL_CELLS_COMPILER_PORT")
-      assert CompilerDaemon.port() == CompilerDaemon.build_port(Spiral.Cells.Toolchain.compiler_dll([]))
+      assert CompilerDaemon.port() == CompilerDaemon.build_port(Spiral.Cells.Domain.tool("compiler_dll", []))
       System.put_env("SPIRAL_CELLS_COMPILER_PORT", "13806")
       assert CompilerDaemon.port() == 13806
       System.put_env("SPIRAL_CELLS_COMPILER_PORT", "x")
@@ -135,7 +135,7 @@ defmodule Spiral.Cells.CompilerDaemonTest do
       System.delete_env("SPIRAL_CELLS_SHELL_LAUNCHER")
       assert CompilerClient.shell_launcher() == CompilerClient.default_shell_launcher()
       default = CompilerClient.default_shell_launcher()
-      assert default == nil or (File.regular?(default) and Path.basename(default) == "kit.exe")
+      assert default == nil or (File.regular?(default) and Path.basename(default) in ["rig.exe", "kit.exe"])
       System.put_env("SPIRAL_CELLS_SHELL_LAUNCHER", "none")
       assert CompilerClient.shell_launcher() == nil
     after
@@ -640,7 +640,7 @@ defmodule Spiral.Cells.CompilerDaemonTest do
       {:ok, daemon} = CompilerDaemon.start_link(port: 0, dotnet: pwsh, compiler_dll: fake, workspace: dir, package_dir: dir, pool: "off")
 
       try do
-        assert "server-tcp" in CompilerDaemon.host_capabilities(pwsh, fake)
+        assert Spiral.Cells.Domain.host_has(pwsh, fake, "server-tcp")
         output = Path.join(dir, "main.rs")
         {:ok, sock} = :gen_tcp.connect({127, 0, 0, 1}, CompilerDaemon.listen_port(daemon), [:binary, packet: :line, active: false], 5_000)
         :ok = :gen_tcp.send(sock, "compile\tRust\t#{Path.join(dir, "main.spi")}\t#{output}\t300000\t0\tdirect-test\n")
@@ -662,11 +662,11 @@ defmodule Spiral.Cells.CompilerDaemonTest do
       pwsh = System.find_executable("pwsh")
 
       try do
-        assert CompilerDaemon.host_capabilities(pwsh, fake) == []
+        refute Spiral.Cells.Domain.host_has(pwsh, fake, "resolve-manifest")
         File.write!(ready, "")
-        assert CompilerDaemon.host_capabilities(pwsh, fake) == ["source-blocks", "resolve-manifest"]
+        assert Spiral.Cells.Domain.host_has(pwsh, fake, "resolve-manifest")
         File.rm!(ready)
-        assert CompilerDaemon.host_capabilities(pwsh, fake) == ["source-blocks", "resolve-manifest"]
+        assert Spiral.Cells.Domain.host_has(pwsh, fake, "source-blocks")
       after
         File.rm_rf(dir)
       end

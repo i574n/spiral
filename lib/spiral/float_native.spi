@@ -1,3 +1,6 @@
+:# float_native static =
+    :< testing
+
 := float_native_types () =
     backend_switch {
         Lua = \ () => ()
@@ -55,11 +58,11 @@
 ///> rust
 :# try_parse_f64_reads_trimmed_numbers_and_refuses_text =
     (try_parse_f64 "12.5", try_parse_f64 " 3 ", try_parse_f64 "", try_parse_f64 "abc")
-    |> testing::_assert_eq (Some 12.5, Some 3.0, None, None)
+    |> _assert_eq (Some 12.5, Some 3.0, None, None)
 
 ///> rust
 :# try_parse_f64_keeps_infinity_a_number =
-    (?= try_parse_f64 "inf" ?| Some x => is_infinite x | None => !-) |> testing::_assert_eq !+
+    (?= try_parse_f64 "inf" ?| Some x => is_infinite x | None => !-) |> _assert_eq !+
 
 := precision_format (p : i32) : string =
     float_text::concat "%." (float_text::concat (float_text::digits_text p "") "g")

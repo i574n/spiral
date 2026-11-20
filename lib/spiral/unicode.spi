@@ -247,7 +247,6 @@
     (pad_points_right 4i32 "ab", pad_points_right 3i32 "é", pad_points_right 1i32 "abc")
     |> _assert_eq ("ab  ", "é  ", "abc")
 
-/// ## byte-level text
 := unicode_byte_ffi () : () =
     global """
         @external(erlang, "erlang", "byte_size")
@@ -335,7 +334,6 @@
     (byte_find "x=" s 0i32, byte_find "x=" s 3i32, byte_find "zz" s 0i32, byte_find "x=" s 7i32, byte_find "" s 5i32)
     |> _assert_eq (2i32, 6i32, -1i32, -1i32, 5i32)
 
-/// ## grapheme stepping
 := grapheme_ffi () : () =
     unicode_types ()
     global """

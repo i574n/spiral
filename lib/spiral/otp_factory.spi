@@ -74,8 +74,6 @@
 := echo_worker (value : i32) : otp_actor::start_result echo_inbox =
     otp_actor::new value |> otp_actor::on_message echo_step |> otp_actor::start
 
-:= pause (ms : i32) : () = erlang_term::apply "timer" "sleep" [ erlang_term::of ms ] |> ignore
-
 := asked (child : option echo_inbox) : i32 =
     ?= child ?|
     | Some inbox => otp_actor::call inbox 5000i32 EchoAsk
@@ -94,7 +92,7 @@
     ?= children ?|
     | _ :: second :: _ => crashed second
     | _ => ()
-    pause 300i32
+    erlang_process::pause 300i32
     answers, before, count_children owner
 
 := factory_outcome () : list i32 * i32 * i32 =

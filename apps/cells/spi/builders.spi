@@ -1,4 +1,5 @@
 ///- --package .
+:< erlang_term
 :# builders static =
     :< testing
 
@@ -206,11 +207,11 @@
     (c < 32i32 && (c < 7i32 || c > 13i32) && c <> 27i32) || within c 128i32 159i32 || c = 65534i32 || c = 65535i32
 
 :~ ^ printable_from (s : string) (i : i32) : bool =
-    := w = json_value::utf8_width_at s i
+    := w = json_tree::utf8_width_at s i
     ? i >= text::length s
     ?> !+
-    |? json_value::at s i < 128i32
-    ?> ? unprintable (json_value::at s i) ?> !- |: printable_from s (i + 1i32)
+    |? json_tree::at s i < 128i32
+    ?> ? unprintable (json_tree::at s i) ?> !- |: printable_from s (i + 1i32)
     |? w = 0i32 || unprintable (text::code_point s i)
     ?> !-
     |: printable_from s (i + w)
@@ -224,15 +225,15 @@
             (? i = 0i32 ?> text::show_i32 (text::byte_at s i) |: acc ++ ", " ++ text::show_i32 (text::byte_at s i))
 
 :~ ^ quoted_from (s : string) (i : i32) (acc : string) : string =
-    := b = json_value::at s i
-    := w = ? b < 128i32 ?> 1i32 |: json_value::utf8_width_at s i
+    := b = json_tree::at s i
+    := w = ? b < 128i32 ?> 1i32 |: json_tree::utf8_width_at s i
     := c = ? b < 128i32 ?> b |: text::code_point s i
     := named = named_escape c
     ? i >= text::length s
     ?> acc
     |? named <> ""
     ?> quoted_from s (i + 1i32) (acc ++ named)
-    |? c = 35i32 && json_value::at s (i + 1i32) = 123i32
+    |? c = 35i32 && json_tree::at s (i + 1i32) = 123i32
     ?> quoted_from s (i + 1i32) (acc ++ "\\#")
     |? unicode_escaped c
     ?> quoted_from s (i + w) (acc ++ "\\u" ++ hex4_upper c)
@@ -569,6 +570,51 @@
     ?= split code ?|
     | Ok (commands, body) => split_ok_wire commands body
     | Error e => "E" ++ e
+
+
+:~ nil_term () : erlang_term::term = erlang_term::atom "nil"
+
+:~ opt_term (o : option string) : erlang_term::term = ?= o ?| Some x => erlang_term::of x | None => nil_term ()
+
+:~ flag_term (o : option bool) : erlang_term::term = ?= o ?| Some on => erlang_term::atom (? on ?> "true" |: "false") | None => nil_term ()
+
+:~ version_term (v : dep_version) : erlang_term::term =
+    ?= v ?|
+    | NoVersion => nil_term ()
+    | AnyVersion => erlang_term::of "*"
+    | Version x => erlang_term::of x
+
+:~ dep_term (d : dep) : erlang_term::term = map_of [ pair "name" (erlang_term::of d::name); pair "version" (version_term d::version); pair "raw" (erlang_term::of d::raw) ]
+
+:~ builder_head (b : builder) : list erlang_term::term =
+    [ pair "tool" (erlang_term::atom (tool_name b::tool)); pair "raw" (erlang_term::of b::raw); pair "contract" (opt_term b::values::contract); pair "wasm" (opt_term b::values::wasm) ]
+
+:~ builder_rest (b : builder) : list erlang_term::term =
+    [ pair "deps" (erlang_term::list_term (listm::map dep_term b::deps)); pair "cleanup" (flag_term b::cleanup); pair "target" (opt_term b::values::target); pair "env" (opt_term b::values::env) ]
+
+:~ command_term (c : command) : erlang_term::term = ?= c ?| Builder b => map_of (listm::append (builder_head b) (builder_rest b))
+
+:~ ok_term (commands : list command) (body : string) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::atom "ok"; erlang_term::list_term (listm::map command_term commands); erlang_term::of body ]
+
+:~ error_term (e : string) : erlang_term::term = erlang_term::tuple [ erlang_term::atom "error"; erlang_term::of e ]
+
+:~ split_term (code : string) : erlang_term::term = ?= split code ?| Ok (commands, body) => ok_term commands body | Error e => error_term e
+
+:~ sample_code () : string = "///> gleam\ninl x = 1"
+
+:~ body_of (code : string) : string = ?= split code ?| Ok (_, b) => b | Error _ => "?"
+
+:~ first_tool (r : erlang_term::term) : erlang_term::term =
+    ?= erlang_term::items_of (erlang_term::element_at 2i32 r) ?| b :: _ => erlang_term::apply "maps" "get" [ erlang_term::atom "tool"; b ] | [] => nil_term ()
+
+///> gleam
+:# a_split_term_carries_the_builder_tool_as_an_atom =
+    erlang_term::equal (first_tool (split_term "///> gleam\ninl x = 1")) (erlang_term::atom "gleam") |> _assert_eq !+
+
+///> gleam
+:# a_split_term_keeps_the_body_split_gives =
+    erlang_term::equal (erlang_term::element_at 3i32 (split_term (sample_code ()))) (erlang_term::of (body_of (sample_code ()))) |> _assert_eq !+
 
 :| route =
     | RouteFsi

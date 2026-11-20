@@ -29,26 +29,30 @@
         Rust = \ () => (map::new_b_tree_map () : map::b_tree_map k v) |> rust_new_rc
     }
 
+:= rust_insert \* k v. (key : k) (value : v) (d : dict k v) : dict k v =
+    := m = rust_owned d
+    rust::to_mut m
+    ($'!m.insert(!key, !value)' : optionm'::option' v) |> ignore
+    rust_new_rc m
+
 := insert \* k v. (key : k) (value : v) (d : dict k v) : dict k v =
     dict_types ()
     backend_switch {
         Gleam = \ () => $'dict.insert(!d, !key, !value)' : dict k v
-        Rust = \ () =>
-            := m = rust_owned d
-            rust::to_mut m
-            ($'!m.insert(!key, !value)' : optionm'::option' v) |> ignore
-            rust_new_rc m
+        Rust = \ () => (rust_insert key value d : dict k v)
     }
+
+:= rust_remove \* k v. (key : k) (d : dict k v) : dict k v =
+    := m = rust_owned d
+    rust::to_mut m
+    ($'!m.remove(&!key)' : optionm'::option' v) |> ignore
+    rust_new_rc m
 
 := remove \* k v. (key : k) (d : dict k v) : dict k v =
     dict_types ()
     backend_switch {
         Gleam = \ () => $'dict.delete(!d, !key)' : dict k v
-        Rust = \ () =>
-            := m = rust_owned d
-            rust::to_mut m
-            ($'!m.remove(&!key)' : optionm'::option' v) |> ignore
-            rust_new_rc m
+        Rust = \ () => (rust_remove key d : dict k v)
     }
 
 := has \* k v. (key : k) (d : dict k v) : bool =
@@ -58,13 +62,15 @@
         Rust = \ () => $'!d.contains_key(&!key)' : bool
     }
 
+:= gleam_find \* k v. (key : k) (d : dict k v) : option v =
+    ?= ($'dict.get(!d, !key)' : resultm::result' v ()) |> resultm::unbox ?|
+    | Ok x => Some x
+    | Error _ => None
+
 := find \* k v. (key : k) (d : dict k v) : option v =
     dict_types ()
     backend_switch {
-        Gleam = \ () =>
-            ?= ($'dict.get(!d, !key)' : resultm::result' v ()) |> resultm::unbox ?|
-            | Ok x => Some x
-            | Error _ => None
+        Gleam = \ () => (gleam_find key d : option v)
         Rust = \ () => ($'!d.get(&!key).cloned()' : optionm'::option' v) |> optionm'::unbox
     }
 
@@ -88,15 +94,19 @@
     := unsorted : listm'::list' k = $'dict.keys(!d)'
     $'dictm_term_sorted(!unsorted)' : listm'::list' k
 
+:= gleam_keys \* k v. (d : dict k v) : list k =
+    global "import gleam/list"
+    gleam_sorted_keys d |> listm'::fold' id []
+
+:= rust_keys \* k v. (d : dict k v) : list k =
+    ($'!d.keys().cloned().collect::<Vec<_>>()' : am'::vec k)
+    |> am'::vec_fold' (\ (acc : list k) (key : k) => (key :: acc)) []
+
 := keys \* k v. (d : dict k v) : list k =
     dict_types ()
     backend_switch {
-        Gleam = \ () =>
-            global "import gleam/list"
-            gleam_sorted_keys d |> listm'::fold' id []
-        Rust = \ () =>
-            ($'!d.keys().cloned().collect::<Vec<_>>()' : am'::vec k)
-            |> am'::vec_fold' (\ (acc : list k) (key : k) => (key :: acc)) []
+        Gleam = \ () => (gleam_keys d : list k)
+        Rust = \ () => (rust_keys d : list k)
     }
 
 := fold \* k v a. (f : a -> k -> v -> a) (init : a) (d : dict k v) : a =
@@ -164,9 +174,11 @@
 
 := dictm_last (l : list string) : string = listm::fold (\ _ s => s) "" l
 
+:= forty_keys () : list string =
+    listm::init 40i32 id |> listm::fold (\ acc i => insert (sm'::obj_to_string (1000i32 + i)) i acc) (empty ()) |> keys
+
 ///> rust
 ///> gleam
 :# keys_are_sorted_past_32_entries =
-    := d = listm::init 40i32 id |> listm::fold (\ acc i => insert (sm'::obj_to_string (1000i32 + i)) i acc) (empty ())
-    := ks = keys d
+    := ks = forty_keys ()
     ((listm::length ks : i32), dictm_first ks, dictm_last ks) |> _assert_eq (40i32, "1039", "1000")

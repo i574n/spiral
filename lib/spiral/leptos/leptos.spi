@@ -150,9 +150,6 @@
 := send_wrapper_get \* t. (x : send_wrapper t) : t =
     $'(*!x).clone()'
 
-:= log_string (text : string) : () =
-    $'leptos::logging::log\!("{}", !text)'
-
 := log (text : string) : () =
     $'leptos::logging::log\!("{}", !text)'
 

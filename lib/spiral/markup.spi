@@ -30,16 +30,15 @@
     |? c = '"' ?> "&quot;"
     |: ""
 
-:~ run_of (s : string) (from : i32) (until : i32) : string =
-    ? until <= from ?> "" |: sm::slice s { from = from; to = until - 1i32 }
+:~ run_of (s : string) (from : i32) (until : i32) : string = sm'::slice_or_empty from until s
 
 :~ escape_step (s : string) (i : i32) (start : i32) (acc : string) : i32 * string =
     := e = entity (sm::index s i)
-    ? e = "" ?> start, acc |: i + 1i32, acc ++# run_of s start i ++# e
+    ? e = "" ?> start, acc |: i + 1i32, acc ++# sm'::slice_or_empty start i s ++# e
 
 :~ ^ escape_from (s : string) (i : i32) (start : i32) (acc : string) : string =
     ? i >= sm::length s
-    ?> acc ++# run_of s start i
+    ?> acc ++# sm'::slice_or_empty start i s
     |:
         := start, acc = escape_step s i start acc
         escape_from s (i + 1i32) start acc

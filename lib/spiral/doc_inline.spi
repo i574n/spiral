@@ -72,11 +72,6 @@
 :~ escaped_at (s : string) (i : i32) : bool =
     at_is s i '\\' && i + 1i32 < sm::length s && escapable (sm::index s (i + 1i32))
 
-:~ ^ rev_inlines (xs : list inline) (acc : list inline) : list inline =
-    ?= xs ?|
-    | x :: rest => rev_inlines rest (x :: acc)
-    | [] => acc
-
 :== found = option (i32 * inline)
 
 :~ or_else (b : () -> found) (a : found) : found =
@@ -131,7 +126,7 @@
 
 :~ ^ inlines_from (s : string) (i : i32) (acc : list inline) : list inline =
     ? i >= sm::length s
-    ?> rev_inlines acc []
+    ?> listm::rev acc
     |:
         := next, x = piece (\ t => inlines_from t 0i32 []) s i
         inlines_from s next (x :: acc)

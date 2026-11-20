@@ -1,0 +1,160 @@
+///- --package .
+:< erlang_term
+:# mount_plan static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ kv (k : string) (v : term) : term = erlang_term::tuple [ atom k; v ]
+
+:~ el (t : term) (n : i32) : string = erlang_file::text_of (erlang_term::element_at n t)
+
+:~ texts (t : term) : list string = listm::map erlang_file::text_of (erlang_term::items_of t)
+
+:~ replace_first (s : string) (old : string) (new : string) : string =
+    := at = text::find_from s old 0i32
+    ? at < 0i32 ?> s |: text::take s at ++ new ++ text::drop s (at + text::length old)
+
+:~ import_lines (imports : list string) : string = sm'::concat_list "" (listm::map (\ (i : string) => "    " ++ i ++ "\n") imports)
+
+:~ with_imports (text : string) (imports : list string) : string =
+    ? listm::length imports = 0i32 ?> text |: replace_first text "modules:\n" (import_lines imports ++ "modules:\n")
+
+:~ with_dir (text : string) (dir : string) : string = ? dir = "" ?> text |: replace_first text "packageDir: ." ("packageDir: " ++ dir)
+
+:~ notebook_package_text (names : list string) (imports : list string) (package_dir : string) : string =
+    with_dir (with_imports (cell::package_project (sm'::concat_list "\n" names)) imports) package_dir
+
+:== tools = { dotnet : string; dll : string }
+
+:~ manifest_of (t : tools) (target : string) : string = mount_text::manifest_text target t::dotnet t::dll
+
+:~ mounted_name (dep : string) : string = mount_text::mount_name_of (text::lowercase (mount_text::basename dep))
+
+:~ all_in (names : list string) (siblings : list string) : bool = not (memo::any (\ (n : string) => not (memo::has_text siblings n)) names)
+
+:~ deps_of (text : string) : list string = listm::map mounted_name (mount_text::package_items text)
+
+:~ shares_text (text : string) (siblings : list string) : bool =
+    mount_text::package_dir_value text <> "" && listm::length (deps_of text) > 0i32 && all_in (deps_of text) siblings
+
+:~ shares_deps (t : tools) (target : string) (siblings : list string) : bool = shares_text (manifest_of t target) siblings
+
+:~ ^ trim_slashes (s : string) : string = ? text::length s > 0i32 && text::slice_len s (text::length s - 1i32) 1i32 = "/" ?> trim_slashes (text::take s (text::length s - 1i32)) |: s
+
+:~ normalized (dir : string) : string = trim_slashes (text::replace dir "\\" "/")
+
+:~ is_relative (dir : string) : bool = erlang_term::equal (erlang_term::apply "filename" "pathtype" [ str dir ]) (atom "relative")
+
+:~ escapes_link (t : tools) (target : string) : bool =
+    := dir = mount_text::package_dir_value (manifest_of t target)
+    dir <> "" && is_relative dir && not (memo::has_text [ "."; ".." ] (normalized dir))
+
+:~ expanded (p : string) : string = mount_text::expanded p (mount_text::cwd ())
+
+:~ dirname (p : string) : string = erlang_file::text_of (erlang_term::apply "filename" "dirname" [ str p ])
+
+:~ patch_for (file : string) (patch : term) : term =
+    erlang_term::tuple [ str (mount_text::basename file); erlang_term::element_at 2i32 patch; erlang_term::element_at 3i32 patch ]
+
+:~ own_patch (target : string) (patch : term) : list term =
+    := file = el patch 1i32
+    ? expanded (dirname file) = expanded target ?> [ patch_for file patch ] |: []
+
+:~ own_patches (target : string) (patches : list term) : list term = listm::concat (listm::map (own_patch target) patches)
+
+:~ entry (name : string) (target : string) (kind : string) (extra : list term) : term =
+    erlang_term::apply "maps" "from_list" [ erlang_term::list_term (kv "name" (str name) :: kv "target" (str target) :: kv "kind" (atom kind) :: extra) ]
+
+:~ patched (name : string) (target : string) (own : list term) (dir : string) : term =
+    entry name target "patched" [ kv "patches" (erlang_term::list_term own); kv "package_dir" (atom dir) ]
+
+:== plan = { t : tools; siblings : list string; patches : list term }
+
+:~ unpatched (p : plan) (name : string) (target : string) (shared : bool) : term =
+    ? shared ?> entry name target "shadow" [] |? escapes_link p::t target ?> patched name target [] "absolute" |: entry name target "link" []
+
+:~ dir_kind (shared : bool) : string = ? shared ?> "siblings" |: "absolute"
+
+:~ entry_for (p : plan) (name : string) (target : string) : term =
+    := shared = shares_deps p::t target p::siblings
+    := own = own_patches target p::patches
+    ? listm::length own > 0i32 ?> patched name target own (dir_kind shared) |: unpatched p name target shared
+
+:== kept = { name : string; target : string; entry : term }
+
+:~ entry_of (k : kept) : term = k::entry
+
+:~ ok_entries (acc : list kept) : term = erlang_term::tuple [ atom "ok"; erlang_term::list_term (listm::rev (listm::map entry_of acc)) ]
+
+:~ failed (message : string) : term = erlang_term::tuple [ atom "error"; str message ]
+
+:~ named_as (name : string) (k : kept) : bool = k::name = name
+
+:~ previous (acc : list kept) (name : string) : option string = ?= memo::keep (named_as name) acc ?| k :: _ => Some k::target | [] => None
+
+:~ reserved (name : string) : bool = memo::has_text [ ""; "console"; "main"; "ready" ] name
+
+:~ clash_text (name : string) : string = "package name " ++ verdict_text::elixir_inspect name ++ " clashes with the cell"
+
+:~ twice_text (name : string) (first : string) (target : string) : string = "package " ++ name ++ " is listed twice: " ++ first ++ " and " ++ target
+
+:~ missing_problem (target : string) : option string =
+    ? mount_text::has_manifest target ?> None |: Some ("Spiral package was not found at " ++ target)
+
+:~ after_clash (acc : list kept) (name : string) (target : string) : option string =
+    ?= previous acc name ?| Some first => Some (twice_text name first target) | None => missing_problem target
+
+:~ problem (acc : list kept) (name : string) (target : string) : option string =
+    ? reserved name ?> Some (clash_text name) |: after_clash acc name target
+
+:~ ^ entries_from (p : plan) (targets : list term) (acc : list kept) : term =
+    ?= targets ?|
+    | [] => ok_entries acc
+    | t :: rest => checked p (el t 1i32) (el t 2i32) rest acc
+
+:& :~ checked (p : plan) (target : string) (name : string) (rest : list term) (acc : list kept) : term =
+    ?= problem acc name target ?| Some m => failed m | None => entries_from p rest ({ name; target; entry = entry_for p name target } :: acc)
+
+:~ mount_entries (targets : term) (siblings : term) (patches : term) (dotnet : string) (dll : string) : term =
+    entries_from { t = { dotnet; dll }; siblings = texts siblings; patches = erlang_term::items_of patches } (erlang_term::items_of targets) []
+
+:~ share_mounted (target : string) (siblings : term) (dotnet : string) (dll : string) : bool = shares_deps { dotnet; dll } target (texts siblings)
+
+:~ pair (target : string) (name : string) : term = erlang_term::tuple [ str target; str name ]
+
+:~ shown_entries (targets : list term) : string = erlang_term::inspect (mount_entries (erlang_term::list_term targets) (erlang_term::list_term []) (erlang_term::list_term []) "" "")
+
+///> gleam
+:# a_reserved_name_clashes_with_the_cell =
+    shown_entries [ pair "/x/console" "console" ] |> _assert_eq "Error(\"package name \\\"console\\\" clashes with the cell\")"
+
+///> gleam
+:# a_target_without_a_manifest_is_not_found =
+    shown_entries [ pair "/no/such/pkg" "pkg" ] |> _assert_eq "Error(\"Spiral package was not found at /no/such/pkg\")"
+
+:~ written_in (dir : string) (name : string) (text : string) : () =
+    erlang_term::apply "filelib" "ensure_path" [ erlang_term::charlist dir ] |> ignore
+    erlang_file::file_written (erlang_file::joined_path dir name) text |> ignore
+
+:~ scratch_pkg (sub : string) : string =
+    := dir = erlang_file::joined_path (erlang_file::test_cache_directory ()) ("mount_plan/" ++ sub)
+    written_in dir "package.spiproj" "modules:\n    a\n"
+    dir
+
+:~ twice_shown (a : string) : string = "Error(\"package dup is listed twice: " ++ a ++ " and /elsewhere\")"
+
+///> gleam
+:# a_name_listed_twice_names_both_targets =
+    := a = scratch_pkg "one"
+    shown_entries [ pair a "dup"; pair "/elsewhere" "dup" ] |> _assert_eq (twice_shown a)
+
+:~ sample_project () : string = "packageDir: .\nmodules:\n    main\n"
+
+:~ sample_result () : string = "packageDir: ../p\n    spiral-\n    client-\nmodules:\n    main\n"
+
+///> gleam
+:# imports_go_before_modules_and_the_package_dir_is_set =
+    with_dir (with_imports (sample_project ()) [ "spiral-"; "client-" ]) "../p" |> _assert_eq (sample_result ())

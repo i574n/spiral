@@ -4,3 +4,14 @@ packages:
     spiral-
 modules:
     tokens
+    blocks
+    ops
+    ast
+    cursor
+    parse_types
+    patterns
+    terms
+    dedup_score
+    dedup_gold
+    dedup_gold_v2
+    dedup_corpus

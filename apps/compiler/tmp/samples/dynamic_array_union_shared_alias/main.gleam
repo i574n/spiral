@@ -46,7 +46,17 @@ pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
 
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
-  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  case value >= 0 - half && value < half {
+    True -> value
+    False -> int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  }
+}
+
+pub fn spiral_wrap_i32(value: Int) -> Int {
+  case value >= -2147483648 && value <= 2147483647 {
+    True -> value
+    False -> spiral_wrap_signed(value, 32)
+  }
 }
 
 
@@ -59,7 +69,7 @@ pub fn bump_0(v0: Us0) -> Int {
         Us0Empty -> 0
         Us0Values(v1) -> {
             let v2 = spiral_array_get(v1, 0)
-            let v3 = spiral_wrap_signed(v2 + 1, 32)
+            let v3 = spiral_wrap_i32(v2 + 1)
             spiral_array_set(v1, 0, v3)
             0
         }
@@ -71,9 +81,9 @@ pub fn score_1(v0: Us0) -> Int {
         Us0Values(v1) -> {
             let v2 = v1.size
             let v3 = spiral_array_get(v1, 0)
-            let v4 = spiral_wrap_signed(v2 + v3, 32)
+            let v4 = spiral_wrap_i32(v2 + v3)
             let v5 = spiral_array_get(v1, 1)
-            spiral_wrap_signed(v4 + v5, 32)
+            spiral_wrap_i32(v4 + v5)
         }
     }
 }
@@ -85,6 +95,6 @@ pub fn main() {
     let v3 = bump_0(v2)
     let v4 = Us0Values(v1)
     let v5 = score_1(v4)
-    let v6 = spiral_wrap_signed(v5 + v3, 32)
-    spiral_wrap_signed(v6 - 12, 32)
+    let v6 = spiral_wrap_i32(v5 + v3)
+    spiral_wrap_i32(v6 - 12)
 }

@@ -1,35 +1,36 @@
 #![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
-fn loop_0(mut v0: i32, mut v1: &Rc<RefCell<Vec<i32>>>, mut v2: i32, mut v3: i32, mut v4: i32) -> i32 {
+fn loop_0(mut v0: i32, mut t_v1: &Rc<RefCell<Vec<i32>>>, mut t_v2: i32, mut v3: i32, mut v4: i32) -> i32 {
+    let t_v1_ref = t_v1.borrow();
     loop {
         let v5: bool = v3 >= v0;
         if v5 {
             return v4;
         } else {
-            let v6: i32 = v3.wrapping_rem(4i32);
-            let v7: i32 = v1.borrow()[v6 as usize];
-            let v8: i32 = v3.wrapping_add(1i32);
+            let slot_v6: i32 = v3.wrapping_rem(4i32);
+            let weight_v7: i32 = t_v1_ref[slot_v6 as usize];
+            let i_v8: i32 = v3.wrapping_add(1i32);
             let v9: i32 = v4.wrapping_mul(7i32);
-            let v10: i32 = v9.wrapping_add(v7);
-            let v11: i32 = v10.wrapping_add(v2);
-            let v12: i32 = v11.wrapping_rem(9973i32);
-            (v3, v4) = (v8, v12);
+            let v10: i32 = v9.wrapping_add(weight_v7);
+            let v11: i32 = v10.wrapping_add(t_v2);
+            let acc_v12: i32 = v11.wrapping_rem(9973i32);
+            (v3, v4) = (i_v8, acc_v12);
             continue;
         }
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 4i32 as usize]));
-    v0.borrow_mut()[0i32 as usize] = 1i32;
-    v0.borrow_mut()[1i32 as usize] = 2i32;
-    v0.borrow_mut()[2i32 as usize] = 3i32;
-    v0.borrow_mut()[3i32 as usize] = 4i32;
-    let v1: i32 = 0i32;
-    let v2: i32 = 1000000i32;
-    let v3: i32 = 0i32;
-    let v4: i32 = 0i32;
-    let v5: i32 = loop_0(v2, &v0, v1, v3, v4);
+    let mut w_v0: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 4i32 as usize]));
+    w_v0.borrow_mut()[0i32 as usize] = 1i32;
+    w_v0.borrow_mut()[1i32 as usize] = 2i32;
+    w_v0.borrow_mut()[2i32 as usize] = 3i32;
+    w_v0.borrow_mut()[3i32 as usize] = 4i32;
+    let bias_v1: i32 = 0i32;
+    let n_v2: i32 = 1000000i32;
+    let i_v3: i32 = 0i32;
+    let acc_v4: i32 = 0i32;
+    let v5: i32 = loop_0(n_v2, &w_v0, bias_v1, i_v3, acc_v4);
     let v6: i32 = v5.wrapping_rem(256i32);
     v6
 }

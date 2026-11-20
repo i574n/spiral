@@ -1,0 +1,136 @@
+///- --package .
+:# verdict_text static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:== trm = erlang_term::term
+
+:~ ii_short (c : i32) : string =
+    ? c = 7i32 ?> "\\a"
+    |? c = 8i32 ?> "\\b"
+    |? c = 9i32 ?> "\\t"
+    |? c = 10i32 ?> "\\n"
+    |? c = 11i32 ?> "\\v"
+    |? c = 12i32 ?> "\\f"
+    |? c = 13i32 ?> "\\r"
+    |? c = 27i32 ?> "\\e"
+    |: ""
+
+:~ ii_printable_cp (cp : i32) : bool =
+    (cp >= 32i32 && cp <= 126i32)
+    || ii_short cp <> ""
+    || (cp >= 160i32 && cp <= 55295i32)
+    || (cp >= 57344i32 && cp <= 65533i32)
+    || (cp >= 65536i32 && cp <= 1114111i32)
+
+:~ u8 (s : string) : trm = erlang_term::apply "unicode" "characters_to_binary" [ erlang_term::of s; erlang_term::atom "utf8"; erlang_term::atom "utf8" ]
+
+:~ is_bin (t : trm) : bool = (erlang_term::apply "erlang" "is_binary" [ t ] |> erlang_term::cast : bool)
+
+:~ ii_valid_utf8 (s : string) : bool = is_bin (u8 s)
+
+:~ cp_at (s : string) (i : i32) : i32 = ? text::byte_at s i < 128i32 ?> text::byte_at s i |: text::code_point s i
+
+:~ cp_width (s : string) (i : i32) : i32 = ? text::byte_at s i < 128i32 ?> 1i32 |: text::utf8_width (text::byte_at s i)
+
+:~ ^ ii_all_printable (s : string) (i : i32) : bool =
+    ? i >= text::length s
+    ?> !+
+    |? ii_printable_cp (cp_at s i)
+    ?> ii_all_printable s (i + cp_width s i)
+    |: !-
+
+:~ ii_is_printable_string (s : string) : bool = ii_valid_utf8 s && ii_all_printable s 0i32
+
+:~ ii_special (s : string) (i : i32) (b : i32) : string =
+    ? b = 34i32
+    ?> "\\\""
+    |? b = 92i32
+    ?> "\\\\"
+    |? b = 35i32 && text::byte_at s (i + 1i32) = 123i32
+    ?> "\\#"
+    |: ""
+
+:~ ii_ascii_esc (s : string) (i : i32) (b : i32) : string =
+    := sp = ii_special s i b
+    ? sp <> ""
+    ?> sp
+    |:
+        := sh = ii_short b
+        ? sh <> "" ?> sh |: text::slice_len s i 1i32
+
+:~ ii_piece (s : string) (i : i32) (b : i32) (w : i32) : string =
+    ? b < 128i32 ?> ii_ascii_esc s i b |: text::slice_len s i w
+
+:~ ^ ii_esc_go (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |:
+        := w = cp_width s i
+        ii_esc_go s (i + w) (acc ++ ii_piece s i (text::byte_at s i) w)
+
+:~ ^ ii_bytes (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc
+    |:
+        := sep = ? acc = "" ?> "" |: ", "
+        ii_bytes s (i + 1i32) (acc ++ sep ++ text::show_i32 (text::byte_at s i))
+
+:~ elixir_inspect (s : string) : string =
+    ? ii_is_printable_string s
+    ?> "\"" ++ ii_esc_go s 0i32 "" ++ "\""
+    |: "<<" ++ ii_bytes s 0i32 "" ++ ">>"
+
+:~ first_line (s : string) : string = ?= text::next_line s 0i32 ?| LineDone => "" | LineGot (l, _) => l
+
+:~ expected_label (code : string) (substring : string) : string =
+    ? code = "" ?> elixir_inspect substring |: code ++ " " ++ elixir_inspect substring
+
+:~ early_mid () : string = " is reported only before the test body (which starts at program line "
+
+:~ early_suf () : string = "), so it does not prove this test:\n"
+
+:~ cet_early (label : string) (floor : i32) (message : string) : string =
+    "the expected error " ++ label ++ early_mid () ++ text::show_i32 (floor + 1i32) ++ early_suf () ++ message
+
+:~ cet_ok (label : string) (message : string) : string =
+    "failed to compile as expected (" ++ label ++ "): " ++ first_line message ++ "\n"
+
+:~ nocode_mid () : string = " but carries no error code (expected "
+
+:~ cet_nocode (substring : string) (code : string) (message : string) : string =
+    "the diagnostic matches " ++ elixir_inspect substring ++ nocode_mid () ++ code ++ "):\n" ++ message
+
+:~ cet_other (label : string) (message : string) : string =
+    "expected a compile error " ++ label ++ ", got a different one:\n" ++ message
+
+:~ compile_compiled_text (code : string) (substring : string) : string =
+    "expected a compile error " ++ expected_label code substring ++ ", but the program compiled"
+
+:~ compile_failed_text (code : string) (substring : string) (detail : string) : string =
+    "expected a compile error " ++ expected_label code substring ++ ", but it failed past compiling:\n" ++ detail
+
+:~ not_run_reason_text (message : string) : string = "the run stopped before this test: " ++ first_line message
+
+:~ bytes_text (codes : list i32) : string = erlang_term::apply "erlang" "list_to_binary" [ erlang_term::list_term (listm::map (\ (c : i32) => erlang_term::of c) codes) ] |> erlang_term::cast
+
+///> gleam
+:# printable_text_inspects_as_a_quoted_escaped_string =
+    (elixir_inspect "abc", elixir_inspect "", elixir_inspect "é", elixir_inspect "tab\tnl\n")
+    |> _assert_eq ("\"abc\"", "\"\"", "\"é\"", "\"tab\\tnl\\n\"")
+
+///> gleam
+:# quotes_backslashes_and_interpolation_openers_are_escaped =
+    (elixir_inspect "a\"b\\c", elixir_inspect "#{x}", elixir_inspect "#a")
+    |> _assert_eq ("\"a\\\"b\\\\c\"", "\"\\#{x}\"", "\"#a\"")
+
+///> gleam
+:# invalid_or_unprintable_bytes_inspect_as_a_binary =
+    (elixir_inspect (bytes_text [ 195i32 ]), elixir_inspect (bytes_text [ 97i32; 0i32 ]))
+    |> _assert_eq ("<<195>>", "<<97, 0>>")
+
+///> gleam
+:# messages_keep_their_first_line_and_label =
+    (first_line "one\ntwo", not_run_reason_text "boom\nmore")
+    |> _assert_eq ("one", "the run stopped before this test: boom")

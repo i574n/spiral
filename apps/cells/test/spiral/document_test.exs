@@ -1,11 +1,11 @@
 defmodule Spiral.Cells.DocumentTest do
   use ExUnit.Case, async: true
 
-  alias Spiral.Cells.Document
+  alias Spiral.Cells.Domain
 
   test "exports definitions, keeps opens, and drops tests" do
     doc =
-      Document.parse_dib("""
+      Domain.parse_dib_doc("""
       #!meta
 
       {"kernelInfo":{"defaultKernelName":"spiral"}}
@@ -39,7 +39,7 @@ defmodule Spiral.Cells.DocumentTest do
       add 1 |> _assert_eq 2
       """)
 
-    spi = Document.to_spi(doc)
+    spi = Domain.to_spi_doc(doc)
 
     assert spi ==
              """
@@ -50,15 +50,15 @@ defmodule Spiral.Cells.DocumentTest do
              inl add x = x + 1
              """
 
-    livemd = Document.to_livemd(doc)
-    assert Document.to_spi(Document.parse_livemd(livemd)) == spi
+    livemd = Domain.to_livemd_doc(doc)
+    assert Domain.to_spi_doc(Domain.parse_livemd_doc(livemd)) == spi
 
-    assert spiral_sources(doc) == spiral_sources(Document.parse_livemd(livemd))
+    assert spiral_sources(doc) == spiral_sources(Domain.parse_livemd_doc(livemd))
   end
 
   test "non-ASCII text survives the byte-counted wire" do
     doc =
-      Document.parse_dib("""
+      Domain.parse_dib_doc("""
       #!markdown
 
       # dé — ü 🎲
@@ -74,7 +74,7 @@ defmodule Spiral.Cells.DocumentTest do
 
     assert spiral_sources(doc) == [~s|inl naïve () = "ü 🎲 é"|, "inl after () = 1"]
 
-    assert Document.to_spi(doc) ==
+    assert Domain.to_spi_doc(doc) ==
              """
              /// # dé — ü 🎲
              inl naïve () = "ü 🎲 é"
@@ -82,14 +82,14 @@ defmodule Spiral.Cells.DocumentTest do
              inl after () = 1
              """
 
-    assert spiral_sources(Document.parse_livemd(Document.to_livemd(doc))) == spiral_sources(doc)
+    assert spiral_sources(Domain.parse_livemd_doc(Domain.to_livemd_doc(doc))) == spiral_sources(doc)
   end
 
   test "the export equals spiral export on a mixed F# and Spiral notebook" do
     exe = Path.expand("../../../../workspace/target/release/spiral" <> exe_suffix(), __DIR__)
 
     mixed =
-      Document.parse_dib("""
+      Domain.parse_dib_doc("""
       #!markdown
 
       # mixed (Mixed)
@@ -136,11 +136,11 @@ defmodule Spiral.Cells.DocumentTest do
     try do
       for {label, doc} <- docs do
         copy = Path.join(tmp, label <> ".cells")
-        File.write!(copy, Document.to_cell_text(doc))
+        File.write!(copy, Domain.to_cell_text_doc(doc))
         {out, status} = System.cmd(exe, ["export", copy, "spi"], stderr_to_stdout: true)
         assert status == 0, out
         expected = File.read!(Path.rootname(copy) <> ".spi")
-        assert Document.to_spi(doc) == expected, label
+        assert Domain.to_spi_doc(doc) == expected, label
       end
     after
       File.rm_rf!(tmp)
@@ -153,7 +153,7 @@ defmodule Spiral.Cells.DocumentTest do
 
   test "adjacent markdown and import cells round-trip through livemd" do
     doc =
-      Document.parse_dib("""
+      Domain.parse_dib_doc("""
       #!markdown
 
       # title
@@ -178,7 +178,7 @@ defmodule Spiral.Cells.DocumentTest do
     kinds = Enum.map(doc.cells, & &1.kind)
     assert kinds == [:markdown, :markdown, :import, :fsharp, :import, :markdown]
 
-    again = doc |> Document.to_livemd() |> Document.parse_livemd()
+    again = doc |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc()
 
     assert Enum.map(again.cells, &Map.take(&1, [:kind, :source])) ==
              Enum.map(doc.cells, &Map.take(&1, [:kind, :source]))
@@ -192,27 +192,27 @@ defmodule Spiral.Cells.DocumentTest do
       ]
     }
 
-    text = Document.to_livemd(doc)
+    text = Domain.to_livemd_doc(doc)
 
     assert text ==
-             Document.to_livemd(%{
+             Domain.to_livemd_doc(%{
                cells: [
                  %{kind: :markdown, source: "# t"},
                  %{kind: :spiral, source: "inl x () = 1i32"}
                ]
              })
 
-    assert Document.to_livemd(Document.parse_livemd(text)) == text
+    assert Domain.to_livemd_doc(Domain.parse_livemd_doc(text)) == text
   end
 
   @tag :alphabet_corpus
   test "alphabet: documents is a .spi source that writes back byte for byte" do
     alphabet = Path.join(Spiral.Cells.TestHelpers.alphabet_root(), "apps")
     documents_source = File.read!(Path.join(alphabet, "documents/documents.spi"))
-    documents = Document.parse_spi(documents_source, "")
+    documents = Domain.parse_spi_doc(documents_source, "")
 
-    assert Document.to_spi_tested(documents) == documents_source
-    assert length(Document.tests(documents)) >= 2
+    assert Domain.to_spi_tested_doc(documents) == documents_source
+    assert length(Domain.tests_doc(documents)) >= 2
   end
 
   test "test cells export as test blocks that load back as the same test cells" do
@@ -226,15 +226,15 @@ defmodule Spiral.Cells.DocumentTest do
       ]
     }
 
-    spi = Document.to_spi_tested(doc)
+    spi = Domain.to_spi_tested_doc(doc)
 
     assert spi ==
              "/// ## add\ninl add a b = a + b\n\n///> c\ntest add =\n    add 1 2 |> _assert_eq 3\n\n" <>
                "test add_2 static print_code =\n    add 2 2 |> _assert_eq 4\n"
 
-    assert Document.to_spi(doc) == "/// ## add\ninl add a b = a + b\n"
+    assert Domain.to_spi_doc(doc) == "/// ## add\ninl add a b = a + b\n"
 
-    assert Enum.map(Document.parse_spi(spi, "").cells, &{&1.kind, &1.source}) == [
+    assert Enum.map(Domain.parse_spi_doc(spi, "").cells, &{&1.kind, &1.source}) == [
              markdown: "## add",
              spiral: "inl add a b = a + b",
              spiral: "///- --test\n///> c\n\nadd 1 2 |> _assert_eq 3",
@@ -242,7 +242,7 @@ defmodule Spiral.Cells.DocumentTest do
            ]
 
     custom = "/// ## add\ninl add a b = a + b\n\ntest one_plus_one =\n    add 1 1 |> _assert_eq 2\n"
-    doc = Document.parse_spi(custom, "")
+    doc = Domain.parse_spi_doc(custom, "")
 
     assert Enum.map(doc.cells, &{&1.kind, &1.source}) == [
              markdown: "## add",
@@ -251,7 +251,7 @@ defmodule Spiral.Cells.DocumentTest do
              spiral: "///- --test\n\nadd 1 1 |> _assert_eq 2"
            ]
 
-    assert doc |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == custom
+    assert doc |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc() |> Domain.to_spi_tested_doc() == custom
   end
 
   test "non-ASCII headings name tests apart: identity, localized title, ASCII symbol" do
@@ -269,13 +269,13 @@ defmodule Spiral.Cells.DocumentTest do
       ]
     }
 
-    spi = Document.to_spi_tested(doc)
+    spi = Domain.to_spi_tested_doc(doc)
     assert spi =~ "\ntest сложение =\n"
     assert spi =~ "\ntest 加法 =\n"
     assert spi =~ "\ntest ünïcode_mix_2 =\n"
     assert spi =~ "\ntest plain_add =\n"
 
-    tests = Document.tests(doc)
+    tests = Domain.tests_doc(doc)
 
     assert Enum.map(tests, &{&1.name, &1.title}) == [
              {"сложение", "Сложение"},
@@ -291,15 +291,15 @@ defmodule Spiral.Cells.DocumentTest do
              "plain_add"
            ]
 
-    again = Document.parse_spi(spi, "")
-    assert Document.to_spi_tested(again) == spi
-    assert Enum.map(Document.tests(again), & &1.name) == Enum.map(tests, & &1.name)
+    again = Domain.parse_spi_doc(spi, "")
+    assert Domain.to_spi_tested_doc(again) == spi
+    assert Enum.map(Domain.tests_doc(again), & &1.name) == Enum.map(tests, & &1.name)
   end
 
   test "a _real.spir interleaves with its .spi by heading, keeps only the headings over its own code, and both round-trip through livemd" do
     spi = "/// # demo\n\n/// ## twice_real\n\n/// ## twice\ninl twice (x : i32) : i32 = real twice_real x\n"
     spir = "/// ## twice_real\n///- --real\n\ninl twice_real (x : i32) : i32 = x + x\n"
-    doc = Document.parse_spi(spi, spir)
+    doc = Domain.parse_spi_doc(spi, spir)
 
     assert Enum.map(doc.cells, &{&1.kind, &1.source}) == [
              markdown: "# demo",
@@ -309,9 +309,9 @@ defmodule Spiral.Cells.DocumentTest do
              spiral: "inl twice (x : i32) : i32 = real twice_real x"
            ]
 
-    back = doc |> Document.to_livemd() |> Document.parse_livemd()
-    assert Document.to_spi_tested(back) == spi
-    assert Document.to_spir_tested(back) == spir
+    back = doc |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc()
+    assert Domain.to_spi_tested_doc(back) == spi
+    assert Domain.to_spir_tested_doc(back) == spir
 
     lib = Path.expand("../../../../lib/spiral", __DIR__)
     pairs = Path.wildcard(Path.join(lib, "*_real.spir"))
@@ -320,17 +320,17 @@ defmodule Spiral.Cells.DocumentTest do
     for spir_path <- pairs do
       spi_path = String.replace_suffix(spir_path, "_real.spir", ".spi")
       {spi, spir} = {File.read!(spi_path), File.read!(spir_path)}
-      back = spi |> Document.parse_spi(spir) |> Document.to_livemd() |> Document.parse_livemd()
-      assert Document.to_spi_tested(back) == spi, spi_path
-      assert Document.to_spir_tested(back) == spir, spir_path
+      back = spi |> Domain.parse_spi_doc(spir) |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc()
+      assert Domain.to_spi_tested_doc(back) == spi, spi_path
+      assert Domain.to_spir_tested_doc(back) == spir, spir_path
     end
   end
 
   test "an edition-3 :# test header round-trips as :#" do
     spi = "///- --package .\n:= add (a : i32) (b : i32) : i32 = a + b\n\n///> rust\n:# adds static =\n    add 1i32 2i32 |> ignore\n"
-    doc = Document.parse_spi(spi, "")
+    doc = Domain.parse_spi_doc(spi, "")
     assert Enum.any?(doc.cells, &(&1.kind == :spiral and &1.source =~ ~r/\A\/\/\/- --test static --symbol/))
-    assert spi |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == spi
+    assert spi |> Domain.parse_spi_doc("") |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc() |> Domain.to_spi_tested_doc() == spi
   end
   for {order, header} <- [
         {"target first", "///> rust\n///- --timeout 900000\n"},
@@ -338,50 +338,50 @@ defmodule Spiral.Cells.DocumentTest do
       ] do
     test "a :# test keeps its target and its own ///- --timeout row, #{order}" do
       spi = "///- --package .\n:= add (a : i32) (b : i32) : i32 = a + b\n\n" <> unquote(header) <> ":# adds static =\n    add 1i32 2i32 |> ignore\n"
-      doc = Document.parse_spi(spi, "")
+      doc = Domain.parse_spi_doc(spi, "")
       [source] = for c <- doc.cells, c.kind == :spiral and String.starts_with?(c.source, "///- --test"), do: c.source
       assert source =~ "///> rust"
       assert source =~ "///- --timeout 900000"
       refute Enum.any?(doc.cells, &(String.trim(&1.source) == String.trim(unquote(header))))
-      assert spi |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == spi
+      assert spi |> Domain.parse_spi_doc("") |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc() |> Domain.to_spi_tested_doc() == spi
     end
   end
 
   test "a package directive directly above a module :# header stays its own cell and round-trips" do
     spi = "///- --package . --timeout 600000\n:# prelude static =\n    :< testing\n\n:= one () : i32 = 1i32\n"
-    doc = Document.parse_spi(spi, "")
+    doc = Domain.parse_spi_doc(spi, "")
     assert Enum.any?(doc.cells, &(String.trim(&1.source) == "///- --package . --timeout 600000"))
-    assert spi |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == spi
+    assert spi |> Domain.parse_spi_doc("") |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc() |> Domain.to_spi_tested_doc() == spi
   end
   test "a package directive followed by a blank line stays its own cell before a :# test" do
     spi = "///- --package .\n\n///> rust\n:# adds static =\n    1i32 |> ignore\n"
-    doc = Document.parse_spi(spi, "")
+    doc = Domain.parse_spi_doc(spi, "")
     assert Enum.any?(doc.cells, &(String.trim(&1.source) == "///- --package ."))
   end
   test "a test name a heading cannot carry (trailing underscore) round-trips through an explicit --name" do
     spi = "///- --package .\n/// ### map4\n:= map4 (a : i32) : i32 = a\n\n:= map4_ (a : i32) : i32 = a\n\n///> rust\ntest map4_ =\n    map4_ 1i32 |> ignore\n"
-    livemd = spi |> Document.parse_spi("") |> Document.to_livemd()
+    livemd = spi |> Domain.parse_spi_doc("") |> Domain.to_livemd_doc()
     assert livemd =~ "--name map4_"
-    once = livemd |> Document.parse_livemd() |> Document.to_spi_tested()
+    once = livemd |> Domain.parse_livemd_doc() |> Domain.to_spi_tested_doc()
     assert once =~ "\ntest map4_ =\n"
     refute once =~ "--name"
-    assert once |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == once
+    assert once |> Domain.parse_spi_doc("") |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc() |> Domain.to_spi_tested_doc() == once
   end
   test "a test named by its heading with the trailing underscore stripped keeps the heading name, no --name" do
     spi = "///- --package .\n/// ### take_\n:= take (a : i32) : i32 = a\n\n///> rust\ntest take =\n    take 1i32 |> ignore\n"
-    livemd = spi |> Document.parse_spi("") |> Document.to_livemd()
+    livemd = spi |> Domain.parse_spi_doc("") |> Domain.to_livemd_doc()
     refute livemd =~ "--name"
-    once = livemd |> Document.parse_livemd() |> Document.to_spi_tested()
+    once = livemd |> Domain.parse_livemd_doc() |> Domain.to_spi_tested_doc()
     assert once =~ "\ntest take =\n"
   end
   test "a cell source holding --> stays inside its livebook comment through livemd" do
     spi = "///- --package .\n:= arrow (s : string) : bool = s = \"-->\"\n"
-    livemd = spi |> Document.parse_spi("") |> Document.to_livemd()
+    livemd = spi |> Domain.parse_spi_doc("") |> Domain.to_livemd_doc()
     refute livemd =~ ~r/livebook:\{[^\n]*-->[^\n]*-->/
-    once = livemd |> Document.parse_livemd() |> Document.to_spi_tested()
+    once = livemd |> Domain.parse_livemd_doc() |> Domain.to_spi_tested_doc()
     assert once =~ ~s|:= arrow (s : string) : bool = s = "-->"|
     refute once =~ "chunks"
-    assert once |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == once
+    assert once |> Domain.parse_spi_doc("") |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc() |> Domain.to_spi_tested_doc() == once
   end
   @tag timeout: 900_000
   test "the spiral library .spi files load as notebooks, one test cell per test block" do
@@ -396,11 +396,11 @@ defmodule Spiral.Cells.DocumentTest do
           spir = Path.rootname(path) <> "_real.spir"
           spi_text = File.read!(path)
           spir_text = if File.regular?(spir), do: File.read!(spir), else: ""
-          doc = Document.parse_spi(spi_text, spir_text)
+          doc = Domain.parse_spi_doc(spi_text, spir_text)
           expected = length(Regex.scan(~r/^(?:test|:#) \w+/m, spi_text <> spir_text))
           found = Enum.count(doc.cells, &(&1.kind == :spiral and &1.source =~ ~r/\A\/\/\/- (--real )?--(test|ignore)/))
           assert found == expected, path
-          through_livemd = &(&1 |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested())
+          through_livemd = &(&1 |> Domain.parse_spi_doc("") |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc() |> Domain.to_spi_tested_doc())
           once = through_livemd.(spi_text)
           assert through_livemd.(once) == once, path
           if expected > 0, do: assert(once == spi_text, path)
@@ -414,22 +414,22 @@ defmodule Spiral.Cells.DocumentTest do
   test "dice's Spiral sources are .spi files whose test blocks load as notebook cells and write back byte for byte" do
     dice_source = File.read!(Path.join(Spiral.Cells.TestHelpers.dice_root(), "lib/dice.spi"))
     contract_source = File.read!(Path.join(Spiral.Cells.TestHelpers.dice_root(), "contract/dice_contract.spi"))
-    dice = Document.parse_spi(dice_source, "")
-    contract = Document.parse_spi(contract_source, "")
+    dice = Domain.parse_spi_doc(dice_source, "")
+    contract = Domain.parse_spi_doc(contract_source, "")
 
-    assert Document.to_spi_tested(dice) == dice_source
-    assert Document.to_spi_tested(contract) == contract_source
-    assert length(Document.tests(dice)) >= 24
-    assert length(Document.tests(contract)) >= 8
+    assert Domain.to_spi_tested_doc(dice) == dice_source
+    assert Domain.to_spi_tested_doc(contract) == contract_source
+    assert length(Domain.tests_doc(dice)) >= 24
+    assert length(Domain.tests_doc(contract)) >= 8
 
-    spi = Document.to_spi(dice)
+    spi = Domain.to_spi_doc(dice)
     assert spi =~ "/// # dice (Dice)"
     assert spi =~ ~r/^(?:inl|:=) face_of_pips \(p : u8\) : option face =/m
     assert spi =~ ~r/^(?:inl|:=) main \(_args : array_base string\) =/m
     refute spi =~ "_assert_eq"
     refute spi =~ ~r/^\s*(?:open|:<) testing$/m
 
-    spi = Document.to_spi(contract)
+    spi = Domain.to_spi_doc(contract)
     assert spi =~ "///- --package ../dice"
     assert spi =~ "lib.dice.roll_within_bounds max"
     refute spi =~ "_assert_eq"

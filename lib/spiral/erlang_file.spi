@@ -4,7 +4,7 @@
     :< testing
 
 := text_of_call (m : string) (f : string) (args : list erlang_term::term) : string =
-    erlang_term::apply "unicode" "characters_to_binary" [ erlang_term::apply m f args ] |> erlang_term::cast
+    erlang_term::charlist_text (erlang_term::apply m f args)
 
 := dir_name (path : string) : string = text_of_call "filename" "dirname" [ erlang_term::of path ]
 
@@ -17,10 +17,9 @@
 
 := file_written (path : string) (content : string) : bool =
     := r = erlang_term::apply "file" "write_file" [ erlang_term::of path; erlang_term::of content ]
-    erlang_term::equal r (erlang_term::atom "ok")
+    erlang_term::is_atom "ok" r
 
-:= text_of (c : erlang_term::term) : string =
-    erlang_term::apply "unicode" "characters_to_binary" [ c ] |> erlang_term::cast
+:= text_of (c : erlang_term::term) : string = erlang_term::charlist_text c
 
 := matching_paths (pattern : string) : list string =
     erlang_term::apply "filelib" "wildcard" [ erlang_term::charlist pattern ]
@@ -31,11 +30,11 @@
 
 := file_appended (path : string) (content : string) : bool =
     := r = erlang_term::apply "file" "write_file" [ erlang_term::of path; erlang_term::of content; append_mode () ]
-    erlang_term::equal r (erlang_term::atom "ok")
+    erlang_term::is_atom "ok" r
 
 := file_text (path : string) : string =
     := r = erlang_term::apply "file" "read_file" [ erlang_term::of path ]
-    erlang_term::apply "erlang" "element" [ erlang_term::of 2i32; r ] |> erlang_term::cast
+    erlang_term::element_at 2i32 r |> erlang_term::cast
 
 := regular_file (path : string) : bool =
     erlang_term::equal (erlang_term::apply "filelib" "is_regular" [ erlang_term::of path ]) (erlang_term::atom "true")
@@ -44,6 +43,30 @@
 
 := put_error_text (s : string) : () =
     erlang_term::apply "io" "put_chars" [ erlang_term::atom "standard_error"; erlang_term::of s ] |> ignore
+
+:= tuple_ok (r : erlang_term::term) : bool = erlang_term::equal (erlang_term::element_at 1i32 r) (erlang_term::atom "ok")
+
+:= is_directory (path : string) : bool = erlang_term::equal (erlang_term::apply "filelib" "is_dir" [ erlang_term::of path ]) (erlang_term::atom "true")
+
+:= make_dir_all (path : string) : bool =
+    erlang_term::apply "filelib" "ensure_dir" [ erlang_term::of (joined_path path ".x") ] |> ignore
+    is_directory path
+
+:= remove_tree (path : string) : bool = erlang_term::is_atom "ok" (erlang_term::apply "file" "del_dir_r" [ erlang_term::of path ])
+
+:= copy_file (src : string) (dst : string) : bool = tuple_ok (erlang_term::apply "file" "copy" [ erlang_term::of src; erlang_term::of dst ])
+
+:= make_symlink_result (existing : string) (link : string) : erlang_term::term = erlang_term::apply "file" "make_symlink" [ erlang_term::of existing; erlang_term::of link ]
+
+:= make_symlink (existing : string) (link : string) : bool = erlang_term::is_atom "ok" (make_symlink_result existing link)
+
+:= read_symlink (link : string) : string =
+    text_of (erlang_term::element_at 2i32 (erlang_term::apply "file" "read_link" [ erlang_term::of link ]))
+
+:= list_dir (path : string) : list string =
+    erlang_term::element_at 2i32 (erlang_term::apply "file" "list_dir" [ erlang_term::of path ])
+    |> erlang_term::items_of
+    |> listm::map text_of
 
 ///> gleam
 :# a_path_splits_into_its_dir_and_base =

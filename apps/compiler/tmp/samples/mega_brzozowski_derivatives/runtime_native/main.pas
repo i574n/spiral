@@ -1,8 +1,8 @@
 program SpiralGenerated;
 {$mode delphi}{$H+}
 {$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}
-{$MAXSTACKSIZE $10000000}
-uses SysUtils, Math;
+{$IFDEF WINDOWS}{$MAXSTACKSIZE $10000000}{$ENDIF}
+uses {$IFDEF UNIX}cthreads, {$ENDIF}SysUtils, Math;
 type
   TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TUH0 = class;
@@ -2494,7 +2494,7 @@ begin
   SpiralRelease(v36);
   if v37 then begin
   end else begin
-      begin WriteLn(StdErr, 'brzozowski-expected-true'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-expected-true'); Halt(1); end;
   end;
   v38 := US0_BitZero;
   v39 := UH2_RegexChar(v38);
@@ -2520,7 +2520,7 @@ begin
   v47 := accepts_0(v46, v13);
   SpiralRelease(v46);
   if v47 then begin
-      begin WriteLn(StdErr, 'brzozowski-expected-false'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-expected-false'); Halt(1); end;
   end else begin
   end;
   v48 := US1_TriA;
@@ -2535,7 +2535,7 @@ begin
   SpiralRelease(v50);
   if v51 then begin
   end else begin
-      begin WriteLn(StdErr, 'brzozowski-expected-true'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-expected-true'); Halt(1); end;
   end;
   v52 := US1_TriA;
   v53 := UH3_RegexChar(v52);
@@ -2548,7 +2548,7 @@ begin
   SpiralRelease(v27);
   SpiralRelease(v54);
   if v55 then begin
-      begin WriteLn(StdErr, 'brzozowski-expected-false'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-expected-false'); Halt(1); end;
   end else begin
   end;
   v56 := US0_BitZero;
@@ -2610,20 +2610,22 @@ begin
   SpiralRelease_TUS5(v66);
   if v78 then begin
   end else begin
-      begin WriteLn(StdErr, 'brzozowski-expected-true'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-expected-true'); Halt(1); end;
   end;
   SpiralRetain_TUS5(v77);
   v79 := bit_match_value_23(v77);
   SpiralRelease_TUS5(v77);
   if v79 then begin
-      begin WriteLn(StdErr, 'brzozowski-expected-false'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-expected-false'); Halt(1); end;
   end else begin
   end;
   Result := 0;
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
 var SpiralExitCode: LongInt;
+procedure SpiralRun;
 begin
+  {$IFDEF WINDOWS}SetTextCodePage(Output, CP_UTF8); SetTextCodePage(StdErr, CP_UTF8);{$ENDIF}
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
   SpiralExitCode := SpiralMain;
@@ -2633,5 +2635,23 @@ begin
   if UH2_RegexEpsilon_shared <> nil then UH2_RegexEpsilon_shared.Free;
   if UH3_RegexEmpty_shared <> nil then UH3_RegexEmpty_shared.Free;
   if UH3_RegexEpsilon_shared <> nil then UH3_RegexEpsilon_shared.Free;
+  Flush(Output);
+end;
+{$IFNDEF WINDOWS}
+function SpiralThreadMain(p: Pointer): PtrInt;
+begin
+  SpiralRun;
+  Result := 0;
+end;
+var SpiralThread, SpiralThreadId: TThreadID;
+{$ENDIF}
+begin
+  {$IFDEF WINDOWS}
+  SpiralRun;
   Halt(SpiralExitCode);
+  {$ELSE}
+  SpiralThread := BeginThread(@SpiralThreadMain, nil, SpiralThreadId, 268435456);
+  WaitForThreadTerminate(SpiralThread, 0);
+  Halt(SpiralExitCode and 255);
+  {$ENDIF}
 end.

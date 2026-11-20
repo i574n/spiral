@@ -1,0 +1,189 @@
+///- --package .
+:< erlang_term
+:# runner_loop static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:== trm = erlang_term::term
+
+:== ewport = erlang_port::port
+
+:== ewmon = erlang_process::monitor
+
+:== rstate = {
+        port : ewport
+        mon : ewmon
+        os_pid : trm
+        started : i64
+        deadline : i64
+        out_timeout : i32
+        max_output : i32
+        out : list string
+        out_size : i32
+        capture : trm
+        closed : bool
+    }
+
+:| outcome =
+    | WReply : trm
+    | WCallerGone
+    | WExit : trm
+
+:~ now_ms () : i64 = erlang_term::apply "erlang" "monotonic_time" [ erlang_term::atom "millisecond" ] |> erlang_term::cast
+
+:~ byte_size (s : string) : i32 = erlang_term::apply "erlang" "byte_size" [ erlang_term::of s ] |> erlang_term::cast
+
+:~ i64_of (n : i32) : i64 = erlang_term::cast (erlang_term::of n)
+
+:~ clamp_ms (left : i64) : i32 = ? left < 0i64 ?> 0i32 |: (erlang_term::cast (erlang_term::of left) : i32)
+
+:~ last_bytes (bin : string) (n : i32) : string =
+    erlang_term::apply "binary" "part" [ erlang_term::of bin; erlang_term::of (byte_size bin - n); erlang_term::of n ] |> erlang_term::cast
+
+:~ remaining (st : rstate) : i32 = clamp_ms (st::deadline - now_ms ())
+
+:~ trim_output (st : rstate) (data : string) (size : i32) : rstate =
+    := bin = sm'::concat_list "" (listm::rev (data :: st::out))
+    := keep = last_bytes bin st::max_output
+    { st with out = keep :: []; out_size = byte_size keep }
+
+:~ append (st : rstate) (data : string) : rstate =
+    := size = st::out_size + byte_size data
+    ? size > st::max_output * 2i32
+    ?> trim_output st data size
+    |: { st with out = data :: st::out; out_size = size }
+
+:~ output (st : rstate) : string =
+    := bin = sm'::concat_list "" (listm::rev st::out)
+    ? byte_size bin > st::max_output ?> last_bytes bin st::max_output |: bin
+
+:~ is_nil (t : trm) : bool = erlang_term::equal t (erlang_term::atom "nil")
+
+:~ tag_is (t : trm) (name : string) : bool = erlang_term::equal (erlang_term::element_at 1i32 t) (erlang_term::atom name)
+
+:~ discard_capture (st : rstate) : rstate =
+    ? is_nil st::capture
+    ?> st
+    |:
+        runner_edges::remove_capture (erlang_term::cast st::capture) 20i32
+        { st with capture = erlang_term::atom "nil" }
+
+:~ absorbed (st : rstate) (r : trm) : rstate =
+    ? tag_is r "ok" ?> append st (erlang_term::cast (erlang_term::element_at 2i32 r)) |: st
+
+:~ absorb_capture (st : rstate) : rstate =
+    ? is_nil st::capture
+    ?> st
+    |: discard_capture (absorbed st (runner_edges::read_tail (erlang_term::cast st::capture) st::max_output))
+
+:~ oft \* t. (v : t) : trm = erlang_term::of v
+
+:~ from_kvs (xs : list trm) : trm = erlang_term::apply "maps" "from_list" [ erlang_term::list_term xs ]
+
+:~ result_kvs (st : rstate) (status : i32) : list trm =
+    [
+        pair "exit_status" (oft status)
+        pair "output" (oft (output st))
+        pair "os_pid" st::os_pid
+        pair "duration_ms" (oft (now_ms () - st::started))
+    ]
+
+:~ result_map (st : rstate) (status : i32) : trm = from_kvs (result_kvs st status)
+
+:~ ok_result (st : rstate) (status : i32) : trm = erlang_term::tuple [ erlang_term::atom "ok"; result_map st status ]
+
+:~ timeout_kvs (st : rstate) : list trm =
+    [
+        pair "output" (oft (output st))
+        pair "os_pid" st::os_pid
+        pair "timeout" (oft st::out_timeout)
+    ]
+
+:~ timeout_map (st : rstate) : trm = from_kvs (timeout_kvs st)
+
+:~ timeout_error (st : rstate) : trm =
+    erlang_term::tuple [ erlang_term::atom "error"; erlang_term::tuple [ erlang_term::atom "timeout"; timeout_map st ] ]
+
+:~ recv_after (st : rstate) (until : i64) : erlang_watch::watch_event =
+    erlang_watch::watch_within (erlang_watch::watch_after st::port) (clamp_ms (until - now_ms ()))
+
+:~ ^ output_after_exit (st : rstate) (until : i64) : rstate =
+    ? st::closed
+    ?> st
+    |:
+        ?= recv_after st until ?|
+        | erlang_watch::Data data => output_after_exit (append st data) until
+        | _ => st
+
+:~ recv_drain (st : rstate) (until : i64) : erlang_watch::watch_event =
+    erlang_watch::watch_within (erlang_watch::watch_drain st::port) (clamp_ms (until - now_ms ()))
+
+:~ ^ drain (st : rstate) (until : i64) : rstate =
+    ?= recv_drain st until ?|
+    | erlang_watch::Data data => drain (append st data) until
+    | _ => st
+
+:~ port_gone (p : erlang_port::port) : bool = erlang_term::equal (erlang_term::apply "erlang" "port_info" [ erlang_port::term_of p ]) (erlang_term::atom "undefined")
+
+:~ close_port (st : rstate) : () = ? port_gone st::port ?> () |: erlang_port::close st::port |> ignore
+
+:~ kill_os (st : rstate) : () =
+    ? is_nil st::os_pid ?> () |: runner_edges::kill_tree (erlang_term::cast st::os_pid)
+
+:~ kill_and_cleanup (st : rstate) : () =
+    kill_os st
+    close_port st
+    discard_capture st |> ignore
+
+:~ cleanup_gone (st : rstate) : outcome =
+    kill_and_cleanup st
+    WCallerGone
+
+:~ cleanup_exit (st : rstate) (reason : trm) : outcome =
+    kill_and_cleanup st
+    WExit reason
+
+:~ on_exit (st : rstate) (status : i32) : outcome =
+    := st2 = absorb_capture (output_after_exit st (now_ms () + 2000i64))
+    WReply (ok_result st2 status)
+
+:~ on_timeout (st : rstate) : outcome =
+    kill_os st
+    := st2 = drain st (now_ms () + 5000i64)
+    close_port st2
+    := st3 = absorb_capture st2
+    WReply (timeout_error st3)
+
+:~ recv (st : rstate) : erlang_watch::watch_event =
+    := sel = erlang_watch::watch_main st::port st::mon
+    ? st::out_timeout < 0i32 ?> erlang_watch::watch_forever sel |: erlang_watch::watch_within sel (remaining st)
+
+:~ loop_rest (st : rstate) (ev : erlang_watch::watch_event) : outcome =
+    ?= ev ?|
+    | erlang_watch::CallerDown => cleanup_gone st
+    | erlang_watch::OtherExit reason => cleanup_exit st reason
+    | erlang_watch::TimedOut => on_timeout st
+    | _ => cleanup_gone st
+
+:~ ^ loop (st : rstate) : outcome =
+    := ev = recv st
+    ?= ev ?|
+    | erlang_watch::Data data => loop (append st data)
+    | erlang_watch::ExitStatus status => on_exit st status
+    | erlang_watch::PortClosed => loop { st with closed = !+ }
+    | _ => loop_rest st ev
+
+:~ dl_of (s : i64) (t : i32) : i64 = ? t < 0i32 ?> -1i64 |: s + i64_of t
+
+:~ init_state (p : ewport) (mon : ewmon) (o : trm) (cap : trm) (s : i64) (t : i32) (m : i32) : rstate =
+    { port = p; mon = mon; os_pid = o; started = s; deadline = dl_of s t; out_timeout = t; max_output = m; out = []; out_size = 0i32; capture = cap; closed = !- }
+
+:~ outcome_term (oc : outcome) : trm =
+    ?= oc ?|
+    | WReply r => erlang_term::tuple [ erlang_term::atom "reply"; r ]
+    | WCallerGone => erlang_term::atom "caller_gone"
+    | WExit reason => erlang_term::tuple [ erlang_term::atom "exit"; reason ]
+
+:~ run_loop (caller : erlang_process::pid) (p : ewport) (o : trm) (cap : trm) (s : i64) (t : i32) (m : i32) : trm =
+    outcome_term (loop (init_state p (erlang_watch::trap_and_monitor caller) o cap s t m))

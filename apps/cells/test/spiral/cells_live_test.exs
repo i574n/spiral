@@ -4,13 +4,13 @@ defmodule Spiral.CellsLiveTest do
   @moduletag timeout: 900_000
   @budget 600_000
 
-  alias Spiral.Cells.{Result, SpiralError, Toolchain}
+  alias Spiral.Cells.{Domain, SpiralError}
 
   setup do
-    dll = Toolchain.compiler_dll([])
-    rustc = Toolchain.rustc([])
-    dotnet = Toolchain.dotnet([])
-    core = Path.join(Toolchain.package_dir([]), "core/package.spiproj")
+    dll = Domain.tool("compiler_dll", [])
+    rustc = Domain.tool("rustc", [])
+    dotnet = Domain.tool("dotnet", [])
+    core = Path.join(Domain.tool("package_dir", []), "core/package.spiproj")
 
     if File.regular?(dll) and File.regular?(core) and is_binary(dotnet) and is_binary(rustc) do
       :ok
@@ -20,7 +20,7 @@ defmodule Spiral.CellsLiveTest do
   end
 
   test "compiles and runs a cell" do
-    assert {:ok, %Result{value: "49", stdout: stdout, exit_status: 0}} =
+    assert {:ok, %{value: "49", stdout: stdout, exit_status: 0}} =
              Spiral.Cells.run(
                """
                ///> rust
@@ -36,7 +36,7 @@ defmodule Spiral.CellsLiveTest do
   end
 
   test "a print with no value still runs" do
-    assert {:ok, %Result{value: nil, stdout: stdout, exit_status: 0}} =
+    assert {:ok, %{value: nil, stdout: stdout, exit_status: 0}} =
              Spiral.Cells.run("///> rust\nconsole.write_line \"Hello from Spiral!\"\n", timeout: @budget)
 
     assert stdout =~ "Hello from Spiral!"
@@ -45,7 +45,7 @@ defmodule Spiral.CellsLiveTest do
   test "imports a package and runs it" do
     root = Path.expand("../fixtures", __DIR__)
 
-    assert {:ok, %Result{value: "42", exit_status: 0}} =
+    assert {:ok, %{value: "42", exit_status: 0}} =
              Spiral.Cells.run("///> rust\n///- --package shared\noffset.add_one 41i32",
                root: root,
                timeout: @budget

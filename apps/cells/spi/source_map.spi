@@ -10,11 +10,15 @@
 :| in_source =
     | InSource
 
-:== position p = { line : i32; column : i32 }
+:! position p = { line : i32; column : i32 }
 
-:~ generated_at (line : i32) (column : i32) : position in_generated = { line; column }
+:~ generated_at (line : i32) (column : i32) : position in_generated = position { line; column }
 
-:~ source_at (line : i32) (column : i32) : position in_source = { line; column }
+:~ pos_line \* p. ((position r) : position p) : i32 = r::line
+
+:~ pos_column \* p. ((position r) : position p) : i32 = r::column
+
+:~ source_at (line : i32) (column : i32) : position in_source = position { line; column }
 
 :~ ^ nth (i : i32) (xs : list string) : option string =
     ?= xs ?|
@@ -69,23 +73,20 @@
         with_score scored (best_score scored -1i32) []
 
 :~ located (p : position in_generated) (text_in : string) (found : string) (index : i32) : position in_source =
-    := column = p::column - indent text_in + indent found
+    := column = pos_column p - indent text_in + indent found
     source_at (index + 1i32) (? column < 1i32 ?> 1i32 |: column)
 
+:~ matched_at (p : position in_generated) (text_in : string) (source : list string) (indexes : list i32) : option (position in_source) =
+    ?= indexes ?|
+    | index :: [] => ?= nth index source ?| Some found => Some (located p text_in found index) | None => None
+    | _ => None
+
+:~ located_line (p : position in_generated) (program : list string) (source : list string) (text_in : string) : option (position in_source) =
+    := trimmed = text::trim text_in
+    ? trimmed = "" ?> None |: matched_at p text_in source (best_matches (pos_line p) program source trimmed)
+
 :~ locate (p : position in_generated) (program : list string) (source : list string) : option (position in_source) =
-    ?= nth (p::line - 1i32) program ?|
-    | None => None
-    | Some text_in =>
-        := trimmed = text::trim text_in
-        ? trimmed = ""
-        ?> None
-        |:
-            ?= best_matches p::line program source trimmed ?|
-            | index :: [] =>
-                ?= nth index source ?|
-                | Some found => Some (located p text_in found index)
-                | None => None
-            | _ => None
+    ?= nth (pos_line p - 1i32) program ?| None => None | Some text_in => located_line p program source text_in
 
 :~ ^ digits_end (s : string) (i : i32) : i32 =
     ? i < text::length s && text::digit_val (text::index s i) >= 0i32 ?> digits_end s (i + 1i32) |: i
@@ -109,7 +110,7 @@
     |: None
 
 :~ shown (path : string) (q : position in_source) (whole : string) : string =
-    path ++ ":" ++ text::show_i32 q::line ++ ":" ++ text::show_i32 q::column ++ " (" ++ whole ++ ")"
+    path ++ ":" ++ text::show_i32 (pos_line q) ++ ":" ++ text::show_i32 (pos_column q) ++ " (" ++ whole ++ ")"
 
 :~ ^ remap_from
     (s : string) (i : i32) (program : list string) (source : list string) (path : string) (acc : string)
@@ -134,3 +135,7 @@
     := none = remap "main.spi:1:5: oops" "zzz\n" "a\n" "f.spi"
     := moved = remap "main.spi:2:5: oops" "a\n    b\nc\n" "q\na\nb\nc\nb\n" "f.spi"
     (kept, none, moved) |> _assert_eq ("main.spi:2:1: oops", "main.spi:1:5: oops", "f.spi:3:1 (main.spi:2:5): oops")
+
+///> gleam
+:# a_nominal_position_keeps_its_line_and_column =
+    (pos_line (generated_at 3i32 4i32), pos_column (source_at 5i32 6i32)) |> _assert_eq (3i32, 6i32)

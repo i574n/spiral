@@ -1045,6 +1045,7 @@
     global (
         "#ifdef _WIN32\nstatic char * spiral_localize(char * m, long n) { (void)n; return m; }\n#else\n"
         ^^ "#include <sys/syscall.h>\n#include <string.h>\n"
+        ^^ "long syscall(long, ...);\nint madvise(void *, size_t, int);\n#ifndef MADV_HUGEPAGE\n#define MADV_HUGEPAGE 14\n#endif\n"
         ^^ "static int spiral_page_node(void * p) { int node = -1; "
         ^^ "return syscall(SYS_get_mempolicy, &node, NULL, 0UL, p, 3UL) == 0 ? node : -1; }\n"
         ^^ "static int spiral_cpu_node(void) { unsigned cpu = 0, node = 0; "

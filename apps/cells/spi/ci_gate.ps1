@@ -25,15 +25,15 @@ try {
         $lines = @(& pwsh -NoProfile -File (Join-Path $PSScriptRoot 'run_notebook.ps1') @notebookArgs 2>&1 | ForEach-Object { "$_" })
         $mixExit = $LASTEXITCODE
         [IO.File]::AppendAllLines((Join-Path $Out 'gate.log'), [string[]]$lines)
-        if ($mixExit -ne 0 -and -not ($lines -match '^spiral-tests file ')) {
-            "run_notebook.ps1 exited $mixExit with no test report for paths $at..$($at + $chunk.Count - 1); its last lines:"
-            $lines | Select-Object -Last 30 | ForEach-Object { "  $_" }
-        }
-        foreach ($line in $lines) {
-            if ($line -notmatch '^spiral-tests file (\{.*\})\s*$') { continue }
-            $report = $Matches[1] | ConvertFrom-Json
+        $reports = @($lines -match '^spiral-tests file \{.*\}\s*$' | ForEach-Object { ($_ -replace '^spiral-tests file ', '') | ConvertFrom-Json })
+        $crashed = $mixExit -ne 0 -and -not ($reports | Where-Object { $_.failed -gt 0 })
+        foreach ($report in $reports) {
             $failedTargets = ($report.failed_targets.PSObject.Properties | ForEach-Object { "$($_.Name)=$($_.Value -join '+')" }) -join ';'
             $summary.Add("$($report.file)`t$($report.discovered)`t$($report.executed)`t$($report.passed)`t$($report.failed)`t$failedTargets")
+        }
+        if ($reports.Count -lt $chunk.Count -or $crashed) {
+            $summary.Add("paths $at..$($at + $chunk.Count - 1)`t$($chunk.Count)`t0`t0`t$([Math]::Max(1, $chunk.Count - $reports.Count))`trun_notebook.ps1 exit $mixExit with $($reports.Count) of $($chunk.Count) reports, last lines below and in gate.log")
+            $lines | Select-Object -Last 30 | ForEach-Object { "  $_" }
         }
     }
 } finally {

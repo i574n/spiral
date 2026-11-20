@@ -22,7 +22,7 @@
 
 :== literal_split = { outside : list i32; pieces : list (list i32) }
 
-:== kind_row = { kind : block_kind; over : bool }
+:== kind_row = { kind : block_kind; over : bool; excess : i32 }
 
 := type_heads () : list string = [ ":|"; ":=="; ":!"; "type "; "union "; "nominal " ]
 
@@ -130,10 +130,25 @@
 :~ plain_call (call : string) : bool =
     call <> "" && sm'::starts_with " " call = !- && contains_any (arm_logic ()) call = !-
 
+:~ bare_arm (arm : string) : bool =
+    := at = sm'::index_of " = \\ () => " arm
+    at > 0i32 && capital_word (sm'::substring 0i32 at arm) && plain_call (tail_after (at + 11i32) arm)
+
+:~ typed_open () : string = " = (\\ () => "
+
+:~ typed_close (arm : string) : i32 = sm'::last_index_of ") : " arm
+
+:~ typed_body (arm : string) : string =
+    := from = sm'::index_of (typed_open ()) arm + 12i32
+    ? typed_close arm > from ?> sm'::substring from (typed_close arm - from) arm |: ""
+
+:~ typed_arm (arm : string) : bool =
+    := at = sm'::index_of (typed_open ()) arm
+    at > 0i32 && capital_word (sm'::substring 0i32 at arm) && plain_call (typed_body arm) && plain_call (tail_after (typed_close arm + 4i32) arm)
+
 :~ switch_arm (raw : string) : bool =
     := arm = sm'::trim raw
-    := at = sm'::index_of " = \\ () => " arm
-    at > 0i32 && capital_word (sm'::substring 0i32 at arm) && (sm'::length raw : i32) <= 120i32 && plain_call (tail_after (at + 11i32) arm)
+    (sm'::length raw : i32) <= 120i32 && (bare_arm arm || typed_arm arm)
 
 :~ flat_switch (body : list string) : flat_shape =
     ?= body ?|
@@ -166,13 +181,15 @@
     sm'::starts_with "| " arm && a > 0i32 && all_of identifier (sm'::split_list " " (sm'::substring 0i32 a rest)) && (sm'::length raw : i32) <= 120i32
     && target_call (tail_after (a + 6i32) rest)
 
+:~ run_target_head (t : string) : bool = (sm'::starts_with "run_target_args" t || sm'::starts_with "run_target " t) && sm'::ends_with "\\|" t
+
 :~ flat_run_target (body : list string) : flat_shape =
     ?= body ?|
     | [] => NotFlat
     | head :: rest =>
         := t = sm'::trim head
         := arms = non_blank rest
-        ? sm'::starts_with "run_target_args" t && sm'::ends_with "\\|" t && arms <> [] && all_of run_target_arm arms
+        ? run_target_head t && arms <> [] && all_of run_target_arm arms
         ?> Flat (t, listm::map sm'::trim arms)
         |: NotFlat
 
@@ -228,6 +245,34 @@
     starts_with_any [ "{"; "["; "("; ";[" ] bare && contains_any (logic_marks ()) bare = !-
     && application_in (0i32 - 1i32) (unicode::code_points bare) = !-
 
+:~ applied (text : string) : bool = application_in (0i32 - 1i32) (unicode::code_points text)
+
+:~ capital_start (s : string) : bool = ?= unicode::code_points s ?| c :: _ => c >= 65i32 && c <= 90i32 | [] => !-
+
+:~ constructor_term (nominals : list string) (text : string) : bool =
+    := bare = sm'::trim (listm::fold without_name (sm'::trim (without_literals "\"\"" text)) nominals)
+    capital_start bare && contains_any (logic_marks ()) bare = !- && applied bare = !-
+
+:~ scrutinee_line (l : string) : bool =
+    := t = sm'::trim l
+    sm'::starts_with "?= " t && sm'::ends_with " ?|" t && identifier (sm'::trim (sm'::replace " ?|" "" (tail_after 3i32 t)))
+
+:~ arm_count (lines : list string) : i32 = listm::fold (\ n (l : string) => ? sm'::starts_with "| " (sm'::trim l) ?> n + 1i32 |: n) 0i32 lines
+
+:~ bound_vars_only (rhs : string) : bool =
+    := t = sm'::trim rhs
+    t <> "" && capital_start t = !- && contains_any (logic_marks ()) t = !- && sm'::contains "\"" t = !- && applied t = !-
+
+:~ projection (body : list string) : bool =
+    ?= non_blank body ?|
+    | head :: rest =>
+        := arms = joined_lines rest
+        := at = sm'::index_of "=>" arms
+        scrutinee_line head && arm_count rest = 1i32 && at > 0i32 && bound_vars_only (tail_after (at + 2i32) arms)
+    | [] => !-
+
+:~ structural (nominals : list string) (body : list string) (text : string) : bool = constructor_term nominals text || projection body
+
 :~ template (text : string) : bool =
     := bare = without_literals "" text |> sm'::replace "++#" "" |> sm'::replace "^^" "" |> sm'::replace "(" "" |> sm'::replace ")" ""
     literal_pieces text <> [] && sm'::trim bare = ""
@@ -237,22 +282,96 @@
 :~ heaviest (tlds : tld_list) (texts : list string) : i32 =
     listm::fold (\ top t => ? weight_of tlds t > top ?> weight_of tlds t |: top) 0i32 texts
 
+:~ indent_of (l : string) : i32 = (sm'::length l : i32) - (sm'::length (sm'::trim_start [ ' ' ] l) : i32)
+
+:~ table_head (l : string) : bool =
+    := t = sm'::trim l
+    sm'::starts_with "backend_switch" t && sm'::ends_with "{" t || sm'::starts_with "run_target" t && sm'::ends_with "\\|" t
+
+:~ ^ table_split (before : list string) (lines : list string) : option (list string * list string) =
+    ?= lines ?|
+    | [] => None
+    | l :: rest => ? table_head l ?> Some (listm::rev before, lines) |: table_split (l :: before) rest
+
+:~ inside_table (depth : i32) (l : string) : bool = sm'::trim l = "" || indent_of l > depth
+
+:~ closes_table (depth : i32) (l : string) : bool = sm'::trim l = "}" && indent_of l = depth
+
+:~ table_stop (depth : i32) (taken : list string) (l : string) (rest : list string) : list string * list string =
+    ? closes_table depth l ?> (listm::rev (l :: taken), rest) |: (listm::rev taken, l :: rest)
+
+:~ ^ table_end (depth : i32) (taken : list string) (lines : list string) : list string * list string =
+    ?= lines ?|
+    | [] => (listm::rev taken, [])
+    | l :: rest => ? inside_table depth l ?> table_end depth (l :: taken) rest |: table_stop depth taken l rest
+
+:~ table_shape (head : string) (table : list string) : flat_shape =
+    ? sm'::starts_with "backend_switch" (sm'::trim head) ?> flat_switch (head :: table) |: flat_run_target (head :: table)
+
+:== flat_table = string * list string
+
+:== table_split_state = list string * list flat_table
+
+:~ shaped_step (kept : list string) (flats : list flat_table) (head : string) (rows : list string) (shape : flat_shape) : table_split_state =
+    ?= shape ?| Flat (h, arms) => (kept, (h, arms) :: flats) | NotFlat => (listm::append kept (head :: rows), flats)
+
+:~ stepped (kept : list string) (flats : list flat_table) (head : string) (rows : list string) (rest : list string) =
+    ?= shaped_step kept flats head rows (table_shape head rows) ?| f, t => (f, t, rest)
+
+:~ table_next (frame : list string) (flats : list flat_table) (prefix : list string) (head : string) (after : list string) =
+    ?= table_end (indent_of head) [] after ?| rows, rest => stepped (listm::append frame prefix) flats head rows rest
+
+:~ done_tables (frame : list string) (lines : list string) (flats : list flat_table) : table_split_state =
+    (listm::append frame lines, listm::rev flats)
+
+:~ ^ split_tables (ls : list string) (fr : list string) (fl : list flat_table) : table_split_state =
+    ?= table_split [] ls ?|
+    | Some (p, (h :: af)) => ?= table_next fr fl p h af ?| f, t, r => split_tables r f t
+    | _ => done_tables fr ls fl
+
+:~ flat_part (tlds : tld_list) (n : i32) (p : flat_table) : i32 = ?= p ?| h, arms => n + weight_of tlds h + heaviest tlds arms
+
+:~ framed (tlds : tld_list) (body : list string) (text : string) : i32 =
+    ?= split_tables body [] [] ?|
+    | _, [] => weight_of tlds text
+    | frame, flats => weight_of tlds (joined_lines frame) + listm::fold (flat_part tlds) 0i32 flats
+
+:~ flat_weight (tlds : tld_list) (h : string) (arms : list string) : i32 = weight_of tlds h + heaviest tlds arms
+
+:~ control_logic () : list string = [ "?= "; " ? "; "?> "; ":= "; "fun " ]
+
+:~ export_row (raw : string) : bool = sm'::starts_with "export \"" (sm'::trim raw) && contains_any (control_logic ()) raw = !-
+
+:~ digit_or_suffix (c : i32) : bool = c >= 48i32 && c <= 57i32 || c = 105i32
+
+:~ result_literal (raw : string) : bool = sm'::trim raw <> "" && all_of digit_or_suffix (unicode::code_points (sm'::trim raw))
+
+:~ export_rows (kept : list string) : list string =
+    ?= listm::rev kept ?| last :: rest => ? result_literal last ?> listm::rev rest |: kept | [] => []
+
+:~ flat_exports (body : list string) : flat_shape =
+    := rows = export_rows (non_blank body)
+    ? rows <> [] && all_of export_row rows ?> Flat ("", listm::map sm'::trim rows) |: NotFlat
+
+:~ exports_or_framed (tlds : tld_list) (body : list string) (text : string) : i32 =
+    ?= flat_exports body ?| Flat (h, arms) => flat_weight tlds h arms | NotFlat => framed tlds body text
+
 :~ shaped_weight (tlds : tld_list) (body : list string) (text : string) : i32 =
     ?= flat_dispatch body, flat_switch body, flat_run_target body ?|
-    | Flat (h, arms), _, _ => weight_of tlds h + heaviest tlds arms
-    | NotFlat, Flat (h, arms), _ => weight_of tlds h + heaviest tlds arms
-    | NotFlat, NotFlat, Flat (h, arms) => weight_of tlds h + heaviest tlds arms
-    | NotFlat, NotFlat, NotFlat => weight_of tlds text
+    | Flat (h, arms), _, _ => flat_weight tlds h arms
+    | NotFlat, Flat (h, arms), _ => flat_weight tlds h arms
+    | NotFlat, NotFlat, Flat (h, arms) => flat_weight tlds h arms
+    | NotFlat, NotFlat, NotFlat => exports_or_framed tlds body text
 
 :~ body_weight (tlds : tld_list) (nominals : list string) (body : list string) : i32 =
     := text = joined_lines body
-    ? data_literal nominals text ?> 0i32
+    ? data_literal nominals text || structural nominals body text ?> 0i32
     |? template text ?> heaviest tlds (literal_pieces text)
     |: shaped_weight tlds body text
 
 :~ ruled_weight (tlds : tld_list) (nominals : list string) (block : string) : i32 =
     := lines = undocumented (sm'::split_list "\n" block)
-    ? starts_with_any (type_heads ()) (joined_lines lines) ?> 0i32
+    ? starts_with_any (type_heads ()) (joined_lines lines) || declared_block block ?> 0i32
     |:
         ?= split_header lines ?|
         | Body body => body_weight tlds nominals body
@@ -260,7 +379,7 @@
 
 :~ body_kind (nominals : list string) (body : list string) : block_kind =
     := text = joined_lines body
-    ? data_literal nominals text ?> DataKind |? template text ?> TemplateKind |: CodeKind
+    ? data_literal nominals text || structural nominals body text ?> DataKind |? template text ?> TemplateKind |: CodeKind
 
 :~ classify (nominals : list string) (block : string) : block_kind =
     := lines = undocumented (sm'::split_list "\n" block)
@@ -269,24 +388,26 @@
     |? starts_with_any (type_heads ()) code ?> TypeKind
     |: ?= split_header lines ?| Body body => body_kind nominals body | NoHeader => CodeKind
 
-:~ ^ ruled_from (tlds : tld_list) (nominals : list string) (bs : list block) (k : i32) (acc : list finding) : list finding =
+:~ ^ ruled_from (tlds : tld_list) (nominals : list string) (bs : list block) (k : i32) (acc : list any_finding) : list any_finding =
     ?= bs ?|
     | [] => listm::rev acc
     | b :: rest =>
         := w = cell_weight (ruled_weight tlds nominals b::text)
         := limit = cell_limit k
-        := acc = ? weight_value w > weight_value limit ?> OverRuled { line = b::row; weight = w; limit = limit } :: acc |: acc
+        := acc = ? weight_value w > weight_value limit ?> ruled_finding { line = b::row; weight = w; limit = limit } :: acc |: acc
         ruled_from tlds nominals rest (k + 1i32) acc
 
-:~ ruled_over (tlds : tld_list) (nominals : list string) (source : string) : list finding =
+:~ ruled_over (tlds : tld_list) (nominals : list string) (source : string) : list any_finding =
     ruled_from tlds nominals (blocks source) 1i32 []
+
+:~ row_for (tlds : tld_list) (nominals : list string) (b : block) (k : i32) : kind_row =
+    := gap = ruled_weight tlds nominals b::text - weight_value (cell_limit k)
+    { kind = classify nominals b::text; over = gap > 0i32; excess = ? gap > 0i32 ?> gap |: 0i32 }
 
 :~ ^ kinds_from (tlds : tld_list) (nominals : list string) (bs : list block) (k : i32) (acc : list kind_row) : list kind_row =
     ?= bs ?|
     | [] => listm::rev acc
-    | b :: rest =>
-        := over = ruled_weight tlds nominals b::text > weight_value (cell_limit k)
-        kinds_from tlds nominals rest (k + 1i32) ({ kind = classify nominals b::text; over = over } :: acc)
+    | b :: rest => kinds_from tlds nominals rest (k + 1i32) (row_for tlds nominals b k :: acc)
 
 :~ kinds (tlds : tld_list) (nominals : list string) (source : string) : list kind_row = kinds_from tlds nominals (blocks source) 1i32 []
 
@@ -295,17 +416,21 @@
 :~ count_over_code (rows : list kind_row) : i32 =
     listm::fold (\ n (r : kind_row) => ? r::kind = CodeKind && r::over ?> n + 1i32 |: n) 0i32 rows
 
+:~ code_excess (rows : list kind_row) : i32 =
+    listm::fold (\ n (r : kind_row) => ? r::kind = CodeKind ?> n + r::excess |: n) 0i32 rows
+
 :~ tenths_text (over : i32) (code : i32) : string =
     := c = ? code < 1i32 ?> 1i32 |: code
     := tenths = (over * 2000i32 + c) / (2i32 * c)
     sm'::show (tenths / 10i32) ++# "." ++# sm'::show (tenths % 10i32)
 
+:~ code_text (code : i32) (over : i32) : string =
+    "cell-budget granular: code " ++# sm'::show code ++# " (over " ++# sm'::show over ++# ", " ++# tenths_text over code ++# "%), "
+
 :~ kinds_line (rows : list kind_row) : string =
-    := code = count_kind rows CodeKind
-    := over = count_over_code rows
     := rest = "data " ++# sm'::show (count_kind rows DataKind) ++# ", template " ++# sm'::show (count_kind rows TemplateKind)
     := more = ", type " ++# sm'::show (count_kind rows TypeKind) ++# ", test " ++# sm'::show (count_kind rows TestKind)
-    "cell-budget granular: code " ++# sm'::show code ++# " (over " ++# sm'::show over ++# ", " ++# tenths_text over code ++# "%), " ++# rest ++# more
+    code_text (count_kind rows CodeKind) (count_over_code rows) ++# rest ++# more ++# ", excess " ++# sm'::show (code_excess rows) ++# " (gated)"
 
 :~ nominal_of (line : string) : option string =
     := rest = tail_after 2i32 line
@@ -319,6 +444,60 @@
     sm'::split_list "\n" (sm'::replace "\r\n" "\n" source)
     |> listm::fold (\ acc line => ?= nominal_of line ?| Some n => n :: acc | None => acc) []
     |> listm::rev
+
+:~ wire_list (text : string) : list string = ? text = "" ?> [] |: sm'::split_list "\n" text
+
+:~ finding_kind (f : any_finding) : string =
+    ?= f ?|
+    | RewriteFinding (Rewritten r) => mark_name r::mark
+    | BudgetFinding _ => "over_budget"
+    | RuledFinding _ => "over_budget"
+
+:~ file_findings (tlds : tld_list) (granular : bool) (nominals : list string) (source : string) : list any_finding =
+    := over = ? granular ?> ruled_over tlds nominals source |: over_budget tlds source
+    listm::append (rewrites tlds source) over
+
+:~ findings_rows (tlds : tld_list) (granular : bool) (nominals : string) (path : string) (source : string) : string =
+    file_findings tlds granular (wire_list nominals) source
+    |> listm::map (\ (f : any_finding) => finding_kind f ++# "\t" ++# finding_line path f)
+    |> sm'::concat_list "\n"
+
+:~ kind_name (k : block_kind) : string =
+    ?= k ?|
+    | CodeKind => "code"
+    | DataKind => "data"
+    | TemplateKind => "template"
+    | TypeKind => "type"
+    | TestKind => "test"
+
+:~ kind_named (s : string) : block_kind =
+    ? s = "data" ?> DataKind |? s = "template" ?> TemplateKind |? s = "type" ?> TypeKind |? s = "test" ?> TestKind |: CodeKind
+
+:~ kind_rows (tlds : tld_list) (nominals : string) (source : string) : string =
+    kinds tlds (wire_list nominals) source
+    |> listm::map (\ (r : kind_row) => kind_name r::kind ++# (? r::over ?> "\t1\t" |: "\t0\t") ++# sm'::show r::excess)
+    |> sm'::concat_list "\n"
+
+:~ digits_value (s : string) : i32 = listm::fold (\ n c => ? c >= 48i32 && c <= 57i32 ?> n * 10i32 + (c - 48i32) |: n) 0i32 (unicode::code_points s)
+
+:~ row_of (name : string) (flag : string) (excess : i32) : kind_row = { kind = kind_named name; over = flag = "1"; excess = excess }
+
+:~ kind_row_of (line : string) : kind_row =
+    ?= sm'::split_list "\t" line ?|
+    | name :: flag :: e :: _ => row_of name flag (digits_value e)
+    | name :: flag :: _ => row_of name flag 0i32
+    | name :: _ => row_of name "0" 0i32
+    | _ => row_of "code" "0" 0i32
+
+:~ kinds_line_of_rows (rows : string) : string =
+    sm'::split_list "\n" rows |> listm'::filter (\ (l : string) => l <> "") |> listm::map kind_row_of |> kinds_line
+
+:~ nominals_wire (source : string) : string = declared_nominals source |> sm'::concat_list "\n"
+
+:~ findings_wire (granular : bool) (nominals : string) (path : string) (source : string) : string =
+    findings_rows Iana granular nominals path source
+
+:~ kind_rows_wire (nominals : string) (source : string) : string = kind_rows Iana nominals source
 
 :~ w (text : string) : i32 = weight_of (no_tlds ()) text
 
@@ -358,12 +537,36 @@
     := nested = "    backend_switch {\n        Gleam = \\ () => ? d ?> a |: b\n        Rust = \\ () => format_rust d\n    }"
     (ruled (format_head () ++# multi), ruled (format_head () ++# nested)) |> _assert_eq (w multi, w nested)
 
+:~ framed_switch () : string = "    := d = today ()\n" ++# switch_body () ++# "\n    d"
+
+:~ framed_expected () : i32 = w "    := d = today ()\n    d" + w "backend_switch {" + w "Python = \\ () => format_python_long_name d"
+
+///> rust
+///> gleam
+:# a_framed_flat_switch_counts_its_frame_lines_switch_line_and_longest_arm =
+    ruled (format_head () ++# framed_switch ()) |> _assert_eq (framed_expected ())
+
+:~ framed_multi () : string =
+    "    := d = today ()\n    backend_switch {\n        Gleam = \\ () =>\n            format_gleam d\n        Rust = \\ () => format_rust d\n    }\n    d"
+
+///> rust
+///> gleam
+:# a_framed_switch_with_a_multi_line_arm_counts_the_whole_body =
+    ruled (format_head () ++# framed_multi ()) |> _assert_eq (w (framed_multi ()))
+
 :~ target_arm (t : string) : string = "        | " ++# t ++# " => \\ var => get_env_" ++# sm'::to_lower t ++# " var"
 
 :~ target_arms () : list string =
     [ "Rust"; "Gleam"; "Python"; "Lua"; "Zig"; "C"; "Lean"; "Wasm"; "Kotlin"; "Swift" ] |> listm::map target_arm
 
 :~ target_head () : string = "    run_target_args (\\ () => var) \\|"
+
+:~ plain_target_expected () : i32 = w "run_target \\|" + heaviest (no_tlds ()) (listm::map sm'::trim (target_arms ()))
+
+///> rust
+///> gleam
+:# a_plain_run_target_head_counts_as_flat =
+    ruled (env_head () ++# joined_lines ("    run_target \\|" :: target_arms ())) |> _assert_eq (plain_target_expected ())
 
 ///> rust
 ///> gleam
@@ -443,9 +646,9 @@
 ///> rust
 ///> gleam
 :# the_granular_line_reports_the_code_over_share_beside_exempt_rows =
-    := row = \ (k : block_kind) (o : bool) => { kind = k; over = o }
-    [ row CodeKind !+; row CodeKind !-; row CodeKind !-; row CodeKind !-; row DataKind !-; row TemplateKind !-; row TestKind !+ ]
-    |> kinds_line |> _assert_eq "cell-budget granular: code 4 (over 1, 25.0%), data 1, template 1, type 0, test 1"
+    := row = \ (k : block_kind) (e : i32) => { kind = k; over = e > 0i32; excess = e }
+    [ row CodeKind 7i32; row CodeKind 0i32; row CodeKind 0i32; row CodeKind 0i32; row DataKind 0i32; row TemplateKind 0i32; row TestKind 5i32 ]
+    |> kinds_line |> _assert_eq "cell-budget granular: code 4 (over 1, 25.0%), data 1, template 1, type 0, test 1, excess 7 (gated)"
 
 ///> rust
 ///> gleam
@@ -459,3 +662,96 @@
 :# ruled_rules_hold_on_run_time_text =
     := suffix = env::get_environment_variable "CELLS_CELL_BUDGET_UNSET_SUFFIX"
     ruled (":= g (x : i32) : i32 = x + 1" ++# suffix) |> _assert_eq (w "x + 1")
+
+///> rust
+///> gleam
+:# findings_rows_carry_the_kind_then_the_reported_line =
+    := long = "inl b () =\n    \"" ++# sm'::replicate 300i32 "x" ++# "\""
+    := rows = findings_rows (no_tlds ()) !- "" "p.spi" ("see #tag\n\n" ++# long) |> sm'::split_list "\n"
+    (listm::length rows, listm::map (\ (r : string) => sm'::substring 0i32 (sm'::index_of "\t" r) r) rows, sm'::contains "\tp.spi:1:5: hashtag: #tag (" (sm'::concat_list "\n" rows))
+    |> _assert_eq (2i32, [ "hashtag"; "over_budget" ], !+)
+
+///> rust
+///> gleam
+:# granular_findings_measure_the_body_by_the_ruled_weight =
+    := flat = ":= g (x : i32) : i32 =\n    " ++# sm'::replicate 70i32 "1 + "  ++# "1"
+    (findings_rows (no_tlds ()) !- "" "p.spi" flat <> "", findings_rows (no_tlds ()) !+ "" "p.spi" flat <> "")
+    |> _assert_eq (!+, !+)
+
+///> rust
+///> gleam
+:# kind_rows_round_trip_into_the_granular_line =
+    := source = ":| color =\n    | Red\n\n:= g (x : i32) : i32 = x + 1\n\n:# a_test =\n    testing.expect !+ \"x\"\n"
+    kinds_line_of_rows (kind_rows (no_tlds ()) "" source) |> _assert_eq (kinds_line (kinds (no_tlds ()) [] source))
+
+///> rust
+///> gleam
+:# nominals_and_wire_lists_are_newline_joined =
+    (nominals_wire ":! meters = i32\n:! feet = i32\n:= x = 1", wire_list "", wire_list "a\nb") |> _assert_eq ("meters\nfeet", [], [ "a"; "b" ])
+
+///> rust
+///> gleam
+:# an_export_table_main_weighs_zero_and_a_stray_line_is_weighed =
+    (ruled (export_main ""), ruled (export_main "    := x = 1i32\n") > 0i32) |> _assert_eq (0i32, !+)
+
+:~ typed_switch () : string =
+    "    backend_switch `string `({}) {\n        Gleam = (\\ () => format_gleam d) : () -> string\n        Rust = (\\ () => format_rust d) : () -> string\n    }"
+
+///> rust
+///> gleam
+:# a_typed_switch_arm_counts_like_a_bare_one =
+    ruled (format_head () ++# typed_switch ()) |> _assert_eq (w "backend_switch `string `({}) {" + w "Gleam = (\\ () => format_gleam d) : () -> string")
+
+:~ typed_logic () : string = "    backend_switch {\n        Gleam = (\\ () => ? d ?> a |: b) : () -> string\n        Rust = (\\ () => format_rust d) : () -> string\n    }"
+
+///> rust
+///> gleam
+:# a_typed_arm_with_logic_in_its_body_is_not_flat =
+    ruled (format_head () ++# typed_logic ()) |> _assert_eq (w (typed_logic ()))
+
+:~ table_weight () : i32 = w "backend_switch {" + w "Python = \\ () => format_python_long_name d"
+
+///> rust
+///> gleam
+:# every_flat_switch_in_a_definition_is_exempt =
+    ruled (format_head () ++# switch_body () ++# "\n    := e = d\n" ++# switch_body ()) |> _assert_eq (w "    := e = d" + table_weight () + table_weight ())
+
+///> rust
+///> gleam
+:# excess_survives_the_kind_row_wire =
+    := a = kind_row_of "code\t1\t15"
+    := b = kind_row_of "code\t0\t0"
+    := c = kind_row_of "test\t1\t3"
+    (a::excess, b::over, c::excess) |> _assert_eq (15i32, !-, 3i32)
+
+:~ export_table () : string = ":= main () : i32 =\n    export \"a\" ((\\ x => m::a x) : i32 -> i32)\n    export \"bb\" ((\\ x => m::bb x) : i32 -> i32)\n    0i32"
+
+///> rust
+///> gleam
+:# a_flat_export_table_weighs_as_its_longest_row =
+    ruled (export_table ()) |> _assert_eq (w "export \"bb\" ((\\ x => m::bb x) : i32 -> i32)")
+
+:~ logic_table () : string = "    export \"a\" ((\\ x => m::a x) : i32 -> i32)\n    export \"b\" ((\\ x => ? x > 0i32 ?> 1i32 |: 0i32) : i32 -> i32)"
+
+///> rust
+///> gleam
+:# an_export_row_with_logic_makes_the_table_weigh_in_full =
+    ruled (":= main () : i32 =\n" ++# logic_table ()) |> _assert_eq (w (logic_table ()))
+
+///> gleam
+:# a_constructor_over_bare_values_weighs_nothing =
+    (ruled ":= wrap (a : i32) (b : i32) : pair =\n    Pair (a, b)", ruled ":= three () : nat =\n    Succ (Succ (Succ Zero))") |> _assert_eq (0i32, 0i32)
+
+///> gleam
+:# a_constructor_over_a_call_still_counts =
+    (ruled ":= wrap (a : i32) : pair =\n    Pair (twice a, a)" > 0i32) |> _assert_eq !+
+
+///> gleam
+:# a_one_arm_projection_weighs_nothing =
+    ruled ":= inputs (x : box) : i32 * i32 =\n    ?= x ?|\n    | Box (_, a, b) =>\n        a, b" |> _assert_eq 0i32
+
+///> gleam
+:# a_projection_that_computes_or_has_two_arms_counts =
+    := computes = ruled ":= total (x : box) : i32 =\n    ?= x ?|\n    | Box (_, a, b) =>\n        add a b"
+    := two = ruled ":= pick (x : opt) : i32 =\n    ?= x ?|\n    | Some a => a\n    | None => zero"
+    (computes > 0i32, two > 0i32) |> _assert_eq (!+, !+)

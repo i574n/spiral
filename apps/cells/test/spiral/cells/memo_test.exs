@@ -1,12 +1,9 @@
 defmodule Spiral.Cells.MemoTest do
   use ExUnit.Case, async: true
 
-  alias Spiral.Cells.{Memo, SourceBlocks}
+  alias Spiral.Cells.Domain
 
-  defp bounds(program) do
-    {:ok, bounds} = SourceBlocks.of_texts([], [program])
-    bounds
-  end
+  defp bounds(program), do: Spiral.Cells.Domain.memo_rows_of_texts(Spiral.Cells.Domain.tool("dotnet", []) || "", Spiral.Cells.Domain.tool("compiler_dll", []) || "", [program])
 
   setup do
     dir = Spiral.Cells.TestHelpers.tmp_dir!("memo")
@@ -17,7 +14,7 @@ defmodule Spiral.Cells.MemoTest do
     File.write!(Path.join(package, "sub/inner.spi"), "inl b () = 2i32\n")
     File.write!(Path.join(package, "unlisted.spi"), "inl c () = 3i32\n")
     step = %{program: "///- --package #{package}\n\ninl main () = listed.a () + sub.inner.b ()\n", real: ""}
-    key = fn -> Memo.key(Memo.context([memo: true, memo_dir: Path.join(dir, "memo")], [step]), step, []) end
+    key = fn -> Domain.memo_key(Domain.memo_context([memo: true, memo_dir: Path.join(dir, "memo")], [step]), step, []) end
     %{package: package, key: key}
   end
 
@@ -51,7 +48,7 @@ defmodule Spiral.Cells.MemoTest do
 
   test "the listed modules are read from package.spiproj, folders included", %{package: package} do
     project = File.read!(Path.join(package, "package.spiproj"))
-    assert Enum.map(Memo.module_files(package, project), &Path.relative_to(&1, package)) == ["listed.spi", "sub/inner.spi"]
+    assert Enum.map(Domain.memo_module_files(package, project), &Path.relative_to(&1, package)) == ["listed.spi", "sub/inner.spi"]
   end
 
   test "nested folders resolve like lib/spiral's leptos/svg and near/wallet/src", %{package: package} do
@@ -60,12 +57,12 @@ defmodule Spiral.Cells.MemoTest do
     File.write!(Path.join(package, "a/top.spi"), "")
     File.write!(Path.join(package, "after.spi"), "")
     project = "modules:\n    a/\n        b/\n            c/\n                deep\n        top\n    after\n"
-    assert Enum.map(Memo.module_files(package, project), &Path.relative_to(&1, package)) == ["a/b/c/deep.spi", "a/top.spi", "after.spi"]
+    assert Enum.map(Domain.memo_module_files(package, project), &Path.relative_to(&1, package)) == ["a/b/c/deep.spi", "a/top.spi", "after.spi"]
   end
 
   test "every module the spiral library lists resolves to a file" do
     lib = Path.expand("../../../../../lib/spiral", __DIR__)
-    project = Spiral.Cells.Manifest.read!(lib)
+    project = Spiral.Cells.Domain.manifest_read!(lib)
     entries =
       project
       |> String.replace("\r\n", "\n")
@@ -76,7 +73,7 @@ defmodule Spiral.Cells.MemoTest do
       |> Enum.reject(&(&1 == "" or String.ends_with?(&1, "/")))
       |> Enum.map(&(&1 |> String.trim_trailing("-") |> String.trim_trailing("*")))
 
-    resolved = lib |> Memo.module_files(project) |> Enum.map(&Path.rootname(Path.basename(&1)))
+    resolved = lib |> Domain.memo_module_files(project) |> Enum.map(&Path.rootname(Path.basename(&1)))
     assert entries != []
     assert Enum.reject(entries, &(&1 in resolved)) == []
   end
@@ -85,7 +82,7 @@ defmodule Spiral.Cells.MemoTest do
     dll = Path.join(package, "SpiralCompiler.dll")
     File.write!(dll, "dll")
     step = %{program: "inl main () = 0i32\n", real: ""}
-    key = fn spelled -> Memo.key(Memo.context([memo: true, compiler_dll: spelled], [step]), step, []) end
+    key = fn spelled -> Domain.memo_key(Domain.memo_context([memo: true, compiler_dll: spelled], [step]), step, []) end
     windows = String.replace(dll, "/", "\\")
     assert key.(dll) == key.(if(match?({:win32, _}, :os.type()), do: String.upcase(windows), else: dll))
   end
@@ -95,7 +92,7 @@ defmodule Spiral.Cells.MemoTest do
     File.write!(dll, "host")
     File.write!(core, "core one")
     step = %{program: "inl main () = 0i32\n", real: ""}
-    key = fn -> Memo.key(Memo.context([memo: true, compiler_dll: dll], [step]), step, []) end
+    key = fn -> Domain.memo_key(Domain.memo_context([memo: true, compiler_dll: dll], [step]), step, []) end
     before = key.()
     File.write!(core, "core two")
     refute key.() == before
@@ -107,7 +104,7 @@ defmodule Spiral.Cells.MemoTest do
     File.write!(core, "core one")
     spelled = if match?({:win32, _}, :os.type()), do: String.replace(dll, "/", "\\"), else: dll
     step = %{program: "inl main () = 0i32\n", real: ""}
-    key = fn -> Memo.key(Memo.context([memo: true, compiler_dll: spelled], [step]), step, []) end
+    key = fn -> Domain.memo_key(Domain.memo_context([memo: true, compiler_dll: spelled], [step]), step, []) end
     before = key.()
     File.write!(core, "core two")
     refute key.() == before
@@ -117,10 +114,10 @@ defmodule Spiral.Cells.MemoTest do
     core = Path.join(package, "SpiralCompilerCore.dll")
     File.write!(dll, "host")
     File.write!(core, "core one")
-    first = Memo.compiler_binaries_print(dll)
-    assert Memo.compiler_binaries_print(dll) == first
+    first = Domain.memo_compiler_binaries_print(dll)
+    assert Domain.memo_compiler_binaries_print(dll) == first
     File.write!(core, "core two")
-    refute Memo.compiler_binaries_print(dll) == first
+    refute Domain.memo_compiler_binaries_print(dll) == first
   end
 
   test "a backslash-spelled dir still finds its entries, so prune and the compiler print see every file" do
@@ -128,13 +125,13 @@ defmodule Spiral.Cells.MemoTest do
     File.mkdir_p!(Path.join(dir, "ab"))
     File.write!(Path.join([dir, "ab", "k.etf"]), "x")
     spelled = if match?({:win32, _}, :os.type()), do: String.replace(dir, "/", "\\"), else: dir
-    assert [found] = Memo.glob(spelled, "*/*.etf")
+    assert [found] = Domain.memo_glob(spelled, "*/*.etf")
     assert Path.basename(found) == "k.etf"
   end
 
   test "the same compiler binaries key the same from another folder and with other timestamps", %{package: package} do
     step = %{program: "inl main () = 0i32\n", real: ""}
-    key = fn dir -> Memo.key(Memo.context([memo: true, compiler_dll: Path.join(dir, "SpiralCompiler.dll")], [step]), step, []) end
+    key = fn dir -> Domain.memo_key(Domain.memo_context([memo: true, compiler_dll: Path.join(dir, "SpiralCompiler.dll")], [step]), step, []) end
     first = Path.join(package, "first")
     second = Path.join(package, "second")
     for dir <- [first, second] do
@@ -146,7 +143,7 @@ defmodule Spiral.Cells.MemoTest do
     assert key.(first) == key.(second)
   end
   test "Cells's identity covers the modules that shape a result, not the editor or report ones" do
-    modules = Memo.result_path_modules()
+    modules = Domain.memo_result_path_modules()
     assert Spiral.Cells.Targets in modules
     assert Spiral.Cells.Notebook in modules
     refute Spiral.Cells.SmartCell in modules
@@ -159,28 +156,28 @@ defmodule Spiral.Cells.MemoTest do
     run = fn result -> fn -> :counters.add(counter, 1, 1); result end end
     chunk = {:ok, %{target: "rust", stdout: "49\n", exit_status: 0}}
 
-    assert {^chunk, :miss} = Memo.code_result(opts, ["rust", "fn main() {}"], run.(chunk))
-    assert {^chunk, :hit} = Memo.code_result(opts, ["rust", "fn main() {}"], run.(chunk))
-    assert {^chunk, :miss} = Memo.code_result(opts, ["rust", "fn main() { 1; }"], run.(chunk))
-    assert {{:error, :boom}, :miss} = Memo.code_result(opts, ["rust", "broken"], run.({:error, :boom}))
-    assert {{:error, :boom}, :miss} = Memo.code_result(opts, ["rust", "broken"], run.({:error, :boom}))
-    assert {^chunk, :off} = Memo.code_result([memo: false, memo_dir: dir], ["rust", "fn main() {}"], run.(chunk))
+    assert {^chunk, :miss} = Domain.memo_code_result(opts, ["rust", "fn main() {}"], run.(chunk))
+    assert {^chunk, :hit} = Domain.memo_code_result(opts, ["rust", "fn main() {}"], run.(chunk))
+    assert {^chunk, :miss} = Domain.memo_code_result(opts, ["rust", "fn main() { 1; }"], run.(chunk))
+    assert {{:error, :boom}, :miss} = Domain.memo_code_result(opts, ["rust", "broken"], run.({:error, :boom}))
+    assert {{:error, :boom}, :miss} = Domain.memo_code_result(opts, ["rust", "broken"], run.({:error, :boom}))
+    assert {^chunk, :off} = Domain.memo_code_result([memo: false, memo_dir: dir], ["rust", "fn main() {}"], run.(chunk))
     assert :counters.get(counter, 1) == 5
   end
   test "a definition the program never reaches can change without changing the key; a reached one changes it" do
     step = fn unused, used -> %{program: "open testing\ninl helper () = #{used}\ninl unused () = #{unused}\ninl spiral_cells_test () =\n    helper () |> _assert_eq 1i32\nspiral_cells_test ()\n0i32\n", real: ""} end
-    key = fn s -> Memo.key(Memo.context([memo: true, memo_dir: Spiral.Cells.TestHelpers.tmp_dir!("reach")], [s]), s, []) end
+    key = fn s -> Domain.memo_key(Domain.memo_context([memo: true, memo_dir: Spiral.Cells.TestHelpers.tmp_dir!("reach")], [s]), s, []) end
     first = key.(step.("1i32", "1i32"))
     assert key.(step.("2i32", "1i32")) == first
     refute key.(step.("1i32", "3i32")) == first
     program = step.("2i32", "1i32").program
-    assert Memo.reached_program(program, bounds(program)) =~ "inl helper"
-    refute Memo.reached_program(program, bounds(program)) =~ "inl unused"
+    assert Domain.memo_reached_program(program, bounds(program)) =~ "inl helper"
+    refute Domain.memo_reached_program(program, bounds(program)) =~ "inl unused"
   end
 
   test "instances and comments do not hide a dependency: instances are always kept, // inside strings is not a comment" do
     program = "instance equable thing = fun a b => true\ninl url () = \"https://x//y\" |> fun _ => helper ()\ninl helper () = 1i32\ninl spiral_cells_test () = url ()\nspiral_cells_test ()\n"
-    reached = Memo.reached_program(program, bounds(program))
+    reached = Domain.memo_reached_program(program, bounds(program))
     assert reached =~ "instance equable"
     assert reached =~ "inl helper"
   end
@@ -190,7 +187,7 @@ defmodule Spiral.Cells.MemoTest do
     File.write!(Path.join(package, "other.spi"), "inl o () = 1i32\n")
     File.write!(Path.join(package, "implicit.spi"), "instance equable thing = fun x y => true\n")
     step = %{program: "///- --package #{package}\n\ninl main () = a ()\n", real: ""}
-    key = fn -> Memo.key(Memo.context([memo: true, memo_dir: Path.join(package, "memo")], [step]), step, []) end
+    key = fn -> Domain.memo_key(Domain.memo_context([memo: true, memo_dir: Path.join(package, "memo")], [step]), step, []) end
     first = key.()
     File.write!(Path.join(package, "other.spi"), "inl o () = 2i32\n")
     File.write!(Path.join(package, "sub/inner.spi"), "inl b () = 9i32\n")
@@ -204,29 +201,29 @@ defmodule Spiral.Cells.MemoTest do
   test "a test body bound to _ (no trailing assertion) is part of the key, so two such tests never share a result" do
     key = fn body ->
       step = %{program: "inl cols () = 1i32\ninl lines () = 2i32\ninl spiral_cells_test () =\n    #{body}\ninl _ = spiral_cells_test ()\n0i32\n", real: ""}
-      Memo.key(Memo.context([memo: true, memo_dir: Spiral.Cells.TestHelpers.tmp_dir!("discard")], [step]), step, [])
+      Domain.memo_key(Domain.memo_context([memo: true, memo_dir: Spiral.Cells.TestHelpers.tmp_dir!("discard")], [step]), step, [])
     end
 
     refute key.("cols () |> console.write_line") == key.("lines () |> console.write_line")
     discarded = "inl f () = 1i32\ninl _ = f ()\n0i32\n"
-    assert Memo.reached_program(discarded, bounds(discarded)) =~ "inl f () = 1i32"
+    assert Domain.memo_reached_program(discarded, bounds(discarded)) =~ "inl f () = 1i32"
   end
   test "the step keyed on the whole source changes with any definition, so an edit that only breaks unreached code still compiles once" do
     program = fn unused -> "inl helper () = 1i32\ninl unused () = #{unused}\ninl spiral_cells_test () = helper ()\nspiral_cells_test ()\n" end
-    context = fn step -> Memo.context([memo: true, memo_dir: Spiral.Cells.TestHelpers.tmp_dir!("whole")], [step]) end
-    reached = fn unused -> step = %{program: program.(unused), real: ""}; Memo.key(context.(step), step, []) end
-    whole = fn unused -> step = %{program: program.(unused), real: "", whole_source_key: true}; Memo.key(context.(step), step, []) end
+    context = fn step -> Domain.memo_context([memo: true, memo_dir: Spiral.Cells.TestHelpers.tmp_dir!("whole")], [step]) end
+    reached = fn unused -> step = %{program: program.(unused), real: ""}; Domain.memo_key(context.(step), step, []) end
+    whole = fn unused -> step = %{program: program.(unused), real: "", whole_source_key: true}; Domain.memo_key(context.(step), step, []) end
     assert reached.("1i32") == reached.("(")
     refute whole.("1i32") == whole.("(")
   end
   test "a context without source bounds keys on whole sources, never meets a bounded run's keys, and says so in the report" do
     step = %{program: "inl helper () = 1i32\ninl unused () = 2i32\ninl spiral_cells_test () = helper ()\nspiral_cells_test ()\n", real: ""}
-    bounded = Memo.context([memo: true, memo_dir: Spiral.Cells.TestHelpers.tmp_dir!("bounded")], [step])
+    bounded = Domain.memo_context([memo: true, memo_dir: Spiral.Cells.TestHelpers.tmp_dir!("bounded")], [step])
     unbounded = %{bounded | bounds: :unavailable}
-    refute Memo.whole_keys?(bounded)
-    assert Memo.whole_keys?(unbounded)
-    refute Memo.whole_keys?(nil)
-    refute Memo.key(unbounded, step, []) == Memo.key(bounded, step, [])
+    refute Domain.memo_whole_keys(bounded)
+    assert Domain.memo_whole_keys(unbounded)
+    refute Domain.memo_whole_keys(nil)
+    refute Domain.memo_key(unbounded, step, []) == Domain.memo_key(bounded, step, [])
     assert Spiral.Cells.Notebook.with_whole_memo_keys(%{"tests" => []}, true)["memo_keys"] == "whole"
     refute Map.has_key?(Spiral.Cells.Notebook.with_whole_memo_keys(%{"tests" => []}, false), "memo_keys")
   end
@@ -237,7 +234,7 @@ defmodule Spiral.Cells.MemoTest do
 
     key_of = fn body ->
       step = %{program: "///- --package #{package}\n\n#{body}\n", real: ""}
-      fn -> Memo.key(Memo.context([memo: true, memo_dir: Path.join(package, "memo")], [step]), step, []) end
+      fn -> Domain.memo_key(Domain.memo_context([memo: true, memo_dir: Path.join(package, "memo")], [step]), step, []) end
     end
 
     edit_other = fn value -> File.write!(Path.join(package, "other.spi"), "inl a () = #{value}i32\ninl slice () = #{value}i32\n") end
@@ -259,7 +256,7 @@ defmodule Spiral.Cells.MemoTest do
 
     key_of = fn body ->
       step = %{program: "///- --package #{package}\n\n#{body}\n", real: ""}
-      fn -> Memo.key(Memo.context([memo: true, memo_dir: Path.join(package, "memo")], [step]), step, []) end
+      fn -> Domain.memo_key(Domain.memo_context([memo: true, memo_dir: Path.join(package, "memo")], [step]), step, []) end
     end
 
     edit_other = fn value -> File.write!(Path.join(package, "other.spi"), ":= a () = #{value}i32\n:= slice () = #{value}i32\n") end
@@ -277,7 +274,7 @@ defmodule Spiral.Cells.MemoTest do
   test "inserting an unreached definition between reached ones in a package module keeps the key", %{package: package} do
     File.write!(Path.join(package, "listed.spi"), "inl a () = 1i32\ninl z () = a ()\n")
     step = %{program: "///- --package #{package}\n\ninl main () = z ()\n", real: ""}
-    key = fn -> Memo.key(Memo.context([memo: true, memo_dir: Path.join(package, "memo")], [step]), step, []) end
+    key = fn -> Domain.memo_key(Domain.memo_context([memo: true, memo_dir: Path.join(package, "memo")], [step]), step, []) end
     first = key.()
     File.write!(Path.join(package, "listed.spi"), "inl a () = 1i32\ninl inserted () = (\ninl z () = a ()\n")
     assert key.() == first
@@ -287,7 +284,7 @@ defmodule Spiral.Cells.MemoTest do
 
   test "block boundaries come from the compiler: column-0 lines inside a triple-quoted string belong to its definition" do
     program = "inl text () =\n    \"\"\"\nnot a statement: inl fake () = 0i32\n\"\"\"\ninl spiral_cells_test () = 1i32\nspiral_cells_test ()\n"
-    reached = Memo.reached_program(program, bounds(program))
+    reached = Domain.memo_reached_program(program, bounds(program))
     refute reached =~ "inl text"
     refute reached =~ "not a statement"
     assert reached =~ "inl spiral_cells_test"
@@ -295,7 +292,7 @@ defmodule Spiral.Cells.MemoTest do
 
   test "directive and comment lines stay in the key while an unreached definition is dropped" do
     program = "///- --timeout 5000\n// note\ninl unused () = 2i32\ninl spiral_cells_test () = 1i32\nspiral_cells_test ()\n"
-    reached = Memo.reached_program(program, bounds(program))
+    reached = Domain.memo_reached_program(program, bounds(program))
     assert reached =~ "///- --timeout 5000"
     refute reached =~ "inl unused"
   end
@@ -305,60 +302,46 @@ defmodule Spiral.Cells.MemoTest do
     dll = Path.join(dir, "SpiralCompiler.dll")
     File.write!(dll, "not a compiler")
     step = fn unused -> %{program: "inl helper () = 1i32\ninl unused () = #{unused}\ninl spiral_cells_test () = helper ()\nspiral_cells_test ()\n", real: ""} end
-    key = fn s -> Memo.key(Memo.context([memo: true, memo_dir: Path.join(dir, "memo"), compiler_dll: dll], [s]), s, []) end
+    key = fn s -> Domain.memo_key(Domain.memo_context([memo: true, memo_dir: Path.join(dir, "memo"), compiler_dll: dll], [s]), s, []) end
     refute key.(step.("1i32")) == key.(step.("2i32"))
-    assert Memo.reached_program("inl a () = 1i32\n", :unavailable) == "inl a () = 1i32\n"
+    assert Domain.memo_reached_program("inl a () = 1i32\n", :unavailable) == "inl a () = 1i32\n"
   end
 
   test "source-block bounds are stored once and reused when the same compiler cannot answer later" do
     dir = Spiral.Cells.TestHelpers.tmp_dir!("bounds_cache")
     memo = Path.join(dir, "memo")
     step = %{program: "inl helper () = 1i32\ninl unused () = 2i32\ninl spiral_cells_test () = helper ()\nspiral_cells_test ()\n", real: ""}
-    real_dll = Spiral.Cells.Toolchain.compiler_dll([])
-    answered = Memo.context([memo: true, memo_dir: memo, compiler_dll: real_dll], [step])
+    real_dll = Spiral.Cells.Domain.tool("compiler_dll", [])
+    answered = Domain.memo_context([memo: true, memo_dir: memo, compiler_dll: real_dll], [step])
     refute answered.bounds == :unavailable
     silent = Path.join(dir, "silent")
     File.mkdir_p!(silent)
     for name <- ["SpiralCompiler.dll", "SpiralCompilerCore.dll"], do: File.cp!(Path.join(Path.dirname(real_dll), name), Path.join(silent, name))
-    refute SourceBlocks.available?(compiler_dll: Path.join(silent, "SpiralCompiler.dll"))
-    reused = Memo.context([memo: true, memo_dir: memo, compiler_dll: Path.join(silent, "SpiralCompiler.dll")], [step])
+    refute Spiral.Cells.Domain.host_has(Spiral.Cells.Domain.tool("dotnet", []) || "", Path.join(silent, "SpiralCompiler.dll"), "source-blocks")
+    reused = Domain.memo_context([memo: true, memo_dir: memo, compiler_dll: Path.join(silent, "SpiralCompiler.dll")], [step])
     assert reused.bounds == answered.bounds
-    assert Memo.key(reused, step, []) == Memo.key(answered, step, [])
+    assert Domain.memo_key(reused, step, []) == Domain.memo_key(answered, step, [])
   end
   test "bounds read once in this BEAM survive a cleared memo dir, so later notebooks skip the per-text memo reads" do
     dir = Spiral.Cells.TestHelpers.tmp_dir!("bounds_in_memory")
     memo = Path.join(dir, "memo")
     step = %{program: "inl kept () = 3i32\ninl dropped () = 4i32\ninl spiral_cells_test () = kept ()\nspiral_cells_test ()\n", real: ""}
-    real_dll = Spiral.Cells.Toolchain.compiler_dll([])
-    answered = Memo.context([memo: true, memo_dir: memo, compiler_dll: real_dll], [step])
+    real_dll = Spiral.Cells.Domain.tool("compiler_dll", [])
+    answered = Domain.memo_context([memo: true, memo_dir: memo, compiler_dll: real_dll], [step])
     refute answered.bounds == :unavailable
     File.rm_rf!(memo)
     silent = Path.join(dir, "silent")
     File.mkdir_p!(silent)
     for name <- ["SpiralCompiler.dll", "SpiralCompilerCore.dll"], do: File.cp!(Path.join(Path.dirname(real_dll), name), Path.join(silent, name))
-    reused = Memo.context([memo: true, memo_dir: memo, compiler_dll: Path.join(silent, "SpiralCompiler.dll")], [step])
+    reused = Domain.memo_context([memo: true, memo_dir: memo, compiler_dll: Path.join(silent, "SpiralCompiler.dll")], [step])
     assert reused.bounds == answered.bounds
   end
 
-  test "source-blocks rows group by input and skip headerless blocks" do
-    rows = "1\t1\t2\t3\t4\tinl a () =\n1\t5\t0\t0\t6\t\n2\t1\t1\t1\t1\ttest x =\n"
-    assert Enum.map(["1", "2", "3"], &Spiral.Cells.Domain.source_input_rows(rows, &1)) == ["2\t4\tinl a () =", "1\t1\ttest x =", ""]
-  end
-
-  test "a split keeps each block's lines, drops test blocks, and gives a block past the end no lines" do
-    rows = "1\t2\t:= a =\n3\t3\t:# t =\n4\t4\ttest_ok =\n9\t9\t:= g ="
-    assert SourceBlocks.split(":= a =\n 1\n:# t =\ntest_ok", rows) == [
-             %{header_text: ":= a =", lines: [":= a =", " 1"]},
-             %{header_text: "test_ok =", lines: ["test_ok"]},
-             %{header_text: ":= g =", lines: []}
-           ]
-  end
-
   test "a stub option only turns the memo off when it is set, so a nil build_receipt keeps notebook runs memoized" do
-    assert Memo.enabled?(build_receipt: nil, target: nil, compile: nil)
-    refute Memo.enabled?(build_receipt: "receipt.txt")
-    refute Memo.enabled?(compile: fn _ -> {:ok, ""} end)
-    refute Memo.enabled?(memo: false, build_receipt: nil)
-    assert Memo.enabled?(memo: true, compile: fn _ -> {:ok, ""} end)
+    assert Domain.memo_on(build_receipt: nil, target: nil, compile: nil)
+    refute Domain.memo_on(build_receipt: "receipt.txt")
+    refute Domain.memo_on(compile: fn _ -> {:ok, ""} end)
+    refute Domain.memo_on(memo: false, build_receipt: nil)
+    assert Domain.memo_on(memo: true, compile: fn _ -> {:ok, ""} end)
   end
 end

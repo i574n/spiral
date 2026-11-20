@@ -1,7 +1,7 @@
 defmodule Spiral.Cells.TargetAuditTest do
   use ExUnit.Case, async: false
 
-  alias Spiral.Cells.{Document, Notebook}
+  alias Spiral.Cells.{Domain, Notebook}
 
   @moduletag :target_audit
   @moduletag timeout: 3_600_000
@@ -48,7 +48,7 @@ defmodule Spiral.Cells.TargetAuditTest do
 
   test "every target fails a failing assertion with its text and passes its twin, or is unsupported; never a false pass" do
     dir = Spiral.Cells.TestHelpers.tmp_dir!("target_audit")
-    doc = Document.parse_spi(audit_source(), "")
+    doc = Domain.parse_spi_doc(audit_source(), "")
     evaluation = Notebook.evaluate(doc, spiral_lib: @lib, root: dir, plan: :tests, memo: false, timeout: 900_000)
     rows = Map.new(evaluation.report["tests"], &{&1["name"], &1})
 

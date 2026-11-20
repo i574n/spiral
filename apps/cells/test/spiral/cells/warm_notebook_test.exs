@@ -44,7 +44,7 @@ defmodule Spiral.Cells.WarmNotebookTest do
     other = JSON.encode!(%{"args" => ["--path", "x.spi"], "root" => @root, "dll" => __ENV__.file})
     assert {["stale\tthe daemon serves another compiler build: " <> _], :keep} = CompilerDaemon.notebook_reply(other)
 
-    own = JSON.encode!(%{"args" => ["--export-only"], "root" => @root, "dll" => Spiral.Cells.Toolchain.compiler_dll([])})
+    own = JSON.encode!(%{"args" => ["--export-only"], "root" => @root, "dll" => Spiral.Cells.Domain.tool("compiler_dll", [])})
     assert {["error\t" <> _, "end\t1"], :keep} = CompilerDaemon.notebook_reply(own)
   end
 

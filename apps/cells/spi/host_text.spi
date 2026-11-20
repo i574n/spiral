@@ -36,12 +36,16 @@
     ? k < 0i32
     ?> -1i32
     |? d > b && e > d && text::starts_at s e " kB"
-    ?>
-        := kb = erlang_term::apply "erlang" "binary_to_integer" [ erlang_term::of (text::slice_len s d (e - d)) ]
-        erlang_term::apply "erlang" "div" [ kb; erlang_term::of 1024i32 ] |> erlang_term::cast
+    ?> erlang_term::apply "erlang" "binary_to_integer" [ erlang_term::of (text::slice_len s d (e - d)) ] |> erlang_term::cast
     |: mem_available_from s (k + 1i32)
 
-:= mem_available_mb (meminfo : string) : i32 = mem_available_from meminfo 0i32
+:= mem_available_kb (meminfo : string) : i32 = mem_available_from meminfo 0i32
+
+:= mem_available_mb (meminfo : string) : i32 =
+    := kb = mem_available_kb meminfo
+    ? kb < 0i32
+    ?> -1i32
+    |: kb / 1024i32
 
 :~ ^ line_end (s : string) (i : i32) : i32 = ? i >= len s || byte s i = 10i32 ?> i |: line_end s (i + 1i32)
 
@@ -102,6 +106,7 @@
     mem_available_mb "MemAvailable: 4096kB" |> _assert_eq (-1i32)
     mem_available_mb "MemTotal: 5 kB\nMemAvailable: 0 kB" |> _assert_eq 0i32
     mem_available_mb "xMemAvailable: 3072 kB" |> _assert_eq 3i32
+    (mem_available_kb "MemAvailable: 4000001 kB", mem_available_kb "MemAvailable: 4096kB", mem_available_kb "none") |> _assert_eq (4000001i32, -1i32, -1i32)
     directive_timeout "  ///- x --timeout 30" |> _assert_eq "30"
     directive_timeout "///- --timeout 30 --timeout 45" |> _assert_eq "45"
     directive_timeout "///- --timeout\n\n 12" |> _assert_eq "12"

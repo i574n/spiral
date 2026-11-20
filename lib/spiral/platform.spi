@@ -83,7 +83,7 @@
 
 := gleam_os_command_output (command : string) : string =
     := output = erlang_term::apply "os" "cmd" [ erlang_term::charlist command ]
-    erlang_term::apply "unicode" "characters_to_binary" [ output ] |> erlang_term::cast
+    erlang_term::charlist_text output
 
 := os_command_output (command : string) : string =
     run_target \|

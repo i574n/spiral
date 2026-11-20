@@ -1,0 +1,112 @@
+///- --package .
+:< erlang_term
+:< sm'_operators
+
+:# slots_server static =
+    :< testing
+
+:~ name () : string = "spiral_cells_slots"
+
+:~ schedulers () : i32 = apply "erlang" "system_info" [ atom "schedulers_online" ] |> cast
+
+:~ configured () : i32 =
+    := v = apply "application" "get_env" [ atom "spiral_cells"; atom "jobs" ]
+    ? has_tag "ok" v ?> (cast (element_at 2i32 v) : i32) |: daemon_pool::default_slots (schedulers ())
+
+:~ bad_jobs (raw : string) : i32 =
+    := message = "SPIRAL_CELLS_JOBS must be a positive integer, got: " ++# inspect (of raw)
+    apply "erlang" "error" [ builder_calls::argument_error message ] |> cast
+
+:~ jobs_limit () : i32 =
+    := raw = toolchain::beam_env "SPIRAL_CELLS_JOBS"
+    := n = daemon_pool::slots_limit raw (configured ())
+    ? n = -1i32 ?> bad_jobs raw |: n
+
+:~ grant_all (grants : term) : () = listm::iter (\ (w : term) => process_loop::reply (element_at 1i32 w) (element_at 3i32 w) |> ignore) (items_of grants)
+
+:~ demonitored (ref : term) : term = apply "erlang" "demonitor" [ ref; list_term [ atom "flush" ] ]
+
+:~ regranted (table : term) (grants : term) : term =
+    := _g = grant_all grants
+    process_loop::next table
+
+:~ owner_of (m : term) : term = element_at 2i32 (process_loop::request m)
+
+:~ granted_or_queued (m : term) (mref : term) (r : term) : term =
+    ? is_atom "granted" (element_at 1i32 r) ?> process_loop::replied (process_loop::caller m) mref (element_at 2i32 r) |: process_loop::next (element_at 2i32 r)
+
+:~ acquired (s : term) (m : term) : term =
+    := mref = process_loop::watch (owner_of m)
+    granted_or_queued m mref (slot_table::acquire_term s (tuple [ process_loop::caller m; owner_of m; mref ]))
+
+:~ freed (r : term) (ref : term) : term =
+    := _d = demonitored ref
+    regranted (element_at 2i32 r) (element_at 3i32 r)
+
+:~ released (s : term) (ref : term) : term =
+    := r = slot_table::release_term s ref
+    ? is_atom "released" (element_at 1i32 r) ?> freed r ref |: process_loop::next s
+
+:~ downed (s : term) (m : term) : term =
+    := r = slot_table::down_term s (element_at 2i32 m)
+    regranted (element_at 1i32 r) (element_at 2i32 r)
+
+:~ status_map (s : term) : term =
+    := t = slot_table::status_term s
+    map_of [ pair "limit" (element_at 1i32 t); pair "held" (element_at 2i32 t); pair "waiting" (element_at 3i32 t) ]
+
+:~ asks_status (m : term) : bool = process_loop::is_call m && is_atom "status" (process_loop::request m)
+
+:~ status_reply (s : term) (m : term) : term = process_loop::replied (process_loop::caller m) (status_map s) s
+
+:~ cast_ref (m : term) : term = element_at 2i32 (process_loop::request m)
+
+:~ step (s : term) (m : term) : term =
+    ? process_loop::is_down m ?> downed s m
+    |? process_loop::is_cast m ?> released s (cast_ref m)
+    |? asks_status m ?> status_reply s m
+    |? process_loop::is_call m ?> acquired s m
+    |: process_loop::next s
+
+:~ handle (ms : term) : term = step (element_at 2i32 ms) (element_at 1i32 ms)
+
+:~ slots_start (limit : i32) : term = process_loop::start (of (slot_table::slots_new limit)) handle
+
+:~ pid_of_start (r : term) : term = ? has_tag "ok" r ?> element_at 2i32 r |: element_at 2i32 (element_at 2i32 r)
+
+:~ ensure () : term = pid_of_start (process_loop::start_named (name ()) (of (slot_table::slots_new (jobs_limit ()))) handle)
+
+:~ acquire_ref (server : term) : term =
+    := request = tuple [ atom "acquire"; apply "erlang" "self" [] ]
+    element_at 2i32 (file_lock::evaluated (process_loop::call_source ()) [ ("P", server); ("R", request); ("T", atom "infinity") ])
+
+:~ run_source () : string =
+    "W = erlang:monotonic_time(millisecond) - T0, try begin case OnWait of nil -> ok; _ -> OnWait(W) end, {F(), W} end after S ! {pl_cast, {release, Ref}} end."
+
+:~ slots_run (f : term) (on_wait : term) (server : term) : term =
+    := s = ? is_atom "nil" server ?> ensure () |: server
+    := t0 = apply "erlang" "monotonic_time" [ atom "millisecond" ]
+    := ref = acquire_ref s
+    file_lock::evaluated (run_source ()) [ ("T0", t0); ("OnWait", on_wait); ("F", f); ("S", s); ("Ref", ref) ]
+
+:~ slots_status_of (server : term) : term = element_at 2i32 (process_loop::call server (atom "status") 5000i32)
+
+:~ nullary_value (n : i32) : term = file_lock::evaluated "fun() -> N end." [ ("N", of n) ]
+
+:~ count_of_key (key : string) (m : term) : i32 = cast (field_or key m (of -1i32))
+
+///> gleam
+:# a_run_returns_the_function_value =
+    := srv = slots_start 1i32
+    (cast (element_at 1i32 (slots_run (nullary_value 7i32) (atom "nil") srv)) : i32) |> _assert_eq 7i32
+
+///> gleam
+:# a_finished_run_gives_its_slot_back =
+    := srv = slots_start 1i32
+    := _r = slots_run (nullary_value 7i32) (atom "nil") srv
+    := st = slots_status_of srv
+    (count_of_key "held" st, count_of_key "waiting" st, count_of_key "limit" st) |> _assert_eq (0i32, 0i32, 1i32)
+
+///> gleam
+:# the_default_job_limit_is_positive =
+    (jobs_limit () > 0i32) |> _assert_eq !+

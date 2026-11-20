@@ -66,9 +66,7 @@
     ++# "\",id=\"" ++# s::id
     ++# "\"} " ++# sm'::obj_to_string s::value
 
-///> rust
-///> gleam
-:# exposition_renders_one_prometheus_line =
+:= hello_sample () : sample ms =
     {
         metric = CompileSeconds
         backend = BackendRust
@@ -77,8 +75,13 @@
         value = 1.5f64 |> quantity
     }
     |> sample
-    |> exposition
-    |> _assert_eq "spiral_backend_compile_seconds{backend=\"rust\",suite=\"examples\",id=\"samples/hello\"} 1.5"
+
+:= hello_line () : string = "spiral_backend_compile_seconds{backend=\"rust\",suite=\"examples\",id=\"samples/hello\"} 1.5"
+
+///> rust
+///> gleam
+:# exposition_renders_one_prometheus_line =
+    hello_sample () |> exposition |> _assert_eq (hello_line ())
 
 := backend_of (name : string) : option backend_name =
     ?= name ?|
@@ -118,13 +121,14 @@
     | Some s => exposition s
     | None => "none"
 
+:= abi_row () : string = "samples/abi_external\tC\texamples\tok\t794\t9a0e2f8c9c596b8c"
+
+:= abi_line () : string = "spiral_backend_compile_seconds{backend=\"c\",suite=\"examples\",id=\"samples/abi_external\"} 0.794"
+
 ///> rust
 ///> gleam
 :# compile_sample_reads_a_results_row =
-    "samples/abi_external\tC\texamples\tok\t794\t9a0e2f8c9c596b8c"
-    |> compile_sample
-    |> rendered
-    |> _assert_eq "spiral_backend_compile_seconds{backend=\"c\",suite=\"examples\",id=\"samples/abi_external\"} 0.794"
+    abi_row () |> compile_sample |> rendered |> _assert_eq (abi_line ())
 
 ///> rust
 ///> gleam
@@ -134,19 +138,19 @@
     |> rendered
     |> _assert_eq "none"
 
-:= results_rows (text : string) : array string =
-    sm'::lines text
-
 := results_exposition (text : string) : array string =
-    results_rows text
+    sm'::lines text
     |> am'::choose compile_sample
     |> am'::map' exposition
+
+:= results_exposition_keeps_known_rows_text () : string =
+    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10\n"
+    ^^ "samples/b\tZig\tcontracts\terror\t2000\nsamples/c\tNope\texamples\tok\t5"
 
 ///> rust
 ///> gleam
 :# results_exposition_keeps_known_rows =
-    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10\n"
-    ^^ "samples/b\tZig\tcontracts\terror\t2000\nsamples/c\tNope\texamples\tok\t5"
+    results_exposition_keeps_known_rows_text ()
     |> results_exposition
     |> am'::length
     |> _assert_eq 2i32
@@ -176,7 +180,7 @@
         | None => None
 
 := results_oracle_samples (text : string) : array (sample count) =
-    results_rows text
+    sm'::lines text
     |> am'::choose oracle_sample
 
 ///> rust
@@ -190,23 +194,28 @@
 := results_file_exposition (path : string) : array string =
     file_system::read_all_text path |> results_exposition
 
-///> rust
-///> gleam
-:# results_file_exposition_reads_a_results_file =
+:= one_row_results () : string = "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10"
+
+:= one_row_results_file () : string =
     := path = file_system::get_temp_path () ++# "/spiral-metrics-results.tsv"
-    file_system::write_all_text path "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10"
+    file_system::write_all_text path (one_row_results ())
     path
-    |> results_file_exposition
-    |> am'::length
-    |> _assert_eq 1i32
 
 ///> rust
 ///> gleam
-:# oracle_samples_skip_rows_without_a_verdict =
+:# results_file_exposition_reads_a_results_file =
+    one_row_results_file () |> results_file_exposition |> am'::length |> _assert_eq 1i32
+
+:= oracle_samples_skip_rows_without_a_verdict_text () : string =
     "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\texit\tstdout\toracle\n"
     ^^ "samples/a\tC\texamples\tok\t10\th\tran\t5\t0\ts\tagree\n"
     ^^ "samples/b\tRust\texamples\tok\t10\th\tran\t5\t1\ts\tDISAGREE\n"
     ^^ "samples/c\tZig\texamples\tok\t10\th\tran\t5\t0\ts\tno-zig"
+
+///> rust
+///> gleam
+:# oracle_samples_skip_rows_without_a_verdict =
+    oracle_samples_skip_rows_without_a_verdict_text ()
     |> results_oracle_samples
     |> am'::length
     |> _assert_eq 2i32
@@ -227,9 +236,12 @@
     := values : array f64 = samples |> am'::choose (\ (s : sample u) => backend_value b s)
     values |> arraym::fold (+) 0f64
 
+:= keep_heavier \* u. (samples : array (sample u)) (c : backend_name) (b : backend_name) : option backend_name =
+    ? backend_total c samples >= backend_total b samples ?> Some c |: Some b
+
 := heavier \* u. (samples : array (sample u)) (best : option backend_name) (b : backend_name) : option backend_name =
     ?= best ?|
-    | Some c => ? backend_total c samples >= backend_total b samples ?> best |: Some b
+    | Some c => keep_heavier samples c b
     | None => ? backend_total b samples > 0f64 ?> Some b |: None
 
 := heaviest \* u. (candidates : array backend_name) (samples : array (sample u)) : option backend_name =
@@ -246,12 +258,12 @@
     |: None
 
 := results_totals (text : string) : array string =
-    := samples = results_rows text |> am'::choose compile_sample
+    := samples = sm'::lines text |> am'::choose compile_sample
     backends ()
     |> am'::choose (\ (b : backend_name) => compile_total_line samples b)
 
 := results_heaviest (text : string) : option backend_name =
-    results_rows text
+    sm'::lines text
     |> am'::choose compile_sample
     |> heaviest (backends ())
 
@@ -260,13 +272,11 @@
     | Some b => backend_label b
     | None => "none"
 
+:= hit_value \* u. (b : backend_name) (id : string) (s : sample u) : option f64 =
+    ? backend_label s::backend = backend_label b && s::id = id ?> Some (sample_value s) |: None
+
 := value_for \* u. (b : backend_name) (id : string) (samples : array (sample u)) : option f64 =
-    := hits : array f64 =
-        samples
-        |> am'::choose \ (s : sample u) =>
-            ? backend_label s::backend = backend_label b && s::id = id
-            ?> Some (sample_value s)
-            |: None
+    := hits : array f64 = samples |> am'::choose (hit_value b id)
     ? am'::length hits = 0i32 ?> None |: Some (am'::index 0i32 hits)
 
 := beats \* u. (b : backend_name) (samples : array (sample u)) (s : sample u) : option bool =
@@ -283,12 +293,12 @@
     am'::length (wins_of pairs), am'::length pairs
 
 := results_head_to_head (a : backend_name) (b : backend_name) (text : string) : i32 * i32 =
-    results_rows text
+    sm'::lines text
     |> am'::choose compile_sample
     |> head_to_head a b
 
 := results_native_head_to_head (a : backend_name) (b : backend_name) (text : string) : i32 * i32 =
-    results_rows text
+    sm'::lines text
     |> am'::choose native_sample
     |> head_to_head a b
 
@@ -303,68 +313,91 @@
     |: sample_at RunSeconds fields (\ () => millis_at fields 13i32)
 
 := results_run_head_to_head (a : backend_name) (b : backend_name) (text : string) : i32 * i32 =
-    results_rows text
+    sm'::lines text
     |> am'::choose run_sample
     |> head_to_head a b
+
+:= run_head_to_head_reads_the_run_column_text () : string =
+    "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\texit\tstdout\toracle\tbaseline\tdeta"
+    ^^ "il\trun_ms\nsamples/a\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t40\n"
+    ^^ "samples/a\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t30\n"
+    ^^ "samples/b\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t20\n"
+    ^^ "samples/b\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t"
 
 ///> rust
 ///> gleam
 :# run_head_to_head_reads_the_run_column =
     := wins, shared =
-        "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\texit\tstdout\toracle\tbaseline\tdeta"
-        ^^ "il\trun_ms\nsamples/a\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t40\n"
-        ^^ "samples/a\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t30\n"
-        ^^ "samples/b\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t20\n"
-        ^^ "samples/b\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t"
+        run_head_to_head_reads_the_run_column_text ()
         |> results_run_head_to_head BackendZig BackendC
     wins |> _assert_eq 1i32
     shared |> _assert_eq 1i32
+
+:= native_head_to_head_counts_ran_rows_only_text () : string =
+    "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\n"
+    ^^ "samples/a\tC\texamples\tok\t10\th\tran\t300\nsamples/a\tZig\texamples\tok\t10\th\tran\t200\n"
+    ^^ "samples/b\tC\texamples\tok\t10\th\tran\t100\nsamples/b\tZig\texamples\tok\t10\th\tbuild-fail\t50"
 
 ///> rust
 ///> gleam
 :# native_head_to_head_counts_ran_rows_only =
     := wins, shared =
-        "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\n"
-        ^^ "samples/a\tC\texamples\tok\t10\th\tran\t300\nsamples/a\tZig\texamples\tok\t10\th\tran\t200\n"
-        ^^ "samples/b\tC\texamples\tok\t10\th\tran\t100\nsamples/b\tZig\texamples\tok\t10\th\tbuild-fail\t50"
+        native_head_to_head_counts_ran_rows_only_text ()
         |> results_native_head_to_head BackendZig BackendC
     wins |> _assert_eq 1i32
     shared |> _assert_eq 1i32
+
+:= head_to_head_counts_shared_samples_only_text () : string =
+    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10\nsamples/a\tZig\texamples\tok\t20\n"
+    ^^ "samples/b\tC\texamples\tok\t30\nsamples/b\tZig\texamples\tok\t5\nsamples/c\tC\texamples\tok\t7"
 
 ///> rust
 ///> gleam
 :# head_to_head_counts_shared_samples_only =
     := wins, shared =
-        "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10\nsamples/a\tZig\texamples\tok\t20\n"
-        ^^ "samples/b\tC\texamples\tok\t30\nsamples/b\tZig\texamples\tok\t5\nsamples/c\tC\texamples\tok\t7"
+        head_to_head_counts_shared_samples_only_text ()
         |> results_head_to_head BackendC BackendZig
     wins |> _assert_eq 1i32
     shared |> _assert_eq 2i32
 
+:= results_totals_sum_compile_seconds_per_backend_text () : string =
+    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t1500\n"
+    ^^ "samples/b\tC\tcontracts\tok\t750\nsamples/c\tZig\texamples\tok\t2000"
+
+:= c_total_line () : string = "spiral_backend_compile_seconds_total{backend=\"c\"} 2.25"
+
+:= c_and_zig_totals () : array string = results_totals_sum_compile_seconds_per_backend_text () |> results_totals
+
+///> rust
+///> gleam
+:# results_totals_list_one_line_per_backend_with_samples =
+    am'::length (c_and_zig_totals ()) |> _assert_eq 2i32
+
 ///> rust
 ///> gleam
 :# results_totals_sum_compile_seconds_per_backend =
-    := totals =
-        "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t1500\n"
-        ^^ "samples/b\tC\tcontracts\tok\t750\nsamples/c\tZig\texamples\tok\t2000"
-        |> results_totals
-    am'::length totals |> _assert_eq 2i32
-    am'::index 0i32 totals |> _assert_eq "spiral_backend_compile_seconds_total{backend=\"c\"} 2.25"
+    am'::index 0i32 (c_and_zig_totals ()) |> _assert_eq (c_total_line ())
+
+:= results_heaviest_names_the_backend_that_drains_most_text () : string =
+    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t1500\nsamples/b\tC\tcontracts\tok\t750\n"
+    ^^ "samples/c\tZig\texamples\tok\t2000"
 
 ///> rust
 ///> gleam
 :# results_heaviest_names_the_backend_that_drains_most =
-    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t1500\nsamples/b\tC\tcontracts\tok\t750\n"
-    ^^ "samples/c\tZig\texamples\tok\t2000"
+    results_heaviest_names_the_backend_that_drains_most_text ()
     |> results_heaviest
     |> heaviest_label
     |> _assert_eq "c"
 
+:= results_totals_cover_python_cpp_and_openqasm_text () : string =
+    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tPython\texamples\tok\t1500\n"
+    ^^ "samples/b\tCpp\texamples\tok\t250\nsamples/c\tOpenQasm\texamples\tok\t500"
+
 ///> rust
 ///> gleam
 :# results_totals_cover_python_cpp_and_openqasm =
-    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tPython\texamples\tok\t1500\n"
-    ^^ "samples/b\tCpp\texamples\tok\t250\nsamples/c\tOpenQasm\texamples\tok\t500"
+    results_totals_cover_python_cpp_and_openqasm_text ()
     |> results_totals
     |> am'::length
     |> _assert_eq 3i32

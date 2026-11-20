@@ -24,7 +24,7 @@
 
 := os_pid (p : port) : i32 =
     := info = erlang_term::apply "erlang" "port_info" [ term_of p; erlang_term::atom "os_pid" ]
-    erlang_term::apply "erlang" "element" [ erlang_term::of 2i32; info ] |> erlang_term::cast
+    erlang_term::element_at 2i32 info |> erlang_term::cast
 
 := close (p : port) : bool = erlang_term::apply "erlang" "port_close" [ term_of p ] |> erlang_term::cast
 
@@ -47,15 +47,12 @@
     erlang_port_imports ()
     $'result.unwrap(!outcome, !otherwise)' : erlang_term::term
 
-:= element (index : i32) (tuple : erlang_term::term) : erlang_term::term =
-    erlang_term::apply "erlang" "element" [ erlang_term::of index; tuple ]
-
-:= message_event (message : erlang_term::term) : erlang_term::term = element 2i32 message
+:= message_event (message : erlang_term::term) : erlang_term::term = erlang_term::element_at 2i32 message
 
 := event_kind (event : erlang_term::term) : string =
-    erlang_term::apply "erlang" "atom_to_binary" [ element 1i32 event ] |> erlang_term::cast
+    erlang_term::apply "erlang" "atom_to_binary" [ erlang_term::element_at 1i32 event ] |> erlang_term::cast
 
-:= event_value (event : erlang_term::term) : erlang_term::term = element 2i32 event
+:= event_value (event : erlang_term::term) : erlang_term::term = erlang_term::element_at 2i32 event
 
 := halt_args () : erlang_term::term =
     [ "-noshell"; "-eval"; "halt(3)." ] |> listm::map erlang_term::charlist |> erlang_term::list_term

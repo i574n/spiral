@@ -256,3 +256,96 @@
     rewrite spi "claims" "(0, 0, \"x, y\", false)" "(3, 4, \"x, z\", true)" 0i32 |> _assert_eq pinned
     rewrite spi "claims" "(0, 1, \"x, y\", false)" "(3, 4, \"x, z\", true)" 0i32 |> _assert_eq "Ethe failing _assert_eq (number 1 in the test body) is not the tuple (0, 1, \"x, y\", false)"
     text::starts_with (rewrite spi "claims" "(0, 0, \"x, y\", false)" "((1, 2), 3)" 0i32) "Ethe actual value ((1, 2), 3) is not a flat tuple" |> _assert_eq !+
+
+:~ split_first_nl (s : string) : string * string =
+    := k = text::find_from s "\n" 0i32
+    ? k < 0i32 ?> (s, "") |: (text::take s k, text::drop s (k + 1i32))
+
+:~ mismatch_ok (m : string) : erlang_term::term =
+    := actual, expected = split_first_nl m
+    erlang_term::tuple [ erlang_term::atom "ok"; erlang_term::of actual; erlang_term::of expected ]
+
+:~ mismatch_term (message : string) : erlang_term::term =
+    := m = mismatch message
+    ? m = "" ?> erlang_term::atom "none" |: mismatch_ok m
+
+:~ ^ first_diff (a : list string) (b : list string) : string * string =
+    ?= a, b ?|
+    | (x :: xs), (y :: ys) => ? x <> y ?> (text::utrim x, text::utrim y) |: first_diff xs ys
+    | _ => ("", "")
+
+:~ changed_line (src : string) (rewritten : string) : string * string =
+    first_diff (sm'::split_list "\n" src) (sm'::split_list "\n" rewritten)
+
+:~ result_ok (name : string) (before : string) (after : string) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::of name; erlang_term::tuple [ erlang_term::atom "ok"; erlang_term::of before; erlang_term::of after ] ]
+
+:~ result_error (name : string) (reason : string) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::of name; erlang_term::tuple [ erlang_term::atom "error"; erlang_term::of reason ] ]
+
+:~ applied_rewrite (src : string) (name : string) (rewritten : string) : string * bool * erlang_term::term =
+    := before, after = changed_line src rewritten
+    (rewritten, !+, result_ok name before after)
+
+:~ site_error (src : string) (name : string) (reason : string) : string * bool * erlang_term::term =
+    (src, !-, result_error name reason)
+
+:~ site_result (src : string) (name : string) (actual : string) (expected : string) (passed : i32) : string * bool * erlang_term::term =
+    := r = rewrite src name expected actual passed
+    ? text::starts_with r "K" ?> applied_rewrite src name (text::drop r 1i32) |: site_error src name (text::drop r 1i32)
+
+:~ one_site_hit (src : string) (name : string) (message : string) (m : string) : string * bool * erlang_term::term =
+    := actual, expected = split_first_nl m
+    site_result src name actual expected (passed_before message)
+
+:~ one_site (src : string) (name : string) (message : string) : string * bool * erlang_term::term =
+    := m = mismatch message
+    ? m = "" ?> site_error src name "no __assert_eq mismatch in its output" |: one_site_hit src name message m
+
+:~ decode_failures (failures : erlang_term::term) : list (string * string) =
+    listm::map
+        (\ t => ((erlang_term::element_at 1i32 t |> erlang_term::cast : string), (erlang_term::element_at 2i32 t |> erlang_term::cast : string)))
+        (erlang_term::items_of failures)
+
+:~ ^ fold_failures (src : string) (fs : list (string * string)) (acc : list erlang_term::term) (any : bool) : string * list erlang_term::term * bool =
+    ?= fs ?|
+    | [] => (src, listm::rev acc, any)
+    | (name, message) :: rest =>
+        := next, is_ok, r = one_site src name message
+        fold_failures next rest (r :: acc) (any || is_ok)
+
+:~ accept_sites_run (path : string) (failures : erlang_term::term) : erlang_term::term =
+    := text0 = erlang_file::file_text path
+    := final_text, results, any = fold_failures text0 (decode_failures failures) [] !-
+    := _ = ? any ?> erlang_file::file_written path final_text |: !-
+    erlang_term::list_term results
+
+:~ accept_sites (path : string) (failures : erlang_term::term) : erlang_term::term =
+    file_lock::locked (path ++ ".accept.lock") (\ () => accept_sites_run path failures) 30000i64
+
+:~ accept_uniq () : string =
+    erlang_term::integer_text (erlang_term::apply "erlang" "unique_integer" [ erlang_term::list_term [ erlang_term::atom "positive" ] ])
+
+:~ fixture_spi () : string = "///> rust\ninl one () = 1i32\n\n///> rust\ntest one =\n    one ()\n    |> _assert_eq 2i32\n\n///> rust\ntest other =\n    one () |> _assert_eq 2i32\n"
+
+:~ fixture_path () : string =
+    erlang_file::joined_path (erlang_file::test_cache_directory ()) ("accept-sites-" ++ accept_uniq () ++ ".spi")
+
+:~ fixture_failures () : erlang_term::term =
+    erlang_term::list_term [ erlang_term::tuple [ erlang_term::of "one"; erlang_term::of "__assert_eq { actual = 1; expected = 2 }" ] ]
+
+:~ accept_fixture () : erlang_term::term * string =
+    := path = fixture_path ()
+    := _ = erlang_file::file_written path (fixture_spi ())
+    := results = accept_sites_run path (fixture_failures ())
+    (results, erlang_file::file_text path)
+
+:~ expected_sites () : erlang_term::term = erlang_term::list_term [ result_ok "one" "|> _assert_eq 2i32" "|> _assert_eq 1i32" ]
+
+:~ fixture_checks (results : erlang_term::term) (rewritten : string) : bool * bool * bool =
+    (erlang_term::equal results (expected_sites ()), text::contains rewritten "    |> _assert_eq 1i32", text::contains rewritten "    one () |> _assert_eq 2i32")
+
+///> gleam
+:# accept_sites_run_rewrites_the_failing_literal_names_the_line_and_leaves_the_rest =
+    := results, rewritten = accept_fixture ()
+    fixture_checks results rewritten |> _assert_eq (!+, !+, !+)

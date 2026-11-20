@@ -16,7 +16,7 @@ fn closure1(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
                 let v2: Rc<str> = v2.clone();
                 let v3: Rc<RefCell<Vec<i32>>> = v3.clone();
                 let v4: i32 = (v2.len() as i32);
-                let v5: i32 = (v3.clone().borrow().len() as i32);
+                let v5: i32 = (v3.borrow().len() as i32);
                 let v6: i32 = v4.wrapping_add(v5);
                 let v7: i32 = v3.borrow()[0i32 as usize];
                 let v8: i32 = v6.wrapping_add(v7);
@@ -69,10 +69,10 @@ fn method2(mut v0: Rc<dyn Fn(i32) -> i32>, mut v1: Rc<dyn Fn(i32) -> i32>) -> i3
     v4
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> = closure0();
-    let mut v1: Rc<dyn Fn(i32) -> i32> = method0(v0.clone());
-    let v2: Rc<dyn Fn(i32) -> i32> = method1(v0);
-    method2(v1, v2)
+    let make_v0: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> = closure0();
+    let empty_use_v1: Rc<dyn Fn(i32) -> i32> = method0(make_v0.clone());
+    let item_use_v2: Rc<dyn Fn(i32) -> i32> = method1(make_v0);
+    method2(empty_use_v1, item_use_v2)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

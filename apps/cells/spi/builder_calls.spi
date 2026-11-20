@@ -1,0 +1,100 @@
+///- --package .
+:< erlang_term
+
+:# builder_calls static =
+    :< testing
+
+:~ argument_error (message : string) : term =
+    apply "maps" "from_list" [ list_term [ pair "__struct__" (atom "Elixir.ArgumentError"); pair "__exception__" (atom "true"); pair "message" (of message) ] ]
+
+:~ raised (message : string) : term = apply "erlang" "error" [ argument_error message ]
+
+:~ newline () : term = apply "erlang" "list_to_binary" [ list_term [ of 10i32 ] ]
+
+:~ lines (wire : string) : list term = items_of (apply "binary" "split" [ of wire; newline (); list_term [ atom "global" ] ])
+
+:~ split (code : string) : term =
+    := r = builders::split_term code
+    ? has_tag "ok" r ?> tuple [ element_at 2i32 r; element_at 3i32 r ]
+    |: raised (cast (element_at 2i32 r))
+
+:~ commands (code : string) : term = element_at 1i32 (split code)
+
+:~ missing () : term = atom "spiral_cells_builder_field_missing"
+
+:~ unset (key : string) (b : term) : bool = is_atom "nil" (field_or key b (missing ()))
+
+:~ no_deps (b : term) : bool = equal (field_or "deps" b (missing ())) (list_term [])
+
+:~ keeps_cleanup (b : term) : bool =
+    := c = field_or "cleanup" b (missing ())
+    not (is_atom "false" c) && not (equal c (missing ()))
+
+:~ host_rust (b : term) : bool =
+    is_map b && is_atom "rust" (field_or "tool" b (missing ())) && unset "contract" b && unset "wasm" b && no_deps b && keeps_cleanup b
+
+:~ tool_name (b : term) : string = cast (apply "erlang" "atom_to_binary" [ field_or "tool" b (atom "nil") ])
+
+:~ known (value : string) (b : term) : term = ? value = "" ?> raised ("no Spiral target for :" ^^ tool_name b) |: of value
+
+:~ backend (b : term) : term = known (targets::backend (targets::target_of (tool_name b))) b
+
+:~ ext (b : term) : term = known (targets::extension (targets::target_of (tool_name b))) b
+
+:~ raw_of (b : term) : string =
+    := raw = field_or "raw" b (atom "nil")
+    ? is_atom "nil" raw || is_atom "false" raw ?> tool_name b |: cast raw
+
+:~ error_text (wire : string) : option string =
+    ? sm'::starts_with "E" wire ?> Some (sm'::substring 1i32 ((sm'::length wire : i32) - 1i32) wire) |: None
+
+:~ gleam_route (b : term) (path : string) : term = tuple [ atom "gleam"; of path; field_or "deps" b (list_term []) ]
+
+:~ atom_route (only : term) (path : string) : term = tuple [ apply "erlang" "binary_to_atom" [ only ]; of path ]
+
+:~ single (b : term) (path : string) (only : term) : term = ? binary_text only = "gleam" ?> gleam_route b path |: atom_route only path
+
+:~ spiral_route (rest : list term) : term = tuple [ atom "spiral"; list_term rest ]
+
+:~ unroutable () : term = raised "unroutable builder"
+
+:~ lone (b : term) (path : string) (first : term) (rest : list term) : term =
+    ? (listm::length rest : i32) = 0i32 ?> single b path first |: unroutable ()
+
+:~ routed (b : term) (path : string) (parts : list term) : term =
+    ?= parts ?|
+    | first :: rest => ? binary_text first = "spiral" ?> spiral_route rest |: lone b path first rest
+    | _ => unroutable ()
+
+:~ dispatch (b : term) (path : string) : term =
+    := wire = builders::route_wire (raw_of b) path
+    ?= error_text wire ?| Some message => raised message | None => routed b path (lines wire)
+
+:~ argv (b : term) (path : string) : term =
+    := wire = builders::argv_wire (raw_of b) path
+    ?= error_text wire ?| Some message => raised message | None => list_term (lines wire)
+
+:~ rust_base () : list term =
+    [ pair "tool" (atom "rust"); pair "contract" (atom "nil"); pair "wasm" (atom "nil"); pair "deps" (list_term []); pair "cleanup" (atom "true") ]
+
+:~ rust_builder (extra : list term) : term = apply "maps" "from_list" [ list_term (listm::append (rust_base ()) extra) ]
+
+:~ caught (run : term) : term = file_lock::evaluated "try F(nil) catch error:E -> E end." [ ("F", run) ]
+
+:~ message_of (e : term) : string = cast (field_or "message" e (of ""))
+
+:~ field_is (key : string) (want : string) (e : term) : bool = is_atom want (field_or key e (atom "nil"))
+
+///> gleam
+:# a_plain_rust_builder_is_the_host_and_any_extra_turns_it_off =
+    := off = \ (k : string) (v : string) => host_rust (rust_builder [ pair k (atom v) ])
+    (host_rust (rust_builder []), off "cleanup" "false", off "wasm" "true") |> _assert_eq (!+, !-, !-)
+
+///> gleam
+:# a_builder_error_is_an_elixir_argument_error =
+    := e = caught (of (\ () => raised "bad builder"))
+    (field_is "__struct__" "Elixir.ArgumentError" e, field_is "__exception__" "true" e, message_of e) |> _assert_eq (!+, !+, "bad builder")
+
+///> gleam
+:# wires_split_on_newlines_and_errors_drop_their_marker =
+    ((listm::length (lines "a\nb\nc") : i32), error_text "Eboom", error_text "fine") |> _assert_eq (3i32, Some "boom", None)

@@ -166,3 +166,132 @@
     (nested_name "a.spi\n./b.spi\nsub/c.spi", nested_name "x\\y.spi", nested_name "c.spi\nd/e.spi\nf/g.spi", nested_name "a.spi", nested_name "")
     |> _assert_eq ("sub/c.spi", "x\\y.spi", "d/e.spi", "", "")
     (patch_first "a b a" "a" "x", patch_first "abc" "z" "y", patch_first "" "" "n", patch_first "aaa" "aa" "b") |> _assert_eq ("Kx b a", "E", "Kn", "Kba")
+
+:~ declareds (src : string) : list string = package_lines (lines_of src 0i32 []) !- []
+
+:~ package_items (src : string) : list string = listm::map entry_item (declareds src)
+
+///> gleam
+:# package_items_skip_bars_and_stop_at_modules =
+    package_items "packages:\n    |core-\n    ../lib/a-\n    b*\nmodules:\n    c" |> _assert_eq [ "../lib/a"; "b" ]
+
+:~ popped (acc : list string) : list string = ?= acc ?| _ :: up :: more => up :: more | _ => acc
+
+:~ stepped (acc : list string) (p : string) : list string = ? p = "." ?> acc |? p = ".." ?> popped acc |: p :: acc
+
+:~ normal_parts (parts : list string) : list string = listm::fold stepped [] parts |> listm::rev
+
+:~ split_path (path : string) : list string =
+    erlang_term::apply "filename" "split" [ erlang_term::of path ] |> erlang_term::items_of |> listm::map erlang_file::text_of
+
+:~ joined_parts (parts : list string) : string =
+    erlang_file::text_of_call "filename" "join" [ erlang_term::list_term (listm::map (\ (p : string) => erlang_term::of p) parts) ]
+
+:~ expanded (path : string) (base : string) : string =
+    := absolute = erlang_file::text_of_call "filename" "absname" [ erlang_term::of path; erlang_term::of base ]
+    joined_parts (normal_parts (split_path absolute))
+
+///> gleam
+:# expanded_paths_resolve_dot_and_dot_dot_like_path_expand =
+    (expanded "../lib/a" "/r/apps/x", expanded "./b" "/r", expanded "../../.." "/r") |> _assert_eq ("/r/apps/lib/a", "/r/b", "/")
+
+:~ package_base (dir : string) (src : string) : string =
+    := value = package_dir_value src
+    ? value = "" ?> expanded ".." dir |: expanded value dir
+
+:~ strs (xs : list string) : erlang_term::term = erlang_term::tuple (listm::map (\ (s : string) => erlang_term::of s) xs)
+
+:~ entry_target (dir : string) (base : string) (item : string) : string = expanded item (? relative_item item ?> dir |: base)
+
+:~ dependency_row (dir : string) (base : string) (declared : string) : erlang_term::term =
+    := item = entry_item declared
+    := name = basename item
+    strs [ name; entry_target dir base item; name ++ text::drop declared (text::length item) ]
+
+:~ dependencies_in (dir : string) (src : string) : list erlang_term::term = listm::map (dependency_row dir (package_base dir src)) (declareds src)
+
+:~ one_row (dir : string) (src : string) (wanted : list string) : bool =
+    erlang_term::equal (erlang_term::list_term (dependencies_in dir src)) (erlang_term::list_term [ strs wanted ])
+
+///> gleam
+:# a_relative_entry_resolves_from_the_project =
+    one_row "/r/apps/x" "packages:\n    ./near-\n" [ "near"; "/r/apps/x/near"; "near-" ] |> _assert_eq !+
+
+///> gleam
+:# a_bare_entry_resolves_from_the_package_dir =
+    one_row "/r/apps/x" "packageDir: ../../lib\npackages:\n    far*\n" [ "far"; "/r/lib/far"; "far*" ] |> _assert_eq !+
+
+:~ manifest_text (dir : string) (dotnet : string) (dll : string) : string =
+    manifest::manifest_read dir dotnet dll (toolchain::host_has dotnet dll "resolve-manifest")
+
+:~ declared_dependencies (dir : string) (dotnet : string) (dll : string) : list erlang_term::term =
+    ?= manifest::manifest_path dir ?|
+    | Some _ => dependencies_in dir (manifest_text dir dotnet dll)
+    | None => []
+
+:~ cwd () : string = erlang_file::text_of (erlang_term::element_at 2i32 (erlang_term::apply "file" "get_cwd" []))
+
+:~ tab_rest (line : string) : string = text::drop line (text::find_char line 0i32 '\t' + 1i32)
+
+:~ candidates (dir : string) (name : string) : list string =
+    memo::keep erlang_file::regular_file [ erlang_file::joined_path dir (name ++ ".spi"); erlang_file::joined_path dir (name ++ ".spir") ]
+
+:~ module_files (dir : string) (project : string) : list string =
+    := lines = memo::keep (\ (l : string) => l <> "") (lines_of (memo::module_entries project) 0i32 [])
+    listm::fold (\ acc l => listm::append acc (candidates dir (tab_rest l))) [] lines
+
+:~ sha256 (t : erlang_term::term) : erlang_term::term = erlang_term::apply "crypto" "hash" [ erlang_term::atom "sha256"; t ]
+
+:~ is_ok_tuple (r : erlang_term::term) : bool = erlang_term::is_tuple r && erlang_term::equal (erlang_term::element_at 1i32 r) (erlang_term::atom "ok")
+
+:~ rows_for (text : string) (bounds : erlang_term::term) : erlang_term::term =
+    ? erlang_term::equal bounds (erlang_term::atom "unavailable") ?> erlang_term::atom "error" |: erlang_term::apply "maps" "find" [ erlang_term::of text; bounds ]
+
+:~ printed_text (text : string) (bounds : erlang_term::term) : string =
+    := found = rows_for text bounds
+    ? is_ok_tuple found ?> source_blocks::split_blocks text (erlang_term::element_at 2i32 found |> erlang_term::cast) |: text
+
+:~ text_print (text : string) (bounds : erlang_term::term) : erlang_term::term = sha256 (erlang_term::of (printed_text text bounds))
+
+:~ read_print (r : erlang_term::term) (bounds : erlang_term::term) : erlang_term::term =
+    ? is_ok_tuple r ?> text_print (erlang_term::element_at 2i32 r |> erlang_term::cast) bounds |: erlang_term::atom "missing"
+
+:~ content_print (path : string) (bounds : erlang_term::term) : erlang_term::term = read_print (erlang_term::apply "file" "read_file" [ erlang_term::of path ]) bounds
+
+:~ file_rows (dir : string) (project : string) (bounds : erlang_term::term) : erlang_term::term =
+    erlang_term::list_term (listm::map (\ (f : string) => erlang_term::tuple [ erlang_term::of f; content_print f bounds ]) (module_files dir project))
+
+:~ term_hash (t : erlang_term::term) : erlang_term::term = sha256 (erlang_term::apply "erlang" "term_to_binary" [ t ])
+
+:== tree_ctx = { bounds : erlang_term::term; dotnet : string; dll : string }
+
+:~ seen_has (seen : list string) (d : string) : bool = listm::fold (\ hit s => hit || s = d) !- seen
+
+:~ has_manifest (d : string) : bool = ?= manifest::manifest_path d ?| Some _ => !+ | None => !-
+
+:~ ^ package_print (c : tree_ctx) (seen : list string) (dir : string) : erlang_term::term =
+    := d = expanded dir (cwd ())
+    ? seen_has seen d ?> erlang_term::atom "seen"
+    |? has_manifest d ?> printed_package c (d :: seen) d
+    |: erlang_term::atom "missing"
+
+:& :~ dep_print (c : tree_ctx) (seen : list string) (row : erlang_term::term) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::element_at 1i32 row; package_print c seen (erlang_term::element_at 2i32 row |> erlang_term::cast) ]
+
+:& :~ deps_print (c : tree_ctx) (seen : list string) (d : string) : erlang_term::term =
+    erlang_term::list_term (listm::map (dep_print c seen) (declared_dependencies d c::dotnet c::dll))
+
+:& :~ printed_package (c : tree_ctx) (seen : list string) (d : string) : erlang_term::term =
+    := project = manifest_text d c::dotnet c::dll
+    term_hash (erlang_term::tuple [ erlang_term::of project; file_rows d project c::bounds; deps_print c seen d ])
+
+:~ tree_print (dir : string) (bounds : erlang_term::term) (dotnet : string) (dll : string) : erlang_term::term =
+    package_print { bounds = bounds; dotnet = dotnet; dll = dll } [] dir
+
+///> gleam
+:# a_package_without_a_manifest_prints_missing =
+    erlang_term::equal (tree_print "/no/such/dir" (erlang_term::atom "unavailable") "" "") (erlang_term::atom "missing") |> _assert_eq !+
+
+///> gleam
+:# a_text_without_bounds_hashes_as_it_is =
+    printed_text "inl a = 1" (erlang_term::atom "unavailable") |> _assert_eq "inl a = 1"

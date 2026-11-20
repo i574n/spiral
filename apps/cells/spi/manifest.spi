@@ -186,6 +186,72 @@
     ?> from_toml text_in
     |: (?= resolved ?| Some r => r | None => from_toml text_in)
 
+:~ run_resolve (dir : string) (dotnet : string) (dll : string) (has_cap : bool) : option string =
+    ? has_cap = !-
+    ?> None
+    |:
+        := out = process::captured_by dotnet [ dll; "--resolve-manifest"; dir ] !-
+        ? out::ran && out::code = 0i32 && out::stdout <> "" ?> Some out::stdout |: None
+
+:~ stat_fields (name : string) (info : erlang_term::term) : erlang_term::term =
+    erlang_term::tuple
+        [
+            erlang_term::of name
+            erlang_term::apply "erlang" "element" [ erlang_term::of 3i32; info ]
+            erlang_term::apply "erlang" "element" [ erlang_term::of 2i32; info ]
+            erlang_term::apply "erlang" "element" [ erlang_term::of 6i32; info ]
+        ]
+
+:~ posix_time_opts () : erlang_term::term =
+    erlang_term::list_term [ erlang_term::tuple [ erlang_term::atom "time"; erlang_term::atom "posix" ] ]
+
+:~ stat_tuple (dir : string) (name : string) : erlang_term::term =
+    := r = erlang_term::apply "file" "read_file_info" [ erlang_term::of (erlang_file::joined_path dir name); posix_time_opts () ]
+    ? erlang_term::equal (erlang_term::apply "erlang" "element" [ erlang_term::of 1i32; r ]) (erlang_term::atom "ok")
+    ?> stat_fields name (erlang_term::apply "erlang" "element" [ erlang_term::of 2i32; r ])
+    |: erlang_term::tuple [ erlang_term::of name; erlang_term::atom "missing" ]
+
+:~ stamp_of_names (dir : string) (names : list string) : erlang_term::term =
+    := tuples = listm::map (\ name => stat_tuple dir name) names
+    erlang_term::apply "erlang" "phash2" [ erlang_term::apply "lists" "sort" [ erlang_term::list_term tuples ] ]
+
+:~ dir_stamp (dir : string) : erlang_term::term =
+    := r = erlang_term::apply "file" "list_dir" [ erlang_term::of dir ]
+    ? erlang_term::equal (erlang_term::apply "erlang" "element" [ erlang_term::of 1i32; r ]) (erlang_term::atom "ok")
+    ?> stamp_of_names dir (erlang_term::apply "erlang" "element" [ erlang_term::of 2i32; r ] |> erlang_term::items_of |> listm::map erlang_file::text_of)
+    |: erlang_term::atom "unlisted"
+
+:~ cache_key (dir : string) : erlang_term::term =
+    erlang_term::tuple
+        [
+            erlang_term::atom "spiral_cells_manifest"
+            erlang_term::atom "resolved"
+            erlang_term::of (erlang_file::absolute_path dir)
+            dir_stamp dir
+        ]
+
+:~ cached_resolve (dir : string) (dotnet : string) (dll : string) (has_cap : bool) : option string =
+    := key = cache_key dir
+    := miss = erlang_term::atom "spiral_cells_manifest_miss"
+    := hit = erlang_term::apply "persistent_term" "get" [ key; miss ]
+    ? erlang_term::equal hit miss
+    ?>
+        ?= run_resolve dir dotnet dll has_cap ?|
+        | Some r =>
+            := _ = erlang_term::apply "persistent_term" "put" [ key; erlang_term::of r ]
+            Some r
+        | None => None
+    |: Some (hit |> erlang_term::cast : string)
+
+:~ manifest_read (dir : string) (dotnet : string) (dll : string) (has_cap : bool) : string =
+    ?= manifest_path dir ?|
+    | None => ""
+    | Some file =>
+        := text = erlang_file::file_text file
+        := needs_resolve = ends_with file ".toml" && not (declares_modules text)
+        := resolved = ? needs_resolve ?> cached_resolve dir dotnet dll has_cap |: None
+        manifest_read_choice file text resolved
+
 ///> gleam
 :# scalars_lists_and_blocks_convert_like_the_elixir_reader =
     := toml = "edition = 3\npackageDir = '../lib'\npackages = ['|core-', \"spiral-\"]\nmodules = '''\nmain\n'''"

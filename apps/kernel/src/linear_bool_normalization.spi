@@ -613,3 +613,15 @@
 :# a_multistep_needs_a_normalization_not_a_program fails "Unification failure" =
     := m : multistep false_normal = literal_false (), "an-unlinked-trace"
     m |> ignore
+
+///> rust
+:# a_variable_used_on_both_sides_of_a_tensor_has_no_left_only_merge fails "Unification failure" =
+    := t : term (extend empty_context bool_type) (used usage_empty) (tensor_type bool_type bool_type) =
+        Intro (Tensor (\? (generic_variable (), generic_variable (), left_only (), "x-and-x")))
+    t |> ignore
+
+///> rust
+:# a_variable_used_on_both_sides_of_a_tensor_has_no_right_only_merge fails "Unification failure" =
+    := t : term (extend empty_context bool_type) (used usage_empty) (tensor_type bool_type bool_type) =
+        Intro (Tensor (\? (generic_variable (), generic_variable (), right_only (), "x-and-x")))
+    t |> ignore

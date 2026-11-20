@@ -23,6 +23,17 @@
         | u64 => $'printf("%llu\\n", (unsigned long long)(!obj))' : ()
         | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()
 
+:= write_line_cpp \* t. (obj : t) : () =
+    global "#include <cstdio>"
+    ~>
+        ?: t ?|
+        | string => $'std::printf("%s\\n", !obj)' : ()
+        | i32 => $'std::printf("%d\\n", !obj)' : ()
+        | i64 => $'std::printf("%lld\\n", (long long)(!obj))' : ()
+        | u32 => $'std::printf("%u\\n", !obj)' : ()
+        | u64 => $'std::printf("%llu\\n", (unsigned long long)(!obj))' : ()
+        | _ => $'backend_switch_has_no_Cpp_arm_in_lib_spiral' : ()
+
 := write_line_gleam \* t. (obj : t) : () =
     global "import gleam/io"
     ? (~> ?: t ?| string => !+ | _ => !-)
@@ -73,6 +84,8 @@
             $'spiralPrint(&[_]u8{10})' : ()
         Lean = \ () => $'IO.println (toString !obj)' : ()
         C = \ () => write_line_c obj
+        Cpp = \ () => write_line_cpp obj
+        CppHost = \ () => write_line_cpp obj
         Pascal = \ () => $'Writeln(!obj)' : ()
         Kotlin = fun () => $'run { System.out.write((!obj.toString() + "\\n").toByteArray(Charsets.UTF_8)); \
             System.out.flush() }' : ()
@@ -137,6 +150,17 @@
         | u64 => $'printf("%llu", (unsigned long long)(!x))' : ()
         | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()
 
+:= write_cpp \* t. (x : t) : () =
+    global "#include <cstdio>"
+    ~>
+        ?: t ?|
+        | string => $'std::printf("%s", !x)' : ()
+        | i32 => $'std::printf("%d", !x)' : ()
+        | i64 => $'std::printf("%lld", (long long)(!x))' : ()
+        | u32 => $'std::printf("%u", !x)' : ()
+        | u64 => $'std::printf("%llu", (unsigned long long)(!x))' : ()
+        | _ => $'backend_switch_has_no_Cpp_arm_in_lib_spiral' : ()
+
 := write_gleam \* t. (x : t) : () =
     global "import gleam/io"
     ? (~> ?: t ?| string => !+ | _ => !-)
@@ -165,6 +189,8 @@
         Zig = \ () => $'spiralPrintAny(!x)' : ()
         Lean = \ () => $'IO.print (toString !x)' : ()
         C = \ () => write_c x
+        Cpp = \ () => write_cpp x
+        CppHost = \ () => write_cpp x
         Pascal = \ () => $'Write(!x)' : ()
         Kotlin = \ () =>
             $'run { System.out.write(!x.toString().toByteArray(Charsets.UTF_8)); System.out.flush() }' : ()

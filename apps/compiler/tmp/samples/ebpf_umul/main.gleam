@@ -1,5 +1,6 @@
 import gleam/int
 
+
 pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
   int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
 }

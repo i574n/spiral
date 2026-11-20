@@ -1,0 +1,91 @@
+///- --package .
+:< erlang_term
+
+:# tool_lookup static =
+    :< testing
+
+:~ is_nil (t : term) : bool = equal t (atom "nil") || equal t (atom "false")
+
+:~ fname (f : string) (args : list term) : string = cast (apply "filename" f args)
+
+:~ parent (dir : string) : string = fname "dirname" [ of dir ]
+
+:~ joined (dir : string) (rel : string) : string = fname "join" [ of dir; of rel ]
+
+:~ is_root (dir : string) : bool = erlang_file::is_directory (joined dir "apps/cells") && erlang_file::is_directory (joined dir "lib/spiral")
+
+:~ root_above (dir : string) : string =
+    ? is_root dir ?> dir
+    |? parent dir = dir ?> ""
+    |: root_above (parent dir)
+
+:~ beam_path () : term = apply "code" "which" [ atom "spiral_cells@domain" ]
+
+:~ is_list (t : term) : bool = cast (apply "erlang" "is_list" [ t ])
+
+:~ as_text (t : term) : string = cast (apply "unicode" "characters_to_binary" [ t ])
+
+:~ cells_root () : string =
+    := b = beam_path ()
+    ? is_list b ?> root_above (parent (as_text b)) |: ""
+
+:~ opt_key (name : string) : string =
+    ? name = "cache_dir" ?> "bin_cache_dir"
+    |? name = "rustc" ?> "rustc_bin"
+    |: name
+
+:~ raw_opt (opts : term) (key : term) : term =
+    ? is_map opts ?> apply "maps" "get" [ key; opts; atom "nil" ]
+    |? is_list opts ?> apply "proplists" "get_value" [ key; opts; atom "nil" ]
+    |: atom "nil"
+
+:~ override (opts : term) (name : string) : string =
+    := v = raw_opt opts (atom (opt_key name))
+    ? is_nil v ?> "" |: cast v
+
+:~ path_or_nil (found : string) : term = ? found = "" ?> atom "nil" |: of found
+
+:~ found (name : string) (opts : term) : string = toolchain::tool_path_wire name (override opts name) (cells_root ())
+
+:~ tool (name : string) (opts : term) : term = path_or_nil (found name opts)
+
+:~ tab () : term = apply "erlang" "list_to_binary" [ list_term [ of 9i32 ] ]
+
+:~ flag_list (flag : string) : term = list_term (? flag = "" ?> [] |: [ of flag ])
+
+:~ split_tab (wire : string) : list term = items_of (apply "binary" "split" [ of wire; tab () ])
+
+:~ lean_pair (exe : string) (flag : string) : term = tuple [ path_or_nil exe; flag_list flag ]
+
+:~ lean_of (wire : string) : term =
+    ?= split_tab wire ?|
+    | exe :: flag :: _ => lean_pair (cast exe) (cast flag)
+    | _ => lean_pair wire ""
+
+:~ tool_lean (opts : term) : term = lean_of (found "lean" opts)
+
+:~ listed () : term = list_term [ pair "rustc_bin" (of "/r"); pair "dotnet" (atom "nil") ]
+
+:~ mapped () : term = apply "maps" "from_list" [ list_term [ pair "zig" (of "/z") ] ]
+
+:~ tab_text () : string = cast (tab ())
+
+:~ with_tab (a : string) (b : string) : string = a ^^ tab_text () ^^ b
+
+:~ pair_is (wire : string) (exe : term) (flag : string) : bool = equal (lean_of wire) (tuple [ exe; flag_list flag ])
+
+///> gleam
+:# option_keys_follow_the_elixir_names =
+    (opt_key "cache_dir", opt_key "rustc", opt_key "dotnet") |> _assert_eq ("bin_cache_dir", "rustc_bin", "dotnet")
+
+///> gleam
+:# overrides_read_from_lists_and_maps_and_blank_when_unset =
+    (override (listed ()) "rustc", override (listed ()) "dotnet", override (mapped ()) "zig", override (mapped ()) "gleam") |> _assert_eq ("/r", "", "/z", "")
+
+///> gleam
+:# a_lean_wire_splits_into_exe_and_flags =
+    (pair_is (with_tab "/l" "--x") (of "/l") "--x", pair_is "" (atom "nil") "") |> _assert_eq (!+, !+)
+
+///> gleam
+:# a_missing_directory_has_no_root_above_it =
+    (root_above "/surely/missing/spiral/root/1118", is_root "/surely/missing", override (atom "nil") "zig") |> _assert_eq ("", !-, "")

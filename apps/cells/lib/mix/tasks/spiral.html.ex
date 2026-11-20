@@ -9,7 +9,8 @@ defmodule Mix.Tasks.Spiral.Html do
     if paths == [], do: Mix.raise("usage: mix spiral.html <file.ipynb>...")
 
     for path <- paths do
-      :ok = Spiral.Cells.Html.write(Path.expand(path))
+      expanded = Path.expand(path)
+      Spiral.Cells.Domain.html_write(expanded, Path.rootname(expanded) <> ".html", Spiral.Cells.Domain.tool("dotnet", []) || "", Spiral.Cells.Domain.tool("compiler_dll", []) || "")
       IO.puts("spiral.html: #{Path.rootname(path)}.html")
     end
   end

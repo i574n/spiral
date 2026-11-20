@@ -6,53 +6,11 @@ defmodule Mix.Tasks.Spiral.Notebook do
   @impl Mix.Task
   def run(args) do
     Mix.Task.run("loadpaths")
-    Spiral.Cells.MemoryGuard.start()
-    Spiral.Cells.TempSweep.sweep()
-    Spiral.Cells.Domain.ensure!()
-    gate? = "--gate" in args
-    gate_report_dir = Path.join(System.tmp_dir!(), "spiral-cells-gate-#{System.unique_integer([:positive])}")
-    args = if gate?, do: gate_args(args, gate_report_dir) ++ pin_args(), else: args
-    {status, lines} =
-      case Spiral.Cells.Server.try_execute(args) do
-        {:served, reply} -> reply
-        :unavailable -> Spiral.Cells.NotebookCli.execute(args)
-      end
-    Enum.each(lines, &IO.puts/1)
 
-    cond do
-      gate? ->
-        File.rm_rf!(gate_report_dir)
-        Spiral.Cells.CompilerClient.shutdown()
-
-      System.get_env("SPIRAL_CELLS_WARM") != "0" and System.get_env("SPIRAL_CELLS_COMPILER") != "process" ->
-        Spiral.Cells.CompilerClient.prestart()
-
-      true ->
-        :ok
+    case Spiral.Cells.Domain.boot_main(args) do
+      0 -> :ok
+      3 -> exit({:shutdown, 3})
+      code -> exit({:shutdown, code})
     end
-
-    case status do
-      :ok -> :ok
-      {:void, message} -> Mix.shell().error(message) && exit({:shutdown, 3})
-      {:error, message} -> Mix.raise(message)
-    end
-  end
-
-  @doc false
-  def pin_args do
-    if System.get_env("SPIRAL_CELLS_COMPILER") == "process" do
-      []
-    else
-      case Spiral.Cells.CompilerDaemon.gate_pin(Spiral.Cells.Toolchain.compiler_dll([])) do
-        pin when is_binary(pin) -> ["--compiler-pin", pin]
-        _ -> []
-      end
-    end
-  end
-
-  @doc false
-  def gate_args(args, report_dir) do
-    args = Enum.reject(args, &(&1 == "--gate")) ++ ["--no-memo", "--no-html"]
-    if Enum.any?(args, &(&1 in ["--output-dir", "--output-path"])), do: args, else: args ++ ["--output-dir", report_dir]
   end
 end

@@ -64,14 +64,18 @@
 :# theta_vanishes_at_the_first_gram_point =
     (distance (theta 17.8455995405) 0.0 < 0.000001) |> _assert_eq !+
 
+:~ later_miss (w : f64) (z : f64) : f64 = ? z > 24.0 ?> worse_miss w z |: w
+
 ///> rust
 ///> gleam
-:# riemann_siegel_z_finds_the_first_ten_zeros_by_sign_change =
+:# riemann_siegel_z_changes_sign_at_each_of_the_first_ten_zeros =
+    first_zeros () |> listm::fold (\ (ok : bool) (z : f64) => ok && changes_sign z) !+ |> _assert_eq !+
+
+///> rust
+///> gleam
+:# riemann_siegel_z_locates_the_first_ten_zeros_closely =
     := zeros = first_zeros ()
-    := signs = zeros |> listm::fold (\ (ok : bool) (z : f64) => ok && changes_sign z) !+
-    := worst = zeros |> listm::fold worse_miss 0.0
-    := later = zeros |> listm::fold (\ (w : f64) (z : f64) => ? z > 24.0 ?> worse_miss w z |: w) 0.0
-    (signs, worst < 0.003, later < 0.0005) |> _assert_eq (!+, !+, !+)
+    (listm::fold worse_miss 0.0 zeros < 0.003, listm::fold later_miss 0.0 zeros < 0.0005) |> _assert_eq (!+, !+)
 
 :== complex = { re : f64; im : f64 }
 
@@ -93,41 +97,51 @@
     := m = exp (0.0 - s::re * l)
     { re = m * cos (s::im * l); im = 0.0 - m * sin (s::im * l) }
 
+:~ bernoulli_top (k : i32) : f64 =
+    ? k = 9i32 ?> (43867.0 / 798.0) / 6402373705728000.0
+    |? k = 10i32 ?> (0.0 - 174611.0 / 330.0) / 2432902008176640000.0
+    |: 0.0
+
+:~ bernoulli_high (k : i32) : f64 =
+    ? k = 6i32 ?> (0.0 - 691.0 / 2730.0) / 479001600.0
+    |? k = 7i32 ?> (7.0 / 6.0) / 87178291200.0
+    |? k = 8i32 ?> (0.0 - 3617.0 / 510.0) / 20922789888000.0
+    |: bernoulli_top k
+
 :~ bernoulli_over_factorial (k : i32) : f64 =
     ? k = 1i32 ?> (1.0 / 6.0) / 2.0
     |? k = 2i32 ?> (0.0 - 1.0 / 30.0) / 24.0
     |? k = 3i32 ?> (1.0 / 42.0) / 720.0
     |? k = 4i32 ?> (0.0 - 1.0 / 30.0) / 40320.0
     |? k = 5i32 ?> (5.0 / 66.0) / 3628800.0
-    |? k = 6i32 ?> (0.0 - 691.0 / 2730.0) / 479001600.0
-    |? k = 7i32 ?> (7.0 / 6.0) / 87178291200.0
-    |? k = 8i32 ?> (0.0 - 3617.0 / 510.0) / 20922789888000.0
-    |? k = 9i32 ?> (43867.0 / 798.0) / 6402373705728000.0
-    |? k = 10i32 ?> (0.0 - 174611.0 / 330.0) / 2432902008176640000.0
-    |: 0.0
+    |: bernoulli_high k
 
 :~ ^ head_sum (s : complex) (n : i32) (last : i32) (acc : complex) : complex =
     ? n > last
     ?> acc
     |: head_sum s (n + 1i32) last (c_add acc (power_neg (conv n) s))
 
+:~ correction_term (s : complex) (big_n : f64) (k : i32) (rising : complex) : complex =
+    := power = power_neg big_n { re = s::re + 2.0 * (conv k : f64) - 1.0; im = s::im }
+    c_scale (bernoulli_over_factorial k) (c_mul rising power)
+
+:~ next_rising (s : complex) (k : i32) (rising : complex) : complex =
+    := j : f64 = conv (2i32 * k)
+    c_mul (c_mul rising { re = s::re + j - 1.0; im = s::im }) { re = s::re + j; im = s::im }
+
 :~ ^ correction_sum (s : complex) (big_n : f64) (k : i32) (rising : complex) (acc : complex) : complex =
     ? k > 10i32
     ?> acc
-    |:
-        := power = power_neg big_n { re = s::re + 2.0 * (conv k : f64) - 1.0; im = s::im }
-        := term = c_scale (bernoulli_over_factorial k) (c_mul rising power)
-        := j : f64 = conv (2i32 * k)
-        := next = c_mul (c_mul rising { re = s::re + j - 1.0; im = s::im }) { re = s::re + j; im = s::im }
-        correction_sum s big_n (k + 1i32) next (c_add acc term)
+    |: correction_sum s big_n (k + 1i32) (next_rising s k rising) (c_add acc (correction_term s big_n k rising))
+
+:~ em_parts (s : complex) (shifted : f64) : complex * complex =
+    := n_s = power_neg shifted s
+    c_div (c_scale shifted n_s) { re = s::re - 1.0; im = s::im }, c_add (c_scale 0.5 n_s) (correction_sum s shifted 1i32 s { re = 0.0; im = 0.0 })
 
 :~ zeta_em_terms (count : i32) (s : complex) : complex =
-    := big_n : f64 = conv count
     := head = head_sum s 1i32 (count - 1i32) { re = 0.0; im = 0.0 }
-    := n_s = power_neg big_n s
-    := tail_integral = c_div (c_scale big_n n_s) { re = s::re - 1.0; im = s::im }
-    := half = c_scale 0.5 n_s
-    c_add (c_add head tail_integral) (c_add half (correction_sum s big_n 1i32 s { re = 0.0; im = 0.0 }))
+    := tail_integral, rest = em_parts s (conv count)
+    c_add (c_add head tail_integral) rest
 
 :~ zeta_em (s : complex) : complex = zeta_em_terms 30i32 s
 
@@ -175,16 +189,21 @@
 
 ///> rust
 ///> gleam
-:# euler_maclaurin_zeta_matches_closed_forms_and_a_complex_value =
+:# euler_maclaurin_zeta_gives_pi_squared_over_six_at_two =
     := two = zeta_em { re = 2.0; im = 0.0 }
+    (distance two::re (pi * pi / 6.0) < 0.000000000001) |> _assert_eq !+
+
+///> rust
+///> gleam
+:# euler_maclaurin_zeta_gives_minus_one_twelfth_at_minus_one =
     := minus_one = zeta_em { re = 0.0 - 1.0; im = 0.0 }
+    (distance minus_one::re (0.0 - 1.0 / 12.0) < 0.000000000001) |> _assert_eq !+
+
+///> rust
+///> gleam
+:# euler_maclaurin_zeta_matches_a_complex_value =
     := off_axis = zeta_em { re = 2.0; im = 0.0 - 2.0 }
-    (
-        distance two::re (pi * pi / 6.0) < 0.000000000001,
-        distance minus_one::re (0.0 - 1.0 / 12.0) < 0.000000000001,
-        distance off_axis::re 0.8673518296 < 0.000000001 && distance off_axis::im 0.2751272388 < 0.000000001
-    )
-    |> _assert_eq (!+, !+, !+)
+    (distance off_axis::re 0.8673518296 < 0.000000001, distance off_axis::im 0.2751272388 < 0.000000001) |> _assert_eq (!+, !+)
 
 ///> rust
 ///> gleam
@@ -204,25 +223,27 @@
 
 :~ real_power (a : f64) (s : complex) : complex = c_exp (c_scale (log a) s)
 
+:~ stirling_coefficient (k : i32) : f64 =
+    ? k = 1i32 ?> 1.0 / 12.0
+    |? k = 2i32 ?> 0.0 - 1.0 / 360.0
+    |? k = 3i32 ?> 1.0 / 1260.0
+    |? k = 4i32 ?> 0.0 - 1.0 / 1680.0
+    |? k = 5i32 ?> 1.0 / 1188.0
+    |? k = 6i32 ?> 0.0 - 691.0 / 360360.0
+    |? k = 7i32 ?> 1.0 / 156.0
+    |: 0.0 - 3617.0 / 122400.0
+
 :~ ^ inverse_power_sum (inv_sq : complex) (k : i32) (power : complex) (acc : complex) : complex =
     ? k > 8i32
     ?> acc
-    |:
-        := coefficient =
-            ? k = 1i32 ?> 1.0 / 12.0
-            |? k = 2i32 ?> 0.0 - 1.0 / 360.0
-            |? k = 3i32 ?> 1.0 / 1260.0
-            |? k = 4i32 ?> 0.0 - 1.0 / 1680.0
-            |? k = 5i32 ?> 1.0 / 1188.0
-            |? k = 6i32 ?> 0.0 - 691.0 / 360360.0
-            |? k = 7i32 ?> 1.0 / 156.0
-            |: 0.0 - 3617.0 / 122400.0
-        inverse_power_sum inv_sq (k + 1i32) (c_mul power inv_sq) (c_add acc (c_scale coefficient power))
+    |: inverse_power_sum inv_sq (k + 1i32) (c_mul power inv_sq) (c_add acc (c_scale (stirling_coefficient k) power))
+
+:~ stirling_main (z : complex) : complex = c_sub (c_mul { re = z::re - 0.5; im = z::im } (c_log z)) z
 
 :~ stirling_log_gamma (z : complex) : complex =
     := inv = c_div { re = 1.0; im = 0.0 } z
     := inv_sq = c_mul inv inv
-    := main = c_sub (c_mul { re = z::re - 0.5; im = z::im } (c_log z)) z
+    := main = stirling_main z
     := constant = { re = log (two_pi ()) / 2.0; im = 0.0 }
     c_add (c_add main constant) (inverse_power_sum inv_sq 1i32 inv { re = 0.0; im = 0.0 })
 
@@ -264,20 +285,28 @@
     := five = gamma { re = 5.0; im = 0.0 }
     (distance half::re (sqrt pi) < 0.000000000001, distance five::re 24.0 < 0.00000000001) |> _assert_eq (!+, !+)
 
+:= reflection_points () : list complex =
+    [
+        { re = 0.3; im = 5.0 }; { re = 0.25; im = 0.0 - 3.0 }; { re = 0.0 - 1.5; im = 2.0 }; { re = 3.0; im = 4.0 }
+        { re = 2.5; im = 0.0 - 3.5 }; { re = 1.5; im = 2.5 }; { re = 0.5; im = 14.134725 }
+    ]
+
 ///> rust
 ///> gleam
-:# the_functional_equation_trivial_zeros_and_conjugate_symmetry_hold =
-    := points =
-        [
-            { re = 0.3; im = 5.0 }; { re = 0.25; im = 0.0 - 3.0 }; { re = 0.0 - 1.5; im = 2.0 }; { re = 3.0; im = 4.0 }
-            { re = 2.5; im = 0.0 - 3.5 }; { re = 1.5; im = 2.5 }; { re = 0.5; im = 14.134725 }
-        ]
-    := reflection = points |> listm::fold reflects !+
-    := trivial = [ 2.0; 4.0; 6.0; 8.0; 18.0 ] |> listm::fold vanishes !+
+:# the_functional_equation_holds_off_the_line =
+    reflection_points () |> listm::fold reflects !+ |> _assert_eq !+
+
+///> rust
+///> gleam
+:# the_trivial_zeros_vanish =
+    [ 2.0; 4.0; 6.0; 8.0; 18.0 ] |> listm::fold vanishes !+ |> _assert_eq !+
+
+///> rust
+///> gleam
+:# zeta_is_conjugate_symmetric =
     := upper = zeta_em { re = 0.3; im = 7.0 }
     := lower = zeta_em { re = 0.3; im = 0.0 - 7.0 }
-    := mirrored = c_distance upper { re = lower::re; im = 0.0 - lower::im } < 0.000000000001
-    (reflection, trivial, mirrored) |> _assert_eq (!+, !+, !+)
+    (c_distance upper { re = lower::re; im = 0.0 - lower::im } < 0.000000000001) |> _assert_eq !+
 
 :~ ^ sign_changes (t : f64) (stop : f64) (step : f64) (previous : f64) (count : i32) : i32 =
     ? t > stop
@@ -289,19 +318,18 @@
 
 :~ zeros_up_to (stop : f64) : i32 = sign_changes 10.05 stop 0.05 (hardy_z_signed 10.0) 0i32
 
+:~ near_n_of_t (counted : i32) (stop : f64) (slack : f64) : bool = distance (conv counted : f64) (theta stop / pi + 1.0) < slack
+
 ///> rust
 ///> gleam
 :# the_zeros_below_one_hundred_are_counted_by_sign_changes_and_match_n_of_t =
     := counted = zeros_up_to 100.0
-    := expected = theta 100.0 / pi + 1.0
-    := counted_f : f64 = conv counted
-    (counted, distance counted_f expected < 0.5) |> _assert_eq (29i32, !+)
+    (counted, near_n_of_t counted 100.0 0.5) |> _assert_eq (29i32, !+)
 
 ///> rust
 :# the_zeros_below_one_thousand_count_to_six_hundred_forty_nine =
     := counted = zeros_up_to 1000.0
-    := counted_f : f64 = conv counted
-    (counted, distance counted_f (theta 1000.0 / pi + 1.0) < 1.0) |> _assert_eq (649i32, !+)
+    (counted, near_n_of_t counted 1000.0 1.0) |> _assert_eq (649i32, !+)
 
 :~ ^ gram_newton (target : f64) (t : f64) (left : i32) : f64 =
     ? left <= 0i32
@@ -319,11 +347,13 @@
 
 ///> rust
 ///> gleam
-:# gram_points_solve_theta_and_grams_law_first_fails_at_one_hundred_twenty_six =
-    := g0 = gram_point 0i32
-    := g1 = gram_point 1i32
-    (distance g0 17.8455995405 < 0.00000001, distance (theta g1) pi < 0.000000001, first_gram_failure 0i32 130i32)
-    |> _assert_eq (!+, !+, 126i32)
+:# gram_points_solve_theta =
+    (distance (gram_point 0i32) 17.8455995405 < 0.00000001, distance (theta (gram_point 1i32)) pi < 0.000000001) |> _assert_eq (!+, !+)
+
+///> rust
+///> gleam
+:# grams_law_first_fails_at_one_hundred_twenty_six =
+    first_gram_failure 0i32 130i32 |> _assert_eq 126i32
 
 :~ good_gram (n : i32) : bool = gram_law_holds n
 
@@ -369,13 +399,16 @@
 :~ ^ first_good_above (n : i32) (floor : f64) : i32 =
     ? gram_point n >= floor && good_gram n ?> n |: first_good_above (n + 1i32) floor
 
+:~ lower_count (n : i32) : i32 = ? good_gram (0i32 - 1i32) ?> block_lower (0i32 - 1i32) n 0i32 |: 0i32
+
+:~ certified_after (n : i32) (blocks : i32) (lower : i32) (p : i32) : option i32 =
+    := enough = (conv blocks : f64) > turing_blocks_needed (gram_point p)
+    ? good_gram n && gram_point n >= 653.0 && enough && lower >= n + 1i32 ?> Some lower |: None
+
 :~ certified_count (n : i32) (blocks : i32) : option i32 =
-    := gn = gram_point n
-    := lower = ? good_gram (0i32 - 1i32) ?> block_lower (0i32 - 1i32) n 0i32 |: 0i32
+    := lower = lower_count n
     ?= rosser_blocks n blocks ?|
-    | Some p =>
-        := enough = (conv blocks : f64) > turing_blocks_needed (gram_point p)
-        ? good_gram n && gn >= 653.0 && enough && lower >= n + 1i32 ?> Some lower |: None
+    | Some p => certified_after n blocks lower p
     | None => None
 
 ///> rust
@@ -396,8 +429,7 @@
 ///> rust
 :# the_zero_count_is_certified_past_one_hundred_thousand_and_matches_odlyzko =
     := n = first_good_above 138060i32 100000.0
-    := certified = certified_count n 3i32
-    (certified = Some (n + 1i32), n + 1i32 >= 138069i32 && n + 1i32 <= 138080i32) |> _assert_eq (!+, !+)
+    (certified_count n 3i32 = Some (n + 1i32), n + 1i32 >= 138069i32 && n + 1i32 <= 138080i32) |> _assert_eq (!+, !+)
 
 :~ hardy_z_precise (t : f64) : f64 =
     := z = zeta_em_terms (conv (t + 30.0)) { re = 0.5; im = t }
@@ -459,14 +491,12 @@
 
 :~ fixed_point_e12 (t : f64) : i64 = conv (t * 1000000000000.0 + 0.5)
 
+:~ first_hundred_text () : string = odlyzko_first_hundred () |> listm::map (fixed_point_e12 >> sm'::show) |> sm'::concat_list (~~ "\n")
+
 ///> rust -d chrono regex sha2
 :# the_first_hundred_zeros_are_the_pinned_lmfdb_rendering =
     := provenance = first_hundred_provenance ()
-    odlyzko_first_hundred ()
-    |> listm::map (fixed_point_e12 >> sm'::show)
-    |> sm'::concat_list (~~ "\n")
-    |> crypto::hash_text
-    |> _assert_eq provenance::fingerprint
+    first_hundred_text () |> crypto::hash_text |> _assert_eq provenance::fingerprint
 
 :~ ^ hurwitz_head (s : complex) (a : f64) (n : i32) (last : i32) (acc : complex) : complex =
     ? n > last
@@ -474,12 +504,9 @@
     |: hurwitz_head s a (n + 1i32) last (c_add acc (power_neg ((conv n : f64) + a) s))
 
 :~ hurwitz_em_terms (count : i32) (s : complex) (a : f64) : complex =
-    := shifted = (conv count : f64) + a
     := head = hurwitz_head s a 0i32 (count - 1i32) { re = 0.0; im = 0.0 }
-    := n_s = power_neg shifted s
-    := tail_integral = c_div (c_scale shifted n_s) { re = s::re - 1.0; im = s::im }
-    := half = c_scale 0.5 n_s
-    c_add (c_add head tail_integral) (c_add half (correction_sum s shifted 1i32 s { re = 0.0; im = 0.0 }))
+    := tail_integral, rest = em_parts s ((conv count : f64) + a)
+    c_add (c_add head tail_integral) rest
 
 :~ hurwitz_terms (s : complex) : i32 =
     := height = distance s::im 0.0
@@ -507,19 +534,23 @@
     := value = dirichlet_l 4i32 chi_four { re = x; im = 0.0 }
     value::re
 
+:~ close_to (expected : f64) (value : f64) : bool = distance value expected < 0.000000000001
+
 ///> rust
 ///> gleam
-:# dirichlet_l_gives_catalan_at_two_and_euler_numbers_at_non_positive_integers =
-    := catalan = 0.9159655941772190150546035149
+:# dirichlet_l_chi_four_gives_catalan_at_two =
+    close_to 0.9159655941772190150546035149 (l_four 2.0) |> _assert_eq !+
+
+///> rust
+///> gleam
+:# dirichlet_l_of_the_principal_character_gives_zeta_two =
     := zeta_two = dirichlet_l 1i32 principal_one { re = 2.0; im = 0.0 }
-    (
-        distance (l_four 2.0) catalan < 0.000000000001,
-        distance (l_four 0.0) 0.5 < 0.000000000001,
-        distance (l_four (0.0 - 2.0)) (0.0 - 0.5) < 0.000000000001,
-        distance (l_four (0.0 - 4.0)) 2.5 < 0.000000000001,
-        distance zeta_two::re (pi * pi / 6.0) < 0.000000000001
-    )
-    |> _assert_eq (!+, !+, !+, !+, !+)
+    close_to (pi * pi / 6.0) zeta_two::re |> _assert_eq !+
+
+///> rust
+///> gleam
+:# dirichlet_l_gives_euler_numbers_at_non_positive_integers =
+    (close_to 0.5 (l_four 0.0), close_to (0.0 - 0.5) (l_four (0.0 - 2.0)), close_to 2.5 (l_four (0.0 - 4.0))) |> _assert_eq (!+, !+, !+)
 
 :~ unit (z : complex) : complex =
     := size = sqrt (z::re * z::re + z::im * z::im)
@@ -564,9 +595,12 @@
 ///> rust
 ///> gleam
 :# the_first_five_zeros_of_l_chi_four_match_lmfdb_to_a_ten_billionth =
-    := zeros = lmfdb_l_four_zeros () |> listm::fold worse_l_four 0.0
-    := on_line = [ 3.0; 7.5; 14.0; 21.0 ] |> listm::fold real_on_the_line !+
-    (zeros < 0.0000000001, on_line) |> _assert_eq (!+, !+)
+    ((lmfdb_l_four_zeros () |> listm::fold worse_l_four 0.0) < 0.0000000001) |> _assert_eq !+
+
+///> rust
+///> gleam
+:# the_rotated_l_chi_four_is_real_on_the_critical_line =
+    [ 3.0; 7.5; 14.0; 21.0 ] |> listm::fold real_on_the_line !+ |> _assert_eq !+
 
 := two_thirds_paper () =
     {
@@ -582,15 +616,20 @@
 
 ///> rust
 ///> gleam
-:# the_montgomery_taylor_constants_of_the_two_thirds_paper_reproduce =
+:# the_montgomery_taylor_constant_of_the_two_thirds_paper_reproduces =
+    close_to 1.32749929632059 (montgomery_taylor_inverse ()) |> _assert_eq !+
+
+///> rust
+///> gleam
+:# the_two_thirds_paper_proportions_reproduce =
     := c = montgomery_taylor_inverse ()
-    (
-        distance c 1.32749929632059 < 0.000000000001,
-        distance (2.0 - c) 0.672500703679412 < 0.000000000001,
-        distance (0.5 * (3.0 - c)) 0.836250351839706 < 0.000000000001,
-        2.0 - c > 2.0 / 3.0 && 0.5 * (3.0 - c) > 5.0 / 6.0
-    )
-    |> _assert_eq (!+, !+, !+, !+)
+    (close_to 0.672500703679412 (2.0 - c), close_to 0.836250351839706 (0.5 * (3.0 - c))) |> _assert_eq (!+, !+)
+
+///> rust
+///> gleam
+:# the_montgomery_taylor_proportions_clear_two_thirds_and_five_sixths =
+    := c = montgomery_taylor_inverse ()
+    (2.0 - c > 2.0 / 3.0, 0.5 * (3.0 - c) > 5.0 / 6.0) |> _assert_eq (!+, !+)
 
 :~ ^ zero_terms (x : f64) (left : i32) (zeros : list f64) (acc : f64) : f64 =
     ?= zeros ?|
@@ -617,14 +656,16 @@
 
 :~ explicit_gap (count : i32) (x : f64) : f64 = distance (psi_from_zeros x count) (psi_from_primes x)
 
+:~ explicit_points () : list f64 = [ 10.5; 30.5; 50.5; 100.5 ]
+
+:~ worst_gap (count : i32) : f64 = explicit_points () |> listm::fold (\ w x => ? explicit_gap count x > w ?> explicit_gap count x |: w) 0.0
+
+:~ total_gap (count : i32) : f64 = explicit_points () |> listm::fold (\ s x => s + explicit_gap count x) 0.0
+
 ///> rust
 ///> gleam
 :# the_explicit_formula_over_the_pinned_zeros_reproduces_chebyshev_psi =
-    := points = [ 10.5; 30.5; 50.5; 100.5 ]
-    := worst = points |> listm::fold (\ w x => ? explicit_gap 100i32 x > w ?> explicit_gap 100i32 x |: w) 0.0
-    := total_100 = points |> listm::fold (\ s x => s + explicit_gap 100i32 x) 0.0
-    := total_10 = points |> listm::fold (\ s x => s + explicit_gap 10i32 x) 0.0
-    (worst < 1.25, total_100 < total_10) |> _assert_eq (!+, !+)
+    (worst_gap 100i32 < 1.25, total_gap 100i32 < total_gap 10i32) |> _assert_eq (!+, !+)
 
 :~ fejer_h (l : f64) (r : f64) : f64 =
     := x = l * r / 2.0
@@ -642,16 +683,18 @@
 :~ ^ digamma_shift (x : f64) (y : f64) (acc : f64) : f64 * f64 =
     ? x >= 20.0 ?> (x, acc) |: digamma_shift (x + 1.0) y (acc - x / (x * x + y * y))
 
-:~ digamma_re (x0 : f64) (y : f64) : f64 =
-    := x, acc = digamma_shift x0 y 0.0
-    := r2 = x * x + y * y
-    := a = x / r2
-    := b = 0.0 - y / r2
+:~ even_powers (a : f64) (b : f64) : f64 * f64 * f64 =
     := a2 = a * a - b * b
     := b2 = 2.0 * a * b
     := a4 = a2 * a2 - b2 * b2
     := b4 = 2.0 * a2 * b2
-    := a6 = a4 * a2 - b4 * b2
+    a2, a4, a4 * a2 - b4 * b2
+
+:~ digamma_re (x0 : f64) (y : f64) : f64 =
+    := x, acc = digamma_shift x0 y 0.0
+    := r2 = x * x + y * y
+    := a = x / r2
+    := a2, a4, a6 = even_powers a (0.0 - y / r2)
     acc + 0.5 * log r2 - 0.5 * a - a2 / 12.0 + a4 / 120.0 - a6 / 252.0
 
 :~ ^ weil_integral_from (l : f64) (r : f64) (acc : f64) : f64 =

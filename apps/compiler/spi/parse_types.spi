@@ -1,0 +1,312 @@
+///- --package .
+:< sm'_operators
+
+:# parse_types static =
+    :< testing
+
+:~ col (c : cursor::cursor) : i32 =
+    ?= cursor::current c ?|
+    | Some ((from, _), _) => from::character
+    | None => -1i32
+
+:= indented \* a. (i : i32) (ok : i32 -> i32 -> bool) (p : cursor::cursor -> cursor::step a) : cursor::cursor -> cursor::step a =
+    \ c => ? ok i (col c) ?> p c |: cursor::Failed ([], c)
+
+:~ ^ duplicates_from (error : ast::parser_error) (xs : list ast::named) (seen : list string) (acc : cursor::failure) : cursor::failure =
+    ?= xs ?|
+    | [] => listm::rev acc
+    | (r, name) :: rest =>
+        ? listm'::contains name seen ?> duplicates_from error rest seen ((r, error) :: acc)
+        |: duplicates_from error rest (name :: seen) acc
+
+:~ duplicates (error : ast::parser_error) (xs : list ast::named) : cursor::failure = duplicates_from error xs [] []
+
+:~ ^ fold_kinds (xs : list ast::raw_kind_expr) : ast::raw_kind_expr =
+    ?= xs ?|
+    | [ x ] => x
+    | x :: rest => ast::RawKindFun (x, fold_kinds rest)
+    | [] => ast::RawKindStar
+
+:~ ^ parse_kind (c : cursor::cursor) : cursor::step ast::raw_kind_expr =
+    := atom = cursor::alt_p (cursor::map_p (\ _ => ast::RawKindStar) (cursor::skip_op "*")) (cursor::rounds_p parse_kind)
+    cursor::map_p fold_kinds (cursor::sep_by1_p atom (cursor::skip_op "->")) c
+
+:~ ^ kind_text (k : ast::raw_kind_expr) : string =
+    ?= k ?|
+    | ast::RawKindStar => "*"
+    | ast::RawKindWildcard => "_"
+    | ast::RawKindFun (a, b) => "(" ++# kind_text a ++# " -> " ++# kind_text b ++# ")"
+
+///> rust
+///> fsharp
+///> gleam
+:# a_kind_folds_its_arrows_to_the_right_like_the_reference =
+    := shown (text : string) = cursor::took_value (parse_kind (cursor::line_cursor text)) |> optionm::map kind_text
+    (shown "*", shown "* -> *", shown "* -> * -> *", shown "( * -> * ) -> *", shown "x") |> _assert_eq (Some "*", Some "(* -> *)", Some "(* -> (* -> *))", Some "((* -> *) -> *)", None)
+
+///> rust
+///> fsharp
+///> gleam
+:# duplicates_report_every_repeat_after_the_first_in_order =
+    := r (n : i32) : ast::range = cursor::at0 n (n + 1i32)
+    duplicates ast::DuplicateForallVar [ (r 0i32, "a"); (r 2i32, "b"); (r 4i32, "a"); (r 6i32, "a") ] |> listm::map fst |> _assert_eq [ r 4i32; r 6i32 ]
+
+///> rust
+///> fsharp
+///> gleam
+:# an_indent_guard_fails_without_consuming_and_without_errors =
+    := c = cursor::line_cursor "  x"
+    := ok = cursor::took_value (indented 1i32 (\ i at => i <= at) cursor::read_var c) |> optionm::map snd
+    := refused = ?= indented 5i32 (\ i at => i <= at) cursor::read_var c ?| | cursor::Failed (e, at) => ((listm::length e : i32), at::at) | cursor::Took _ => (-1i32, -1i32)
+    (ok, refused, col c) |> _assert_eq (Some "x", (0i32, 0i32), 2i32)
+
+:== type_flags = { allow_wildcard : bool; allow_typecase_metavars : bool; allow_term : bool }
+
+:~ type_defaults () : type_flags = { allow_wildcard = !-; allow_typecase_metavars = !-; allow_term = !- }
+
+:~ read_symbol (c : cursor::cursor) : cursor::step ast::named =
+    cursor::take c (\ r t => ?= t ?| | tokens::TokSymbol (x, _) => Some (r, x) | _ => None) ast::ExpectedSymbol
+
+:~ skip_value_suffix (c : cursor::cursor) : cursor::cursor =
+    ?= cursor::current c ?|
+    | Some (_, tokens::TokValueSuffix) => cursor::advance c
+    | _ => c
+
+:~ read_value (c : cursor::cursor) : cursor::step (ast::range * tokens::literal) =
+    ?= cursor::take c (\ r t => ?= t ?| | tokens::TokValue x => Some (r, x) | _ => None) ast::ExpectedLit ?|
+    | cursor::Took (v, next) => cursor::Took (v, skip_value_suffix next)
+    | cursor::Failed (e, at) => cursor::Failed (e, at)
+
+:~ read_string (c : cursor::cursor) : cursor::step (ast::range * string * ast::range) =
+    := text = cursor::alt_p (cursor::map_p snd (cursor::read_text !-)) (\ c => cursor::Took ("", c))
+    cursor::bind_p cursor::skip_string_open (\ a => cursor::bind_p text (\ s => cursor::map_p (\ b => a, s, b) cursor::skip_string_close)) c
+
+:~ expr_tight \* a. (p : cursor::cursor -> cursor::step a) (c : cursor::cursor) : cursor::step a =
+    ?= cursor::current c ?|
+    | Some ((from, _), _) ?& c::at > 0i32 =>
+        := (_, prev_end) = c::last
+        ? prev_end::line = from::line && prev_end::character = from::character ?> p c |: cursor::Failed ([], c)
+    | _ => cursor::Failed ([], c)
+
+:~ record_var (c : cursor::cursor) : cursor::step string =
+    cursor::alt_p (cursor::map_p snd cursor::read_var) (cursor::rounds_p (cursor::map_p snd cursor::read_op)) c
+
+:~ bar (i : i32) (c : cursor::cursor) : cursor::step ast::range = indented i (\ a b => a <= b) (cursor::skip_op "|") c
+
+:~ optional_p \* a. (p : cursor::cursor -> cursor::step a) (c : cursor::cursor) : cursor::step () = cursor::map_p (\ _ => ()) (cursor::opt_p p) c
+
+:~ line_start_column (c : cursor::cursor) : i32 =
+    ?= cursor::current c ?|
+    | Some ((from, _), _) =>
+        := first = cursor::first_column_of_line from::line c::firsts
+        ? first < 0i32 || col c < first ?> col c |: first
+    | None => col c
+
+:~ ^ fold_applies (a : ast::raw_texpr) (xs : list ast::raw_texpr) : ast::raw_texpr =
+    ?= xs ?|
+    | [] => a
+    | b :: rest => fold_applies (ast::RawTApply (ast::joined (ast::range_of_texpr a) (ast::range_of_texpr b), a, b)) rest
+
+:~ pair_of (a : ast::raw_texpr) (b : ast::raw_texpr) : ast::raw_texpr = ast::RawTPair (ast::joined (ast::range_of_texpr a) (ast::range_of_texpr b), a, b)
+
+:~ fun_of (a : ast::raw_texpr) (b : ast::raw_texpr) : ast::raw_texpr = ast::RawTFun (ast::joined (ast::range_of_texpr a) (ast::range_of_texpr b), a, b, ast::FtVanilla)
+
+:~ ^ fold_pairs (xs : list ast::raw_texpr) : ast::raw_texpr =
+    ?= xs ?|
+    | [ x ] => x
+    | a :: rest => pair_of a (fold_pairs rest)
+    | [] => ast::RawTB (cursor::origin ())
+
+:~ ^ fold_functions (xs : list ast::raw_texpr) : ast::raw_texpr =
+    ?= xs ?|
+    | [ x ] => x
+    | a :: rest => fun_of a (fold_functions rest)
+    | [] => ast::RawTB (cursor::origin ())
+
+:~ ^ index_fields \* t. (i : i32) (xs : list (ast::named * t)) (acc : list ((i32 * string) * t)) : list ((i32 * string) * t) =
+    ?= xs ?|
+    | [] => listm::rev acc
+    | ((_, n), x) :: rest => index_fields (i + 1i32) rest (((i, n), x) :: acc)
+
+:~ read_small_var (c : cursor::cursor) : cursor::step ast::named =
+    ?= c::rest ?|
+    | [] => cursor::Failed ([], c)
+    | (r, tokens::TokVar (x, _)) :: _ ?& not (cursor::is_big x) => cursor::Took ((r, x), cursor::advance c)
+    | (r, tokens::TokKeyword k) :: _ => cursor::Failed ([ (r, ast::KeywordAsName k) ], c)
+    | (r, _) :: _ => cursor::Failed ([ (r, ast::ExpectedSmallVar) ], c)
+
+:~ ho_var (c : cursor::cursor) : cursor::step ast::hovar =
+    := plain = cursor::map_p (\ ((_, x) : ast::named) => x, ast::RawKindWildcard) read_small_var
+    := kinded = cursor::rounds_p (cursor::pair_p (cursor::left_p (cursor::map_p snd read_small_var) (cursor::skip_op ":")) parse_kind)
+    cursor::ranged_p (cursor::alt_p plain kinded) c
+
+:~ type_constraint (c : cursor::cursor) : cursor::step ast::named =
+    cursor::alt_p read_small_var (cursor::rounds_p cursor::read_op) c
+
+:~ forall_var (c : cursor::cursor) : cursor::step ast::type_var =
+    := constraints = cursor::map_p (\ (x : option (list ast::named)) => ?= x ?| | Some l => l | None => []) (cursor::opt_p (cursor::curlies_p (cursor::sep_by_p type_constraint (cursor::skip_op ";"))))
+    cursor::pair_p ho_var constraints c
+
+:~ quantifier_errors (error : ast::parser_error) (q : list ast::type_var) : cursor::failure =
+    := constraints = listm::fold (\ (acc : cursor::failure) ((_, l) : ast::type_var) => listm::append acc (duplicates ast::DuplicateConstraint l)) [] q
+    := names = duplicates error (listm::map (\ (((r, (a, _)), _) : ast::type_var) => r, a) q)
+    listm::append names constraints
+
+:~ quantifier (keyword : tokens::token_keyword) (at_least_one : bool) (error : ast::parser_error) (c : cursor::cursor) : cursor::step (list ast::type_var) =
+    := vars = ? at_least_one ?> cursor::many1_p forall_var |: cursor::many_p forall_var
+    ?= cursor::left_p (cursor::right_p (cursor::skip_keyword keyword) vars) (cursor::skip_op ".") c ?|
+    | cursor::Took (q, next) =>
+        ?= quantifier_errors error q ?|
+        | [] => cursor::Took (q, next)
+        | er => cursor::Failed (er, next)
+    | cursor::Failed (e, at) => cursor::Failed (e, at)
+
+:~ forall_p (c : cursor::cursor) : cursor::step (list ast::type_var) = quantifier tokens::SpecForall !+ ast::DuplicateForallVar c
+
+:~ exists_p (c : cursor::cursor) : cursor::step (list ast::type_var) = quantifier tokens::SpecExists !- ast::DuplicateExistsVar c
+
+:~ forall_of (v : ast::type_var) (inner : ast::raw_texpr) : ast::raw_texpr = ast::RawTForall (ast::joined (ast::range_of_type_var v) (ast::range_of_texpr inner), v, inner)
+
+:~ ^ wrap_foralls (vars : list ast::type_var) (body : ast::raw_texpr) : ast::raw_texpr =
+    ?= vars ?|
+    | [] => body
+    | v :: rest => forall_of v (wrap_foralls rest body)
+
+:~ ^ root_type_record (flags : type_flags) (c : cursor::cursor) : cursor::step ast::raw_texpr =
+    := field = cursor::pair_p (cursor::left_p (cursor::ranged_p record_var) (cursor::skip_op ":")) (root_type flags)
+    := body = cursor::ranged_p (cursor::curlies_p (cursor::sep_by_p field (optional_p (cursor::skip_op ";"))))
+    ?= body c ?|
+    | cursor::Took ((r, xs), next) =>
+        ?= duplicates ast::DuplicateRecordTypeVar (listm::map fst xs) ?|
+        | [] => cursor::Took (ast::RawTRecord (r, index_fields 0i32 xs []), next)
+        | er => cursor::Failed (er, next)
+    | cursor::Failed (e, at) => cursor::Failed (e, at)
+
+:& :~ type_cases (flags : type_flags) (c : cursor::cursor) : cursor::step ast::raw_texpr =
+    := next = root_type flags
+    := unit_or_inner = cursor::alt_p (cursor::map_p (\ x => \ (_ : ast::range) => x) next) (\ c => cursor::Took ((\ (r : ast::range) => ast::RawTB r), c))
+    := rounds = cursor::map_p (\ ((r, f) : ast::range * (ast::range -> ast::raw_texpr)) => f r) (cursor::ranged_p (cursor::rounds_p unit_or_inner))
+    := lit = cursor::alt_p (cursor::map_p (\ ((r, x) : ast::range * tokens::literal) => ast::RawTLit (r, x)) read_value) (cursor::map_p (\ ((a, s, b) : ast::range * string * ast::range) => ast::RawTLit (ast::joined a b, tokens::LitString s)) read_string)
+    := wildcard = \ c => ? flags::allow_wildcard ?> cursor::map_p (\ r => ast::RawTWildcard r) (cursor::skip_keyword_range tokens::SpecWildcard) c |: cursor::Failed ([], c)
+    := var = cursor::map_p (\ ((r, x) : ast::named) => ast::RawTVar (r, x)) cursor::read_var
+    := symbol = cursor::map_p (\ ((r, x) : ast::named) => ast::RawTSymbol (r, x)) read_symbol
+    := metavar = \ c => ? flags::allow_typecase_metavars ?> cursor::map_p (\ ((r, x) : ast::named) => ast::RawTMetaVar (r, x)) (cursor::right_p (cursor::skip_unary_op "~") cursor::read_var) c |: cursor::Failed ([], c)
+    := existential = cursor::map_p (\ ((r, (l, b)) : ast::range * (list ast::type_var * ast::raw_texpr)) => ast::RawTExists (r, l, b)) (cursor::ranged_p (cursor::pair_p exists_p next))
+    := foralls = cursor::map_p (\ ((l, b) : list ast::type_var * ast::raw_texpr) => wrap_foralls l b) (cursor::pair_p forall_p next)
+    cursor::alt_p rounds (cursor::alt_p lit (cursor::alt_p wildcard (cursor::alt_p metavar (cursor::alt_p var (cursor::alt_p (root_type_record flags) (cursor::alt_p symbol (cursor::alt_p existential foralls))))))) c
+
+:& :~ root_type (flags : type_flags) (c : cursor::cursor) : cursor::step ast::raw_texpr =
+    := cases = type_cases flags
+    := apply_tight = cursor::bind_p cases (\ a => cursor::map_p (fold_applies a) (cursor::many_p (expr_tight cases)))
+    := apply = \ c =>
+        := start = line_start_column c
+        cursor::bind_p apply_tight (\ a => cursor::map_p (\ (xs : list ast::raw_texpr) => fold_applies a xs) (cursor::many_p (indented start (\ a b => a < b) apply_tight))) c
+    := pairs = cursor::map_p fold_pairs (cursor::sep_by1_p apply (cursor::skip_op "*"))
+    cursor::map_p fold_functions (cursor::sep_by1_p pairs (cursor::skip_op "->")) c
+
+:~ ^ type_text (t : ast::raw_texpr) : string =
+    ?= t ?|
+    | ast::RawTVar (_, x) => x
+    | ast::RawTSymbol (_, x) => "." ++# x
+    | ast::RawTB _ => "()"
+    | ast::RawTWildcard _ => "_"
+    | ast::RawTLit (_, tokens::LitString s) => "\"" ++# s ++# "\""
+    | ast::RawTLit _ => "lit"
+    | ast::RawTApply (_, a, b) => "(" ++# type_text a ++# " " ++# type_text b ++# ")"
+    | ast::RawTPair (_, a, b) => "(" ++# type_text a ++# " * " ++# type_text b ++# ")"
+    | ast::RawTFun (_, a, b, _) => "(" ++# type_text a ++# " -> " ++# type_text b ++# ")"
+    | ast::RawTRecord (_, fields) => "{" ++# sm'::concat_list "; " (listm::map (\ (((_, n), x) : (i32 * string) * ast::raw_texpr) => n ++# ": " ++# type_text x) fields) ++# "}"
+    | ast::RawTForall (_, ((_, (n, _)), _), body) => "forall " ++# n ++# ". " ++# type_text body
+    | _ => "?"
+
+:~ shown_type (text : string) : string =
+    ?= root_type (type_defaults ()) (cursor::line_cursor text) ?|
+    | cursor::Took (t, next) => ? (listm::length next::rest : i32) = 0i32 ?> type_text t |: type_text t ++# " +rest"
+    | cursor::Failed (e, _) => "fail " ++# sm'::format (listm::length e : i32)
+
+///> rust
+///> fsharp
+///> gleam
+:# types_apply_tightly_pair_with_star_and_arrow_to_the_right_like_the_reference =
+    (shown_type "a", shown_type "list a", shown_type "a * b * c", shown_type "a -> b -> c", shown_type "a * b -> c", shown_type "()")
+    |> _assert_eq ("a", "(list a)", "(a * (b * c))", "(a -> (b -> c))", "((a * b) -> c)", "()")
+
+///> rust
+///> fsharp
+///> gleam
+:# a_record_type_keeps_field_order_and_refuses_a_repeated_field =
+    (shown_type "{ a : i32; b : list c }", shown_type "{ a : i32; a : string }")
+    |> _assert_eq ("{a: i32; b: (list c)}", "fail 1")
+
+
+:~ type_vars_text (q : list ast::type_var) : string =
+    sm'::concat_list " " (listm::map (\ (((_, (name, k)), cs) : ast::type_var) => name ++# ":" ++# kind_text k ++# "{" ++# sm'::concat_list ";" (listm::map snd cs) ++# "}") q)
+
+///> rust
+///> fsharp
+///> gleam
+:# a_forall_reads_plain_kinded_and_constrained_vars_and_refuses_repeats =
+    := shown (text : string) =
+        ?= forall_p (cursor::line_cursor text) ?|
+        | cursor::Took (q, _) => type_vars_text q
+        | cursor::Failed (e, _) => "fail " ++# sm'::format (listm::length e : i32)
+    := error_word (e : ast::parser_error) : string =
+        ?= e ?|
+        | ast::ExpectedSmallVar => "small"
+        | ast::ExpectedParenthesis _ => "paren"
+        | ast::KeywordAsName _ => "keyword"
+        | ast::ExpectedOperator _ => "op"
+        | ast::DuplicateForallVar => "dup"
+        | _ => "other"
+    := named (text : string) =
+        ?= forall_p (cursor::line_cursor text) ?|
+        | cursor::Took _ => "took"
+        | cursor::Failed (e, _) => sm'::concat_list " " (listm::map (\ ((_, x) : ast::range * ast::parser_error) => error_word x) e)
+    (shown "forall a (b : * -> *) c {number; (+)}.", named "forall a a.", named "forall .")
+    |> _assert_eq ("a:_{} b:(* -> *){} c:_{number;+}", "dup", "small paren")
+
+///> rust
+///> fsharp
+///> gleam
+:# a_forall_type_nests_one_forall_per_var_around_its_body =
+    (shown_type "forall a b. a -> b", shown_type "a -> b") |> _assert_eq ("forall a. forall b. (a -> b)", "(a -> b)")
+
+
+:== union_cases = ast::range * list ((i32 * string) * (bool * ast::raw_texpr))
+
+:~ union_body (flags : type_flags) (c : cursor::cursor) : cursor::step (option (bool * ast::raw_texpr)) =
+    := vanilla = cursor::map_p (\ (x : ast::raw_texpr) => Some (!-, x)) (cursor::right_p (cursor::skip_op ":") (root_type flags))
+    := quantified = cursor::map_p (\ (q : option (list ast::type_var)) => ?= q ?| | Some l => l | None => []) (cursor::opt_p forall_p)
+    := gadt = cursor::map_p (\ ((q, x) : list ast::type_var * ast::raw_texpr) => Some (!+, wrap_foralls q x)) (cursor::right_p (cursor::skip_op "::") (cursor::pair_p quantified (root_type flags)))
+    cursor::alt_p vanilla (cursor::alt_p gadt (\ c => cursor::Took (None, c))) c
+
+:~ ^ index_cases (i : i32) (xs : list (ast::named * option (bool * ast::raw_texpr))) (acc : list ((i32 * string) * (bool * ast::raw_texpr))) : list ((i32 * string) * (bool * ast::raw_texpr)) =
+    ?= xs ?|
+    | [] => listm::rev acc
+    | ((r, n), body) :: rest =>
+        := chosen = ?= body ?| | Some x => x | None => (!-, ast::RawTB r)
+        index_cases (i + 1i32) rest (((i, n), chosen) :: acc)
+
+:~ root_type_union (flags : type_flags) (c : cursor::cursor) : cursor::step union_cases =
+    := separator = bar (col c)
+    := key = cursor::ranged_p (cursor::map_p snd cursor::read_big_var)
+    := cases = cursor::right_p (optional_p separator) (cursor::sep_by1_p (cursor::pair_p key (union_body flags)) separator)
+    ?= cursor::ranged_p cases c ?|
+    | cursor::Took ((r, xs), next) =>
+        ?= duplicates ast::DuplicateUnionKey (listm::map fst xs) ?|
+        | [] => cursor::Took ((r, index_cases 0i32 xs []), next)
+        | er => cursor::Failed (er, next)
+    | cursor::Failed (e, at) => cursor::Failed (e, at)
+
+:~ shown_union (text : string) : string =
+    ?= root_type_union (type_defaults ()) (cursor::line_cursor text) ?|
+    | cursor::Took ((_, cases), _) =>
+        sm'::concat_list " | " (listm::map (\ (((i, n), (g, t)) : (i32 * string) * (bool * ast::raw_texpr)) => sm'::format i ++# n ++# (? g ?> " :: " |: " : ") ++# type_text t) cases)
+    | cursor::Failed (e, _) => "fail " ++# sm'::format (listm::length e : i32)
+
+///> rust
+///> fsharp
+///> gleam
+:# a_union_reads_plain_gadt_and_empty_cases_in_order_and_refuses_a_repeated_key =
+    (shown_union "| A : i32 | B | C :: forall t. t -> list t", shown_union "A | A")
+    |> _assert_eq ("0A : i32 | 1B : () | 2C :: forall t. (t -> (list t))", "fail 1")

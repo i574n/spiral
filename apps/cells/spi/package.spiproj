@@ -4,6 +4,11 @@ packages:
     spiral-
 modules:
     text
+    toolchain
+    tool_lookup
+    lisp
+    file_lock
+    tables
     type_trial
     canonical
     shown_text
@@ -16,23 +21,68 @@ modules:
     livemd
     cell
     directives
+    json_value
     document
+    ipynb
+    verdict_text
     notebook
     targets
     daemon
+    daemon_pool
+    slot_table
+    memory_guard
     client
+    memo_store
     memo
+    tool_env
     source_blocks
     verdicts
     manifest
     source_map
+    temp_sweep
     html_markdown
-    json_value
     builder_output
     builders
+    builder_calls
     gleam_project
+    daemon_host
     run_result
+    html
     mount_text
+    package_reach
+    memo_bounds
+    mount_stats
+    runner_edges
+    mount_plan
     cell_budget
     cell_budget_ruled
+    cell_result
+    cell_display
+    cli_text
+    prepared
+    watch_probe
+    runner_loop
+    display_render
+    result_shape
+    process_loop
+    slots_server
+    main_text
+    memo_key
+    fs_probe
+    mount_place
+    cell_collect
+    report_row
+    error_terms
+    accept_mark
+    report_tail
+    compile_outcome
+    phase_clock
+    missing_notes
+    target_agree
+    package_write
+    source_stamp
+    target_record
+    compile_plan
+    cells_boot
+    memo_context
     main

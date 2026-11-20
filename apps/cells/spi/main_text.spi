@@ -1,0 +1,45 @@
+///- --package .
+:# main_text static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ main_head () : string = "inl main () : i32 =\n"
+
+:~ trim_right (s : string) : string = text::take s (text::ucontent_end s 0i32 0i32)
+
+:~ owned_main (code : string) (at : i32) (len : i32) : string =
+    := renamed = text::take code at ++ "inl spiral_cells_main () =" ++ text::drop code (at + len)
+    trim_right renamed ++ "\n\n" ++ main_head () ++ "    spiral_cells_main ()\n"
+
+:~ span_part (span : string) (first : bool) : i32 =
+    := tab = text::find_char span 0i32 '\t'
+    text::parse_i32 (? first ?> text::take span tab |: text::drop span (tab + 1i32))
+
+:~ own_main_code (code : string) : string =
+    := span = main_shape::main_span code
+    ? span = "" ?> "" |: owned_main code (span_part span !+) (span_part span !-)
+
+:~ ^ last_at (s : string) (p : string) (from : i32) (found : i32) : i32 =
+    := i = text::find_from s p from
+    ? i < 0i32 ?> found |: last_at s p (i + 1i32) i
+
+:~ indent_line (line : string) : string = ? text::utrim line = "" ?> "" |: "    " ++ line
+
+:~ indented (body : string) : string = sm'::concat_list "\n" (listm::map indent_line (sm'::split_list "\n" body))
+
+:~ wrapped (body : string) : string = "    inl spiral_cells_value =\n" ++ indented body ++ "\n    console.show_value spiral_cells_value\n    0i32\n"
+
+:~ show_value_main (code : string) : string =
+    := cut = last_at code (main_head ()) 0i32 -1i32 + text::length (main_head ())
+    text::take code cut ++ wrapped (trim_right (text::drop code cut))
+
+:~ sample_shown () : string = show_value_main ("inl a = 1\n\n" ++ main_head () ++ "    a\n  \n")
+
+///> gleam
+:# a_value_main_wraps_the_last_main_body_and_blanks_whitespace_lines =
+    sample_shown () |> _assert_eq ("inl a = 1\n\n" ++ main_head () ++ "    inl spiral_cells_value =\n        a\n    console.show_value spiral_cells_value\n    0i32\n")
+
+///> gleam
+:# trim_right_strips_elixir_whitespace_only_at_the_end =
+    (trim_right "a b \t\n", trim_right "", trim_right " x") |> _assert_eq ("a b", "", " x")

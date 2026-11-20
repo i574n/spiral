@@ -67,14 +67,17 @@
     := from = ms_count start
     ? now > from ?> now - from |: 0u64
 
-///> rust
-///> fsharp
-///> gleam
-:# the_unix_clock_reads_epoch_counts_in_their_own_units =
+:= seconds_agree (s : u64) (ms : u64) : bool = s * 1000u64 + 2000u64 > ms && s * 1000u64 <= ms + 2000u64
+
+:= clock_facts () : bool * bool * bool * bool =
     := start = unix_now_ms ()
     := ms = ms_count start
     := s = seconds_count (unix_now_seconds ())
     := ns = nanos_count (unix_now_nanos ())
-    := seconds_agree = s * 1000u64 + 2000u64 > ms && s * 1000u64 <= ms + 2000u64
-    (ms > 1700000000000u64, seconds_agree, ns / 1000000u64 + 2000u64 > ms, ms_since start < 1000u64)
-    |> _assert_eq (!+, !+, !+, !+)
+    ms > 1700000000000u64, seconds_agree s ms, ns / 1000000u64 + 2000u64 > ms, ms_since start < 1000u64
+
+///> rust
+///> fsharp
+///> gleam
+:# the_unix_clock_reads_epoch_counts_in_their_own_units =
+    clock_facts () |> _assert_eq (!+, !+, !+, !+)

@@ -22,6 +22,16 @@
         "@external(erlang, \"sys\", \"change_code\") fn otp_upgrade_sys_change_code(server: dynamic.Dynamic, "
         ^^ "module: atom.Atom, old: a, extra: b) -> atom.Atom"
     )
+    global (
+        "@external(erlang, \"code\", \"get_object_code\") fn otp_upgrade_object_code(module: atom.Atom) "
+        ^^ "-> #(atom.Atom, BitArray, dynamic.Dynamic)"
+    )
+    global (
+        "@external(erlang, \"code\", \"load_binary\") fn otp_upgrade_load_binary(module: atom.Atom, "
+        ^^ "file: dynamic.Dynamic, binary: BitArray) -> dynamic.Dynamic"
+    )
+    global "@external(erlang, \"code\", \"soft_purge\") fn otp_upgrade_soft_purge(module: atom.Atom) -> Bool"
+    global "@external(erlang, \"erlang\", \"check_old_code\") fn otp_upgrade_check_old_code(module: atom.Atom) -> Bool"
     global "pub fn otp_upgrade_triple(a, b, c) { #(a, b, c) }"
     global "pub fn init(state) { #(atom.create(\"ok\"), state) }"
     global (
@@ -35,7 +45,12 @@
     )
     global "pub fn otp_upgrade_module() -> atom.Atom { otp_upgrade_fun_info(code_change, atom.create(\"module\")).1 }"
     global (
+        "pub fn otp_upgrade_reload() -> Nil { let m = otp_upgrade_module()  let _ = otp_upgrade_soft_purge(m)  "
+        ^^ "let #(_, binary, file) = otp_upgrade_object_code(m)  let _ = otp_upgrade_load_binary(m, file, binary)  Nil }"
+    )
+    global (
         "pub fn otp_upgrade_swap(server: dynamic.Dynamic, extra) -> Nil { let _ = otp_upgrade_sys_suspend(server)  "
+        ^^ "otp_upgrade_reload()  "
         ^^ "let _ = otp_upgrade_sys_change_code(server, otp_upgrade_module(), atom.create(\"v1\"), extra)  let _ = "
         ^^ "otp_upgrade_sys_resume(server)  Nil }"
     )
@@ -65,6 +80,10 @@
     $'otp_upgrade_swap(!from, otp_upgrade_triple(fn(u, q) { !r(u)(q) }, fn(u, q) { !n(u)(q) }, fn(u) { !migrate(u) }))' : ()
     $'!from'
 
+:= old_code_resident () : bool =
+    otp_upgrade_imports ()
+    $'otp_upgrade_check_old_code(otp_upgrade_module())' : bool
+
 :== counter_v1 = { total : i32 }
 
 :== counter_v2 = { total : i32; calls : i32 }
@@ -93,3 +112,11 @@
     := v2 = upgrade v1 migrate_v1 step_v2
     call v2 (Add 1i32) |> ignore
     call v2 Read |> _assert_eq 8001i32
+
+///> gleam
+:# a_hot_upgrade_loads_a_second_code_version_and_serves_the_migrated_state =
+    := v1 = start ({ total = 0i32 } : counter_v1) step_v1
+    call v1 (Add 5i32) |> ignore
+    := before = old_code_resident ()
+    := v2 = upgrade v1 migrate_v1 step_v2
+    (before, old_code_resident (), call v2 Read) |> _assert_eq (!-, !+, 5000i32)

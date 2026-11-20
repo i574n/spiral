@@ -1,7 +1,17 @@
 import gleam/int
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
-  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  case value >= 0 - half && value < half {
+    True -> value
+    False -> int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  }
+}
+
+pub fn spiral_wrap_i32(value: Int) -> Int {
+  case value >= -2147483648 && value <= 2147483647 {
+    True -> value
+    False -> spiral_wrap_signed(value, 32)
+  }
 }
 
 pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
@@ -43,8 +53,8 @@ pub fn main() {
     let v1 = build_0(10)
     let v3 = sum_1(v1, 0)
     let v4 = 5
-    let v5 = spiral_wrap_signed(v3, 32)
-    let v6 = spiral_wrap_signed(v4 * 2, 32)
-    let v7 = spiral_wrap_signed(v4 + v6, 32)
-    spiral_wrap_signed(v5 + v7, 32)
+    let v5 = spiral_wrap_i32(v3)
+    let v6 = spiral_wrap_i32(v4 * 2)
+    let v7 = spiral_wrap_i32(v4 + v6)
+    spiral_wrap_i32(v5 + v7)
 }

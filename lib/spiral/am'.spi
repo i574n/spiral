@@ -42,9 +42,6 @@
 := base \* el. ((array a) : array el) : array_base el =
     a
 
-:= base' \* el. ((array a) : array el) : array_base el =
-    a
-
 := generic_equable x1 x2 =
     ? length x1 <>.. length x2
     ?> !-
@@ -295,9 +292,7 @@
     := fn = rust::one_param_fn fn
     !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
-:= vec_map' \* t u. (fn : t -> u) (ar : vec t) : vec u =
-    := fn = rust::one_param_fn fn
-    !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
+:= vec_map' \* t u. (fn : t -> u) (ar : vec t) : vec u = vec_map fn ar
 
 := vec_fold' \* t u. (fn : u -> t -> u) (init : u) (ar : vec t) : u =
     (!\\(ar, $'"true; let _vec_fold_ = $0.into_iter().fold(!init, |acc, x| { //"') : bool) |> ignore
@@ -308,11 +303,6 @@
     (!\\((ar, fn), $'"true; $0.iter().for_each(|x| { $1(x.clone()); }); //"') : bool) |> ignore
 
 := vec_for_each' \* t. (fn : t -> ()) (ar : vec t) : () =
-    (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
-    (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
-    (!\($'"true; }}); //"') : bool) |> ignore
-
-:= vec_for_each'' \* t. (fn : t -> ()) (ar : vec t) : () =
     (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
     (!\($'"true; }}); //"') : bool) |> ignore
@@ -784,3 +774,36 @@
     := a = ;[ 10i32; 20i32 ]
     := code (i : i32) : i32 = ?= try_item i a ?| | Some x => x | None => -1i32
     [ code (-1i32); code 0i32; code 1i32; code 2i32 ] |> _assert_eq [ -1i32; 10i32; 20i32; -1i32 ]
+
+:== frozen_reads_switch el =
+    {
+        Rust : $'std::rc::Rc<[`el]>'
+        C : $'int'
+    }
+:! frozen_reads el = $'backend_switch `(frozen_reads_switch el)'
+:! frozen el = { items : array el; reads : frozen_reads el }
+
+:= freeze \* el. (a : array el) : frozen el =
+    := reads =
+        backend_switch {
+            Rust = \ () => $'std::rc::Rc::<[`el]>::from((!a).borrow().as_slice())' : frozen_reads el
+            C = \ () => $'0' : frozen_reads el
+        }
+    { items = a; reads } |> frozen
+
+:= frozen_index \* el. (i : int) (f : frozen el) : el =
+    backend_switch {
+        Rust = \ () =>
+            := reads = f::reads
+            ? (~> ?: el ?| string => !- | _ => real_core::prim_type_is `el)
+            ?> $'(!&reads)[(!i) as usize]' : el
+            |: $'(!&reads)[(!i) as usize].clone()' : el
+        C = \ () => index i f::items
+    }
+
+///> rust
+///> c
+:# frozen_reads_match_the_array =
+    := a = ;[ 10i32; 20i32; 30i32 ]
+    := f = freeze a
+    (frozen_index 0 f, frozen_index 1 f, frozen_index 2 f) |> _assert_eq (10i32, 20i32, 30i32)

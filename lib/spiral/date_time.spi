@@ -763,6 +763,7 @@
     run_target \|
         | Gleam => \ () => gleam_span a b
         | Fsharp => \ () => $'!b - !a '
+        | TypeScript => \ () => $'!b.getTime() - !a.getTime()'
         | _ => \ () => failwith "date_time.new_time_span: no arm for this backend"
 
 :! rust_std_duration = $'std::time::Duration'

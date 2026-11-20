@@ -263,6 +263,7 @@ var SpiralOutputBuffer: array[0..65535] of Char;
 var SpiralExitCode: LongInt;
 procedure SpiralRun;
 begin
+  {$IFDEF WINDOWS}SetTextCodePage(Output, CP_UTF8); SetTextCodePage(StdErr, CP_UTF8);{$ENDIF}
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
   SpiralExitCode := SpiralMain;

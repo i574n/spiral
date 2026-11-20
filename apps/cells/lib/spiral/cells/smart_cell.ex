@@ -54,64 +54,8 @@ defmodule Spiral.Cells.SmartCell do
 
   @impl true
   def to_source(attrs) do
-    source = attrs["source"] || ""
-
-    if String.trim(source) == "" do
-      ""
-    else
-      opts = source_opts(attrs)
-
-      args =
-        [
-          string_literal(source)
-          | Enum.map(opts, fn {key, value} -> "#{key}: #{literal(value)}" end)
-        ]
-        |> Enum.map_join(",\n", &indent/1)
-
-      ("Spiral.Cells.eval!(\n" <> args <> "\n)")
-      |> Code.format_string!()
-      |> IO.iodata_to_binary()
-    end
+    Spiral.Cells.Domain.cell_source(attrs["source"] || "", valid_timeout(attrs["timeout"]) * 1000, attrs["print_code"] == true)
   end
-
-  defp source_opts(attrs) do
-    [
-      timeout: valid_timeout(attrs["timeout"]) * 1000,
-      print_code: if(attrs["print_code"] == true, do: true)
-    ]
-    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
-  end
-
-  defp string_literal(source) do
-    if String.contains?(source, ~s(""")) or String.contains?(source, "\r") do
-      literal(source)
-    else
-      body =
-        source
-        |> String.split("\n")
-        |> then(fn lines ->
-          if List.last(lines) == "", do: Enum.drop(lines, -1), else: lines
-        end)
-        |> Enum.map_join("\n", fn
-          "" -> ""
-          line -> "  " <> line
-        end)
-
-      ~s(~S""") <> "\n" <> body <> "\n" <> ~s(  """)
-    end
-  end
-
-  defp indent(text) do
-    case String.split(text, "\n", parts: 2) do
-      [first] -> "  " <> first
-      [first, rest] -> "  " <> first <> "\n" <> rest
-    end
-  end
-
-  defp literal(value) when is_binary(value),
-    do: inspect(value, printable_limit: :infinity, limit: :infinity)
-
-  defp literal(value), do: inspect(value)
 
   defp normalize("timeout", value), do: valid_timeout(value)
   defp normalize("print_code", value), do: value == true

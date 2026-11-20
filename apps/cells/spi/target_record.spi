@@ -1,0 +1,46 @@
+///- --package .
+:< erlang_term
+:# target_record static =
+    :< testing
+
+:~ zero_or_nil (t : term) : bool = is_atom "nil" t || erlang_term::equal t (erlang_term::of 0i32)
+
+:~ exited_badly (value : term) : bool =
+    erlang_term::is_map value && (erlang_term::apply "maps" "is_key" [ atom "exit_status"; value ] |> erlang_term::cast) && not (zero_or_nil (field_or_nil "exit_status" value))
+
+:~ tool_missing (error : term) : bool =
+    erlang_term::is_map error && is_atom "Elixir.Spiral.Cells.ProcessError" (field_or_nil "__struct__" error) && is_atom "tool_missing" (field_or_nil "reason" error)
+
+:~ status_of (result : term) : string =
+    := value = erlang_term::element_at 2i32 result
+    ? is_atom "ok" (erlang_term::element_at 1i32 result) ?> (? exited_badly value ?> "failed" |: "passed") |: ? tool_missing value ?> "unsupported" |: "failed"
+
+:~ row_of (raw : term) (status : string) (ms : term) : term =
+    map_of [ pair "target" raw; pair "status" (erlang_term::of status); pair "ms" ms ]
+
+:~ rows () : term =
+    := current = erlang_term::apply "erlang" "get" [ atom "spiral_cells_targets" ]
+    ? erlang_term::apply "erlang" "is_list" [ current ] |> erlang_term::cast ?> current |: erlang_term::list_term []
+
+:~ record_target (raw : term) (result : term) (ms : term) : term =
+    := row = row_of raw (status_of result) ms
+    erlang_term::apply "erlang" "put" [ atom "spiral_cells_targets"; erlang_term::appended (rows ()) (erlang_term::list_term [ row ]) ] |> ignore
+    result
+
+:~ ok_with (pairs : list term) : term = erlang_term::tuple [ atom "ok"; map_of pairs ]
+
+///> gleam
+:# an_ok_result_without_exit_status_passes_and_a_nonzero_one_fails =
+    (status_of (ok_with []), status_of (ok_with [ erlang_term::tuple [ atom "exit_status"; erlang_term::of 2i32 ] ])) |> _assert_eq ("passed", "failed")
+
+///> gleam
+:# an_exit_status_of_zero_or_nil_passes =
+    (status_of (ok_with [ erlang_term::tuple [ atom "exit_status"; erlang_term::of 0i32 ] ]), status_of (ok_with [ erlang_term::tuple [ atom "exit_status"; atom "nil" ] ])) |> _assert_eq ("passed", "passed")
+
+///> gleam
+:# a_missing_tool_is_unsupported =
+    status_of (erlang_term::tuple [ atom "error"; error_terms::process_error (atom "nil") (atom "nil") (atom "nil") (atom "tool_missing") ]) |> _assert_eq "unsupported"
+
+///> gleam
+:# any_other_error_fails =
+    status_of (erlang_term::tuple [ atom "error"; atom "x" ]) |> _assert_eq "failed"

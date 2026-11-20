@@ -1,0 +1,160 @@
+///- --package .
+:# daemon_pool static =
+    :< testing
+
+:~ slots_limit (raw : string) (fallback : i32) : i32 =
+    ? raw = ""
+    ?> fallback
+    |:
+        ?= daemon::queue_ms (text::trim raw) ?|
+        | Some n ?& n > 0i32 => n
+        | _ => -1i32
+
+:~ default_slots (schedulers : i32) : i32 =
+    := half = schedulers / 2i32
+    ? half > 4i32
+    ?> 4i32
+    |? half < 1i32
+    ?> 1i32
+    |: half
+
+:~ pool_max_workers (raw : string) : i32 =
+    ? raw = "auto"
+    ?> 3i32
+    |:
+        ?= daemon::queue_ms raw ?|
+        | Some n ?& n >= 1i32 => n
+        | _ => 1i32
+
+:~ room_verdict (read : bool) (free_mb : i32) (needed_mb : i32) : string =
+    ? not read
+    ?> "waiting"
+    |? free_mb < 0i32 || free_mb >= needed_mb
+    ?> "room"
+    |: "no_room"
+
+:~ mib () : i64 = 1048576i64
+
+:~ default_guard_bytes (available_kb : i64) : i64 =
+    := floor = 2048i64 * mib ()
+    := three_quarters = available_kb * 1024i64 * 3i64 / 4i64
+    ? available_kb >= 0i64 && three_quarters > floor ?> three_quarters |: floor
+
+:~ guard_limit_bytes (raw : string) (available_kb : i64) : i64 =
+    ?= daemon::queue_ms (text::trim raw) ?|
+    | Some mb => (conv mb : i64) * mib ()
+    | None => default_guard_bytes available_kb
+
+:~ over_limit (total : i64) (limit : i64) : bool = limit > 0i64 && total > limit
+
+:== job = erlang_term::term
+
+:== lane = string * list job
+
+:| fair_queue = FairQueue : list lane
+
+:~ fair_empty () : fair_queue = FairQueue []
+
+:~ lane_add (client : string) (item : job) (lane : lane) : option lane =
+    := name, items = lane
+    ? name = client ?> Some (name, listm::append items [ item ]) |: None
+
+:~ ^ lanes_pushed (who : string) (item : job) (lanes : list lane) : list lane =
+    ?= lanes ?|
+    | [] => [ who, [ item ] ]
+    | lane :: rest =>
+        ?= lane_add who item lane ?|
+        | Some up => up :: rest
+        | None => lane :: lanes_pushed who item rest
+
+:~ fair_push (client : string) (item : job) (queue : fair_queue) : fair_queue =
+    ?= queue ?|
+    | FairQueue lanes => FairQueue (lanes_pushed client item lanes)
+
+:~ served_lane (name : string) (left : list job) (rest : list lane) : fair_queue =
+    ?= left ?|
+    | [] => FairQueue rest
+    | _ => FairQueue (listm::append rest [ name, left ])
+
+:~ ^ lanes_pop (lanes : list lane) : option (job * fair_queue) =
+    ?= lanes ?|
+    | [] => None
+    | lane :: rest =>
+        := name, items = lane
+        ?= items ?|
+        | [] => lanes_pop rest
+        | item :: left => Some (item, served_lane name left rest)
+
+:~ fair_pop (queue : fair_queue) : option (job * fair_queue) =
+    ?= queue ?|
+    | FairQueue lanes => lanes_pop lanes
+
+:~ ^ lanes_len (lanes : list lane) : i32 =
+    ?= lanes ?|
+    | [] => 0i32
+    | lane :: rest =>
+        := _, items = lane
+        listm::length items + lanes_len rest
+
+:~ fair_len (queue : fair_queue) : i32 =
+    ?= queue ?|
+    | FairQueue lanes => lanes_len lanes
+
+:~ fair_pop_term (queue : job) : job =
+    ?= fair_pop (erlang_term::cast queue) ?|
+    | Some got =>
+        := item, rest = got
+        erlang_term::tuple [ erlang_term::atom "ok"; item; erlang_term::of rest ]
+    | None => erlang_term::atom "empty"
+
+///> gleam
+:# slot_limits_read_their_env_or_fall_back =
+    (slots_limit "" 3i32, slots_limit "6" 3i32, slots_limit " 2 " 3i32, slots_limit "0" 3i32, slots_limit "x" 3i32, slots_limit "  " 3i32)
+    |> _assert_eq (3i32, 6i32, 2i32, -1i32, -1i32, -1i32)
+
+///> gleam
+:# default_slots_scale_with_schedulers =
+    (default_slots 1i32, default_slots 2i32, default_slots 6i32, default_slots 16i32) |> _assert_eq (1i32, 1i32, 3i32, 4i32)
+
+///> gleam
+:# pool_workers_follow_the_setting =
+    (pool_max_workers "", pool_max_workers "off", pool_max_workers "auto", pool_max_workers "2", pool_max_workers "0", pool_max_workers "x")
+    |> _assert_eq (1i32, 1i32, 3i32, 2i32, 1i32, 1i32)
+
+///> gleam
+:# room_waits_for_a_reading_then_compares_free_memory =
+    (room_verdict !- 9000i32 2500i32, room_verdict !+ (-1i32) 2500i32, room_verdict !+ 2500i32 2500i32, room_verdict !+ 2499i32 2500i32)
+    |> _assert_eq ("waiting", "room", "room", "no_room")
+
+///> gleam
+:# memory_guard_limit_is_exact_bytes =
+    (guard_limit_bytes "0" 100i64, guard_limit_bytes "512" 100i64, guard_limit_bytes "" (-1i64), guard_limit_bytes "x" 1000i64)
+    |> _assert_eq (0i64, 536870912i64, 2147483648i64, 2147483648i64)
+
+///> gleam
+:# memory_guard_takes_three_quarters_and_zero_disables_it =
+    (guard_limit_bytes "" 4000001i64, over_limit 10i64 0i64, over_limit 10i64 9i64, over_limit 9i64 9i64)
+    |> _assert_eq (3072000768i64, !-, !+, !-)
+
+
+:~ ^ drained (queue : fair_queue) : list string =
+    ?= fair_pop queue ?|
+    | Some got =>
+        := item, rest = got
+        erlang_file::text_of item :: drained rest
+    | None => []
+
+:~ ^ pushed_all (client : string) (texts : list string) (queue : fair_queue) : fair_queue =
+    ?= texts ?|
+    | [] => queue
+    | text :: rest => queue |> fair_push client (erlang_term::of text) |> pushed_all client rest
+
+///> gleam
+:# fair_queue_serves_clients_in_turn =
+    := q = fair_empty () |> pushed_all "a" [ "a1"; "a2"; "a3" ] |> pushed_all "b" [ "b1" ]
+    (fair_len q, drained q) |> _assert_eq (4i32, [ "a1"; "b1"; "a2"; "a3" ])
+
+///> gleam
+:# fair_queue_with_one_client_keeps_arrival_order =
+    := q = fair_empty () |> pushed_all "fifo" [ "x"; "y" ]
+    (drained q, fair_len (fair_empty ()), drained (fair_empty ())) |> _assert_eq ([ "x"; "y" ], 0i32, [])

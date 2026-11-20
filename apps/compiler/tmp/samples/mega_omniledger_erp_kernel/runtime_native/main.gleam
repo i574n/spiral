@@ -1,8 +1,12 @@
 import gleam/int
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
-  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  case value >= 0 - half && value < half {
+    True -> value
+    False -> int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  }
 }
+
 
 
 pub type Us0 {
@@ -800,12 +804,10 @@ pub fn main() {
                 let v614 = spiral_wrap_signed(v588 + v611, 64)
                 let v615 = spiral_wrap_signed(v592 + v612, 64)
                 let v616 = spiral_wrap_signed(v594 + v613, 64)
-                let v617 = "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation"
-                Us0TypedFxHashedStatementChecksumValidationAccepted(1, 3, v614, v615, v616, v617)
+                Us0TypedFxHashedStatementChecksumValidationAccepted(1, 3, v614, v615, v616, "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation")
             }
             False -> {
-                let v619 = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
-                Us0TypedFxHashedStatementChecksumValidationRejected(v548, v583, v619)
+                Us0TypedFxHashedStatementChecksumValidationRejected(v548, v583, "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric")
             }
         }
     let #(v640, v641, v644, v645, v646, v647, v648) =
@@ -1139,12 +1141,10 @@ pub fn main() {
                 let v897 = spiral_wrap_signed(v871 + v894, 64)
                 let v898 = spiral_wrap_signed(v875 + v895, 64)
                 let v899 = spiral_wrap_signed(v877 + v896, 64)
-                let v900 = "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation"
-                Us0TypedFxHashedStatementChecksumValidationAccepted(1, 3, v897, v898, v899, v900)
+                Us0TypedFxHashedStatementChecksumValidationAccepted(1, 3, v897, v898, v899, "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation")
             }
             False -> {
-                let v902 = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
-                Us0TypedFxHashedStatementChecksumValidationRejected(v831, v866, v902)
+                Us0TypedFxHashedStatementChecksumValidationRejected(v831, v866, "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric")
             }
         }
     let #(v923, v924, v927, v931) =
@@ -2463,12 +2463,10 @@ pub fn main() {
                 let v1965 = spiral_wrap_signed(v1939 + v1962, 64)
                 let v1966 = spiral_wrap_signed(v1943 + v1963, 64)
                 let v1967 = spiral_wrap_signed(v1945 + v1964, 64)
-                let v1968 = "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation"
-                Us0TypedFxHashedStatementChecksumValidationAccepted(1, 3, v1965, v1966, v1967, v1968)
+                Us0TypedFxHashedStatementChecksumValidationAccepted(1, 3, v1965, v1966, v1967, "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation")
             }
             False -> {
-                let v1970 = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
-                Us0TypedFxHashedStatementChecksumValidationRejected(v1899, v1934, v1970)
+                Us0TypedFxHashedStatementChecksumValidationRejected(v1899, v1934, "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric")
             }
         }
     let #(v1991, v1992, v1995, v1999) =
@@ -2956,12 +2954,10 @@ pub fn main() {
                 let v2370 = spiral_wrap_signed(v2344 + v2367, 64)
                 let v2371 = spiral_wrap_signed(v2348 + v2368, 64)
                 let v2372 = spiral_wrap_signed(v2350 + v2369, 64)
-                let v2373 = "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation"
-                Us0TypedFxHashedStatementChecksumValidationAccepted(1, 3, v2370, v2371, v2372, v2373)
+                Us0TypedFxHashedStatementChecksumValidationAccepted(1, 3, v2370, v2371, v2372, "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation")
             }
             False -> {
-                let v2375 = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
-                Us0TypedFxHashedStatementChecksumValidationRejected(v2304, v2339, v2375)
+                Us0TypedFxHashedStatementChecksumValidationRejected(v2304, v2339, "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric")
             }
         }
     let #(v2396, v2397, v2404) =
@@ -3365,12 +3361,10 @@ pub fn main() {
                 let v2707 = spiral_wrap_signed(v2681 + v2704, 64)
                 let v2708 = spiral_wrap_signed(v2685 + v2705, 64)
                 let v2709 = spiral_wrap_signed(v2687 + v2706, 64)
-                let v2710 = "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation"
-                Us0TypedFxHashedStatementChecksumValidationAccepted(1, 3, v2707, v2708, v2709, v2710)
+                Us0TypedFxHashedStatementChecksumValidationAccepted(1, 3, v2707, v2708, v2709, "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation")
             }
             False -> {
-                let v2712 = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
-                Us0TypedFxHashedStatementChecksumValidationRejected(v2641, v2676, v2712)
+                Us0TypedFxHashedStatementChecksumValidationRejected(v2641, v2676, "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric")
             }
         }
     let #(v2733, v2734, v2741) =

@@ -1,0 +1,108 @@
+:# toml_flat static =
+    :< testing
+
+:< sm'_operators
+
+:| toml_value =
+    | TomlText : string
+    | TomlList : list string
+
+:| toml_error =
+    | UnreadableLine : i32 * string
+    | UnclosedBlock : string
+
+:== entry = string * toml_value
+
+:= quoted_text (s : string) : option string =
+    := n = sm'::length s
+    := single = sm'::starts_with "'" s && sm'::ends_with "'" s
+    := double = sm'::starts_with "\"" s && sm'::ends_with "\"" s
+    ? n >= 2i32 && (single || double) ?> Some (sm'::substring 1i32 (n - 2i32) s) |: None
+
+:~ ^ quoted_all (items : list string) (acc : list string) : option (list string) =
+    ?= items ?|
+    | [] => Some (listm::rev acc)
+    | x :: rest =>
+        ?= quoted_text (sm'::trim x) ?|
+        | Some t => quoted_all rest (t :: acc)
+        | None => None
+
+:= list_of (s : string) : option (list string) =
+    := n = sm'::length s
+    ? n >= 2i32 && sm'::starts_with "[" s && sm'::ends_with "]" s ?>
+        := inner = sm'::trim (sm'::substring 1i32 (n - 2i32) s)
+        ? inner = "" ?> Some [] |: quoted_all (sm'::split_list "," inner) []
+    |: None
+
+:= value_of (s : string) : option toml_value =
+    ?= quoted_text s ?|
+    | Some t => Some (TomlText t)
+    | None => list_of s |> optionm::map TomlList
+
+:= key_value (line : string) : option (string * string) =
+    := at : i32 = conv (sm'::index_of "=" line)
+    ? at <= 0i32
+    ?> None
+    |:
+        := key = sm'::trim (sm'::substring 0i32 at line)
+        := rest = sm'::substring (at + 1i32) (sm'::length line - at - 1i32) line
+        Some (key, sm'::trim rest)
+
+:= skipped (line : string) : bool = line = "" || sm'::starts_with "#" line
+
+:~ ^ block_lines (key : string) (lines : list string) (acc : list string) : option (string * list string) =
+    ?= lines ?|
+    | [] => None
+    | l :: rest =>
+        ? sm'::trim l = "'''"
+        ?> Some (sm'::concat_list "\n" (listm::rev acc), rest)
+        |: block_lines key rest (l :: acc)
+
+:~ ^ entries (n : i32) (lines : list string) (acc : list entry) : result (list entry) toml_error =
+    ?= lines ?|
+    | [] => Ok (listm::rev acc)
+    | raw :: rest =>
+        := line = sm'::trim raw
+        ? skipped line ?> entries (n + 1i32) rest acc |:
+            ?= key_value line ?|
+            | None => Error (UnreadableLine (n, line))
+            | Some (key, "'''") =>
+                ?= block_lines key rest [] ?|
+                | Some (text, after) => entries (n + 1i32) after ((key, TomlText text) :: acc)
+                | None => Error (UnclosedBlock key)
+            | Some (key, value) =>
+                ?= value_of value ?|
+                | Some v => entries (n + 1i32) rest ((key, v) :: acc)
+                | None => Error (UnreadableLine (n, line))
+
+:= parse (text : string) : result (list entry) toml_error = entries 1i32 (sm'::split_list "\n" text) []
+
+:~ ^ lookup (key : string) (es : list entry) : option toml_value =
+    ?= es ?|
+    | [] => None
+    | (k, v) :: rest => ? k = key ?> Some v |: lookup key rest
+
+:= text_at (key : string) (es : list entry) : option string =
+    ?= lookup key es ?| Some (TomlText t) => Some t | _ => None
+
+:= list_at (key : string) (es : list entry) : option (list string) =
+    ?= lookup key es ?| Some (TomlList l) => Some l | _ => None
+
+:= manifest () : string =
+    := head = "name = 'pdf2md'\nversion = \"1.2.3\"\n# a comment\n\n"
+    head ^^ "packages = ['|core-', \"spiral-\"]\nmodules = '''\npdf2md\npdf_objects\n'''\n"
+
+///> rust
+///> gleam
+:# a_flat_manifest_reads_texts_lists_and_blocks =
+    ?= parse (manifest ()) ?|
+    | Ok es =>
+        (text_at "name" es, text_at "version" es, list_at "packages" es, text_at "modules" es, text_at "missing" es)
+        |> _assert_eq (Some "pdf2md", Some "1.2.3", Some [ "|core-"; "spiral-" ], Some "pdf2md\npdf_objects", None)
+    | Error _ => !- |> _assert_eq !+
+
+///> rust
+///> gleam
+:# an_unreadable_line_and_an_unclosed_block_are_refused =
+    (parse "name = 'x'\nthis is not toml\n", parse "modules = '''\na\n")
+    |> _assert_eq (Error (UnreadableLine (2i32, "this is not toml")), Error (UnclosedBlock "modules"))

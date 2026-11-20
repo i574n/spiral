@@ -1,0 +1,239 @@
+///- --package .
+:# train_run static =
+    :< testing
+
+:< sm'_operators
+
+:== floats = array f32
+
+:== stream = array u64
+
+:== shape = transformer::config
+
+:| start =
+    | Checkpoint : string
+    | Seeded : u64
+
+:== data_plan = { train : string; val : string; window : i32; batch : i32; seed : u64; val_cap : i32 }
+
+:== run_plan = { steps : i32; peak : f32; warmup : i32; every : i32; out : string }
+
+:== plan = { start : start; shape : transformer::config; d : data_plan; r : run_plan }
+
+:= text_of (name : string) : string = env::get_environment_variable name
+
+:= number_or \* t. (name : string) (fallback : t) : t =
+    := v : option t = convert::try_convert (text_of name)
+    ?= v ?| | Some x => x | None => fallback
+
+:= shape_260k () : transformer::config =
+    { dim = 64; hidden = 172; layers = 5; heads = 8; kv_heads = 4; vocab = 512; seq = 512 }
+
+:= sizes_of (d : transformer::config) : i32 * i32 * i32 =
+    number_or "TRAIN_DIM" d::dim, number_or "TRAIN_HIDDEN" d::hidden, number_or "TRAIN_LAYERS" d::layers
+
+:= heads_of (d : transformer::config) : i32 * i32 =
+    number_or "TRAIN_HEADS" d::heads, number_or "TRAIN_KV_HEADS" d::kv_heads
+
+:= tokens_of (d : transformer::config) : i32 * i32 = number_or "TRAIN_VOCAB" d::vocab, number_or "TRAIN_SEQ" d::seq
+
+:= shape_of (d : transformer::config) : transformer::config =
+    := dim, hidden, layers = sizes_of d
+    := heads, kv = heads_of d
+    := vocab, seq = tokens_of d
+    { dim = dim; hidden = hidden; layers = layers; heads = heads; kv_heads = kv; vocab = vocab; seq = seq }
+
+:= start_env () : start =
+    := path = text_of "TRAIN_CHECKPOINT"
+    ? path = "" ?> Seeded (number_or "TRAIN_INIT_SEED" 1u64) |: Checkpoint path
+
+:= files_env () : string * string = text_of "TRAIN_DATA", text_of "TRAIN_VAL"
+
+:= sampling_env () : u64 * i32 = number_or "TRAIN_SEED" 88172645463325252u64, number_or "TRAIN_VAL_WINDOWS" 0
+
+:= data_env () : data_plan =
+    := train, val = files_env ()
+    := window, batch = number_or "TRAIN_WINDOW" 129, number_or "TRAIN_BATCH" 4
+    := seed, cap = sampling_env ()
+    { train = train; val = val; window = window; batch = batch; seed = seed; val_cap = cap }
+
+:= peak_env () : f32 = conv (number_or "TRAIN_PEAK_MICRO" 1000) / 1000000.0f32
+
+:= run_env () : run_plan =
+    := steps, warmup, every = number_or "TRAIN_STEPS" 100, number_or "TRAIN_WARMUP" 10, number_or "TRAIN_VAL_EVERY" 0
+    { steps = steps; peak = peak_env (); warmup = warmup; every = every; out = text_of "TRAIN_OUT" }
+
+:= plan_env () : plan = { start = start_env (); shape = shape_of (shape_260k ()); d = data_env (); r = run_env () }
+
+:= gauss (r : stream) : f32 =
+    := u = 1.0f32 - transformer::random_f32 r
+    sqrt (2.0f32 * log (1.0f32 / u)) * cos (6.28318531f32 * transformer::random_f32 r)
+
+:~ ^ normal_from (w : floats) (r : stream) (std : f32) (s : transformer::slab) (i : i32) : () =
+    ? i < s::size ?>
+        set w (s::at + i) (std * gauss r)
+        normal_from w r std s (i + 1)
+
+:~ ^ ones_from (w : floats) (s : transformer::slab) (i : i32) : () =
+    ? i < s::size ?>
+        set w (s::at + i) 1.0f32
+        ones_from w s (i + 1)
+
+:= small (w : floats) (r : stream) (s : transformer::slab) : () = normal_from w r 0.02f32 s 0
+
+:= projection_std (c : shape) : f32 = 0.02f32 / sqrt (conv (2 * c::layers))
+
+:= seeded_att (w : floats) (r : stream) (c : shape) (a : transformer::attention_w) : () =
+    ones_from w a::rms 0
+    small w r a::wq
+    small w r a::wk
+    small w r a::wv
+    normal_from w r (projection_std c) a::wo 0
+
+:= seeded_ffn (w : floats) (r : stream) (c : shape) (f : transformer::ffn_w) : () =
+    ones_from w f::rms 0
+    small w r f::w1
+    small w r f::w2
+    normal_from w r (projection_std c) f::w3 0
+
+:= stream_of (seed : u64) : stream =
+    := r : stream = create 1
+    set r 0 seed
+    r
+
+:= seeded_weights (c : shape) (l : transformer::layout) (r : stream) : floats =
+    := w : floats = create (transformer::weight_count l)
+    small w r l::embed
+    seeded_att w r c l::att
+    seeded_ffn w r c l::ffn
+    ones_from w l::final 0
+    w
+
+:= seeded_model (c : shape) (seed : u64) : transformer::model =
+    := l = transformer::layout_of c !+
+    { c = c; l = l; w = seeded_weights c l (stream_of seed); k = transformer::known_of c; q8 = None }
+
+:= model_of (p : plan) : transformer::model =
+    ?= p::start ?|
+    | Checkpoint path => transformer::fp32_model_at path
+    | Seeded seed => seeded_model p::shape seed
+
+:= schedule_of (r : run_plan) : f32_optim::schedule =
+    f32_optim::WarmupCosine { peak = r::peak; floor = 0.0f32; warmup = r::warmup; decay_steps = r::steps }
+
+:= target_loss (n : train_grad::net) (xf : floats) (t : i32) : f32 =
+    f32_grads::cross_entropy (train_grad::logits_row n xf t) (train_grad::token n (t + 1))
+
+:= last_rows (n : train_grad::net) : floats =
+    train_grad::final_rows n (train_grad::forward_from n (train_grad::stash_of n) (train_grad::embedded n) 0)
+
+:= row_losses (n : train_grad::net) : floats =
+    := xf, o = last_rows n, train_grad::zeros (train_grad::steps n)
+    train_grad::for_each (train_grad::steps n) (\ t => set o t (target_loss n xf t))
+    o
+
+:= val_count (data : array u8) (window : i32) (cap : i32) : i32 =
+    := all = (length data / 2 - 1) / (window - 1)
+    ? cap > 0 && cap < all ?> cap |: all
+
+:= val_tokens (data : array u8) (window : i32) (k : i32) : array i32 =
+    train_grad::window_at data (k * (window - 1)) window
+
+:= val_rows (m : transformer::model) (d : data_plan) (data : array u8) : array floats =
+    parallel::map_index (val_count data d::window d::val_cap) \ k =>
+        row_losses { m = m; tokens = val_tokens data d::window k }
+
+:~ ^ sum_from (x : floats) (i : i32) (acc : f32) : f32 = ? i >= length x ?> acc |: sum_from x (i + 1) (acc + index x i)
+
+:~ ^ rows_sum (rows : array floats) (k : i32) (acc : f32) : f32 =
+    ? k >= length rows ?> acc |: rows_sum rows (k + 1) (acc + sum_from (index rows k) 0 0.0f32)
+
+:= mean_of (rows : array floats) (window : i32) : f32 = rows_sum rows 0 0.0f32 / conv (length rows * (window - 1))
+
+:= due (r : run_plan) (it : i32) : bool = r::every > 0 && (it % r::every = 0 || it = r::steps)
+
+:= val_mean (p : plan) (data : array u8) (t : train_grad::trainer) : string =
+    ? due p::r t::it ?> "" ++#? mean_of (val_rows t::m p::d data) p::d::window |: "-"
+
+:= val_text (p : plan) (val : option (array u8)) (t : train_grad::trainer) : string =
+    ?= val ?| | Some data => val_mean p data t | None => "-"
+
+:= step_line (it : i32) (loss : f32) (val : string) (norm : f32) (lr : f32) : string =
+    "step\t" ++#? it ++# "\t" ++#? loss ++# "\t" ++# val ++# "\t" ++#? norm ++# "\t" ++#? lr
+
+:== step_io = { p : plan; data : array u8; val : option (array u8) }
+
+:== trainer = train_grad::trainer
+
+:= batch_of (io : step_io) (seed : u64) : list (array i32) * u64 =
+    train_grad::windows_from io::data io::p::d::window io::p::d::batch seed []
+
+:= report (io : step_io) (after : trainer) (loss : f32) (norm : f32) (lr : f32) : () =
+    console::write_line (step_line after::it loss (val_text io::p io::val after) norm lr)
+
+:= step_of (io : step_io) (t : trainer) (seed : u64) : trainer * u64 =
+    := ws, next = batch_of io seed
+    := lr = f32_optim::rate t::sched t::it
+    := after, loss, norm = train_grad::train_step t ws
+    report io after loss norm lr
+    after, next
+
+:~ ^ train_from (io : step_io) (t : trainer) (seed : u64) : trainer =
+    ? t::it >= io::p::r::steps
+    ?> t
+    |:
+        := after, next = step_of io t seed
+        train_from io after next
+
+:= token_line (row : floats) (data : array u8) (window : i32) (k : i32) (t : i32) : () =
+    := at = k * (window - 1) + t + 1
+    console::write_line ("token\t" ++#? at ++# "\t" ++#? train_grad::u16_at data at ++# "\t" ++#? index row t)
+
+:= token_lines (rows : array floats) (data : array u8) (window : i32) (k : i32) : () =
+    := row = index rows k
+    train_grad::for_each (length row) (\ t => token_line row data window k t)
+
+:= dump_tokens (t : train_grad::trainer) (d : data_plan) (data : array u8) : () =
+    := rows = val_rows t::m d data
+    train_grad::for_each (length rows) (\ k => token_lines rows data d::window k)
+
+:= save (r : run_plan) (t : train_grad::trainer) : () =
+    ? r::out = "" ?> () |: train_grad::write_fp32_file t::m t::m::w r::out
+
+:= finish (io : step_io) (t : train_grad::trainer) : () =
+    save io::p::r t
+    ?= io::val ?| | Some data => dump_tokens t io::p::d data | None => ()
+
+:= io_of (p : plan) : step_io =
+    := val = ? p::d::val = "" ?> None |: Some (file_system::read_bytes p::d::val)
+    { p = p; data = file_system::read_bytes p::d::train; val = val }
+
+:= checked (m : transformer::model) (d : data_plan) : transformer::model =
+    ? d::window - 1 > m::c::seq ?> failwith "train_run: TRAIN_WINDOW - 1 exceeds the model seq" |: m
+
+:= main () : i32 =
+    := io = io_of (plan_env ())
+    := m = checked (model_of io::p) io::p::d
+    console::write_line "step\ttrain_loss\tval_loss\tnorm\tlr"
+    finish io (train_from io (train_grad::trainer_of m (schedule_of io::p::r)) io::p::d::seed)
+    0
+
+:= is_260k (m : transformer::model) : bool = ?= m::k ?| | transformer::Stories260K => !+ | _ => !-
+
+///> c
+///> rust
+:# a_seeded_model_is_deterministic_and_matches_the_260k_layout =
+    := a, b = seeded_model (shape_260k ()) 7u64, seeded_model (shape_260k ()) 7u64
+    (train_grad::same_weights a::w b::w, length a::w, is_260k a) |> _assert_eq (!+, 260032, !+)
+
+:= probe_rows () : floats =
+    := tokens = train_grad::ints_of [ 1; 40; 300; 7; 511; 2; 99; 128; 64 ]
+    row_losses { m = seeded_model (shape_260k ()) 7u64; tokens = tokens }
+
+:= mean_row (rows : floats) : f32 = sum_from rows 0 0.0f32 / conv (length rows)
+
+///> c
+///> rust
+:# seeded_logits_start_near_uniform =
+    := mean = mean_row (probe_rows ())
+    (abs (mean - log 512.0f32) < 0.2f32) |> _assert_eq !+

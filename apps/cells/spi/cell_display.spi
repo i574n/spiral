@@ -1,0 +1,80 @@
+///- --package .
+:< erlang_term
+:# cell_display static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:== trm = erlang_term::term
+
+:~ d_begin () : string = "SPIRAL_CELLS_DISPLAY_BEGIN"
+
+:~ d_finish () : string = "SPIRAL_CELLS_DISPLAY_END"
+
+:| dstate =
+    | DNormal
+    | DMime
+    | DOpen : string * list string
+
+:== dacc = (list trm) * (list string) * dstate
+
+:~ dmap (mime : string) (data : string) : trm = map_of [ pair "mime" (erlang_term::of mime); pair "data" (erlang_term::of data) ]
+
+:~ join_lines (xs : list string) : string = sm'::concat_list "\n" xs
+
+:~ dclose (displays : list trm) (kept : list string) (mime : string) (lines : list string) : dacc =
+    (dmap mime (join_lines (listm::rev lines)) :: displays, kept, DNormal)
+
+:~ dnormal (displays : list trm) (kept : list string) (line : string) : dacc =
+    ? line = d_begin () ?> (displays, kept, DMime) |: (displays, line :: kept, DNormal)
+
+:~ dopen (displays : list trm) (kept : list string) (mime : string) (lines : list string) (line : string) : dacc =
+    ? line = d_finish () ?> dclose displays kept mime lines |: (displays, kept, DOpen (mime, line :: lines))
+
+:~ dcollect (acc : dacc) (line : string) : dacc =
+    := (displays, kept, st) = acc
+    ?= st ?|
+    | DNormal => dnormal displays kept line
+    | DMime => (displays, kept, DOpen (text::trim line, []))
+    | DOpen (mime, lines) => dopen displays kept mime lines line
+
+:~ unclosed (kept : list string) (st : dstate) : list string =
+    ?= st ?|
+    | DNormal => kept
+    | DMime => d_begin () :: kept
+    | DOpen (mime, lines) => listm::append lines (mime :: d_begin () :: kept)
+
+:~ extract_result (displays : list trm) (kept : string) : trm =
+    erlang_term::tuple [ erlang_term::list_term displays; erlang_term::of kept ]
+
+:~ kept_text (kept : list string) (st : dstate) : string = join_lines (listm::rev (unclosed kept st))
+
+:~ extract_marked (stdout : string) : trm =
+    := lines = sm'::split_list "\n" (text::replace stdout "\r\n" "\n")
+    := (displays, kept, st) = listm::fold dcollect ([], [], DNormal) lines
+    extract_result (listm::rev displays) (kept_text kept st)
+
+:~ extract (stdout : string) : trm =
+    ? text::contains stdout (d_begin ())
+    ?> extract_marked stdout
+    |: extract_result [] stdout
+
+:~ display_count (r : trm) : i32 = count_of (element_at 1i32 r)
+
+:~ kept_of (r : trm) : string = binary_text (element_at 2i32 r)
+
+:~ first_field (key : string) (r : trm) : string = binary_text (field_or key (item_at 0i32 (element_at 1i32 r)) (erlang_term::of ""))
+
+:~ marked () : string = "a\nSPIRAL_CELLS_DISPLAY_BEGIN\ntext/html\n<b>x</b>\nSPIRAL_CELLS_DISPLAY_END\nb"
+
+:~ half_open () : string = "x\nSPIRAL_CELLS_DISPLAY_BEGIN\ntext/plain\nhalf"
+
+///> gleam
+:# a_display_block_is_lifted_out_of_stdout =
+    := r = extract (marked ())
+    (display_count r, first_field "mime" r, first_field "data" r, kept_of r) |> _assert_eq (1i32, "text/html", "<b>x</b>", "a\nb")
+
+///> gleam
+:# plain_stdout_and_an_unclosed_block_stay_as_text =
+    (kept_of (extract "only\ntext"), display_count (extract (half_open ())), kept_of (extract (half_open ())))
+    |> _assert_eq ("only\ntext", 0i32, half_open ())

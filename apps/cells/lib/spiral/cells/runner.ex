@@ -1,8 +1,6 @@
 # TODO: KINO-WITHOUT-ELIXIR first strangler slice: runner.spi (watcher, caller monitor, deadline, drain, tail, tree kill) on lib
 #     process/port Gleam arms, this module becomes a delegate, runner_test.exs stays the oracle until its cases move to ///> gleam blocks
 defmodule Spiral.Cells.Runner do
-  require Logger
-
   @type result :: %{
           exit_status: non_neg_integer(),
           output: binary(),
@@ -16,8 +14,6 @@ defmodule Spiral.Cells.Runner do
           | {:runner_crashed, term()}
 
   @default_max_output 16 * 1024 * 1024
-  @drain_after_kill_ms 5_000
-  @output_after_exit_ms 2_000
 
   @spec run(String.t(), [String.t()], keyword()) :: {:ok, result()} | {:error, error()}
   def run(executable, args, opts \\ []) when is_binary(executable) and is_list(args) do
@@ -58,7 +54,6 @@ defmodule Spiral.Cells.Runner do
 
   defp watch(caller, ref, executable, args, opts) do
     Process.flag(:trap_exit, true)
-    caller_mref = Process.monitor(caller)
 
     case open_port(executable, args, opts) do
       {:ok, port, capture} ->
@@ -69,31 +64,14 @@ defmodule Spiral.Cells.Runner do
           end
 
         if fun = opts[:on_start], do: fun.(os_pid)
-
         started = System.monotonic_time(:millisecond)
+        timeout_ms = if opts[:timeout] == :infinity, do: -1, else: opts[:timeout]
 
-        deadline =
-          case opts[:timeout] do
-            :infinity -> :infinity
-            ms when is_integer(ms) and ms >= 0 -> started + ms
-          end
-
-        state = %{
-          caller: caller,
-          caller_mref: caller_mref,
-          ref: ref,
-          port: port,
-          capture: capture,
-          os_pid: os_pid,
-          started: started,
-          deadline: deadline,
-          timeout: opts[:timeout],
-          max_output: opts[:max_output],
-          out: [],
-          out_size: 0
-        }
-
-        loop(state)
+        case Spiral.Cells.Domain.runner_loop(caller, port, os_pid, capture, started, timeout_ms, opts[:max_output]) do
+          {:reply, result} -> send(caller, {ref, result})
+          :caller_gone -> :ok
+          {:exit, reason} -> exit(reason)
+        end
 
       {:error, reason} ->
         send(caller, {ref, {:error, {:spawn_failed, reason}}})
@@ -124,263 +102,33 @@ defmodule Spiral.Cells.Runner do
     end
   end
 
-  @cmd_unquotable ["\"", "%", "\r", "\n"]
-  @cmd_needs_quotes [" ", "\t", "&", "|", "<", ">", "(", ")", "^", ",", ";", "="]
 
   @doc false
   @spec capture_file(String.t(), [String.t()]) :: String.t() | nil
   def capture_file(path, args) do
     file = Path.join(System.tmp_dir!(), "spiral-cells-run-#{System.pid()}-#{System.unique_integer([:positive])}.out")
-
-    with {:win32, _} <- :os.type(),
-         shell when is_binary(shell) <- command_shell(),
-         true <- Enum.all?([shell, path, file | args], &(not String.contains?(&1, @cmd_unquotable))) do
-      file
-    else
-      _ -> nil
-    end
+    if Spiral.Cells.Domain.runner_capture_ok(path, file, args), do: file
   end
 
   @doc false
   @spec captured_command_line(String.t(), [String.t()], String.t()) :: String.t()
-  def captured_command_line(path, args, file) do
-    words = Enum.map_join(args, "", &(" " <> cmd_word(&1)))
-    ~s|"#{windows_path(command_shell())}" /d /v:off /s /c "> "#{windows_path(file)}" 2>&1 "#{windows_path(path)}"#{words}"|
-  end
-
-  defp command_shell, do: System.get_env("ComSpec") || System.find_executable("cmd.exe")
-
-  defp cmd_word(""), do: ~s|""|
-
-  defp cmd_word(word) do
-    if String.contains?(word, @cmd_needs_quotes), do: ~s|"#{word}"|, else: word
-  end
-
-  defp windows_path(path), do: String.replace(path, "/", "\\")
-
-  defp absorb_capture(%{capture: nil} = state), do: state
-
-  defp absorb_capture(%{capture: file} = state) do
-    state =
-      case read_tail(file, state.max_output) do
-        {:ok, data} -> append(state, data)
-        {:error, _} -> state
-      end
-
-    discard_capture(state)
-  end
-
-  defp read_tail(file, limit) do
-    with {:ok, %File.Stat{size: size}} <- File.stat(file),
-         {:ok, io} <- File.open(file, [:read, :binary]) do
-      try do
-        case :file.pread(io, max(size - limit, 0), min(size, limit)) do
-          {:ok, data} -> {:ok, data}
-          :eof -> {:ok, ""}
-          {:error, reason} -> {:error, reason}
-        end
-      after
-        File.close(io)
-      end
-    end
-  end
-
-  defp discard_capture(%{capture: nil} = state), do: state
-
-  defp discard_capture(%{capture: file} = state) do
-    remove_capture(file, 20)
-    %{state | capture: nil}
-  end
-
-  defp remove_capture(file, attempts) do
-    case File.rm(file) do
-      {:error, reason} when reason not in [:enoent] and attempts > 1 ->
-        Process.sleep(100)
-        remove_capture(file, attempts - 1)
-
-      _ ->
-        :ok
-    end
-  end
+  def captured_command_line(path, args, file), do: Spiral.Cells.Domain.runner_command_line(path, args, file)
 
   defp resolve_executable(executable) do
-    cond do
-      Path.type(executable) == :absolute and File.regular?(executable) -> {:ok, executable}
-      path = System.find_executable(executable) -> {:ok, path}
-      true -> {:error, {:executable_not_found, executable}}
+    case Spiral.Cells.Domain.runner_resolve(executable) do
+      "" -> {:error, {:executable_not_found, executable}}
+      path -> {:ok, path}
     end
   end
 
   defp port_env({name, nil}), do: {to_charlist(name), false}
   defp port_env({name, value}), do: {to_charlist(name), to_charlist(value)}
 
-  defp loop(%{port: port, caller_mref: caller_mref} = state) do
-    receive do
-      {^port, {:data, data}} ->
-        loop(append(state, data))
-
-      {^port, {:exit_status, status}} ->
-        state = output_after_exit(state, System.monotonic_time(:millisecond) + @output_after_exit_ms)
-        state = absorb_capture(state)
-        finish(state, {:ok, result(state, status)})
-
-      {:DOWN, ^caller_mref, :process, _, _reason} ->
-        kill_tree(state.os_pid)
-        close_port(port)
-        discard_capture(state)
-
-      {:EXIT, ^port, _reason} ->
-        loop(Map.put(state, :port_closed, true))
-
-      {:EXIT, _from, reason} ->
-        kill_tree(state.os_pid)
-        close_port(port)
-        discard_capture(state)
-        exit(reason)
-    after
-      remaining(state.deadline) ->
-        kill_tree(state.os_pid)
-        state = drain(state, System.monotonic_time(:millisecond) + @drain_after_kill_ms)
-        close_port(port)
-        state = absorb_capture(state)
-
-        error =
-          {:timeout, %{output: output(state), os_pid: state.os_pid, timeout: state.timeout}}
-
-        finish(state, {:error, error})
-    end
-  end
-
-  defp output_after_exit(%{port_closed: true} = state, _until), do: state
-
-  defp output_after_exit(%{port: port} = state, until) do
-    receive do
-      {^port, {:data, data}} -> output_after_exit(append(state, data), until)
-      {:EXIT, ^port, _reason} -> state
-    after
-      max(until - System.monotonic_time(:millisecond), 0) -> state
-    end
-  end
-
-  defp drain(%{port: port} = state, until) do
-    receive do
-      {^port, {:data, data}} -> drain(append(state, data), until)
-      {^port, {:exit_status, _}} -> state
-    after
-      max(until - System.monotonic_time(:millisecond), 0) -> state
-    end
-  end
-
-  defp finish(state, result) do
-    send(state.caller, {state.ref, result})
-  end
-
-  defp remaining(:infinity), do: :infinity
-
-  defp remaining(deadline) do
-    max(deadline - System.monotonic_time(:millisecond), 0)
-  end
-
-  defp append(state, data) do
-    out = [data | state.out]
-    size = state.out_size + byte_size(data)
-
-    if size > state.max_output * 2 do
-      bin = IO.iodata_to_binary(Enum.reverse(out))
-      keep = binary_part(bin, byte_size(bin) - state.max_output, state.max_output)
-      %{state | out: [keep], out_size: byte_size(keep)}
-    else
-      %{state | out: out, out_size: size}
-    end
-  end
-
-  defp output(state) do
-    bin = state.out |> Enum.reverse() |> IO.iodata_to_binary()
-
-    if byte_size(bin) > state.max_output do
-      binary_part(bin, byte_size(bin) - state.max_output, state.max_output)
-    else
-      bin
-    end
-  end
-
-  defp result(state, status) do
-    %{
-      exit_status: status,
-      output: output(state),
-      os_pid: state.os_pid,
-      duration_ms: System.monotonic_time(:millisecond) - state.started
-    }
-  end
-
-  defp close_port(port) do
-    Port.close(port)
-  rescue
-    ArgumentError -> :ok
-  end
-
   @spec kill_tree(non_neg_integer() | nil) :: :ok
   def kill_tree(nil), do: :ok
 
-  def kill_tree(os_pid) when is_integer(os_pid) do
-    case :os.type() do
-      {:win32, _} ->
-        System.cmd("taskkill", ["/T", "/F", "/PID", Integer.to_string(os_pid)],
-          stderr_to_stdout: true
-        )
-
-      {:unix, _} ->
-        pids = [os_pid | descendants(os_pid)]
-
-        System.cmd("kill", ["-KILL" | Enum.map(pids, &Integer.to_string/1)],
-          stderr_to_stdout: true
-        )
-    end
-
-    :ok
-  rescue
-    error ->
-      Logger.warning("Spiral.Cells.Runner: failed to kill #{os_pid}: #{Exception.message(error)}")
-
-      :ok
-  end
-
-  defp descendants(pid) do
-    case System.cmd("pgrep", ["-P", Integer.to_string(pid)], stderr_to_stdout: true) do
-      {out, 0} ->
-        children =
-          out
-          |> String.split()
-          |> Enum.flat_map(fn text ->
-            case Integer.parse(text) do
-              {n, ""} -> [n]
-              _ -> []
-            end
-          end)
-
-        children ++ Enum.flat_map(children, &descendants/1)
-
-      _ ->
-        []
-    end
-  end
+  def kill_tree(os_pid) when is_integer(os_pid), do: Spiral.Cells.Domain.runner_kill_tree(os_pid)
 
   @spec os_pid_alive?(non_neg_integer()) :: boolean()
-  def os_pid_alive?(os_pid) when is_integer(os_pid) do
-    case :os.type() do
-      {:win32, _} ->
-        {out, _} =
-          System.cmd("tasklist", ["/FI", "PID eq #{os_pid}", "/NH", "/FO", "CSV"],
-            stderr_to_stdout: true
-          )
-
-        String.contains?(out, ~s("#{os_pid}"))
-
-      {:unix, _} ->
-        {_, status} =
-          System.cmd("kill", ["-0", Integer.to_string(os_pid)], stderr_to_stdout: true)
-
-        status == 0
-    end
-  end
+  def os_pid_alive?(os_pid) when is_integer(os_pid), do: Spiral.Cells.Domain.pid_alive(Integer.to_string(os_pid))
 end

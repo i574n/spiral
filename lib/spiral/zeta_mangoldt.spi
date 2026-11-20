@@ -1,0 +1,2368 @@
+:# zeta_mangoldt static =
+    :< testing
+
+:< zeta_nat
+:< zeta_prime
+
+:= zeta_runtime_i64_add (left : i64) (right : i64) : i64 = !!!!Add(left, right)
+
+:= zeta_runtime_mul_i64 (left : i64) (right : i64) : i64 =
+    !!!!Mult(left, right)
+
+:= ^ positive_positional_nat_to_i64 \* bits.
+    (value : positive_positional_nat bits) : i64 =
+    ?= value ?|
+    | PositivePositionalOne => 1i64
+    | PositivePositionalZeroBit tail =>
+        zeta_runtime_mul_i64 2i64 (positive_positional_nat_to_i64 tail)
+    | PositivePositionalOneBit tail =>
+        zeta_runtime_i64_add 1i64 (zeta_runtime_mul_i64 2i64 (positive_positional_nat_to_i64 tail))
+
+:= zeta_runtime_sub_i64 (left : i64) (right : i64) : i64 = !!!!Sub(left, right)
+
+:= zeta_runtime_add_closure_i64 (left : i64) (right : i64) : i64 = !!!!Add(left, right)
+
+:= ival_sealed_composite_children_runtime \* natural divisor quotient.
+    (children : ival_sealed_composite_children natural divisor quotient)
+    : i64 * i64 =
+    ?= children ?|
+    | CertifiedIntervalPositivePositionalSealedCompositeChildren payload =>
+        := \? length.
+            _, divisor_value, quotient_value, _, _, _ = payload
+        positive_positional_nat_to_i64 divisor_value,
+        positive_positional_nat_to_i64 quotient_value
+
+:= ^ ival_complete_factorization_runtime \* natural.
+    (tree : ival_complete_factorization_tree natural)
+    : i64 * i64 * i64 * i64 =
+    ?= tree ?|
+    | CertifiedIntervalPositivePositionalCompleteUnit =>
+        1i64, 0i64, 0i64, 1i64
+    | CertifiedIntervalPositivePositionalCompletePrime payload =>
+        := \? length. prime_value, _, _, _ = payload
+        1i64, 1i64, 0i64, positive_positional_nat_to_i64 prime_value
+    | CertifiedIntervalPositivePositionalCompleteSplit payload =>
+        := \? length divisor quotient.
+            root_value, _, _, _, _, _, _, left, right, _ = payload
+        := left_nodes, left_primes, left_splits, _ =
+            ival_complete_factorization_runtime left
+        := right_nodes, right_primes, right_splits, _ =
+            ival_complete_factorization_runtime right
+        zeta_runtime_add_closure_i64 1i64
+            (zeta_runtime_add_closure_i64 left_nodes right_nodes),
+        zeta_runtime_add_closure_i64 left_primes right_primes,
+        zeta_runtime_add_closure_i64 1i64
+            (zeta_runtime_add_closure_i64 left_splits right_splits),
+        positive_positional_nat_to_i64 root_value
+
+:= ^ ival_complete_reconstruction_runtime \* natural.
+    (certificate : ival_complete_reconstruction natural)
+    : i64 * i64 * i64 * i64 * i64 * i64 =
+    ?= certificate ?|
+    | CertifiedIntervalPositivePositionalCompleteReconstructionUnit =>
+        1i64, 0i64, 0i64, 0i64, 1i64, 1i64
+    | CertifiedIntervalPositivePositionalCompleteReconstructionPrime payload =>
+        := \? length. prime_value, _, _, _ = payload
+        := value = positive_positional_nat_to_i64 prime_value
+        1i64, 1i64, 0i64, 0i64, value, value
+    | CertifiedIntervalPositivePositionalCompleteReconstructionSplit payload =>
+        := \? divisor quotient.
+            root_value, _, _, _, left, right, _ = payload
+        := left_nodes, left_primes, left_splits, left_descents, _, left_product =
+            ival_complete_reconstruction_runtime left
+        := right_nodes, right_primes, right_splits, right_descents, _, right_product =
+            ival_complete_reconstruction_runtime right
+        zeta_runtime_add_closure_i64 1i64
+            (zeta_runtime_add_closure_i64 left_nodes right_nodes),
+        zeta_runtime_add_closure_i64 left_primes right_primes,
+        zeta_runtime_add_closure_i64 1i64
+            (zeta_runtime_add_closure_i64 left_splits right_splits),
+        zeta_runtime_add_closure_i64 2i64
+            (zeta_runtime_add_closure_i64 left_descents right_descents),
+        positive_positional_nat_to_i64 root_value,
+        zeta_runtime_mul_i64 left_product right_product
+
+:= ival_complete_prime_sequence_cell_runtime
+    (cell : ival_complete_prime_sequence_cell)
+    : i64 =
+    ?= cell ?|
+    | CertifiedIntervalPositivePositionalCompletePrimeSequenceCell payload =>
+        := \? natural length. prime_value, _, _, _ = payload
+        positive_positional_nat_to_i64 prime_value
+
+:= ^ ival_complete_prime_sequence_runtime
+    (sequence : ival_complete_prime_sequence)
+    : i64 * i64 * i64 * i64 =
+    ?= sequence ?|
+    | CertifiedIntervalPositivePositionalCompletePrimeSequenceDone =>
+        0i64, 1i64, 0i64, 0i64
+    | CertifiedIntervalPositivePositionalCompletePrimeSequenceMore (head, tail) =>
+        := value =
+            ival_complete_prime_sequence_cell_runtime head
+        := tail_count, tail_product, tail_first, tail_order_mismatches =
+            ival_complete_prime_sequence_runtime tail
+        := local_order_mismatch : i64 =
+            := test_0 = !!!!EQ(tail_count, 0i64)
+            := test_1 = !!!!LTE(value, tail_first)
+            := test_any = ? test_0 ?> !+ |? test_1 ?> !+ |: !-
+            ? test_any ?> 0i64 |: 1i64
+        zeta_runtime_add_closure_i64 1i64 tail_count,
+        zeta_runtime_mul_i64 value tail_product,
+        value,
+        zeta_runtime_add_closure_i64 local_order_mismatch tail_order_mismatches
+
+:= ^ ival_prime_multiplicity_counted_run_runtime \* head count.
+    (run : ival_prime_multiplicity_counted_run_from head count) : i64 =
+    ?= run ?|
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityCountedRunLast _ => 1i64
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityCountedRunMore payload =>
+        := \? next. _, _, tail = payload
+        zeta_runtime_add_closure_i64 1i64
+            (ival_prime_multiplicity_counted_run_runtime tail)
+
+:= ival_prime_multiplicity_exact_count_runtime \* head.
+    (run : ival_prime_multiplicity_run_from head) : i64 =
+    ?= index_ival_prime_multiplicity_exact_count run ?|
+    | CertifiedIntervalPositivePositionalAnyPrimeMultiplicityCountedRun payload =>
+        := \? count. counted = payload
+        ival_prime_multiplicity_counted_run_runtime counted
+
+:= ival_prime_multiplicity_normal_form_first_exact_count
+    (normal : ival_prime_multiplicity_normal_form) : i64 =
+    ?= normal ?|
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormDone => 0i64
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormSome payload =>
+        := \? head. grouped = payload
+        ?= grouped ?|
+        | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormLast run =>
+            ival_prime_multiplicity_exact_count_runtime run
+        | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormMore payload =>
+            := \? next. run, _, _ = payload
+            ival_prime_multiplicity_exact_count_runtime run
+
+:= ^ ival_prime_multiplicity_normal_form_total_exact_count_from \* head.
+    (normal : ival_prime_multiplicity_normal_form_from head) : i64 =
+    ?= normal ?|
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormLast run =>
+        ival_prime_multiplicity_exact_count_runtime run
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormMore payload =>
+        := \? next. run, _, tail = payload
+        zeta_runtime_add_closure_i64
+            (ival_prime_multiplicity_exact_count_runtime run)
+            (ival_prime_multiplicity_normal_form_total_exact_count_from tail)
+
+:= ival_prime_multiplicity_normal_form_total_exact_count
+    (normal : ival_prime_multiplicity_normal_form) : i64 =
+    ?= normal ?|
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormDone => 0i64
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormSome payload =>
+        := \? head. grouped = payload
+        ival_prime_multiplicity_normal_form_total_exact_count_from grouped
+
+:= ^ ival_prime_multiplicity_run_from_runtime \* head.
+    (run : ival_prime_multiplicity_run_from head)
+    : i64 * i64 * i64 =
+    ?= run ?|
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityRunLast cell =>
+        := value =
+            positive_positional_nat_to_i64 (
+                ival_indexed_prime_cell_value cell)
+        1i64, value, value
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityRunMore payload =>
+        := \? next. cell, _, tail = payload
+        := value =
+            positive_positional_nat_to_i64 (
+                ival_indexed_prime_cell_value cell)
+        := tail_count, _, tail_product =
+            ival_prime_multiplicity_run_from_runtime tail
+        zeta_runtime_add_closure_i64 1i64 tail_count,
+        value,
+        zeta_runtime_mul_i64 value tail_product
+
+:= ^ ival_prime_multiplicity_normal_form_from_runtime \* head.
+    (normal : ival_prime_multiplicity_normal_form_from head)
+    : i64 * i64 * i64 * i64 * i64 * i64 * i64 =
+    ?= normal ?|
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormLast run =>
+        := multiplicity, prime_value, product =
+            ival_prime_multiplicity_run_from_runtime run
+        1i64, multiplicity, product, prime_value, prime_value, multiplicity, 0i64
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormMore payload =>
+        := \? next. run, _, rest = payload
+        := multiplicity, prime_value, product =
+            ival_prime_multiplicity_run_from_runtime run
+        := groups, cells, tail_product, tail_first, tail_last, tail_max, tail_mismatches =
+            ival_prime_multiplicity_normal_form_from_runtime rest
+        := local_max : i64 = ? !!!!GTE(multiplicity, tail_max) ?> multiplicity |: tail_max
+        := local_mismatch : i64 = ? !!!!LT(prime_value, tail_first) ?> 0i64 |: 1i64
+        zeta_runtime_add_closure_i64 1i64 groups,
+        zeta_runtime_add_closure_i64 multiplicity cells,
+        zeta_runtime_mul_i64 product tail_product,
+        prime_value,
+        tail_last,
+        local_max,
+        zeta_runtime_add_closure_i64 local_mismatch tail_mismatches
+
+:= ival_prime_multiplicity_normal_form_runtime
+    (normal : ival_prime_multiplicity_normal_form)
+    : i64 * i64 * i64 * i64 * i64 * i64 * i64 =
+    ?= normal ?|
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormDone =>
+        0i64, 0i64, 1i64, 0i64, 0i64, 0i64, 0i64
+    | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormSome payload =>
+        := \? head. grouped = payload
+        ival_prime_multiplicity_normal_form_from_runtime grouped
+
+:= ^ ival_ordered_prime_sequence_from_runtime \* head.
+    (sequence : ival_ordered_prime_sequence_from head)
+    : i64 * i64 * i64 * i64 * i64 =
+    ?= sequence ?|
+    | CertifiedIntervalPositivePositionalOrderedPrimeSequenceLast cell =>
+        := value =
+            positive_positional_nat_to_i64 (
+                ival_indexed_prime_cell_value cell)
+        1i64, value, value, value, 0i64
+    | CertifiedIntervalPositivePositionalOrderedPrimeSequenceMore payload =>
+        := \? next. cell, _, tail = payload
+        := value =
+            positive_positional_nat_to_i64 (
+                ival_indexed_prime_cell_value cell)
+        := tail_count, tail_product, tail_first, tail_last, tail_mismatches =
+            ival_ordered_prime_sequence_from_runtime tail
+        := local_mismatch : i64 =
+            := test_0 = !!!!LTE(value, tail_first)
+            ? test_0 ?> 0i64 |: 1i64
+        zeta_runtime_add_closure_i64 1i64 tail_count,
+        zeta_runtime_mul_i64 value tail_product,
+        value,
+        tail_last,
+        zeta_runtime_add_closure_i64 local_mismatch tail_mismatches
+
+:= ival_ordered_prime_sequence_runtime
+    (sequence : ival_ordered_prime_sequence)
+    : i64 * i64 * i64 * i64 * i64 =
+    ?= sequence ?|
+    | CertifiedIntervalPositivePositionalOrderedPrimeSequenceDone =>
+        0i64, 1i64, 0i64, 0i64, 0i64
+    | CertifiedIntervalPositivePositionalOrderedPrimeSequenceSome payload =>
+        := \? head. ordered = payload
+        ival_ordered_prime_sequence_from_runtime ordered
+
+:= positive_positional_predecessor_less_runtime \* input output.
+    (input_value : positive_positional_nat input)
+    (output_value : positive_positional_nat output)
+    (_ : positive_positional_less output input) : i64 * i64 =
+    positive_positional_nat_to_i64 input_value,
+    positive_positional_nat_to_i64 output_value
+
+:= positive_positional_predecessor_less_terminal () : string =
+    ?=
+        synthesize_positive_positional_predecessor (
+            positive_positional_twelve_value ()
+        )
+    ?|
+    | PositivePositionalPredecessorResultSome payload =>
+        := \? output. output_value, predecessor = payload
+        := input_runtime, output_runtime =
+            positive_positional_predecessor_less_runtime
+                (positive_positional_twelve_value ())
+                output_value
+                (positive_positional_predecessor_implies_less predecessor)
+        := _ =
+            assert_positive_positional_predecessor_less_runtime
+                input_runtime output_runtime
+        "every-structural-positive-positional-predecessor-witness-now-generically-derives-a-strict-order-proof-by-r"
+        ^^ "ecursion-so-the-twelve-to-eleven-step-is-certified-as-eleven-less-than-twelve-without-running-a-separate-o"
+        ^^ "rder-decision-which-removes-one-proof-gap-needed-by-accessibility-driven-factorization-while-transitive-ca"
+        ^^ "ndidate-membership-quotient-descent-and-arbitrary-tree-uniqueness-remain-open-sealed"
+
+:= ^ positive_positional_predecessor_accessibility_runtime \* natural.
+    (value : positive_positional_nat natural)
+    (accessibility : positive_positional_predecessor_accessibility natural)
+    : i64 * i64 * i64 =
+    ?= accessibility ?|
+    | PositivePositionalPredecessorAccessibilityOne _ =>
+        positive_positional_nat_to_i64 value, 1i64, 0i64
+    | PositivePositionalPredecessorAccessibilityStep payload =>
+        := \? predecessor.
+            predecessor_proof, tail, _ = payload
+        := predecessor_value =
+            positive_positional_predecessor_output_value predecessor_proof
+        := _, tail_nodes, tail_edges =
+            positive_positional_predecessor_accessibility_runtime
+                predecessor_value tail
+        positive_positional_nat_to_i64 value,
+        zeta_runtime_add_closure_i64 1i64 tail_nodes,
+        zeta_runtime_add_closure_i64 1i64 tail_edges
+
+:= positive_positional_predecessor_accessibility_terminal () : string =
+    := root = positive_positional_twelve_value ()
+    := accessibility =
+        derive_positive_positional_predecessor_accessibility root
+    := root_runtime, nodes, edges =
+        positive_positional_predecessor_accessibility_runtime
+            root accessibility
+    := _ =
+        assert_positive_positional_predecessor_accessibility_runtime
+            root_runtime nodes edges
+    "every-positive-positional-input-now-enters-a-total-structural-predecessor-accessibility-builder-that-terminate"
+    ^^ "s-only-at-one-and-carries-both-the-exact-predecessor-witness-and-the-derived-strict-order-proof-at-each-recurs"
+    ^^ "ive-step-so-twelve-materializes-twelve-accessible-nodes-and-eleven-certified-descents-without-a-prebuilt-facto"
+    ^^ "rization-tree-while-accessibility-over-arbitrary-strict-predecessors-quotient-descent-and-propositional-tree-u"
+    ^^ "niqueness-remain-open-sealed"
+
+:= positive_positional_parent_derived_child_accessibility_terminal () : string =
+    := parent = positive_positional_two_value ()
+    := parent_accessibility =
+        derive_positive_positional_predecessor_accessibility parent
+    := derived =
+        derive_positive_positional_parent_child_accessibility
+            parent_accessibility
+            PositivePositionalPredecessorTwo
+    ?= derived ?|
+    | PositivePositionalParentDerivedChildAccessibility payload =>
+        := \? parent synthesized_child. parent_accessibility, _, _, synthesized_accessibility = payload
+        := parent_value =
+            positive_positional_predecessor_accessibility_root_value parent_accessibility
+        := synthesized_value =
+            positive_positional_predecessor_accessibility_root_value synthesized_accessibility
+        := _, _, _ =
+            positive_positional_predecessor_accessibility_runtime
+                parent_value parent_accessibility
+        := _, _, _ =
+            positive_positional_predecessor_accessibility_runtime
+                synthesized_value synthesized_accessibility
+        "the-parent-derived-child-accessibility-authority-now-carries-the-parent-accessibility-the-exact-synthesize"
+        ^^ "d-predecessor-edge-the-typed-child-equality-and-the-child-subaccessibility-as-one-structural-payload-witho"
+        ^^ "ut-a-diagnostic-string"
+
+:= ival_factor_membership_parent_accessibility_terminal () : string =
+    := derived =
+        derive_ival_factor_membership_parent_accessibility
+            (alternate_two_in_four_membership ())
+    ?= derived ?|
+    | PositivePositionalParentDerivedChildAccessibility payload =>
+        := \? parent synthesized_child. parent_accessibility, _, _, synthesized_accessibility = payload
+        := parent_value =
+            positive_positional_predecessor_accessibility_root_value parent_accessibility
+        := synthesized_value =
+            positive_positional_predecessor_accessibility_root_value synthesized_accessibility
+        := _, _, _ =
+            positive_positional_predecessor_accessibility_runtime
+                parent_value parent_accessibility
+        := _, _, _ =
+            positive_positional_predecessor_accessibility_runtime
+                synthesized_value synthesized_accessibility
+        "the-parent-derived-child-accessibility-authority-now-carries-the-parent-accessibility-the-exact-synthesize"
+        ^^ "d-predecessor-edge-the-typed-child-equality-and-the-child-subaccessibility-as-one-structural-payload-witho"
+        ^^ "ut-a-diagnostic-string"
+
+:= ival_accessible_step_prime_terminal () : string =
+    := three_value = positive_positional_three_value ()
+    ?=
+        classify_ival_sealed_factor
+            three_value,
+        derive_positive_positional_predecessor_accessibility three_value
+    ?|
+    | CertifiedIntervalPositivePositionalSealedPrimeClass prime_payload,
+        PositivePositionalPredecessorAccessibilityStep step_payload
+        =>
+            := \? length.
+                prime_material, prime_nonunit, rejected, prime_note = prime_payload
+            := \? predecessor.
+                predecessor_proof,
+                predecessor_accessibility, step_note = step_payload
+            := predecessor_less =
+                positive_positional_predecessor_implies_less predecessor_proof
+            := nodes, primes, splits, root =
+                ival_complete_factorization_runtime
+                    (ival_accessible_step_prime_complete_tree
+                        (CertifiedIntervalPositivePositionalAccessibleStepPrimeDerivation (\? (
+                            prime_material,
+                            prime_nonunit,
+                            rejected,
+                            predecessor_proof,
+                            predecessor_less,
+                            predecessor_accessibility,
+                            prime_note,
+                            step_note))))
+            := blocked = 0i64
+            := _ =
+                assert_ival_accessible_step_prime_runtime
+                    nodes primes splits root blocked
+            "a-sealed-prime-classification-and-the-structural-Step-payload-now-form-one-indexed-prime-child-derivat"
+            ^^ "ion-whose-public-result-is-the-complete-prime-tree-itself-rather-than-a-success-or-refusal-decision-so"
+            ^^ "-the-prime-subcase-is-total-and-only-the-general-composite-boundary-retains-the-legacy-decision-while-"
+            ^^ "governing-Composite-recursion-remains-open-sealed"
+    | _, _ =>
+        "the-accessible-Step-prime-regression-input-was-unexpectedly-not-a-Step-certified-prime"
+
+:= ival_accessible_child_unit_terminal () : string =
+    := one = PositivePositionalOne
+    := accessibility = derive_positive_positional_predecessor_accessibility one
+    := nodes, primes, splits, root =
+        ival_complete_factorization_runtime
+            (ival_accessible_child_unit_complete_tree
+                one accessibility)
+    := _ =
+        assert_ival_accessible_child_unit_runtime
+            nodes primes splits root
+    "the-accessible-unit-consumer-now-returns-the-complete-unit-tree-itself-from-the-unit-indexed-value-and-accessi"
+    ^^ "bility-without-crossing-the-success-or-refusal-decision-boundary-while-the-general-composite-recursion-still-r"
+    ^^ "etains-the-legacy-compatibility-result"
+
+:= ival_accessible_child_step_prime_terminal () : string =
+    := _ = ival_accessible_step_prime_terminal ()
+    "the-compatibility-named-prime-consumer-now-delegates-to-the-total-prime-tree-terminal-and-no-longer-crosses-th"
+    ^^ "e-success-or-refusal-decision-boundary-while-the-general-composite-recursion-still-retains-the-legacy-compatib"
+    ^^ "ility-result"
+
+:= ival_membership_accessible_child_runtime
+    \* candidate start length.
+    (membership :
+        ival_factor_membership
+            candidate start length)
+    : i64 * i64 * i64 * i64 * i64 * i64 =
+    := authority =
+        derive_ival_membership_accessibility_authority
+            membership
+    := candidate_value, accessibility =
+        ival_membership_accessibility_authority_inputs
+            authority
+    := nodes, primes, splits, root =
+        ival_complete_factorization_runtime
+            (ival_accessible_child_completion
+                candidate_value accessibility)
+    positive_positional_nat_to_i64 candidate_value,
+    nodes, primes, splits, root, 0i64
+
+:= ival_membership_accessible_child_terminal () : string =
+    := twelve =
+        classify_ival_sealed_factor
+            (positive_positional_twelve_value ())
+    := eighteen =
+        classify_ival_sealed_factor
+            (positive_positional_eighteen_value ())
+    ?= twelve, eighteen ?|
+    | CertifiedIntervalPositivePositionalSealedCompositeClass first_payload,
+        CertifiedIntervalPositivePositionalSealedCompositeClass second_payload
+        =>
+            := \? first_length first_divisor first_quotient.
+                _, _, _, first_membership, _, _ = first_payload
+            := \? second_length second_divisor second_quotient.
+                _, _, _, second_membership, _, _ = second_payload
+            := fc, fn, fp, fs, fr, fb =
+                ival_membership_accessible_child_runtime
+                    first_membership
+            := sc, sn, sp, ss, sr, sb =
+                ival_membership_accessible_child_runtime
+                    second_membership
+            := _ =
+                assert_ival_membership_accessible_child_runtime
+                    fc fn fp fs fr fb sc sn sp ss sr sb
+            "the-divisor-child-completion-boundary-now-accepts-only-a-candidate-value-paired-with-a-predecessor-acc"
+            ^^ "essibility-of-the-same-hidden-candidate-index-derived-from-the-factor-membership-so-the-active-six-and"
+            ^^ "-nine-child-factorizations-cannot-be-called-with-an-unrelated-accessibility-witness-while-full-recursi"
+            ^^ "ve-integration-quotient-descent-LegacyCompletionRefused-elimination-and-arbitrary-uniqueness-remain-op"
+            ^^ "en-sealed"
+    | _, _ =>
+        "the-membership-accessible-child-regression-inputs-were-unexpectedly-not-composite"
+
+:= positive_positional_strict_predecessor_accessibility_runtime \* lower upper.
+    (upper_value : positive_positional_nat upper)
+    (proof : positive_positional_less lower upper)
+    : i64 * i64 * i64 * i64 =
+    := lower_value, accessibility =
+        derive_positive_positional_strict_predecessor_accessibility
+            upper_value proof
+    := _, nodes, edges =
+        positive_positional_predecessor_accessibility_runtime
+            lower_value accessibility
+    positive_positional_nat_to_i64 lower_value,
+    positive_positional_nat_to_i64 upper_value,
+    nodes, edges
+
+:= positive_positional_strict_predecessor_accessibility_terminal () : string =
+    := first_lower, first_upper, first_nodes, first_edges =
+        positive_positional_strict_predecessor_accessibility_runtime
+            (positive_positional_seven_value ())
+            (positional_six_less_seven ())
+    := second_lower, second_upper, second_nodes, second_edges =
+        positive_positional_strict_predecessor_accessibility_runtime
+            (positional_fourteen ())
+            (positional_thirteen_less_fourteen ())
+    := _ =
+        assert_positive_positional_strict_predecessor_accessibility_runtime
+            first_lower first_upper first_nodes first_edges
+            second_lower second_upper second_nodes second_edges
+    "any-structural-strict-order-proof-now-reconstructs-its-hidden-lower-positive-value-and-feeds-that-derived-valu"
+    ^^ "e-into-the-total-predecessor-accessibility-builder-so-six-below-seven-and-thirteen-below-fourteen-produce-six-"
+    ^^ "and-thirteen-node-certified-descent-chains-without-caller-supplied-lower-witnesses-while-quotient-descent-and-"
+    ^^ "propositional-factorization-tree-uniqueness-remain-open-sealed"
+
+:= positive_positional_quotient_accessibility_runtime \* dividend divisor quotient remainder.
+    (dividend_value : positive_positional_nat dividend)
+    (divisor_value : positive_positional_nat divisor)
+    (remainder_value : positive_positional_nat remainder)
+    (division : positive_positional_euclidean_division dividend divisor quotient remainder)
+    : i64 * i64 * i64 * i64 * i64 * i64 =
+    := quotient_value, accessibility =
+        derive_positive_positional_quotient_accessibility division
+    := _, nodes, edges =
+        positive_positional_predecessor_accessibility_runtime
+            quotient_value accessibility
+    positive_positional_nat_to_i64 dividend_value,
+    positive_positional_nat_to_i64 divisor_value,
+    positive_positional_nat_to_i64 quotient_value,
+    positive_positional_nat_to_i64 remainder_value,
+    nodes, edges
+
+:= positive_positional_quotient_accessibility_terminal () : string =
+    := dividend, divisor, quotient, remainder, nodes, edges =
+        positive_positional_quotient_accessibility_runtime
+            (positional_fourteen ())
+            (positive_positional_three_value ())
+            (positive_positional_two_value ())
+            (positional_fourteen_div_three ())
+    := _ =
+        assert_positive_positional_quotient_accessibility_runtime
+            dividend divisor quotient remainder nodes edges
+    "a-structural-Euclidean-division-proof-now-derives-its-hidden-positive-quotient-directly-from-the-indexed-multi"
+    ^^ "plication-witness-and-feeds-that-derived-value-into-the-total-predecessor-accessibility-builder-so-fourteen-di"
+    ^^ "vided-by-three-materializes-quotient-four-with-four-accessible-nodes-and-three-certified-descents-without-a-ca"
+    ^^ "ller-supplied-quotient-value-while-general-quotient-descent-composition-and-tree-uniqueness-remain-open-sealed"
+
+:= positive_positional_two_stage_quotient_accessibility_runtime () :
+    i64 * i64 * i64 * i64 * i64 * i64 =
+    := middle, middle_accessibility,
+        quotient, quotient_accessibility =
+        derive_positive_positional_two_stage_quotient_accessibility
+            (positional_fourteen_div_three ())
+            (positional_four_div_three ())
+    := _, middle_nodes, middle_edges =
+        positive_positional_predecessor_accessibility_runtime
+            middle middle_accessibility
+    := _, quotient_nodes, quotient_edges =
+        positive_positional_predecessor_accessibility_runtime
+            quotient quotient_accessibility
+    positive_positional_nat_to_i64 middle,
+    positive_positional_nat_to_i64 quotient,
+    middle_nodes, middle_edges,
+    quotient_nodes, quotient_edges
+
+:= positive_positional_two_stage_quotient_accessibility_terminal () : string =
+    := middle, quotient, middle_nodes, middle_edges,
+        quotient_nodes, quotient_edges =
+        positive_positional_two_stage_quotient_accessibility_runtime ()
+    := _ =
+        assert_positive_positional_two_stage_quotient_accessibility_runtime
+            middle quotient middle_nodes middle_edges
+            quotient_nodes quotient_edges
+    "two-structural-Euclidean-divisions-now-compose-as-an-indexed-quotient-chain-because-the-hidden-quotient-of-the"
+    ^^ "-first-proof-is-the-dividend-index-of-the-second-so-fourteen-divided-by-three-derives-four-and-that-same-four-"
+    ^^ "divided-by-three-derives-one-with-both-accessibility-chains-produced-without-parallel-middle-or-quotient-value"
+    ^^ "s-while-flattened-arithmetic-quotient-composition-transitive-candidate-descent-and-arbitrary-tree-uniqueness-r"
+    ^^ "emain-open-sealed"
+
+:= positive_positional_flattened_quotient_composition_runtime () :
+    i64 * i64 * i64 * i64 * i64 * i64 =
+    := flattened =
+        flatten_positive_positional_two_stage_quotient_chain
+            (positional_fourteen_div_three ())
+            (positional_four_div_three ())
+    := quotient, accessibility =
+        derive_positive_positional_quotient_accessibility flattened
+    := _, nodes, edges =
+        positive_positional_predecessor_accessibility_runtime
+            quotient accessibility
+    14i64, 9i64,
+    positive_positional_nat_to_i64 quotient,
+    5i64, nodes, edges
+
+:= positive_positional_flattened_quotient_composition_terminal () : string =
+    := dividend, composite_divisor, quotient,
+        remainder, nodes, edges =
+        positive_positional_flattened_quotient_composition_runtime ()
+    := _ =
+        assert_positive_positional_flattened_quotient_composition_runtime
+            dividend composite_divisor quotient remainder nodes edges
+    "the-two-stage-fourteen-divided-by-three-then-four-divided-by-three-chain-now-flattens-to-one-structural-Euclid"
+    ^^ "ean-certificate-for-fourteen-divided-by-nine-with-quotient-one-and-remainder-five-because-the-composite-diviso"
+    ^^ "r-product-remainder-equation-and-remainder-bound-are-all-inhabited-by-positional-proofs-and-the-final-quotient"
+    ^^ "-accessibility-is-derived-from-that-single-certificate-while-generic-flattening-transitive-candidate-descent-a"
+    ^^ "nd-arbitrary-tree-uniqueness-remain-open-sealed"
+
+:= positive_positional_generic_flattened_quotient_chain_runtime () :
+    i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 =
+    := first = positional_fourteen_div_three ()
+    := second = positional_four_div_three ()
+    := middle, middle_accessibility,
+        staged_quotient, staged_accessibility =
+        derive_positive_positional_two_stage_quotient_accessibility first second
+    := flattened =
+        flatten_positive_positional_two_stage_quotient_chain first second
+    := flattened_quotient, flattened_accessibility =
+        derive_positive_positional_quotient_accessibility flattened
+    := _, middle_nodes, middle_edges =
+        positive_positional_predecessor_accessibility_runtime
+            middle middle_accessibility
+    := _, staged_nodes, staged_edges =
+        positive_positional_predecessor_accessibility_runtime
+            staged_quotient staged_accessibility
+    := _, flattened_nodes, flattened_edges =
+        positive_positional_predecessor_accessibility_runtime
+            flattened_quotient flattened_accessibility
+    positive_positional_nat_to_i64 middle,
+    positive_positional_nat_to_i64 staged_quotient,
+    positive_positional_nat_to_i64 flattened_quotient,
+    middle_nodes, middle_edges,
+    staged_nodes, staged_edges,
+    flattened_nodes, flattened_edges,
+    1i64
+
+:= positive_positional_generic_flattened_quotient_chain_terminal () : string =
+    := middle, staged_quotient, flattened_quotient,
+        middle_nodes, middle_edges, staged_nodes,
+        staged_edges, flattened_nodes, flattened_edges,
+        quotients_definitionally_shared =
+        positive_positional_generic_flattened_quotient_chain_runtime ()
+    := _ =
+        assert_positive_positional_generic_flattened_quotient_chain_runtime
+            middle staged_quotient flattened_quotient
+            middle_nodes middle_edges staged_nodes staged_edges
+            flattened_nodes flattened_edges
+            quotients_definitionally_shared
+    "the-indexed-two-stage-runtime-now-binds-only-the-fourteen-divided-by-three-and-four-divided-by-three-certifica"
+    ^^ "tes-then-computes-the-direct-fourteen-divided-by-nine-certificate-through-the-flattening-function-before-packa"
+    ^^ "ging-the-shared-middle-and-final-quotient-so-the-composite-proof-is-no-longer-entered-as-an-independent-runtim"
+    ^^ "e-value-while-a-fully-generic-composition-proof-transitive-candidate-descent-and-tree-uniqueness-remain-open-s"
+    ^^ "ealed"
+
+:= ^ positive_positional_transitive_predecessor_path_runtime \* input output.
+    (input_value : positive_positional_nat input)
+    (output_value : positive_positional_nat output)
+    (path : positive_positional_transitive_predecessor_path input output)
+    : i64 * i64 * i64 * i64 =
+    ?= path ?|
+    | PositivePositionalTransitivePredecessorPathDone _ =>
+        positive_positional_nat_to_i64 input_value,
+        positive_positional_nat_to_i64 output_value,
+        1i64, 0i64
+    | PositivePositionalTransitivePredecessorPathStep payload =>
+        := \? middle. middle_value, _, _, tail = payload
+        := _, final_value, tail_nodes, tail_edges =
+            positive_positional_transitive_predecessor_path_runtime
+                middle_value output_value tail
+        positive_positional_nat_to_i64 input_value,
+        final_value,
+        zeta_runtime_add_closure_i64 1i64 tail_nodes,
+        zeta_runtime_add_closure_i64 1i64 tail_edges
+
+:= ival_membership_recursion_authority_terminal () : string =
+    ?=
+        classify_ival_sealed_factor (
+            positive_positional_twelve_value ()
+        )
+    ?|
+    | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+        := \? length divisor quotient.
+            _, _, _, membership, _, _ = payload
+        := authority =
+            derive_ival_membership_recursion_authority membership
+        := parent_derived_accessibility =
+            ival_membership_recursion_authority_parent_derived_accessibility authority
+        := parent_derived_note =
+            ?= parent_derived_accessibility ?|
+            | PositivePositionalParentDerivedChildAccessibility parent_payload =>
+                := \? parent synthesized_child.
+                    parent_accessibility, synthesized_predecessor, _, synthesized_accessibility = parent_payload
+                := parent_value =
+                    positive_positional_predecessor_accessibility_root_value parent_accessibility
+                := synthesized_value =
+                    positive_positional_predecessor_accessibility_root_value synthesized_accessibility
+                := _, _, _ =
+                    positive_positional_predecessor_accessibility_runtime
+                        parent_value parent_accessibility
+                := _, _, _ =
+                    positive_positional_predecessor_accessibility_runtime
+                        synthesized_value synthesized_accessibility
+                ?= synthesized_predecessor ?|
+                | PositivePositionalPredecessorTwo =>
+                    "the-active-membership-recursion-now-opens-a-parent-derived-accessibility-payload-that-contains"
+                    ^^ "-the-parent-chain-the-exact-predecessor-edge-the-child-equality-and-the-child-subaccessibility"
+                    ^^ "-without-a-global-child-builder-or-diagnostic-string"
+                | _ =>
+                    "the-active-membership-recursion-consumed-a-parent-derived-predecessor-edge-and-child-subaccess"
+                    ^^ "ibility"
+        := candidate_value =
+            ival_membership_recursion_authority_value authority
+        := path =
+            ival_membership_recursion_authority_path authority
+        := _, _, _, _ =
+            positive_positional_transitive_predecessor_path_runtime
+                (positive_positional_twelve_value ()) candidate_value path
+        parent_derived_note
+    | _ =>
+        "the-membership-recursion-authority-regression-input-was-unexpectedly-not-composite"
+
+:= positive_positional_transitive_predecessor_path_terminal () : string =
+    := root = positive_positional_twelve_value ()
+    := accessibility =
+        derive_positive_positional_predecessor_accessibility root
+    := path =
+        positive_positional_accessibility_to_transitive_path
+            root accessibility
+    := input, output, nodes, edges =
+        positive_positional_transitive_predecessor_path_runtime
+            root PositivePositionalOne path
+    := _ =
+        assert_positive_positional_transitive_predecessor_path_runtime
+            input output nodes edges
+    "the-total-predecessor-accessibility-witness-now-materializes-an-indexed-transitive-path-from-the-original-posi"
+    ^^ "tive-input-to-one-where-every-recursive-edge-carries-both-the-exact-predecessor-and-its-derived-strict-order-p"
+    ^^ "roof-so-twelve-to-one-is-one-composable-eleven-edge-descent-object-rather-than-eleven-unrelated-local-facts-wh"
+    ^^ "ile-arbitrary-factorization-tree-uniqueness-remains-open-sealed"
+
+:= positive_positional_nonidentity_three_segment_path_associativity_runtime () :
+    i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 =
+    := four = positive_positional_four_value ()
+    := three = positive_positional_three_value ()
+    := two = positive_positional_two_value ()
+    := one = PositivePositionalOne
+    := four_to_three =
+        PositivePositionalPredecessorZeroBitHigher
+            PositivePositionalPredecessorTwo
+    := three_to_two =
+        PositivePositionalPredecessorOneBit PositivePositionalOne
+    := two_to_one = PositivePositionalPredecessorTwo
+    := first =
+        PositivePositionalTransitivePredecessorPathStep (\? (
+            three,
+            four_to_three,
+            positive_positional_predecessor_implies_less four_to_three,
+            PositivePositionalTransitivePredecessorPathDone three))
+    := second =
+        PositivePositionalTransitivePredecessorPathStep (\? (
+            two,
+            three_to_two,
+            positive_positional_predecessor_implies_less three_to_two,
+            PositivePositionalTransitivePredecessorPathDone two))
+    := third =
+        PositivePositionalTransitivePredecessorPathStep (\? (
+            one,
+            two_to_one,
+            positive_positional_predecessor_implies_less two_to_one,
+            PositivePositionalTransitivePredecessorPathDone one))
+    := left_associated =
+        positive_positional_transitive_predecessor_path_append
+            (positive_positional_transitive_predecessor_path_append
+                first second)
+            third
+    := right_associated =
+        positive_positional_transitive_predecessor_path_append
+            first
+            (positive_positional_transitive_predecessor_path_append
+                second third)
+    := li, lo, ln, le =
+        positive_positional_transitive_predecessor_path_runtime
+            four one left_associated
+    := ri, ro, rn, re =
+        positive_positional_transitive_predecessor_path_runtime
+            four one right_associated
+    li, lo, ln, le, ri, ro, rn, re
+
+:= positive_positional_nonidentity_three_segment_path_associativity_terminal () : string =
+    := left_input, left_output, left_nodes, left_edges,
+        right_input, right_output, right_nodes, right_edges =
+        positive_positional_nonidentity_three_segment_path_associativity_runtime ()
+    := _ =
+        assert_positive_positional_nonidentity_three_segment_path_associativity_runtime
+            left_input left_output left_nodes left_edges
+            right_input right_output right_nodes right_edges
+    "path-append-associativity-now-runs-over-three-genuinely-nonempty-indexed-predecessor-segments-four-to-three-th"
+    ^^ "ree-to-two-and-two-to-one-each-derived-from-its-own-predecessor-and-strict-order-proof-so-both-parenthesizatio"
+    ^^ "ns-preserve-four-nodes-and-three-certified-edges-without-endpoint-identity-placeholders-while-factorization-sp"
+    ^^ "ecific-quotient-composition-and-arbitrary-tree-uniqueness-remain-open-sealed"
+
+:= positive_positional_transitive_predecessor_path_append_measure_runtime () :
+    i64 * i64 * i64 * i64 * i64 * i64 =
+    := four = positive_positional_four_value ()
+    := three = positive_positional_three_value ()
+    := two = positive_positional_two_value ()
+    := one = PositivePositionalOne
+    := four_to_three = PositivePositionalPredecessorZeroBitHigher PositivePositionalPredecessorTwo
+    := three_to_two = PositivePositionalPredecessorOneBit PositivePositionalOne
+    := two_to_one = PositivePositionalPredecessorTwo
+    := left =
+        PositivePositionalTransitivePredecessorPathStep (\? (
+            three,
+            four_to_three,
+            positive_positional_predecessor_implies_less four_to_three,
+            PositivePositionalTransitivePredecessorPathDone three))
+    := middle =
+        PositivePositionalTransitivePredecessorPathStep (\? (
+            two,
+            three_to_two,
+            positive_positional_predecessor_implies_less three_to_two,
+            PositivePositionalTransitivePredecessorPathDone two))
+    := last =
+        PositivePositionalTransitivePredecessorPathStep (\? (
+            one,
+            two_to_one,
+            positive_positional_predecessor_implies_less two_to_one,
+            PositivePositionalTransitivePredecessorPathDone one))
+    := right = positive_positional_transitive_predecessor_path_append middle last
+    := joined = positive_positional_transitive_predecessor_path_append left right
+    := _, _, left_nodes, left_edges =
+        positive_positional_transitive_predecessor_path_runtime four three left
+    := _, _, right_nodes, right_edges =
+        positive_positional_transitive_predecessor_path_runtime three one right
+    := input, output, joined_nodes, joined_edges =
+        positive_positional_transitive_predecessor_path_runtime four one joined
+    input, output, joined_nodes, joined_edges,
+    zeta_runtime_sub_i64
+        (zeta_runtime_add_closure_i64 left_nodes right_nodes) 1i64,
+    zeta_runtime_add_closure_i64 left_edges right_edges
+
+:= positive_positional_transitive_predecessor_path_append_measure_terminal () : string =
+    := input, output, joined_nodes, joined_edges,
+        expected_nodes, expected_edges =
+        positive_positional_transitive_predecessor_path_append_measure_runtime ()
+    := _ =
+        assert_positive_positional_transitive_predecessor_path_append_measure_runtime
+            input output joined_nodes joined_edges expected_nodes expected_edges
+    "path-append-now-preserves-edge-addition-and-node-addition-minus-the-shared-bridge-on-three-nonempty-indexed-se"
+    ^^ "gments-sealed"
+
+:= ival_factor_membership_accessibility_runtime
+    \* candidate start length.
+    (start_value : positive_positional_nat start)
+    (membership :
+        ival_factor_membership
+            candidate start length)
+    : i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 =
+    := legacy_accessibility_authority =
+        derive_ival_membership_accessibility_authority
+            membership
+    := candidate_value, accessibility =
+        ival_membership_accessibility_authority_inputs
+            legacy_accessibility_authority
+    := membership_path =
+        ival_factor_membership_to_transitive_path
+            membership
+    := candidate_path =
+        positive_positional_accessibility_to_transitive_path
+            candidate_value accessibility
+    := joined_path =
+        positive_positional_transitive_predecessor_path_append
+            membership_path candidate_path
+    := _, _, membership_nodes, membership_edges =
+        positive_positional_transitive_predecessor_path_runtime
+            start_value candidate_value membership_path
+    := _, accessibility_nodes, accessibility_edges =
+        positive_positional_predecessor_accessibility_runtime
+            candidate_value accessibility
+    := _, _, joined_nodes, joined_edges =
+        positive_positional_transitive_predecessor_path_runtime
+            start_value PositivePositionalOne joined_path
+    positive_positional_nat_to_i64 start_value,
+    positive_positional_nat_to_i64 candidate_value,
+    membership_nodes,
+    membership_edges,
+    accessibility_nodes,
+    accessibility_edges,
+    joined_nodes,
+    joined_edges
+
+:= ival_factor_membership_accessibility_terminal () : string =
+    := twelve =
+        classify_ival_sealed_factor
+            (positive_positional_twelve_value ())
+    := eighteen =
+        classify_ival_sealed_factor
+            (positive_positional_eighteen_value ())
+    ?= twelve, eighteen ?|
+    | CertifiedIntervalPositivePositionalSealedCompositeClass first_payload,
+        CertifiedIntervalPositivePositionalSealedCompositeClass second_payload
+        =>
+            := \? first_length first_divisor first_quotient.
+                first_root, _, _, first_membership, _, _ = first_payload
+            := \? second_length second_divisor second_quotient.
+                second_root, _, _, second_membership, _, _ = second_payload
+            := fr, fd, fmn, fme, fan, fae, fjn, fje =
+                ival_factor_membership_accessibility_runtime
+                    first_root first_membership
+            := sr, sd, smn, sme, san, sae, sjn, sje =
+                ival_factor_membership_accessibility_runtime
+                    second_root second_membership
+            := _ =
+                assert_ival_factor_membership_accessibility_runtime
+                    fr fd fmn fme fan fae fjn fje
+                    sr sd smn sme san sae sjn sje
+            "factor-membership-now-structurally-produces-both-the-exact-root-to-divisor-predecessor-path-and-the-di"
+            ^^ "visors-complete-accessibility-chain-so-twelve-to-six-to-one-and-eighteen-to-nine-to-one-compose-to-ful"
+            ^^ "l-root-to-one-paths-without-a-caller-supplied-divisor-or-a-second-order-decision-for-the-membership-se"
+            ^^ "gment-while-factorization-specific-recursion-still-keeps-quotient-descent-separate"
+    | _, _ =>
+        "the-membership-accessibility-regression-inputs-were-unexpectedly-not-composite"
+
+:= ival_division_accessible_quotient_runtime
+    \* natural divisor quotient.
+    (quotient_value : positive_positional_nat quotient)
+    (division :
+        value_synthesized_structural_division
+            natural divisor quotient positional_zero)
+    : i64 * i64 * i64 * i64 * i64 * i64 * i64 =
+    ?= value_synthesized_structural_division_quotient_value division ?|
+    | NonnegativePositionalPositive projected_quotient =>
+        := accessibility =
+            derive_positive_positional_predecessor_accessibility
+                projected_quotient
+        := nodes, primes, splits, root =
+            ival_complete_factorization_runtime
+                (ival_accessible_child_completion
+                    projected_quotient accessibility)
+        positive_positional_nat_to_i64 quotient_value,
+        positive_positional_nat_to_i64 projected_quotient,
+        nodes, primes, splits, root, 0i64
+    | NonnegativePositionalZero =>
+        positive_positional_nat_to_i64 quotient_value,
+        0i64, 0i64, 0i64, 0i64, 0i64, 1i64
+
+:= ival_division_accessible_quotient_terminal () : string =
+    := twelve =
+        classify_ival_sealed_factor
+            (positive_positional_twelve_value ())
+    := eighteen =
+        classify_ival_sealed_factor
+            (positive_positional_eighteen_value ())
+    ?= twelve, eighteen ?|
+    | CertifiedIntervalPositivePositionalSealedCompositeClass first_payload,
+        CertifiedIntervalPositivePositionalSealedCompositeClass second_payload
+        =>
+            := \? first_length first_divisor first_quotient.
+                _, _, first_quotient_value, _, first_division, _ = first_payload
+            := \? second_length second_divisor second_quotient.
+                _, _, second_quotient_value, _, second_division, _ = second_payload
+            := fc, fp, fn, fpr, fs, fr, fb =
+                ival_division_accessible_quotient_runtime
+                    first_quotient_value first_division
+            := sc, sp, sn, spr, ss, sr, sb =
+                ival_division_accessible_quotient_runtime
+                    second_quotient_value second_division
+            := _ =
+                assert_ival_division_accessible_quotient_runtime
+                    fc fp fn fpr fs fr fb sc sp sn spr ss sr sb
+            "the-exact-structural-division-now-projects-its-own-nonnegative-quotient-from-the-final-successor-relat"
+            ^^ "ion-then-the-positive-composite-quotient-enters-the-same-indexed-accessible-child-boundary-as-the-divi"
+            ^^ "sor-so-twelve-and-eighteen-both-derive-and-complete-quotient-two-without-a-second-quotient-value-drivi"
+            ^^ "ng-recursion-while-full-parent-recursion-LegacyCompletionRefused-elimination-and-arbitrary-uniqueness-"
+            ^^ "remain-open-sealed"
+    | _, _ =>
+        "the-division-accessible-quotient-regression-inputs-were-unexpectedly-not-composite"
+
+:= ival_sealed_composite_children_terminal () : string =
+    := twelve =
+        classify_ival_sealed_factor
+            (positive_positional_twelve_value ())
+    := eighteen =
+        classify_ival_sealed_factor
+            (positive_positional_eighteen_value ())
+    ?= twelve, eighteen ?|
+    | CertifiedIntervalPositivePositionalSealedCompositeClass first_payload,
+        CertifiedIntervalPositivePositionalSealedCompositeClass second_payload
+        =>
+            := \? first_divisor_index first_quotient_index. first_children =
+                ival_sealed_composite_children_from_witness
+                    (CertifiedIntervalPositivePositionalSealedCompositeWitness first_payload)
+            := \? second_divisor_index second_quotient_index. second_children =
+                ival_sealed_composite_children_from_witness
+                    (CertifiedIntervalPositivePositionalSealedCompositeWitness second_payload)
+            := first_divisor, first_quotient =
+                ival_sealed_composite_children_runtime
+                    first_children
+            := second_divisor, second_quotient =
+                ival_sealed_composite_children_runtime
+                    second_children
+            := _ =
+                assert_ival_sealed_composite_children_runtime
+                    first_divisor first_quotient second_divisor second_quotient
+            "the-sealed-composite-witness-now-projects-one-indexed-pair-of-the-real-divisor-and-quotient-children-s"
+            ^^ "o-later-refusal-constructors-can-consume-the-authoritative-children-instead-of-choosing-an-unrelated-e"
+            ^^ "xistential-child"
+    | _, _ =>
+        "the-sealed-composite-children-regression-inputs-were-unexpectedly-not-composite"
+
+:= ival_membership_strict_path_runtime
+    \* candidate start length.
+    (start_value : positive_positional_nat start)
+    (candidate_value : positive_positional_nat candidate)
+    (membership : ival_factor_membership candidate start length)
+    : i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 =
+    := strict_path =
+        ival_factor_membership_to_strict_path
+            membership
+    := transitive =
+        positive_positional_strict_predecessor_path_to_transitive_path strict_path
+    := root, divisor, path_nodes, path_edges =
+        positive_positional_transitive_predecessor_path_runtime
+            start_value candidate_value transitive
+    := _, parent_nodes, parent_edges =
+        positive_positional_predecessor_accessibility_runtime
+            start_value
+            (derive_positive_positional_predecessor_accessibility start_value)
+    := path_child_accessibility =
+        positive_positional_transitive_predecessor_path_output_accessibility
+            transitive
+    := _, child_nodes, child_edges =
+        positive_positional_predecessor_accessibility_runtime
+            candidate_value
+            path_child_accessibility
+    root, divisor, path_nodes, path_edges,
+    parent_nodes, parent_edges, child_nodes, child_edges
+
+:= ival_membership_strict_path_terminal () : string =
+    := twelve =
+        classify_ival_sealed_factor
+            (positive_positional_twelve_value ())
+    := eighteen =
+        classify_ival_sealed_factor
+            (positive_positional_eighteen_value ())
+    ?= twelve, eighteen ?|
+    | CertifiedIntervalPositivePositionalSealedCompositeClass first_payload,
+        CertifiedIntervalPositivePositionalSealedCompositeClass second_payload
+        =>
+            := \? first_length first_divisor first_quotient.
+                first_root, first_divisor_value, _, first_membership, _, _ = first_payload
+            := \? second_length second_divisor second_quotient.
+                second_root, second_divisor_value, _, second_membership, _, _ = second_payload
+            := fr, fd, fpn, fpe, fan, fae, fcn, fce =
+                ival_membership_strict_path_runtime
+                    first_root first_divisor_value first_membership
+            := sr, sd, spn, spe, san, sae, scn, sce =
+                ival_membership_strict_path_runtime
+                    second_root second_divisor_value second_membership
+            := _ =
+                assert_ival_membership_strict_path_runtime
+                    fr fd fpn fpe fan fae fcn fce
+                    sr sd spn spe san sae scn sce
+            "factor-membership-now-projects-a-nonempty-predecessor-path-and-the-same-start-and-candidate-values-der"
+            ^^ "ive-accessibility-measures-whose-parent-edges-equal-path-edges-plus-child-edges-for-twelve-to-six-and-"
+            ^^ "eighteen-to-nine-without-caller-supplied-counts-while-a-type-level-subaccessibility-eliminator-and-Leg"
+            ^^ "acyCompletionRefused-retirement-remain-open"
+    | _, _ =>
+        "the-membership-strict-path-regression-inputs-were-unexpectedly-not-composite"
+
+:= ival_complete_reconstruction_terminal () : string =
+    := three_value = positive_positional_three_value ()
+    := twelve_value = positive_positional_twelve_value ()
+    := eighteen_value = positive_positional_eighteen_value ()
+    := three_tree =
+        ival_accessible_child_completion
+            three_value (derive_positive_positional_predecessor_accessibility three_value)
+    := twelve_tree =
+        ival_accessible_child_completion
+            twelve_value (derive_positive_positional_predecessor_accessibility twelve_value)
+    := eighteen_tree =
+        ival_accessible_child_completion
+            eighteen_value (derive_positive_positional_predecessor_accessibility eighteen_value)
+    := three_reconstruction =
+        reconstruct_ival_complete_factorization three_tree
+    := twelve_reconstruction =
+        reconstruct_ival_complete_factorization twelve_tree
+    := eighteen_reconstruction =
+        reconstruct_ival_complete_factorization eighteen_tree
+    := tn, tp, ts, td, tr, tproduct =
+        ival_complete_reconstruction_runtime three_reconstruction
+    := wn, wp, ws, wd, wr, wproduct =
+        ival_complete_reconstruction_runtime twelve_reconstruction
+    := en, ep, es, ed, er, eproduct =
+        ival_complete_reconstruction_runtime eighteen_reconstruction
+    := _ =
+        assert_ival_complete_reconstruction_runtime
+            (zeta_runtime_add_closure_i64 tn (zeta_runtime_add_closure_i64 wn en))
+            (zeta_runtime_add_closure_i64 tp (zeta_runtime_add_closure_i64 wp ep))
+            (zeta_runtime_add_closure_i64 ts (zeta_runtime_add_closure_i64 ws es))
+            (zeta_runtime_add_closure_i64 td (zeta_runtime_add_closure_i64 wd ed))
+            (zeta_runtime_add_closure_i64 tr (zeta_runtime_add_closure_i64 wr er))
+            (zeta_runtime_add_closure_i64 tproduct (zeta_runtime_add_closure_i64 wproduct eproduct))
+    := three_sequence =
+        project_ival_complete_reconstruction_prime_sequence three_reconstruction
+    := _ = ival_complete_prime_sequence_runtime three_sequence
+    := three_ordered =
+        canonicalize_ival_complete_prime_sequence three_sequence
+    := tc, tpo, _, _, tm =
+        ival_ordered_prime_sequence_runtime three_ordered
+    := twelve_sequence =
+        project_ival_complete_reconstruction_prime_sequence twelve_reconstruction
+    := _ = ival_complete_prime_sequence_runtime twelve_sequence
+    := twelve_ordered =
+        canonicalize_ival_complete_prime_sequence twelve_sequence
+    := wc, wpo, _, _, wm =
+        ival_ordered_prime_sequence_runtime twelve_ordered
+    := eighteen_sequence =
+        project_ival_complete_reconstruction_prime_sequence eighteen_reconstruction
+    := _ = ival_complete_prime_sequence_runtime eighteen_sequence
+    := eighteen_ordered =
+        canonicalize_ival_complete_prime_sequence eighteen_sequence
+    := ec, epo, _, _, em =
+        ival_ordered_prime_sequence_runtime eighteen_ordered
+    := _ =
+        assert_ival_ordered_prime_sequence_runtime
+            (zeta_runtime_add_closure_i64 tc (zeta_runtime_add_closure_i64 wc ec))
+            (zeta_runtime_add_closure_i64 tpo (zeta_runtime_add_closure_i64 wpo epo))
+            (zeta_runtime_add_closure_i64 tm (zeta_runtime_add_closure_i64 wm em))
+    := three_multiplicity =
+        compress_ival_ordered_prime_sequence three_ordered
+    := tgroups, tcells, tmproduct, _, _, tmax, tmm =
+        ival_prime_multiplicity_normal_form_runtime three_multiplicity
+    := twelve_multiplicity =
+        compress_ival_ordered_prime_sequence twelve_ordered
+    := wgroups, wcells, wmproduct, _, _, wmax, wmm =
+        ival_prime_multiplicity_normal_form_runtime twelve_multiplicity
+    := eighteen_multiplicity =
+        compress_ival_ordered_prime_sequence eighteen_ordered
+    := egroups, ecells, emproduct, _, _, emax, emm =
+        ival_prime_multiplicity_normal_form_runtime eighteen_multiplicity
+    := three_exact_multiplicity =
+        ival_prime_multiplicity_normal_form_first_exact_count three_multiplicity
+    := twelve_first_exact_multiplicity =
+        ival_prime_multiplicity_normal_form_first_exact_count twelve_multiplicity
+    := eighteen_first_exact_multiplicity =
+        ival_prime_multiplicity_normal_form_first_exact_count eighteen_multiplicity
+    := _ =
+        assert_ival_prime_multiplicity_exact_counts
+            three_exact_multiplicity twelve_first_exact_multiplicity eighteen_first_exact_multiplicity
+    := three_total_exact_multiplicity =
+        ival_prime_multiplicity_normal_form_total_exact_count three_multiplicity
+    := twelve_total_exact_multiplicity =
+        ival_prime_multiplicity_normal_form_total_exact_count twelve_multiplicity
+    := eighteen_total_exact_multiplicity =
+        ival_prime_multiplicity_normal_form_total_exact_count eighteen_multiplicity
+    := _ =
+        assert_ival_prime_multiplicity_total_exact_counts
+            three_total_exact_multiplicity tcells
+            twelve_total_exact_multiplicity wcells
+            eighteen_total_exact_multiplicity ecells
+    := _ =
+        assert_ival_prime_multiplicity_normal_form_runtime
+            (zeta_runtime_add_closure_i64 tgroups (zeta_runtime_add_closure_i64 wgroups egroups))
+            (zeta_runtime_add_closure_i64 tcells (zeta_runtime_add_closure_i64 wcells ecells))
+            (zeta_runtime_add_closure_i64 tmproduct (zeta_runtime_add_closure_i64 wmproduct emproduct))
+            (zeta_runtime_add_closure_i64 tmax (zeta_runtime_add_closure_i64 wmax emax))
+            (zeta_runtime_add_closure_i64 tmm (zeta_runtime_add_closure_i64 wmm emm))
+    "the-total-factorization-tree-now-projects-to-a-root-indexed-structural-reconstruction-that-recomputes-the-leaf"
+    ^^ "-product-canonicalizes-the-prime-leaf-sequence-with-type-indexed-nondecreasing-adjacency-and-compresses-equal-"
+    ^^ "adjacent-primes-into-structural-multiplicity-runs-separated-by-strict-order-proofs-for-three-twelve-and-eighte"
+    ^^ "en-while-arbitrary-tree-uniqueness-remains-open"
+
+:= ival_complete_tree_split_runtime \* natural.
+    (tree : ival_complete_factorization_tree natural)
+    : i64 * i64 =
+    ?= tree ?|
+    | CertifiedIntervalPositivePositionalCompleteUnit => 0i64, 0i64
+    | CertifiedIntervalPositivePositionalCompletePrime _ => 0i64, 0i64
+    | CertifiedIntervalPositivePositionalCompleteSplit payload =>
+        := \? length divisor quotient.
+            _, divisor_value, quotient_value, _, _, _, _, _, _, _ = payload
+        positive_positional_nat_to_i64 divisor_value,
+        positive_positional_nat_to_i64 quotient_value
+
+:= ival_same_root_factorization_pair_normalization_runtime \* natural.
+    (pair : ival_same_root_factorization_pair natural)
+    : i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 =
+    := authority =
+        ival_same_root_factorization_pair_canonical_profiles pair
+    := left_product_indexed =
+        ival_product_indexed_normal_form_from_rooted (
+            ival_same_root_canonical_profile_pair_left_profile authority)
+    := right_product_indexed =
+        ival_product_indexed_normal_form_from_rooted (
+            ival_same_root_canonical_profile_pair_right_profile authority)
+    := left_normal =
+        ival_product_indexed_normal_form_project left_product_indexed
+    := right_normal =
+        ival_product_indexed_normal_form_project right_product_indexed
+    := lg, lc, lp, lf, ll, lm, lx =
+        ival_prime_multiplicity_normal_form_runtime left_normal
+    := rg, rc, rp, rf, rl, rm, rx =
+        ival_prime_multiplicity_normal_form_runtime right_normal
+    lg, lc, lp, lf, ll, lm, lx, rg, rc, rp, rf, rl, rm, rx
+
+:= ival_six_distinct_tree_normalization_terminal () : string =
+    := six_value = positive_positional_six_value ()
+    := search_tree =
+        ival_accessible_child_completion
+            six_value (derive_positive_positional_predecessor_accessibility six_value)
+    := alternate_tree = alternate_six_complete_factorization_tree ()
+    := pair :
+        ival_same_root_factorization_pair
+            (positional_zero_bit (positional_one_bit positional_one)) =
+        CertifiedIntervalPositivePositionalSameRootFactorizationPair (
+            search_tree,
+            alternate_tree)
+    := search_divisor, search_quotient =
+        ival_complete_tree_split_runtime search_tree
+    := alternate_divisor, alternate_quotient =
+        ival_complete_tree_split_runtime alternate_tree
+    := sg, sc, sp, sf, sl, sm, sx, ag, ac, ap, af, al, am, ax =
+        ival_same_root_factorization_pair_normalization_runtime pair
+    := _ =
+        assert_ival_six_distinct_tree_normalization_runtime
+            search_divisor search_quotient alternate_divisor alternate_quotient
+            sg sc sp sf sl sm sx ag ac ap af al am ax
+    := _ = pair
+    "two-genuinely-distinct-complete-factorization-trees-of-six-now-share-the-same-root-index-and-canonicalize-to-t"
+    ^^ "he-same-two-times-three-structural-multiplicity-profile-at-runtime-with-arbitrary-tree-uniqueness-still-open"
+
+:= certified_arithmetic_rooted_ordered_prime_power_nf_mangoldt_support_decision \* root.
+    (normal : certified_arithmetic_rooted_ordered_prime_power_nf root) :
+    certified_arithmetic_rooted_prime_power_decision root =
+    certified_arithmetic_rooted_ordered_prime_power_nf_prime_power_decision normal
+
+:= zeta_root_contract () : string =
+    := surface = certified_arithmetic_kernel_terminal ()
+    := _ = certified_arithmetic_kernel_public_surface_root_value surface
+    := rooted_prime_power_nf =
+        certified_arithmetic_kernel_public_surface_rooted_ordered_prime_power_nf surface
+    := twelve_prime_power_decision =
+        certified_arithmetic_rooted_ordered_prime_power_nf_prime_power_decision
+            rooted_prime_power_nf
+    ?= twelve_prime_power_decision ?|
+    | CertifiedArithmeticRootedPrimePowerDecisionPrimePower _ =>
+        mega_runtime_fail "zeta-twelve-canonical-normal-form-cannot-be-a-single-prime-power"
+    | CertifiedArithmeticRootedPrimePowerDecisionMultiplePrimes _ => ()
+
+    := rooted_prime_power_nf_rebuilt =
+        certified_arithmetic_product_multiplicity_rooted_ordered_prime_power_nf (
+            ival_product_multiplicity_twelve ())
+    := uniqueness_frontier =
+        certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_frontier_make
+            rooted_prime_power_nf rooted_prime_power_nf_rebuilt
+    := uniqueness_frontier_case_authority =
+        certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_frontier_case_authority_make
+            uniqueness_frontier
+
+    := uniqueness_head_order =
+        certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_head_order_decision_make (
+            certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_head_comparison_obligation_make
+                uniqueness_frontier_case_authority)
+    := uniqueness_head_equal_authority =
+        certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_head_equal_authority_make
+            uniqueness_head_order
+    := _ =
+        ?= uniqueness_head_equal_authority ?|
+        | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_head_equal_authority packed =>
+            := \? left_factor left_count left_product right_factor right_count right_product.
+                _, left_power, right_power, equal, note = packed
+            := _ = left_power
+            := _ = right_power
+            := _ = equal
+            := _ = note
+            ()
+    := uniqueness_balance_obligation =
+        certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_balance_obligation_make
+            uniqueness_frontier_case_authority
+    := _ =
+        ?= uniqueness_balance_obligation ?|
+        | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessBalanceAligned aligned =>
+            := aligned_head_equal =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_head_equal_authority_make
+                    aligned
+                    uniqueness_head_equal_authority
+            := aligned_head_exponents =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_head_exponent_pair_authority_make
+                    aligned_head_equal
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_head_exponent_pair_authority_note
+                    aligned_head_exponents
+            := aligned_head_exponents_consumed =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_head_exponent_equality_consumed_authority_make
+                    aligned_head_exponents
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_head_exponent_equality_consumed_authority_note
+                    aligned_head_exponents_consumed
+            := aligned_tail_continuation =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_continuation_authority_make
+                    aligned_head_equal
+            := aligned_tail_recursion_seed =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_both_more_tail_recursion_seed_make
+                    aligned_tail_continuation
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_both_more_tail_recursion_seed_note
+                    aligned_tail_recursion_seed
+            := aligned_tail_frontier_authority =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_both_more_tail_frontier_authority_make
+                    aligned_tail_recursion_seed
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_both_more_tail_frontier_authority_note
+                    aligned_tail_frontier_authority
+            := aligned_tail_same_root_replay_authority =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_same_root_replay_authority_make
+                    aligned_tail_frontier_authority
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_same_root_replay_authority_note
+                    aligned_tail_same_root_replay_authority
+            := aligned_tail_exponent_frontier_authority =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_exponent_frontier_authority_make
+                    aligned_tail_same_root_replay_authority
+                    aligned_tail_continuation
+                    aligned_head_exponents_consumed
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_exponent_frontier_authority_note
+                    aligned_tail_exponent_frontier_authority
+            := aligned_tail_recursion_open_authority =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_recursion_open_authority_make
+                    aligned_tail_exponent_frontier_authority
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_recursion_open_authority_note
+                    aligned_tail_recursion_open_authority
+            := aligned_tail_exponent_seed_authority =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_exponent_seed_authority_make
+                    aligned_tail_recursion_open_authority
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_exponent_seed_authority_note
+                    aligned_tail_exponent_seed_authority
+            := aligned_tail_exponent_seed_open_authority =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_exponent_seed_open_authority_make
+                    aligned_tail_exponent_seed_authority
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_exponent_seed_open_authority_note
+                    aligned_tail_exponent_seed_open_authority
+            := aligned_second_head_equal_authority =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_second_head_equal_authority_make
+                    aligned_tail_exponent_seed_open_authority
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_second_head_equal_authority_note
+                    aligned_second_head_equal_authority
+            := aligned_remaining_tail_authority =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_remaining_tail_authority_make
+                    aligned_second_head_equal_authority
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_remaining_tail_authority_note
+                    aligned_remaining_tail_authority
+            ?= aligned_remaining_tail_authority ?|
+            | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessAlignedRemainingTailDone _ => ()
+            | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessAlignedRemainingTailRecurse _ =>
+                mega_runtime_fail "zeta-twelve-fixture-second-head-equality-should-close-the-aligned-tail"
+            := aligned_tail_equality_consumed_authority =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_equality_consumed_authority_make
+                    aligned_tail_exponent_seed_open_authority
+            := _ =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_equality_consumed_authority_note
+                    aligned_tail_equality_consumed_authority
+            ?= aligned_tail_continuation ?|
+            | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_continuation_authority (
+                    _,
+                    tail_case,
+                    note
+                )
+                =>
+                    := _ = note
+                    ?= tail_case ?|
+                    | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessBothMore => ()
+                    | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessBothSingleton =>
+                        mega_runtime_fail "zeta-aligned-tail-continuation-expected-both-more-in-twelve-fixture"
+                    | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftSingletonRightMore =>
+                        mega_runtime_fail "zeta-aligned-tail-continuation-cannot-be-left-mixed"
+                    | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftMoreRightSingleton =>
+                        mega_runtime_fail "zeta-aligned-tail-continuation-cannot-be-right-mixed"
+        | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessBalanceMixed mixed =>
+            := linked_prime_power_divisibility =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility_make
+                    mixed
+            := euclid_product_descent =
+                certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_euclid_product_descent_make
+                    linked_prime_power_divisibility
+            ?= euclid_product_descent ?|
+            | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_euclid_product_descent packed =>
+                := \? singleton_factor singleton_count second_factor. descent, _ = packed
+                ?= descent ?|
+                | CertifiedArithmeticPrimePowerExternalFactorProductRejected _ => ()
+                | CertifiedArithmeticPrimePowerExternalFactorBaseConflict _ => ()
+                | CertifiedArithmeticPrimePowerExternalFactorDescend _ => ()
+                | CertifiedArithmeticPrimePowerExternalFactorPrimeProductSplitObstruction obstruction_payload =>
+                    := \?
+                        previous_product.
+                        external_prime, multiplication, product_found, factor_rejected, previous_rejected
+                        =
+                        obstruction_payload
+                    := _ = external_prime
+                    := _ = multiplication
+                    := _ = product_found
+                    := _ = factor_rejected
+                    := _ = previous_rejected
+                    ()
+    := product_multiplicity =
+        ival_product_multiplicity_twelve ()
+    ?= product_multiplicity ?|
+    | CertifiedIntervalPositivePositionalProductMultiplicityNormalForm payload =>
+        := \? left_factor left_count left_product right_factor right_count right_product.
+            left_run, left_exponent, ordering, right_run, right_exponent, reconstruction = payload
+        := left_power = certified_arithmetic_prime_power_from_run left_run
+        := left_singleton_nf : certified_arithmetic_rooted_ordered_prime_power_nf left_product =
+            CertifiedArithmeticRootedOrderedPrimePowerNF (\? (
+                left_power,
+                CertifiedArithmeticOrderedPrimePowerProductTailEnd,
+                PositivePositionalMultiplyOne (
+                    certified_arithmetic_prime_power_product_value left_power)))
+        := left_prime_power_decision =
+            certified_arithmetic_rooted_ordered_prime_power_nf_mangoldt_support_decision
+                left_singleton_nf
+        ?= left_prime_power_decision ?|
+        | CertifiedArithmeticRootedPrimePowerDecisionPrimePower _ => ()
+        | CertifiedArithmeticRootedPrimePowerDecisionMultiplePrimes _ =>
+            mega_runtime_fail "zeta-two-squared-singleton-normal-form-must-be-a-prime-power"
+
+        := _ = ival_product_multiplicity_run_prime left_run
+        := _ = ordering
+        := _ = ival_product_multiplicity_run_prime right_run
+        := _ = left_exponent
+        := _ = right_exponent
+        := _ = positive_positional_multiply_result_value reconstruction
+        "the-public-Zeta-root-now-adds-a-total-shape-derived-prime-power-decision-over-the-rooted-canonical-normal-"
+        ^^ "form-and-exercises-both-two-squared-as-one-prime-power-and-twelve-as-a-strictly-multi-prime-normal-form-wi"
+        ^^ "thout-importing-factorization-tree-shapes"
+
+///> c
+:# accessible_child_one_mismatch_is_refused fails "Got: positive_positional_predecessor_accessibility" =
+    := impossible_accessible_child_one_mismatch () =
+        ival_accessible_child_completion
+            (positive_positional_two_value ())
+            (PositivePositionalPredecessorAccessibilityOne
+                "forged-one-accessibility-for-two")
+    impossible_accessible_child_one_mismatch ()
+
+///> c
+:# accessible_child_step_prime_predecessor_mismatch_is_refused fails "Got: positive_positional_predecessor" =
+    := impossible_accessible_child_step_prime_predecessor_mismatch () =
+        := three_value = positive_positional_three_value ()
+        ival_accessible_child_completion
+            three_value
+            (PositivePositionalPredecessorAccessibilityStep (\? (
+                PositivePositionalPredecessorTwo,
+                PositivePositionalPredecessorAccessibilityOne
+                    "forged-one-tail-accessibility",
+                "forged-two-to-one-step-for-general-prime-three")))
+    impossible_accessible_child_step_prime_predecessor_mismatch ()
+
+///> c
+:# accessible_child_unit_direct_wrong_root_is_refused fails "Got: positive_positional_nat (positional_one_bit" =
+    := impossible_accessible_child_unit_direct_wrong_root () =
+        ival_accessible_child_unit_complete_tree
+            (positive_positional_three_value ())
+            (derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()))
+    impossible_accessible_child_unit_direct_wrong_root ()
+
+///> c
+:# accessible_composite_completion_wrong_root_is_refused fails "Got:" =
+    := impossible_accessible_composite_completion_wrong_root () :
+        ival_complete_factorization_tree
+            (positional_one_bit (positional_one_bit positional_one)) =
+        := six_value :
+            positive_positional_nat
+                (positional_zero_bit (positional_one_bit positional_one)) =
+            PositivePositionalZeroBit (positive_positional_three_value ())
+        ival_accessible_child_completion
+            six_value
+            (derive_positive_positional_predecessor_accessibility six_value)
+    impossible_accessible_composite_completion_wrong_root ()
+
+///> c
+:# accessible_step_prime_predecessor_mismatch_is_refused fails "Got: positive_positional_predecessor" =
+    := impossible_accessible_step_prime_predecessor_mismatch () =
+        := three_value = positive_positional_three_value ()
+        ?= classify_ival_sealed_factor three_value ?|
+        | CertifiedIntervalPositivePositionalSealedPrimeClass prime_payload =>
+            := \? length. prime_material, prime_nonunit, rejected, prime_note = prime_payload
+            CertifiedIntervalPositivePositionalAccessibleStepPrimeDerivation (\? (
+                prime_material,
+                prime_nonunit,
+                rejected,
+                PositivePositionalPredecessorTwo,
+                PositivePositionalLessOneZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorAccessibilityOne
+                    "forged-one-tail-accessibility",
+                prime_note,
+                "forged-two-to-one-step-for-prime-three"))
+        | _ =>
+            $"mega_runtime_fail \"three-was-unexpectedly-not-classified-as-prime\""
+    impossible_accessible_step_prime_predecessor_mismatch ()
+
+///> c
+:# accessible_step_prime_tree_wrong_root_is_refused fails "Got: positive_positional_nat (positional_zero_bit" =
+    := impossible_accessible_step_prime_tree_wrong_root () :
+        ival_complete_factorization_tree
+            (positional_zero_bit (positional_zero_bit positional_one)) =
+        := three_value = positive_positional_three_value ()
+        ?=
+            classify_ival_sealed_factor three_value,
+            derive_positive_positional_predecessor_accessibility three_value
+        ?|
+        | CertifiedIntervalPositivePositionalSealedPrimeClass prime_payload,
+            PositivePositionalPredecessorAccessibilityStep step_payload
+            =>
+                := \? length. prime_material, prime_nonunit, rejected, prime_note = prime_payload
+                := \? predecessor. predecessor_proof, predecessor_accessibility, step_note = step_payload
+                ival_accessible_step_prime_complete_tree
+                    (CertifiedIntervalPositivePositionalAccessibleStepPrimeDerivation (\? (
+                        prime_material,
+                        prime_nonunit,
+                        rejected,
+                        predecessor_proof,
+                        positive_positional_predecessor_implies_less predecessor_proof,
+                        predecessor_accessibility,
+                        prime_note,
+                        step_note)))
+        | _, _ =>
+            $"mega_runtime_fail \"three-was-unexpectedly-not-a-Step-certified-prime\""
+    impossible_accessible_step_prime_tree_wrong_root ()
+
+///> c
+:# child_recursion_authority_child_accessibility_mismatch_is_refused fails "Got: positive_positional_nat" =
+    := impossible_child_recursion_authority_child_accessibility_mismatch () :
+        ival_child_recursion_authority
+            (positional_zero_bit positional_one)
+            (positional_one_bit positional_one)
+            (z_nat_succ z_nat_zero) =
+        := membership :
+            ival_factor_membership
+                (positional_zero_bit positional_one)
+                (positional_one_bit positional_one)
+                (z_nat_succ z_nat_zero) =
+            CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "two-is-a-candidate-below-three")
+        := descent =
+            derive_ival_membership_recursive_descent
+                (positive_positional_three_value ())
+                membership
+        CertifiedIntervalPositivePositionalChildRecursionAuthority (
+            membership,
+            positive_positional_two_value (),
+            descent,
+            derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()),
+            derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()),
+            "the-child-accessibility-is-deliberately-rooted-at-three-instead-of-two")
+    impossible_child_recursion_authority_child_accessibility_mismatch ()
+
+///> c
+:# child_recursion_authority_wrong_root_is_refused fails "Got:" =
+    := impossible_child_recursion_authority_wrong_root () :
+        ival_child_recursion_authority
+            (positional_zero_bit positional_one)
+            (positional_zero_bit (positional_zero_bit positional_one))
+            (z_nat_succ z_nat_zero) =
+        := membership :
+            ival_factor_membership
+                (positional_zero_bit positional_one)
+                (positional_one_bit positional_one)
+                (z_nat_succ z_nat_zero) =
+            CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "the-child-authority-membership-is-rooted-at-three-not-four")
+        := descent =
+            derive_ival_membership_recursive_descent
+                (positive_positional_three_value ())
+                membership
+        derive_ival_child_recursion_authority
+            membership
+            descent
+            (derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()))
+    impossible_child_recursion_authority_wrong_root ()
+
+///> c
+:# complete_descent_fold_missing_division_is_refused fails "Got:" =
+    := impossible_complete_descent_fold_missing_division
+        ()
+        : ival_complete_factorization_tree
+            (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+        =
+        := root_value = positive_positional_twelve_value ()
+        ?= classify_ival_sealed_factor root_value ?|
+        | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+            := \? length divisor quotient. natural_value, divisor_value, quotient_value, membership, division, note =
+                payload
+            := children
+                : ival_sealed_composite_children
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor quotient
+                =
+                CertifiedIntervalPositivePositionalSealedCompositeChildren (
+                    \? (natural_value, divisor_value, quotient_value, membership, division, note)
+                )
+            CertifiedIntervalPositivePositionalCompleteSplit (
+                \? (
+                    natural_value,
+                    divisor_value,
+                    quotient_value,
+                    membership,
+                    derive_ival_membership_recursive_descent root_value membership,
+                    derive_ival_quotient_recursive_descent_from_children children,
+                    ival_accessible_child_completion divisor_value (
+                        derive_positive_positional_predecessor_accessibility divisor_value
+                    ),
+                    ival_accessible_child_completion quotient_value (
+                        derive_positive_positional_predecessor_accessibility quotient_value
+                    ),
+                    "a-split-fold-must-carry-the-structural-division-equation"
+                )
+            )
+        | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
+    := _ = impossible_complete_descent_fold_missing_division ()
+    ()
+
+///> c
+:# complete_reconstruction_prime_four_is_refused fails "Got: exists length. positive_positional_nat" =
+    := impossible_complete_reconstruction_prime_four () :
+        ival_complete_reconstruction
+            (positional_zero_bit (positional_zero_bit positional_one)) =
+        CertifiedIntervalPositivePositionalCompleteReconstructionPrime (
+            positive_positional_four_value (),
+            PositivePositionalFactorCandidateNonunitZeroBit
+                (positive_positional_two_value ()),
+            "complete-reconstruction-prime-four-must-carry-complete-rejection-evidence")
+
+///> c
+:# composite_recursion_authority_wrong_root_is_refused fails "Got:" =
+    := impossible_composite_recursion_authority_wrong_root
+        ()
+        : (
+            \? length divisor quotient. ival_composite_recursion_authority
+                (positional_zero_bit (positional_zero_bit positional_one)) length divisor quotient
+        )
+        =
+        := root_value = positive_positional_twelve_value ()
+        ?= classify_ival_sealed_factor root_value ?|
+        | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+            := \? length divisor quotient. natural_value, divisor_value, quotient_value, membership, division, note =
+                payload
+            := children
+                : ival_sealed_composite_children
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor quotient
+                =
+                CertifiedIntervalPositivePositionalSealedCompositeChildren (
+                    \? (natural_value, divisor_value, quotient_value, membership, division, note)
+                )
+            \? (
+                CertifiedIntervalPositivePositionalCompositeRecursionAuthority (
+                    membership,
+                    division,
+                    quotient_value,
+                    derive_ival_membership_recursive_descent root_value membership,
+                    derive_ival_quotient_recursive_descent_from_children children,
+                    derive_positive_positional_predecessor_accessibility root_value,
+                    "the-composite-authority-is-rooted-at-twelve-not-four"))
+        | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
+    := _ = impossible_composite_recursion_authority_wrong_root ()
+    ()
+
+///> c
+:# descent_unavailable_divisor_blocked_equal_root_is_refused fails "Got: positive_positional_equal" =
+    := impossible_descent_unavailable_divisor_blocked_equal_root () =
+        := root_value = positive_positional_twelve_value ()
+        ?= classify_ival_sealed_factor root_value ?|
+        | CertifiedIntervalPositivePositionalSealedCompositeClass composite_payload =>
+            := \? divisor quotient. children =
+                ival_sealed_composite_children_from_witness
+                    (CertifiedIntervalPositivePositionalSealedCompositeWitness composite_payload)
+            := blocked
+                : ival_recursive_descent_blocked
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor
+                =
+                CertifiedIntervalPositivePositionalRecursiveDescentBlockedEqual
+                    (positive_positional_equal_reflexive root_value)
+            ()
+        | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
+    impossible_descent_unavailable_divisor_blocked_equal_root ()
+
+///> c
+:# forged_interval_is_refused fails "Got: certified_positive_positional_candidate_interval positional_one" =
+    := impossible_interval_for_four () :
+        certified_positive_positional_candidate_interval
+            (positional_zero_bit (positional_zero_bit positional_one))
+            z_nat_zero =
+        CertifiedPositivePositionalCandidateIntervalOne
+            "the-one-only-base-cannot-certify-four"
+
+///> c
+:# intrinsic_prime_four_is_refused fails "Got: ival_all_rejected _" =
+    := impossible_intrinsic_prime_four () :
+        ival_sealed_factor_class
+            (positional_zero_bit (positional_zero_bit positional_one)) =
+        CertifiedIntervalPositivePositionalSealedPrimeClass (\? (
+            positive_positional_four_value (),
+            PositivePositionalFactorCandidateNonunitZeroBit (positive_positional_two_value ()),
+            CertifiedIntervalPositivePositionalAllRejectedTwo
+                "four-cannot-reuse-the-two-candidate-base-as-a-complete-rejection",
+            "sealed-prime-four-must-be-uninhabitable"))
+
+///> c
+:# intrinsic_prime_one_is_refused fails "Got: positive_positional_factor_candidate_nonunit (positional_zero_bit" =
+    := impossible_intrinsic_prime_one () :
+        ival_sealed_factor_class positional_one =
+        CertifiedIntervalPositivePositionalSealedPrimeClass (\? (
+            PositivePositionalOne,
+            PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+            CertifiedIntervalPositivePositionalAllRejectedOne
+                "one-has-no-nonunit-factor-candidate",
+            "sealed-prime-one-must-be-uninhabitable"))
+
+///> c
+:# membership_accessibility_authority_candidate_mismatch_is_refused fails "Got:" =
+    := impossible_membership_accessibility_authority_candidate_mismatch () :
+        ival_membership_accessibility_authority
+            positional_one
+            (positional_one_bit positional_one)
+            (z_nat_succ z_nat_zero) =
+        := membership :
+            ival_factor_membership
+                (positional_zero_bit positional_one)
+                (positional_one_bit positional_one)
+                (z_nat_succ z_nat_zero) =
+            CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "the-membership-is-rooted-at-three-and-indexed-by-factor-two")
+        derive_ival_membership_accessibility_authority
+            membership
+    impossible_membership_accessibility_authority_candidate_mismatch ()
+
+///> c
+:# membership_accessibility_candidate_mismatch_is_refused fails "Got:" =
+    := impossible_factor_membership_accessibility_candidate_mismatch () :
+        positive_positional_nat positional_one *
+        positive_positional_predecessor_accessibility positional_one =
+        := membership :
+            ival_factor_membership
+                (positional_zero_bit positional_one)
+                (positional_one_bit positional_one)
+                (z_nat_succ z_nat_zero) =
+            CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "the-membership-is-rooted-at-three-and-indexed-by-factor-two")
+        derive_ival_factor_membership_accessibility
+            membership
+    impossible_factor_membership_accessibility_candidate_mismatch ()
+
+///> c
+:# membership_accessible_child_mismatch_is_refused fails "Got: positive_positional_nat (positional_one_bit" =
+    := impossible_membership_accessible_child_mismatch () =
+        ival_accessible_child_completion
+            (positive_positional_two_value ())
+            (derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()))
+    impossible_membership_accessible_child_mismatch ()
+
+///> c
+:# membership_candidate_value_mismatch_is_refused fails "Got: positive_positional_nat (positional_one_bit" =
+    := impossible_factor_membership_candidate_value_mismatch () :
+        ival_factor_membership
+            (positional_zero_bit positional_one)
+            (positional_one_bit positional_one)
+            (z_nat_succ z_nat_zero) =
+        CertifiedIntervalPositivePositionalFactorMembershipHere (
+            positive_positional_three_value (),
+            PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+            PositivePositionalPredecessorOneBit PositivePositionalOne,
+            "a-membership-for-factor-two-cannot-store-three-as-the-indexed-candidate-value")
+
+///> c
+:# membership_descent_wrong_root_is_refused fails "Got: positive_positional_predecessor (positional_one_bit" =
+    := impossible_factor_membership_descent_wrong_root () =
+        derive_ival_membership_recursive_descent
+            (positive_positional_four_value ())
+            (CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "a-membership-rooted-at-three-cannot-derive-descent-from-four"))
+
+///> c
+:# membership_recursion_authority_wrong_root_is_refused fails "Got:" =
+    := impossible_membership_recursion_authority_wrong_root () :
+        ival_membership_recursion_authority
+            (positional_zero_bit positional_one)
+            (positional_zero_bit (positional_zero_bit positional_one))
+            (z_nat_succ z_nat_zero) =
+        := membership :
+            ival_factor_membership
+                (positional_zero_bit positional_one)
+                (positional_one_bit positional_one)
+                (z_nat_succ z_nat_zero) =
+            CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "the-membership-is-rooted-at-three-not-four")
+        derive_ival_membership_recursion_authority
+            membership
+    impossible_membership_recursion_authority_wrong_root ()
+
+///> c
+:# membership_strict_path_identity_is_refused fails "Got: ival_factor_membership" =
+    := impossible_membership_strict_path_identity () =
+        := twelve =
+            classify_ival_sealed_factor
+                (positive_positional_twelve_value ())
+        ?= twelve ?|
+        | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+            := \? length divisor quotient. _, _, _, membership, _, _ = payload
+            := impossible
+                : positive_positional_strict_predecessor_path
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                =
+                ival_factor_membership_to_strict_path
+                    membership
+            ()
+        | _ =>
+            mega_runtime_fail "twelve-must-be-composite-for-the-negative-boundary"
+    impossible_membership_strict_path_identity ()
+
+///> c
+:# mixed_second_prime_strict_separation_cannot_reverse_is_refused fails "Got: positive_positional_less" =
+    := impossible_mixed_second_prime_strict_separation_cannot_reverse \* root.
+        (authority :
+            certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility root)
+        : ()
+        =
+        ?= authority ?|
+        | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility packed =>
+            := \?
+                singleton_factor singleton_count second_factor second_count second_product. _, _, strict, _, _, _, _
+                =
+                packed
+            := reversed : positive_positional_less second_factor singleton_factor = strict
+            ()
+
+///> c
+:# mixed_singleton_prime_power_wrong_root_is_refused fails "Got: certified_arithmetic_prime_power _ _" =
+    := impossible_mixed_singleton_prime_power_wrong_root \* root.
+        (mixed : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_obstruction root)
+        : \? factor count. certified_arithmetic_prime_power factor count positional_one * string
+        =
+        ?=
+            certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility_make
+                mixed
+        ?|
+        | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility packed =>
+            := \?
+                singleton_factor singleton_count second_factor second_count second_product. singleton_power, _, _, _, _,
+                _,
+                note
+                =
+                packed
+            \? (singleton_power, note)
+
+///> c
+:# mixed_strict_separation_not_divisibility_obligation_is_refused fails "Got:" =
+    := impossible_mixed_strict_separation_not_divisibility_obligation \* root.
+        (authority :
+            certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility root)
+        : ()
+        =
+        ?= authority ?|
+        | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility packed =>
+            := \?
+                singleton_factor singleton_count second_factor second_count second_product. _, _, strict, _, _,
+                divisibility
+                , _
+                =
+                packed
+            := obligation : positive_positional_exact_factor_decision root second_factor = strict
+            ()
+
+///> c
+:# multi_prime_nf_not_prime_power_is_refused fails "Got: exists factor count product." =
+    := impossible_multi_prime_decision_relabels_as_prime_power \* root.
+        (decision : certified_arithmetic_rooted_prime_power_decision root) :
+        certified_arithmetic_rooted_prime_power_decision root =
+        ?= decision ?|
+        | CertifiedArithmeticRootedPrimePowerDecisionPrimePower payload =>
+            CertifiedArithmeticRootedPrimePowerDecisionPrimePower payload
+        | CertifiedArithmeticRootedPrimePowerDecisionMultiplePrimes obstruction =>
+            CertifiedArithmeticRootedPrimePowerDecisionPrimePower obstruction
+
+///> c
+:# positive_exponent_equality_wrong_length_is_refused fails "Got: certified_arithmetic_positive_exponent_equal" =
+    := impossible_positive_exponent_equality_wrong_length () :
+        certified_arithmetic_positive_exponent_equal
+            (z_nat_succ z_nat_zero)
+            (z_nat_succ (z_nat_succ z_nat_zero)) =
+        CertifiedArithmeticPositiveExponentEqualOne
+    impossible_positive_exponent_equality_wrong_length ()
+
+///> c
+:# predecessor_accessibility_parallel_less_is_refused fails "Got: positive_positional_less positional_one" =
+    := impossible_predecessor_accessibility_parallel_less () :
+        positive_positional_predecessor_accessibility
+            (positional_zero_bit positional_one) =
+        PositivePositionalPredecessorAccessibilityStep (\? (
+            PositivePositionalPredecessorTwo,
+            PositivePositionalLessOneZeroBit PositivePositionalOne,
+            PositivePositionalPredecessorAccessibilityOne
+                "one-closes-the-forged-chain",
+            "the-less-proof-is-deliberately-supplied-in-parallel-with-the-predecessor-proof"))
+    impossible_predecessor_accessibility_parallel_less ()
+
+///> c
+:# predecessor_accessibility_parallel_value_is_refused fails "Got: positive_positional_predecessor" =
+    := impossible_predecessor_accessibility_parallel_value () :
+        positive_positional_predecessor_accessibility
+            (positional_zero_bit positional_one) =
+        PositivePositionalPredecessorAccessibilityStep (\? (
+            PositivePositionalOne,
+            PositivePositionalPredecessorTwo,
+            PositivePositionalLessOneZeroBit PositivePositionalOne,
+            PositivePositionalPredecessorAccessibilityOne
+                "one-closes-the-forged-chain",
+            "the-value-is-deliberately-supplied-in-parallel-with-the-predecessor-proof"))
+    impossible_predecessor_accessibility_parallel_value ()
+
+///> c
+:# prime_power_leaf_nonfactor_not_product_nonfactor_is_refused fails "Got:" =
+    := impossible_prime_power_leaf_nonfactor_chain_is_product_nonfactor \* factor count product external.
+        (chain : certified_arithmetic_prime_power_leaf_nonfactor_chain factor count product external) :
+        positive_positional_nonfactor_certificate product external =
+        chain
+
+///> c
+:# prime_product_split_found_not_rejection_is_refused fails "Got: positive_positional_nonfactor_certificate product" =
+    := impossible_prime_product_split_found_is_product_rejection \* factor previous_count product external.
+        (descent :
+            certified_arithmetic_prime_power_external_factor_descent
+                factor
+                (z_nat_succ previous_count)
+                product external)
+        : positive_positional_nonfactor_certificate product external
+        =
+        ?= descent ?|
+        | CertifiedArithmeticPrimePowerExternalFactorPrimeProductSplitObstruction payload =>
+            := \? previous_product. _, _, product_found, _, _ = payload
+            product_found
+        | _ =>
+            mega_runtime_fail "only-the-prime-product-split-obstruction-branch-is-relevant"
+
+///> c
+:# prime_product_split_previous_nonfactor_not_base_nonfactor_is_refused fails "Got:" =
+    := impossible_prime_product_split_previous_nonfactor_is_base_nonfactor \* factor previous_count product external.
+        (descent :
+            certified_arithmetic_prime_power_external_factor_descent
+                factor
+                (z_nat_succ previous_count)
+                product external)
+        : positive_positional_nonfactor_certificate factor external
+        =
+        ?= descent ?|
+        | CertifiedArithmeticPrimePowerExternalFactorPrimeProductSplitObstruction payload =>
+            := \? previous_product. _, _, _, _, previous_nonfactor = payload
+            previous_nonfactor
+        | _ =>
+            mega_runtime_fail "only-the-prime-product-split-obstruction-branch-is-relevant"
+
+///> c
+:# quotient_accessible_parent_root_mismatch_is_refused fails "Got:" =
+    := impossible_quotient_accessible_parent_root_mismatch
+        ()
+        : ival_complete_factorization_tree (positional_zero_bit positional_one)
+        =
+        := three = positive_positional_three_value ()
+        ival_accessible_child_completion three (
+            derive_positive_positional_predecessor_accessibility three
+        )
+    := _ = impossible_quotient_accessible_parent_root_mismatch ()
+    ()
+
+///> c
+:# quotient_recursion_authority_wrong_root_is_refused fails "Got: value_synthesized_structural_division" =
+    := impossible_quotient_recursion_authority_wrong_root
+        ()
+        : (
+            \? divisor quotient. ival_quotient_recursion_authority
+                (positional_zero_bit (positional_zero_bit positional_one)) divisor quotient
+        )
+        =
+        := root_value = positive_positional_twelve_value ()
+        ?= classify_ival_sealed_factor root_value ?|
+        | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+            := \? length divisor quotient. natural_value, divisor_value, quotient_value, membership, division, note =
+                payload
+            := children
+                : ival_sealed_composite_children
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor quotient
+                =
+                CertifiedIntervalPositivePositionalSealedCompositeChildren (
+                    \? (natural_value, divisor_value, quotient_value, membership, division, note)
+                )
+            \? (
+                CertifiedIntervalPositivePositionalQuotientRecursionAuthority (
+                    division,
+                    quotient_value,
+                    derive_ival_quotient_recursive_descent_from_children children,
+                    derive_positive_positional_predecessor_accessibility root_value,
+                    derive_positive_positional_predecessor_accessibility quotient_value,
+                    "the-authority-is-rooted-at-twelve-not-four"))
+        | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
+    := _ = impossible_quotient_recursion_authority_wrong_root ()
+    ()
+
+///> c
+:# sealed_composite_children_direct_forged_divisor_is_refused fails "Got:" =
+    := impossible_sealed_composite_children_direct_forged_divisor \* length.
+        (membership :
+            ival_factor_membership
+                (positional_zero_bit (positional_one_bit positional_one))
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                length)
+        (division :
+            value_synthesized_structural_division
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                (positional_zero_bit (positional_one_bit positional_one))
+                (positional_zero_bit positional_one)
+                positional_zero)
+        : ival_sealed_composite_children
+            (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+            (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+            (positional_zero_bit positional_one) =
+        CertifiedIntervalPositivePositionalSealedCompositeChildren (\? (
+            positive_positional_twelve_value (),
+            positive_positional_twelve_value (),
+            positive_positional_two_value (),
+            membership,
+            division,
+            "the-public-constructor-must-not-accept-root-as-divisor-when-the-evidence-proves-six-divides-twelve"))
+    impossible_sealed_composite_children_direct_forged_divisor
+
+///> c
+:# sealed_composite_children_wrong_divisor_is_refused fails "Got:" =
+    := impossible_sealed_composite_children_wrong_divisor
+        (children :
+            ival_sealed_composite_children
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                (positional_zero_bit (positional_one_bit positional_one))
+                (positional_zero_bit positional_one))
+        : ival_sealed_composite_children
+            (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+            (positional_one_bit (positional_zero_bit (positional_zero_bit positional_one)))
+            (positional_zero_bit positional_one) =
+        children
+    impossible_sealed_composite_children_wrong_divisor
+
+///> c
+:# sealed_composite_children_wrong_root_is_refused fails "Got:" =
+    := impossible_sealed_composite_children_wrong_root
+        (children :
+            ival_sealed_composite_children
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                (positional_zero_bit (positional_one_bit positional_one))
+                (positional_zero_bit positional_one))
+        : ival_sealed_composite_children
+            (positional_zero_bit (positional_one_bit (positional_zero_bit (positional_zero_bit positional_one))))
+            (positional_zero_bit (positional_one_bit positional_one))
+            (positional_zero_bit positional_one) =
+        children
+    impossible_sealed_composite_children_wrong_root
+
+///> c
+:# structural_division_quotient_projection_mismatch_is_refused fails "Got: value_synthesized_structural_division" =
+    := impossible_structural_division_quotient_projection_mismatch () :
+        nonnegative_positional_nat (positional_zero_bit positional_one) =
+        value_synthesized_structural_division_quotient_value
+            (ValueSynthesizedStructuralDivisionEqual (
+                PositivePositionalEqualZeroBit PositivePositionalEqualOne))
+    impossible_structural_division_quotient_projection_mismatch ()
+
+///> c
+:# zero_remainder_is_refused fails "Got: positive_positional_nat positional_zero Expected: " =
+    := impossible_zero_remainder
+        (zero : nonnegative_positional_nat positional_zero)
+        : positive_positional_nat positional_zero =
+        zero
+    impossible_zero_remainder NonnegativePositionalZero
+
+///> rust
+:# positive_positional_predecessor_less_holds_on_rust =
+    positive_positional_predecessor_less_terminal () |> ignore
+
+///> zig
+:# positive_positional_predecessor_less_holds_on_zig =
+    positive_positional_predecessor_less_terminal () |> ignore
+
+///> c
+:# positive_positional_predecessor_less_holds_on_c =
+    positive_positional_predecessor_less_terminal () |> ignore
+
+///> rust
+:# positive_positional_predecessor_accessibility_holds_on_rust =
+    positive_positional_predecessor_accessibility_terminal () |> ignore
+
+///> zig
+:# positive_positional_predecessor_accessibility_holds_on_zig =
+    positive_positional_predecessor_accessibility_terminal () |> ignore
+
+///> c
+:# positive_positional_predecessor_accessibility_holds_on_c =
+    positive_positional_predecessor_accessibility_terminal () |> ignore
+
+///> rust
+:# positive_positional_parent_derived_child_accessibility_holds_on_rust =
+    positive_positional_parent_derived_child_accessibility_terminal () |> ignore
+
+///> zig
+:# positive_positional_parent_derived_child_accessibility_holds_on_zig =
+    positive_positional_parent_derived_child_accessibility_terminal () |> ignore
+
+///> c
+:# positive_positional_parent_derived_child_accessibility_holds_on_c =
+    positive_positional_parent_derived_child_accessibility_terminal () |> ignore
+
+///> rust
+:# ival_factor_membership_parent_accessibility_holds_on_rust =
+    ival_factor_membership_parent_accessibility_terminal () |> ignore
+
+///> zig
+:# ival_factor_membership_parent_accessibility_holds_on_zig =
+    ival_factor_membership_parent_accessibility_terminal () |> ignore
+
+///> c
+:# ival_factor_membership_parent_accessibility_holds_on_c =
+    ival_factor_membership_parent_accessibility_terminal () |> ignore
+
+///> rust
+:# ival_accessible_step_prime_holds_on_rust =
+    ival_accessible_step_prime_terminal () |> ignore
+
+///> zig
+:# ival_accessible_step_prime_holds_on_zig =
+    ival_accessible_step_prime_terminal () |> ignore
+
+///> c
+:# ival_accessible_step_prime_holds_on_c =
+    ival_accessible_step_prime_terminal () |> ignore
+
+///> rust
+:# ival_accessible_child_unit_holds_on_rust =
+    ival_accessible_child_unit_terminal () |> ignore
+
+///> zig
+:# ival_accessible_child_unit_holds_on_zig =
+    ival_accessible_child_unit_terminal () |> ignore
+
+///> c
+:# ival_accessible_child_unit_holds_on_c =
+    ival_accessible_child_unit_terminal () |> ignore
+
+///> rust
+:# ival_accessible_child_step_prime_holds_on_rust =
+    ival_accessible_child_step_prime_terminal () |> ignore
+
+///> zig
+:# ival_accessible_child_step_prime_holds_on_zig =
+    ival_accessible_child_step_prime_terminal () |> ignore
+
+///> c
+:# ival_accessible_child_step_prime_holds_on_c =
+    ival_accessible_child_step_prime_terminal () |> ignore
+
+///> rust
+:# ival_membership_accessible_child_holds_on_rust =
+    ival_membership_accessible_child_terminal () |> ignore
+
+///> zig
+:# ival_membership_accessible_child_holds_on_zig =
+    ival_membership_accessible_child_terminal () |> ignore
+
+///> c
+:# ival_membership_accessible_child_holds_on_c =
+    ival_membership_accessible_child_terminal () |> ignore
+
+///> rust
+:# positive_positional_strict_predecessor_accessibility_holds_on_rust =
+    positive_positional_strict_predecessor_accessibility_terminal () |> ignore
+
+///> zig
+:# positive_positional_strict_predecessor_accessibility_holds_on_zig =
+    positive_positional_strict_predecessor_accessibility_terminal () |> ignore
+
+///> c
+:# positive_positional_strict_predecessor_accessibility_holds_on_c =
+    positive_positional_strict_predecessor_accessibility_terminal () |> ignore
+
+///> rust
+:# positive_positional_quotient_accessibility_holds_on_rust =
+    positive_positional_quotient_accessibility_terminal () |> ignore
+
+///> zig
+:# positive_positional_quotient_accessibility_holds_on_zig =
+    positive_positional_quotient_accessibility_terminal () |> ignore
+
+///> c
+:# positive_positional_quotient_accessibility_holds_on_c =
+    positive_positional_quotient_accessibility_terminal () |> ignore
+
+///> rust
+:# positive_positional_two_stage_quotient_accessibility_holds_on_rust =
+    positive_positional_two_stage_quotient_accessibility_terminal () |> ignore
+
+///> zig
+:# positive_positional_two_stage_quotient_accessibility_holds_on_zig =
+    positive_positional_two_stage_quotient_accessibility_terminal () |> ignore
+
+///> c
+:# positive_positional_two_stage_quotient_accessibility_holds_on_c =
+    positive_positional_two_stage_quotient_accessibility_terminal () |> ignore
+
+///> rust
+:# positive_positional_flattened_quotient_composition_holds_on_rust =
+    positive_positional_flattened_quotient_composition_terminal () |> ignore
+
+///> zig
+:# positive_positional_flattened_quotient_composition_holds_on_zig =
+    positive_positional_flattened_quotient_composition_terminal () |> ignore
+
+///> c
+:# positive_positional_flattened_quotient_composition_holds_on_c =
+    positive_positional_flattened_quotient_composition_terminal () |> ignore
+
+///> rust
+:# positive_positional_generic_flattened_quotient_chain_holds_on_rust =
+    positive_positional_generic_flattened_quotient_chain_terminal () |> ignore
+
+///> zig
+:# positive_positional_generic_flattened_quotient_chain_holds_on_zig =
+    positive_positional_generic_flattened_quotient_chain_terminal () |> ignore
+
+///> c
+:# positive_positional_generic_flattened_quotient_chain_holds_on_c =
+    positive_positional_generic_flattened_quotient_chain_terminal () |> ignore
+
+///> rust
+:# ival_membership_recursion_authority_holds_on_rust =
+    ival_membership_recursion_authority_terminal () |> ignore
+
+///> zig
+:# ival_membership_recursion_authority_holds_on_zig =
+    ival_membership_recursion_authority_terminal () |> ignore
+
+///> c
+:# ival_membership_recursion_authority_holds_on_c =
+    ival_membership_recursion_authority_terminal () |> ignore
+
+///> rust
+:# positive_positional_transitive_predecessor_path_holds_on_rust =
+    positive_positional_transitive_predecessor_path_terminal () |> ignore
+
+///> zig
+:# positive_positional_transitive_predecessor_path_holds_on_zig =
+    positive_positional_transitive_predecessor_path_terminal () |> ignore
+
+///> c
+:# positive_positional_transitive_predecessor_path_holds_on_c =
+    positive_positional_transitive_predecessor_path_terminal () |> ignore
+
+///> rust
+:# positive_positional_nonidentity_three_segment_path_associativity_holds_on_rust =
+    positive_positional_nonidentity_three_segment_path_associativity_terminal () |> ignore
+
+///> zig
+:# positive_positional_nonidentity_three_segment_path_associativity_holds_on_zig =
+    positive_positional_nonidentity_three_segment_path_associativity_terminal () |> ignore
+
+///> c
+:# positive_positional_nonidentity_three_segment_path_associativity_holds_on_c =
+    positive_positional_nonidentity_three_segment_path_associativity_terminal () |> ignore
+
+///> rust
+:# positive_positional_transitive_predecessor_path_append_measure_holds_on_rust =
+    positive_positional_transitive_predecessor_path_append_measure_terminal () |> ignore
+
+///> zig
+:# positive_positional_transitive_predecessor_path_append_measure_holds_on_zig =
+    positive_positional_transitive_predecessor_path_append_measure_terminal () |> ignore
+
+///> c
+:# positive_positional_transitive_predecessor_path_append_measure_holds_on_c =
+    positive_positional_transitive_predecessor_path_append_measure_terminal () |> ignore
+
+///> rust
+:# ival_factor_membership_accessibility_holds_on_rust =
+    ival_factor_membership_accessibility_terminal () |> ignore
+
+///> zig
+:# ival_factor_membership_accessibility_holds_on_zig =
+    ival_factor_membership_accessibility_terminal () |> ignore
+
+///> c
+:# ival_factor_membership_accessibility_holds_on_c =
+    ival_factor_membership_accessibility_terminal () |> ignore
+
+///> rust
+:# ival_division_accessible_quotient_holds_on_rust =
+    ival_division_accessible_quotient_terminal () |> ignore
+
+///> zig
+:# ival_division_accessible_quotient_holds_on_zig =
+    ival_division_accessible_quotient_terminal () |> ignore
+
+///> c
+:# ival_division_accessible_quotient_holds_on_c =
+    ival_division_accessible_quotient_terminal () |> ignore
+
+///> rust
+:# ival_sealed_composite_children_holds_on_rust =
+    ival_sealed_composite_children_terminal () |> ignore
+
+///> zig
+:# ival_sealed_composite_children_holds_on_zig =
+    ival_sealed_composite_children_terminal () |> ignore
+
+///> c
+:# ival_sealed_composite_children_holds_on_c =
+    ival_sealed_composite_children_terminal () |> ignore
+
+///> rust
+:# ival_membership_strict_path_holds_on_rust =
+    ival_membership_strict_path_terminal () |> ignore
+
+///> zig
+:# ival_membership_strict_path_holds_on_zig =
+    ival_membership_strict_path_terminal () |> ignore
+
+///> c
+:# ival_membership_strict_path_holds_on_c =
+    ival_membership_strict_path_terminal () |> ignore
+
+///> rust
+:# ival_complete_reconstruction_holds_on_rust =
+    ival_complete_reconstruction_terminal () |> ignore
+
+///> zig
+:# ival_complete_reconstruction_holds_on_zig =
+    ival_complete_reconstruction_terminal () |> ignore
+
+///> c
+:# ival_complete_reconstruction_holds_on_c =
+    ival_complete_reconstruction_terminal () |> ignore
+
+///> rust
+:# ival_six_distinct_tree_normalization_holds_on_rust =
+    ival_six_distinct_tree_normalization_terminal () |> ignore
+
+///> zig
+:# ival_six_distinct_tree_normalization_holds_on_zig =
+    ival_six_distinct_tree_normalization_terminal () |> ignore
+
+///> c
+:# ival_six_distinct_tree_normalization_holds_on_c =
+    ival_six_distinct_tree_normalization_terminal () |> ignore

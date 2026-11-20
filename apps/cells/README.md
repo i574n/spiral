@@ -225,7 +225,7 @@ also writes a Livebook copy next to the ipynb (`<ipynb stem>.livemd`), so a gh-p
 `notebook` request and prints the daemon's `spiral-tests` lines and exit code, so no `mix` or BEAM starts. The daemon
 refuses (`stale`) when it serves another Cells checkout, or when Cells's sources or beams changed since it started (then
 it retires itself after the reply); the script then runs `mix spiral.notebook` as before, which afterwards launches a
-daemon in the background when none listens, for the next run. `SPIRAL_CELLS_WARM=0` skips the warm daemon;
+daemon in the background when none listens, for the next run. `SPIRAL_CELLS_WARM=0` skips the warm daemon and retires the run's own daemon when it ends (as does a run inside a rig job);
 `SPIRAL_CELLS_MEMO=0` is passed on as `--no-memo`.
 
 On a fresh machine the script first provides what the route needs, each step only when its output is missing: the
@@ -404,10 +404,10 @@ The run-time checker is Spiral: `spi/cell_budget.spi` (weights, rewrites, the 28
 `tlds`) and `spi/cell_budget_ruled.spi` (the GRANULAR ruled budget and the kinds line); Cells calls it through
 `Spiral.Cells.Domain.cell_budget_lines`.
 
-`mix spiral.cell_budget <file or dir>...` is the CI report over `.spi`, `.spir` and `.livemd` files: every finding,
-every definition over budget (`over_budget`) and a summary line. With `--check` it exits 1 when a definition is over
-budget. It skips `target`, `deps`, `_build` and similar folders. The task still runs on `Spiral.Cells.CellBudget`
-(IANA TLD list in `data/tlds.txt`) until the Spiral checker exports `over_budget`.
+The `cell-budget <file or dir>...` binary (built from `budget/` with `cargo build --release`; its Rust source
+`cell_budget_cli.rs` is generated from `budget/cell_budget_cli.spi`) is the CI report over `.spi`, `.spir` and `.livemd`
+files: every finding, every definition over budget (`over_budget`) and a summary line. With `--check` it exits 1 when a
+definition is over budget. It skips `target`, `deps`, `_build` and similar folders. It runs without Mix or the BEAM.
 
 ### Target audit
 

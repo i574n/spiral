@@ -16,10 +16,27 @@
 
 :== rewrite = { mark : mark; line : i32; column : i32; text : string }
 
-:| finding =
-    | OverBudget : over
-    | OverRuled : over
-    | Rewritten : rewrite
+:! budget_kind = ()
+
+:! ruled_kind = ()
+
+:! rewrite_kind = ()
+
+:| finding kind =
+    | OverBudget :: over -> finding budget_kind
+    | OverRuled :: over -> finding ruled_kind
+    | Rewritten :: rewrite -> finding rewrite_kind
+
+:| any_finding =
+    | BudgetFinding : finding budget_kind
+    | RuledFinding : finding ruled_kind
+    | RewriteFinding : finding rewrite_kind
+
+:~ budget_finding (o : over) : any_finding = BudgetFinding (OverBudget o)
+
+:~ ruled_finding (o : over) : any_finding = RuledFinding (OverRuled o)
+
+:~ rewrite_finding (r : rewrite) : any_finding = RewriteFinding (Rewritten r)
 
 :~ weight_value ((cell_weight w) : cell_weight) : i32 = w
 
@@ -269,12 +286,12 @@
 
 :~ budget_hint () : string =
     "a cell holds 280 weighted characters (CJK and emoji weigh 2, links " ++# sm'::show (link_weight ())
-    ++# "), less the cell header; split this definition"
+    ++# "), less the cell header; split this definition (gate bar: granular excess <= baseline)"
 
 :~ ruled_hint () : string =
     "measured with the GRANULAR rules (a one-line-arm match counts its longest arm, the header is excluded, a "
     ++# "literal-only template counts its heaviest piece, type declarations and pure literals weigh 0, declared "
-    ++# ":! nominals count as constructors); split this body"
+    ++# ":! nominals count as constructors); split this body (gate bar: granular excess <= baseline)"
 
 :~ located (path : string) (line : i32) (column : i32) : string = path ++# ":" ++# sm'::show line ++# ":" ++# sm'::show column
 
@@ -282,11 +299,14 @@
     := weights = "weight " ++# sm'::show (weight_value o::weight) ++# " > " ++# sm'::show (weight_value o::limit)
     located path o::line 1i32 ++# ": over_budget: " ++# weights ++# " (" ++# hint ++# ")"
 
-:~ finding_line (path : string) (f : finding) : string =
+:~ rewrite_line (path : string) (r : rewrite) : string =
+    located path r::line r::column ++# ": " ++# mark_name r::mark ++# ": " ++# r::text ++# " (" ++# mark_hint r::mark ++# ")"
+
+:~ finding_line (path : string) (f : any_finding) : string =
     ?= f ?|
-    | Rewritten r => located path r::line r::column ++# ": " ++# mark_name r::mark ++# ": " ++# r::text ++# " (" ++# mark_hint r::mark ++# ")"
-    | OverBudget o => over_line path o (budget_hint ())
-    | OverRuled o => over_line path o (ruled_hint ())
+    | RewriteFinding (Rewritten r) => rewrite_line path r
+    | BudgetFinding (OverBudget o) => over_line path o (budget_hint ())
+    | RuledFinding (OverRuled o) => over_line path o (ruled_hint ())
 
 :~ weight_wire (tlds : string) (s : string) : i32 =
     weight_value (text_weight (Listed (? tlds = "" ?> [] |: sm'::split_list "\n" tlds)) s)
@@ -342,25 +362,60 @@
     := empty = { done = []; cur = []; start = 1i32; blanks = 0i32; seen = !- }
     listm::rev (finished (scan_lines empty 1i32 (source_lines source)))
 
-:~ block_finding (tlds : tld_list) (b : block) (k : i32) (a : list finding) : list finding =
-    := w = text_weight tlds b::text
-    := limit = cell_limit k
-    ? weight_value w > weight_value limit ?> OverBudget { line = b::row; weight = w; limit = limit } :: a |: a
+:~ ^ host_body (lines : list string) : bool =
+    ?= lines ?|
+    | [] => !-
+    | l :: rest => ? rest = [] ?> sm'::trim l = "\"\"\"" |: sm'::starts_with "        " l && host_body rest
 
-:~ ^ over_from (tlds : tld_list) (bs : list block) (k : i32) (acc : list finding) : list finding =
+:~ host_global (text : string) : bool =
+    := lines = sm'::split_list "\n" text |> listm'::filter (\ (l : string) => sm'::trim l <> "")
+    ?= lines ?|
+    | _ :: head :: rest => sm'::trim head = "global \"\"\"" && host_body rest
+    | _ => !-
+
+:~ plain_ident (s : string) : bool =
+    s <> "" && listm::fold (\ (ok : bool) (c : string) => ok && not (sm'::contains c s)) !+ [ " "; "("; ")"; "\\"; "\"" ]
+
+:~ drop_front (n : i32) (s : string) : string = sm'::substring n ((sm'::length s : i32) - n) s
+
+:~ export_line (l : string) : bool =
+    := t = sm'::trim l
+    := rest = ? sm'::starts_with "export \"" t ?> drop_front 8i32 t |: ""
+    := close = sm'::index_of "\" " rest
+    close > 0i32 && plain_ident (drop_front (close + 2i32) rest)
+
+:~ ^ export_body (lines : list string) : bool =
+    ?= lines ?|
+    | [] => !-
+    | l :: rest => ? rest = [] ?> sm'::trim l = "0i32" |: export_line l && export_body rest
+
+:~ export_table (text : string) : bool =
+    ?= sm'::split_list "\n" text |> listm'::filter (\ (l : string) => sm'::trim l <> "") ?|
+    | head :: rest => sm'::trim head = ":= main () : i32 =" && export_body rest
+    | [] => !-
+
+:~ declared_block (text : string) : bool = host_global text || export_table text
+
+:~ block_over (tlds : tld_list) (b : block) (k : i32) : over = { line = b::row; weight = text_weight tlds b::text; limit = cell_limit k }
+
+:~ block_finding (tlds : tld_list) (b : block) (k : i32) (a : list any_finding) : list any_finding =
+    := o = block_over tlds b k
+    ? weight_value o::weight > weight_value o::limit ?> budget_finding o :: a |: a
+
+:~ ^ over_from (tlds : tld_list) (bs : list block) (k : i32) (acc : list any_finding) : list any_finding =
     ?= bs ?|
     | [] => listm::rev acc
-    | b :: rest => over_from tlds rest (k + 1i32) (block_finding tlds b k acc)
+    | b :: rest => over_from tlds rest (k + 1i32) (? declared_block b::text ?> acc |: block_finding tlds b k acc)
 
-:~ over_budget (tlds : tld_list) (source : string) : list finding = over_from tlds (blocks source) 1i32 []
+:~ over_budget (tlds : tld_list) (source : string) : list any_finding = over_from tlds (blocks source) 1i32 []
 
 :~ ^ rewrites_from (tlds : tld_list) (row : i32) (lines : list string) (acc : list rewrite) : list rewrite =
     ?= lines ?|
     | [] => listm::rev acc
     | l :: rest => rewrites_from tlds (row + 1i32) rest (listm::append (listm::rev (line_rewrites tlds row l)) acc)
 
-:~ rewrites (tlds : tld_list) (source : string) : list finding =
-    rewrites_from tlds 1i32 (source_lines source) [] |> listm::map Rewritten
+:~ rewrites (tlds : tld_list) (source : string) : list any_finding =
+    rewrites_from tlds 1i32 (source_lines source) [] |> listm::map rewrite_finding
 
 :~ ^ nearest_manifest (dir : string) : option string =
     ?= manifest::manifest_path dir ?|
@@ -374,14 +429,62 @@
     | Some found => manifest::i574n_dialect (erlang_file::file_text found)
     | None => !-
 
-:~ report_lines (forced : bool) (path : string) : string =
-    := shown = erlang_file::absolute_path path
-    ? forced || i574n_path path
-    ?> rewrites Iana (erlang_file::file_text path) |> listm::map (\ (f : finding) => "cell-budget " ++# finding_line shown f) |> sm'::concat_list "\n"
+:~ finding_excess (n : i32) (f : any_finding) : i32 =
+    ?= f ?|
+    | BudgetFinding (OverBudget o) => n + weight_value o::weight - weight_value o::limit
+    | RuledFinding (OverRuled o) => n + weight_value o::weight - weight_value o::limit
+    | _ => n
+
+:~ over_count (source : string) : i32 = (listm::length (over_budget Iana source) : i32)
+
+:~ over_excess (source : string) : i32 = listm::fold finding_excess 0i32 (over_budget Iana source)
+
+:~ base_twin (spec : string) (shown : string) : string =
+    := bar : i32 = sm'::index_of "|" spec
+    := from = ? bar < 0i32 ?> "" |: sm'::substring 0i32 bar spec
+    := to = ? bar < 0i32 ?> "" |: sm'::substring (bar + 1i32) ((sm'::length spec : i32) - bar - 1i32) spec
+    := cut : i32 = sm'::length from
+    ? from <> "" && sm'::starts_with from shown ?> to ++# sm'::substring cut ((sm'::length shown : i32) - cut) shown |: ""
+
+:~ grew_text (shown : string) (before : i32) (after : i32) : string =
+    ? after > before
+    ?> "cell-budget ratchet: " ++# shown ++# " gained over-budget excess " ++# sm'::obj_to_string before ++# " -> " ++# sm'::obj_to_string after
     |: ""
 
+:~ granular_base_spec () : string =
+    := found = erlang_term::apply "os" "getenv" [ erlang_term::charlist "SPIRAL_CELLS_GRANULAR_BASE"; erlang_term::charlist "" ]
+    erlang_term::apply "unicode" "characters_to_binary" [ found ] |> erlang_term::cast
+
+:~ ratchet_check (shown : string) (source : string) : () =
+    := twin = base_twin (granular_base_spec ()) shown
+    := before = ? twin <> "" && erlang_file::regular_file twin ?> over_excess (erlang_file::file_text twin) |: 0i32
+    := grew = ? twin = "" ?> "" |: grew_text shown before (over_excess source)
+    ? grew = "" ?> () |: failwith grew
+
+:~ report_line (shown : string) (f : any_finding) : string = "cell-budget " ++# finding_line shown f
+
+:~ report_lines (forced : bool) (path : string) : string =
+    := shown = erlang_file::absolute_path path
+    := source = erlang_file::file_text path
+    ratchet_check shown source
+    ? forced || i574n_path path
+    ?> rewrites Iana source |> listm::map (report_line shown) |> sm'::concat_list "\n"
+    |: ""
+
+///> rust
+///> gleam
+:# base_twin_maps_only_paths_under_the_new_prefix =
+    (base_twin "/w/new|/w/base" "/w/new/lib/a.spi", base_twin "/w/new|/w/base" "/elsewhere/a.spi", base_twin "" "/w/new/a.spi")
+    |> _assert_eq ("/w/base/lib/a.spi", "", "")
+
+///> rust
+///> gleam
+:# grew_text_names_growth_and_is_silent_otherwise =
+    (grew_text "p.spi" 1i32 3i32, grew_text "p.spi" 2i32 2i32, grew_text "p.spi" 3i32 1i32)
+    |> _assert_eq ("cell-budget ratchet: p.spi gained over-budget excess 1 -> 3", "", "")
+
 :~ over_text (shown : string) (source : string) : string =
-    over_budget Iana source |> listm::map (\ (f : finding) => "cell-budget " ++# finding_line shown f) |> sm'::concat_list "\n"
+    over_budget Iana source |> listm::map (report_line shown) |> sm'::concat_list "\n"
 
 :~ over_lines (path : string) : string = over_text (erlang_file::absolute_path path) (erlang_file::file_text path)
 
@@ -431,11 +534,13 @@
 
 :~ mark_tlds () : tld_list = Listed [ "io"; "ai" ]
 
-:~ rewrite_row (f : finding) : string * i32 * i32 * string =
+:~ rewrite_cells (r : rewrite) : string * i32 * i32 * string = mark_name r::mark, r::line, r::column, r::text
+
+:~ rewrite_row (f : any_finding) : string * i32 * i32 * string =
     ?= f ?|
-    | Rewritten r => mark_name r::mark, r::line, r::column, r::text
-    | OverBudget o => "over_budget", o::line, 1i32, ""
-    | OverRuled o => "over_ruled", o::line, 1i32, ""
+    | RewriteFinding (Rewritten r) => rewrite_cells r
+    | BudgetFinding (OverBudget o) => "over_budget", o::line, 1i32, ""
+    | RuledFinding (OverRuled o) => "over_ruled", o::line, 1i32, ""
 
 :~ rewrite_rows (source : string) : list (string * i32 * i32 * string) =
     rewrites (mark_tlds ()) source |> listm::map rewrite_row
@@ -457,11 +562,15 @@
     rewrite_rows "@abcdefghijklmnop a#b $abc.de $abcdefg $ab_c #123 #1a"
     |> _assert_eq [ ("cashtag", 1i32, 23i32, "$abc.de"); ("cashtag", 1i32, 40i32, "$ab_c"); ("hashtag", 1i32, 51i32, "#1a") ]
 
+:~ sample_hashtag () : any_finding = rewrite_finding { mark = Hashtag; line = 1i32; column = 9i32; text = "#tag" }
+
+:~ sample_over () : any_finding = budget_finding { line = 7i32; weight = cell_weight 293i32; limit = cell_weight 273i32 }
+
 ///> rust
 ///> gleam
 :# finding_lines_read_like_the_reference_report =
-    := hashtag = Rewritten { mark = Hashtag; line = 1i32; column = 9i32; text = "#tag" }
-    := over = OverBudget { line = 7i32; weight = cell_weight 293i32; limit = cell_weight 273i32 }
+    := hashtag = sample_hashtag ()
+    := over = sample_over ()
     (finding_line "a.spi" hashtag, finding_line "x.spi" over)
     |> _assert_eq ("a.spi:1:9: hashtag: #tag (" ++# mark_hint Hashtag ++# ")", "x.spi:7:1: over_budget: weight 293 > 273 (" ++# budget_hint () ++# ")")
 
@@ -489,3 +598,27 @@
     := upstream = i574n_path post, report_lines !- post, sm'::contains "post.spi:1:11: hashtag: #trending" (report_lines !+ post)
     written_in (dialect_dir ()) "package.spiproj" "packages: |core-\nmodules:\n    post\n"
     (upstream, i574n_path post) |> _assert_eq ((!-, "", !+), !+)
+
+:~ host_block (extra : string) : string =
+    ":= h () : () =\n    global \"\"\"\n        " ++# sm'::replicate 300i32 "x" ++# "\n        \"\"\"\n" ++# extra
+
+///> rust
+///> gleam
+:# a_one_item_host_global_is_exempt_and_a_global_with_a_call_is_not =
+    (over_count (host_block ""), over_count (host_block "    other ()\n"))
+    |> _assert_eq (0i32, 1i32)
+
+:~ export_main (extra : string) : string =
+    ":= main () : i32 =\n" ++# sm'::replicate 12i32 "    export \"unit_name_long_enough\" some_definition\n" ++# extra ++# "    0i32\n"
+
+///> rust
+///> gleam
+:# a_main_of_only_exports_is_exempt =
+    over_count (export_main "") |> _assert_eq 0i32
+
+:~ lambda_export () : string = "    export \"f\" ((\\ (x : i32) => x) : i32 -> i32)\n"
+
+///> rust
+///> gleam
+:# a_main_with_a_lambda_export_or_a_stray_line_is_measured =
+    (over_count (export_main (lambda_export ())), over_count (export_main "    := x = 1i32\n")) |> _assert_eq (1i32, 1i32)

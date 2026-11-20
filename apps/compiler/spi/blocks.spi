@@ -1,0 +1,93 @@
+///- --package .
+:< sm'_operators
+
+:# blocks static =
+    :< testing
+
+:== line_rows = list tokens::token_row
+
+:== block = { lines : list line_rows; offset : i32 }
+
+:~ col0_token (line : line_rows) : option tokens::spiral_token =
+    ?= line ?|
+    | (range, token) :: _ ?& range::from = 0i32 => Some token
+    | _ => None
+
+:~ starts_body (line : line_rows) : bool =
+    ?= col0_token line ?|
+    | Some (tokens::TokComment _) => !-
+    | Some _ => !+
+    | None => !-
+
+:~ continues_body (line : line_rows) : bool =
+    ?= col0_token line ?|
+    | Some _ => !-
+    | None => !+
+
+:~ ^ body_lines (lines : list line_rows) (taken : list line_rows) : list line_rows * list line_rows =
+    ?= lines ?|
+    | line :: rest ?& continues_body line => body_lines rest (line :: taken)
+    | _ => taken, lines
+
+:~ ^ initial_lines (lines : list line_rows) (taken : list line_rows) : list line_rows * list line_rows =
+    ?= lines ?|
+    | [] => taken, []
+    | line :: rest => ? starts_body line ?> body_lines rest (line :: taken) |: initial_lines rest (line :: taken)
+
+:~ block_at (lines : list line_rows) (offset : i32) : block * list line_rows =
+    := taken, rest = initial_lines lines []
+    { lines = listm::rev taken; offset = offset }, rest
+
+:~ ^ blocks_from (lines : list line_rows) (offset : i32) (found : list block) : list block =
+    ?= lines ?|
+    | [] => listm::rev found
+    | _ =>
+        := next, rest = block_at lines offset
+        blocks_from rest (offset + (listm::length next::lines : i32)) (next :: found)
+
+:~ block_all (lines : list line_rows) : list block = blocks_from lines 0i32 []
+
+:~ ^ lexed_lines (state : tokens::lex_state) (texts : list string) (rows : list line_rows) : list line_rows =
+    ?= texts ?|
+    | [] => listm::rev rows
+    | text :: rest =>
+        := lexed = tokens::tokenize_line state text
+        lexed_lines lexed::state rest (lexed::tokens :: rows)
+
+:~ file_lines (text : string) : list line_rows =
+    lexed_lines (tokens::lex_state_init ()) (sm'::split_list "\n" (sm'::replace "\r\n" "\n" text)) []
+
+:~ block_shape (b : block) : string = sm'::format b::offset ++# "+" ++# sm'::format (listm::length b::lines : i32)
+
+:~ shapes (text : string) : string = sm'::concat_list " " (listm::map block_shape (block_all (file_lines text)))
+
+///> rust
+///> fsharp
+///> gleam
+:# a_comment_joins_the_statement_below_it =
+    shapes "// c\n:= a =\n    1\n\n:= b = 2" |> _assert_eq "0+4 4+1"
+
+///> rust
+///> fsharp
+///> gleam
+:# an_indented_first_line_is_kept_for_the_parser_to_reject =
+    shapes "  x\n:= a = 1\n  y\n:= b = 2" |> _assert_eq "0+3 3+1"
+
+///> rust
+///> fsharp
+///> gleam
+:# a_comment_line_has_no_tokens_so_it_stays_in_the_body_like_the_reference =
+    shapes ":= a = 1\n// tail\n/// doc\n(* c *)" |> _assert_eq "0+4"
+
+///> rust
+///> fsharp
+///> gleam
+:# every_comment_form_lexes_to_zero_tokens =
+    := count text = listm::length (tokens::tokenize_line (tokens::lex_state_init ()) text)::tokens : i32
+    (count "// tail", count "/// doc", count "(* c *)", count "x // tail") |> _assert_eq (0i32, 0i32, 0i32, 1i32)
+
+///> rust
+///> fsharp
+///> gleam
+:# an_empty_file_has_one_empty_line_block =
+    shapes "" |> _assert_eq "0+1"

@@ -25,14 +25,16 @@
         | Rust => \ () => $'Rc::new(RefCell::new((!x).to_le_bytes().to_vec()))' : array u8
         | _ => \ () => filled 8 (\ i => conv ((x >>> (8 * i)) &&& 255u64))
 
+:= rust_le_word (bytes : array u8) (at : i32) : u64 =
+    $'u64::from_le_bytes((!bytes).borrow()[(!at) as usize..(!at) as usize + 8].try_into().unwrap())' : u64
+
+:~ ^ le_word_from (bytes : array u8) (at : i32) (j : i32) (word : u64) : u64 =
+    ? j >= 8 ?> word |: le_word_from bytes at (j + 1) (word ||| ((conv (index bytes (at + j)) : u64) <<< (8 * j)))
+
 := le_word (bytes : array u8) (at : i32) : u64 =
     run_target \|
-        | Rust => \ () =>
-            $'u64::from_le_bytes((!bytes).borrow()[(!at) as usize..(!at) as usize + 8].try_into().unwrap())' : u64
-        | _ => \ () =>
-            :~ ^ go (j : i32) (word : u64) : u64 =
-                ? j >= 8 ?> word |: go (j + 1) (word ||| ((conv (index bytes (at + j)) : u64) <<< (8 * j)))
-            go 0 0u64
+        | Rust => \ () => rust_le_word bytes at
+        | _ => \ () => le_word_from bytes at 0 0u64
 
 := utf8 (text : string) : array u8 =
     run_target \|
@@ -53,33 +55,40 @@
             : ()
         | _ => \ () => copy_from out at part 0
 
+:= placed (out : array u8) (at : i32) (part : array u8) : i32 =
+    copy_into out at part
+    at + length part
+
 := concat (parts : list (array u8)) : array u8 =
     := total = listm::fold (\ sum (part : array u8) => sum + length part) 0i32 parts
     := out : array u8 = create total
-    := place (at : i32) (part : array u8) : i32 =
-        copy_into out at part
-        at + length part
-    listm::fold place 0i32 parts |> ignore
+    listm::fold (placed out) 0i32 parts |> ignore
     out
 
 := hex_digit (n : u8) : string =
     := at : i32 = conv n
     sm'::slice at at "0123456789abcdef"
 
+:= rust_hex (bytes : array u8) : string =
+    $'Rc::<str>::from((!bytes).borrow().iter().flat_map(|b| [b >> 4, \
+        b & 15]).map(|n| char::from(b"0123456789abcdef"[n as usize])).collect::<String>())'
+    : string
+
+:~ ^ hex_from (bytes : array u8) (i : i32) (acc : string) : string =
+    ? i >= length bytes
+    ?> acc
+    |:
+        := b = index bytes i
+        hex_from bytes (i + 1) (acc ++# hex_digit (b >>> 4) ++# hex_digit (b &&& 15u8))
+
 := hex (bytes : array u8) : string =
     run_target \|
-        | Rust => \ () =>
-            $'Rc::<str>::from((!bytes).borrow().iter().flat_map(|b| [b >> 4, \
-                b & 15]).map(|n| char::from(b"0123456789abcdef"[n as usize])).collect::<String>())'
-            : string
-        | _ => \ () =>
-            :~ ^ go (i : i32) (acc : string) : string =
-                ? i >= length bytes
-                ?> acc
-                |:
-                    := b = index bytes i
-                    go (i + 1) (acc ++# hex_digit (b >>> 4) ++# hex_digit (b &&& 15u8))
-            go 0 ""
+        | Rust => \ () => rust_hex bytes
+        | _ => \ () => hex_from bytes 0 ""
+
+:= le_facts (x : u64) : string * u64 * u64 = le_u64 x |> hex, le_word (le_u64 x) 0, le_word (counting 10) 1
+
+:= sample_concat (two : i32) : string = concat [ counting two; repeated 0i32 9u8; utf8 "Az"; repeated two 255u8 ] |> hex
 
 ///> c
 ///> rust
@@ -92,8 +101,7 @@
 ///> pascal
 :# little_endian_words_round_trip =
     := ~x = 81985529216486895u64
-    (le_u64 x |> hex, le_word (le_u64 x) 0, le_word (counting 10) 1)
-    |> _assert_eq ("efcdab8967452301", 81985529216486895u64, 578437695752307201u64)
+    le_facts x |> _assert_eq ("efcdab8967452301", 81985529216486895u64, 578437695752307201u64)
 
 ///> c
 ///> rust
@@ -119,6 +127,4 @@
 ///> pascal
 :# concat_keeps_every_part_in_order =
     := ~two = 2i32
-    concat [ counting two; repeated 0i32 9u8; utf8 "Az"; repeated two 255u8 ]
-    |> hex
-    |> _assert_eq "0001417affff"
+    sample_concat two |> _assert_eq "0001417affff"

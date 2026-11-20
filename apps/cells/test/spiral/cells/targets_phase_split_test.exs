@@ -1,10 +1,10 @@
 defmodule Spiral.Cells.TargetsPhaseSplitTest do
   use ExUnit.Case, async: false
 
-  alias Spiral.Cells.{Targets, Toolchain}
+  alias Spiral.Cells.{Domain, Targets}
 
   test "a C cell reports its native build and its run as separate phases" do
-    cc = Toolchain.cc([])
+    cc = Domain.tool("cc", [])
 
     if is_binary(cc) and File.regular?(cc) do
       dir = Path.join(System.tmp_dir!(), "cells-phase-split-#{System.unique_integer([:positive])}")

@@ -1,0 +1,123 @@
+///- --package .
+:< erlang_term
+:< sm'_operators
+
+:# process_loop static =
+    :< testing
+
+:~ loop_source () : string =
+    "fun() -> Loop = fun L(S) -> receive M -> case H({M, S}) of {ok, S2} -> L(S2); {stop, _} -> ok end end end, Loop(I) end"
+
+:~ start (init : term) (handler : term -> term) : term =
+    file_lock::evaluated ("spawn(" ++# loop_source () ++# ").") [ ("I", init); ("H", of handler) ]
+
+:~ named_tail () : string =
+    "try register(N, P), {ok, P} catch error:badarg -> exit(P, kill), {error, {already_started, whereis(N)}} end; Q -> {error, {already_started, Q}} end."
+
+:~ start_named (name : string) (init : term) (handler : term -> term) : term =
+    := source = "case whereis(N) of undefined -> P = spawn(" ++# loop_source () ++# "), " ++# named_tail ()
+    file_lock::evaluated source [ ("N", atom name); ("I", init); ("H", of handler) ]
+
+:~ call_source () : string =
+    "Ref = erlang:monitor(process, P), P ! {pl_call, {self(), Ref}, R}, receive {Ref, Reply} -> erlang:demonitor(Ref, [flush]), {ok, Reply}; "
+    ++# "{'DOWN', Ref, process, _, Why} -> {error, Why} after T -> erlang:demonitor(Ref, [flush]), {error, timeout} end."
+
+:~ call (server : term) (request : term) (timeout_ms : i32) : term =
+    file_lock::evaluated (call_source ()) [ ("P", server); ("R", request); ("T", of timeout_ms) ]
+
+:~ tell (server : term) (request : term) : term = apply "erlang" "send" [ server; tuple [ atom "pl_cast"; request ] ]
+
+:~ reply (from : term) (value : term) : term = apply "erlang" "send" [ element_at 1i32 from; tuple [ element_at 2i32 from; value ] ]
+
+:~ watch (pid : term) : term = apply "erlang" "monitor" [ atom "process"; pid ]
+
+:~ is_call (message : term) : bool = has_tag "pl_call" message
+
+:~ is_cast (message : term) : bool = has_tag "pl_cast" message
+
+:~ is_down (message : term) : bool = has_tag "DOWN" message
+
+:~ caller (message : term) : term = element_at 2i32 message
+
+:~ request (message : term) : term = element_at (? is_call message ?> 3i32 |: 2i32) message
+
+:~ next (state : term) : term = tuple [ atom "ok"; state ]
+
+:~ stop (reason : term) : term = tuple [ atom "stop"; reason ]
+
+:~ replied (from : term) (value : term) (state : term) : term =
+    := _r = reply from value
+    next state
+
+:~ watched (pid : term) (from : term) (state : term) : term =
+    := _w = watch pid
+    replied from (atom "watching") state
+
+:~ int_of (t : term) : i32 = erlang_term::cast t
+
+:~ counted (state : term) (by : i32) : term = next (of (int_of state + by))
+
+:~ counter (ms : term) : term =
+    := m = element_at 1i32 ms
+    := s = element_at 2i32 ms
+    ? is_cast m ?> counted s 1i32 |? is_call m ?> replied (caller m) s s |: next s
+
+:~ held (s : term) (m : term) : term =
+    ? is_atom "wait" (request m) ?> next (tuple [ atom "waiting"; caller m ])
+    |? is_atom "release" (request m) && has_tag "waiting" s ?> replied (element_at 2i32 s) (atom "late") (atom "idle")
+    |: next s
+
+:~ waiter (ms : term) : term = held (element_at 2i32 ms) (element_at 1i32 ms)
+
+:~ seen (s : term) (m : term) : term =
+    ? is_down m ?> counted s 1i32
+    |? is_call m && is_atom "count" (request m) ?> replied (caller m) s s
+    |? is_call m ?> watched (request m) (caller m) s
+    |: next s
+
+:~ watcher (ms : term) : term = seen (element_at 2i32 ms) (element_at 1i32 ms)
+
+:~ short_lived () : term = file_lock::evaluated "spawn(fun() -> ok end)." []
+
+:~ answer_of (r : term) : term = element_at 2i32 r
+
+:~ later_call (server : term) : term =
+    file_lock::evaluated "Parent = self(), spawn(fun() -> Parent ! {got, C(nil)} end), ok." [ ("C", of (\ () => call server (atom "wait") 5000i32)) ]
+
+:~ got () : term = file_lock::evaluated "receive {got, R} -> R after 5000 -> timeout end." []
+
+:~ settle () : term = file_lock::evaluated "receive after 50 -> ok end." []
+
+///> gleam
+:# a_call_sees_the_state_a_cast_changed =
+    := srv = start (of 0i32) counter
+    := _a = tell srv (atom "inc")
+    := _b = tell srv (atom "inc")
+    int_of (answer_of (call srv (atom "get") 5000i32)) |> _assert_eq 2i32
+
+///> gleam
+:# a_deferred_reply_arrives_after_a_later_cast =
+    := srv = start (atom "idle") waiter
+    := _c = later_call srv
+    := _s = settle ()
+    := _r = tell srv (atom "release")
+    equal (got ()) (tuple [ atom "ok"; atom "late" ]) |> _assert_eq !+
+
+///> gleam
+:# a_monitored_process_reports_down_to_the_handler =
+    := srv = start (of 0i32) watcher
+    := _w = call srv (short_lived ()) 5000i32
+    := _s = settle ()
+    int_of (answer_of (call srv (atom "count") 5000i32)) |> _assert_eq 1i32
+
+///> gleam
+:# a_second_named_start_reports_already_started =
+    := first = start_named "process_loop_probe_1119" (of 0i32) counter
+    := again = start_named "process_loop_probe_1119" (of 0i32) counter
+    (has_tag "ok" first, equal (element_at 2i32 (element_at 2i32 again)) (element_at 2i32 first)) |> _assert_eq (!+, !+)
+
+///> gleam
+:# a_call_to_a_dead_server_returns_an_error =
+    := dead = short_lived ()
+    := _s = settle ()
+    has_tag "error" (call dead (atom "get") 1000i32) |> _assert_eq !+

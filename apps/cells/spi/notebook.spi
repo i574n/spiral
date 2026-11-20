@@ -545,6 +545,33 @@
 
 :~ directive_word (source : string) (flag : string) : string = probe_from source (WordProbe flag) 0i32
 
+:== trm = erlang_term::term
+
+:~ nb_nil () : trm = erlang_term::atom "nil"
+
+:~ nb_kv (k : string) (v : trm) : trm = erlang_term::tuple [ erlang_term::atom k; v ]
+
+:~ nb_map (xs : list trm) : trm = erlang_term::apply "maps" "from_list" [ erlang_term::list_term xs ]
+
+:~ agreement (source : string) : bool = directive_flag source "--test" && not (directive_flag source "--no-agree")
+
+:~ reference_target (source : string) : trm =
+    := w = directive_word source "--reference"
+    ? w = "" ?> nb_nil () |: erlang_term::of w
+
+:~ exp_map (code : string) (substring : string) : trm =
+    := codev = ? code = "" ?> nb_nil () |: erlang_term::of code
+    nb_map [ nb_kv "code" codev; nb_kv "substring" (erlang_term::of substring) ]
+
+:~ expectation (source : string) : trm =
+    := raw = fails_expectation source
+    := t = text::find_from raw "\t" 0i32
+    ? t < 0i32 ?> nb_nil () |: exp_map (text::take raw t) (text::drop raw (t + 1i32))
+
+:~ empty_message (path : string) : string = "livebook did not run " ++ path ++ ": no spiral cells"
+
+:~ join_host (prev : string) (next : string) : string = ? prev = "" ?> next |: prev ++ "\n\n" ++ next
+
 :~ ^ collapsed_from (s : string) (i : i32) (in_run : bool) (acc : string) : string =
     ? i >= text::length s
     ?> acc

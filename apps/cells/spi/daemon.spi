@@ -110,13 +110,36 @@
 
 :~ wire_clean (s : string) : string = sm'::concat_list "" (clean_runs s 0i32 0i32 [])
 
-:~ compile_reply_wire (kind : string) (payload : string) (queue : string) : string =
-    := q = queue_ms queue
-    ? kind = "ok"
-    ?> compile_text (Compiled (payload, q))
-    |? kind = "timeout"
-    ?> compile_text (CompileTimedOut q)
-    |: compile_text (CompileFailed (q, wire_clean payload))
+:~ shown_term (t : erlang_term::term) : string =
+    := text = erlang_term::apply "io_lib" "format" [ erlang_term::charlist "~0p"; erlang_term::list_term [ t ] ]
+    erlang_term::apply "unicode" "characters_to_binary" [ text ] |> erlang_term::cast
+
+:~ text_term (t : erlang_term::term) : string = ? erlang_term::is_binary t ?> erlang_term::cast t |: shown_term t
+
+:~ second_of (t : erlang_term::term) : erlang_term::term = erlang_term::element_at 2i32 t
+
+:~ atom_is (name : string) (t : erlang_term::term) : bool = erlang_term::equal t (erlang_term::atom name)
+
+:~ pair_sized (t : erlang_term::term) : bool =
+    ? erlang_term::is_tuple t ?> (erlang_term::apply "erlang" "tuple_size" [ t ] |> erlang_term::cast : i32) = 2i32 |: !-
+
+:~ pair_tagged (tag : string) (t : erlang_term::term) : bool = ? pair_sized t ?> atom_is tag (erlang_term::element_at 1i32 t) |: !-
+
+:~ error_reply (detail : erlang_term::term) (queue : option i32) (odd : compile_reply) : compile_reply =
+    ? atom_is "timeout" detail ?> CompileTimedOut queue
+    |? erlang_term::is_binary detail ?> CompileFailed (queue, wire_clean (erlang_term::cast detail))
+    |: odd
+
+:~ odd_reply (result : erlang_term::term) (queue : option i32) : compile_reply =
+    CompileFailed (queue, wire_clean ("unexpected compile result: " ++ shown_term result))
+
+:~ reply_for (r : erlang_term::term) (q : option i32) : compile_reply =
+    ? pair_tagged "ok" r ?> Compiled (text_term (second_of r), q)
+    |? pair_tagged "error" r ?> error_reply (second_of r) q (odd_reply r q)
+    |: odd_reply r q
+
+:~ compile_reply_term (result : erlang_term::term) (queue_ms : i32) : string =
+    compile_text (reply_for result (? queue_ms < 0i32 ?> None |: Some queue_ms))
 
 :~ ^ after_test (xs : list string) : string =
     ?= xs ?|
@@ -136,6 +159,32 @@
     | backend :: input :: output :: timeout :: mtime :: extra =>
         tabbed [ backend; input; output; timeout; mtime; client_of extra; pin_of extra; after_test extra ]
     | _ => ""
+
+:~ ask_from (rest : string) : option compile_ask =
+    ?= fields (request_fields rest) ?|
+    | b :: spi :: rs :: wait :: mtime :: client :: pin :: named :: [] => Some (ask_of (b, spi, rs, wait, mtime, client, pin, named))
+    | _ => None
+
+:~ named_term (key : string) (value : erlang_term::term) : erlang_term::term = erlang_term::tuple [ erlang_term::atom key; value ]
+
+:~ maybe_term (o : option string) : erlang_term::term = ?= o ?| Some v => erlang_term::of v | None => erlang_term::atom "nil"
+
+:~ wait_term (w : compile_wait) : erlang_term::term = ?= w ?| Unbounded => erlang_term::atom "infinity" | WithinMs ms => erlang_term::of ms
+
+:~ text_terms (a : compile_ask) : list erlang_term::term =
+    := pair = \ (k : string) (v : string) => named_term k (erlang_term::of v)
+    [ pair "backend" a::backend; pair "input" a::spi; pair "output" a::rs; pair "client" a::client ]
+
+:~ mtime_term (mtime : string) : erlang_term::term = erlang_term::apply "erlang" "binary_to_integer" [ erlang_term::of mtime ]
+
+:~ late_terms (a : compile_ask) : list erlang_term::term =
+    := pin, named = named_term "pin" (maybe_term a::pin), named_term "test" (maybe_term a::test_name)
+    [ named_term "timeout" (wait_term a::wait); named_term "mtime" (mtime_term a::mtime); pin; named ]
+
+:~ ask_term (a : compile_ask) : erlang_term::term =
+    erlang_term::apply "maps" "from_list" [ erlang_term::list_term (listm::append (text_terms a) (late_terms a)) ]
+
+:~ ask_wire_term (rest : string) : erlang_term::term = ?= ask_from rest ?| Some a => ask_term a | None => erlang_term::atom "nil"
 
 :~ count_or (raw : string) (fallback : i32) : i32 = ?= queue_ms raw ?| Some n => n | None => fallback
 
@@ -167,6 +216,8 @@
     ?= core ?|
     | Some (m, s) => head ++ "-" ++ text::show_i32 m ++ "-" ++ text::show_i32 s
     | None => head
+
+:~ dll_stamp_wire (m : i32) (s : i32) (cm : i32) (cs : i32) : string = dll_stamp_text m s (? cm < 0i32 ?> None |: Some (cm, cs))
 
 :~ ^ digits_to (s : string) (i : i32) : i32 =
     ? i < text::length s && text::byte_at s i >= 48i32 && text::byte_at s i <= 57i32 ?> digits_to s (i + 1i32) |: i
@@ -248,6 +299,8 @@
 
 :~ pin_stale (now : i32) (complete : option i32) : bool = ?= complete ?| Some m => now - m > 86400i32 | None => !+
 
+:~ pin_stale_wire (now : i32) (complete : i32) : bool = pin_stale now (? complete < 0i32 ?> None |: Some complete)
+
 :~ slot_of (first : i32) (n : i32) (base : i32) (stride : i32) (slots : i32) : i32 =
     := k = (((first - base) / stride) + n) % slots
     base + stride * k
@@ -302,6 +355,27 @@
     | Pool => pool_text reply
     | Retire => "retiring"
     | Compile _ => compile_text reply
+
+:~ incoming_tag (tag : string) (rest : list erlang_term::term) : erlang_term::term = erlang_term::tuple (erlang_term::atom tag :: rest)
+
+:~ plain_commands () : list string = [ request_line Hello; request_line Status; request_line Pool ]
+
+:~ payload_of (t : string) (tag : string) : string = text::drop t (text::length tag + 1i32)
+
+:~ prefixed (t : string) (tag : string) : bool = text::starts_with t (tag ++ "\t")
+
+:~ text_payload (t : string) (tag : string) : erlang_term::term = erlang_term::of (payload_of t tag)
+
+:~ framed_command (t : string) : erlang_term::term =
+    ? prefixed t "notebook" ?> incoming_tag "notebook" [ text_payload t "notebook" ]
+    |? prefixed t "compile" ?> incoming_tag "compile" [ ask_wire_term (payload_of t "compile") ]
+    |: incoming_tag "unknown" []
+
+:~ incoming_term (line : string) : erlang_term::term =
+    := t = text::trim line
+    ? t = request_line Retire ?> incoming_tag t [ erlang_term::of (reply_line Retire ()) ]
+    |? listm::exists' ((=) t) (plain_commands ()) ?> incoming_tag t []
+    |: framed_command t
 
 :~ failed_of (rest : list string) : compile_reply =
     ?= rest ?|
@@ -383,6 +457,22 @@
 :# a_compile_request_is_one_tab_separated_line =
     request_line (Compile (sample_ask ())) |> _assert_eq "compile\trust\ta.spi\ta.rs\t900000\t17\t42"
 
+:~ decoded (a : compile_ask) : option compile_ask = ask_from (text::drop (request_line (Compile a)) 8i32)
+
+///> gleam
+:# the_server_decodes_the_ask_the_client_encodes =
+    := s = sample_ask ()
+    := full = { s with wait = Unbounded; pin = Some "p1"; test_name = Some "adds" }
+    (decoded s, decoded full, ask_from "rust\ta.spi") |> _assert_eq (Some s, Some full, None)
+
+:~ wire_field (key : string) : erlang_term::term =
+    erlang_term::apply "maps" "get" [ erlang_term::atom key; ask_wire_term "gleam\ta.spi\ta.gleam\t-1\t17\t42\tp1" ]
+
+///> gleam
+:# a_decoded_ask_crosses_as_a_map =
+    erlang_term::equal (wire_field "timeout") (erlang_term::atom "infinity") |> _assert_eq !+
+    ((wire_field "mtime" |> erlang_term::cast), (wire_field "pin" |> erlang_term::cast)) |> _assert_eq (17i32, "p1")
+
 ///> gleam
 :# the_daemon_command_runs_mix_or_the_compiled_ebins =
     := mix = daemon_command "C:\\e\\elixir.bat" "C:\\r\\k.log" "C:\\r\\k.err.log" ""
@@ -393,16 +483,50 @@
         "\"e\" -pa \"C:/k/_build/dev/lib/*/ebin\" -e Spiral.Cells.CompilerDaemon.serve_app() 1>\"l\" 2>\"r\""
     )
 
+:~ tagged_term (tag : string) (value : erlang_term::term) : erlang_term::term = erlang_term::tuple [ erlang_term::atom tag; value ]
+
+:~ replied (tag : string) (value : erlang_term::term) (queue_ms : i32) : string = compile_reply_term (tagged_term tag value) queue_ms
+
 ///> gleam
-:# the_daemon_reads_a_request_and_writes_its_reply_like_the_elixir_server =
+:# a_result_becomes_its_reply_line =
+    (replied "ok" (erlang_term::of "r7") (-1i32), replied "ok" (erlang_term::of 7i32) 3i32) |> _assert_eq ("ok\tr7", "ok\t7\t3")
+    replied "error" (erlang_term::atom "timeout") 4i32 |> _assert_eq "error\ttimeout\t4"
+
+///> gleam
+:# a_failed_result_is_one_clean_error_line =
+    replied "error" (erlang_term::of "no\t\tmain\r\nhere") (-1i32) |> _assert_eq "error\tno main here"
+    replied "error" (erlang_term::of "bad") 5i32 |> _assert_eq "error\t5\tbad"
+
+///> gleam
+:# an_odd_result_is_named_in_the_error_line =
+    compile_reply_term (erlang_term::atom "weird") (-1i32) |> _assert_eq "error\tunexpected compile result: weird"
+
+:~ incoming_tag_of (line : string) : string =
+    erlang_term::apply "erlang" "atom_to_binary" [ erlang_term::element_at 1i32 (incoming_term line) ] |> erlang_term::cast
+
+///> gleam
+:# each_command_line_gets_its_tag =
+    := lines = [ "hello\n"; " status"; "pool"; "retire"; "notebook\tx"; "compile\tx"; "bogus" ]
+    listm::map incoming_tag_of lines |> _assert_eq [ "hello"; "status"; "pool"; "retire"; "notebook"; "compile"; "unknown" ]
+
+:~ incoming_payload (line : string) : erlang_term::term = erlang_term::element_at 2i32 (incoming_term line)
+
+///> gleam
+:# retire_and_notebook_carry_their_text =
+    ((incoming_payload "retire" |> erlang_term::cast), (incoming_payload "notebook\t{}" |> erlang_term::cast)) |> _assert_eq ("retiring", "{}")
+
+///> gleam
+:# compile_carries_the_decoded_ask =
+    := ask = incoming_payload "compile\tgleam\ta.spi\ta.gleam\t-1\t17\t42"
+    (erlang_term::apply "maps" "get" [ erlang_term::atom "client"; ask ] |> erlang_term::cast) |> _assert_eq "42"
+
+///> gleam
+:# the_daemon_reads_a_request_like_the_elixir_server =
     := plain = request_fields "rust\ta.spi\ta.rs\t-1\t17\n"
     := full = request_fields "  gleam\ta.spi\ta.gleam\t900\t17\t42\tp1\ttest\tadds  "
     := named = request_fields "rust\ta.spi\ta.rs\t5\t1\t2\ttest\tt"
     (plain, full, named, request_fields "rust\ta.spi")
     |> _assert_eq ("rust\ta.spi\ta.rs\t-1\t17\tanonymous\t\t", "gleam\ta.spi\ta.gleam\t900\t17\t42\tp1\tadds", "rust\ta.spi\ta.rs\t5\t1\t2\t\tt", "")
-    (compile_reply_wire "ok" "r7" "", compile_reply_wire "ok" "r7" "3", compile_reply_wire "timeout" "" "", compile_reply_wire "timeout" "" "4")
-    |> _assert_eq ("ok\tr7", "ok\tr7\t3", "error\ttimeout", "error\ttimeout\t4")
-    (compile_reply_wire "error" "no\t\tmain\r\nhere" "", compile_reply_wire "error" "bad" "5") |> _assert_eq ("error\tno main here", "error\t5\tbad")
 
 ///> gleam
 :# daemon_limits_read_their_env_and_name_the_recycle_reason =

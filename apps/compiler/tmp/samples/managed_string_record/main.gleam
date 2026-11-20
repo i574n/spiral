@@ -7,7 +7,17 @@ pub fn spiral_string_length(text: String) -> Int {
 
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
-  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  case value >= 0 - half && value < half {
+    True -> value
+    False -> int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  }
+}
+
+pub fn spiral_wrap_i32(value: Int) -> Int {
+  case value >= -2147483648 && value <= 2147483647 {
+    True -> value
+    False -> spiral_wrap_signed(value, 32)
+  }
 }
 
 
@@ -17,12 +27,12 @@ pub fn method0(v0: String) -> #(String, Int) {
 }
 pub fn score_1(v0: Int, v1: String) -> Int {
     let v2 = spiral_string_length(v1)
-    spiral_wrap_signed(v2 + v0, 32)
+    spiral_wrap_i32(v2 + v0)
 }
 pub fn main() {
     let #(v1, v2) = method0("qwe")
     let v3 = score_1(v2, v1)
     let v4 = score_1(v2, v1)
-    let v5 = spiral_wrap_signed(v3 + v4, 32)
-    spiral_wrap_signed(v5 - 12, 32)
+    let v5 = spiral_wrap_i32(v3 + v4)
+    spiral_wrap_i32(v5 - 12)
 }

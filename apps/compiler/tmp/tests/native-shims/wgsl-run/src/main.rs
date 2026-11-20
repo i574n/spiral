@@ -81,8 +81,6 @@ fn env_u32(name: &str, default: u32) -> u32 {
     std::env::var(name).ok().and_then(|text| text.parse::<u32>().ok()).unwrap_or(default)
 }
 
-/// SPIRAL_WGSL_PASS_SIZES: the lanes each pass needs, as comma-separated N or COUNT:N (e.g. "1060:288,1:32000").
-/// Unset means every pass covers all lanes. A pass needing fewer lanes dispatches fewer workgroups.
 fn pass_lane_counts(text: Option<String>, passes: u32, lanes: u32) -> Result<Vec<u32>, Fail> {
     let Some(text) = text else { return Ok(vec![lanes; passes as usize]) };
     let mut counts = Vec::new();
@@ -184,6 +182,17 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     let module_constants: Vec<Vec<(&str, f64)>> = pieces
         .iter()
         .map(|piece| shape_header.iter().zip(shape_names).filter(|(_, name)| piece.contains(name)).map(|(value, name)| (name, *value as f64)).collect())
+        .collect();
+    let workgroup_sizes: Vec<u32> = pieces
+        .iter()
+        .map(|piece| {
+            piece
+                .lines()
+                .find_map(|line| line.trim().strip_prefix("// spiral-workgroup-size "))
+                .and_then(|n| n.trim().parse::<u32>().ok())
+                .filter(|n| (1..=1024).contains(n))
+                .unwrap_or(64)
+        })
         .collect();
     let pipelines: Vec<wgpu::ComputePipeline> = shader_modules
         .iter()
@@ -301,11 +310,11 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
             if passes > 1 {
                 encoder.copy_buffer_to_buffer(&pass_buffer, p as u64 * 4, &heap, 0, 4);
             }
-            for pipeline in &pipelines {
+            for (pipeline, group) in pipelines.iter().zip(workgroup_sizes.iter()) {
                 let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor::default());
                 pass.set_pipeline(pipeline);
                 pass.set_bind_group(0, &bind_group, &[]);
-                pass.dispatch_workgroups(active.div_ceil(64), 1, 1);
+                pass.dispatch_workgroups(active.div_ceil(*group), 1, 1);
             }
         }
         let submit_scope = device.push_error_scope(wgpu::ErrorFilter::Validation);

@@ -259,11 +259,11 @@
 
 := memoize seq = memoize_ seq
 
+:= memo_through (shown : i32 -> i32) = (\ n => n |> shown |> Some) |> memoize_
+
 ///> zig
 :# memoize =
-    := seq =
-        \ n => n |> print_and_return |> Some
-        |> memoize_
+    := seq = memo_through print_and_return
 
     seq
     |> take_while_ \ n (_ : i32) => n < 5
@@ -332,11 +332,13 @@
     }
 :! seq' t = $'backend_switch `(seq_switch' t)'
 
+:= gleam_length' \* t. (items : seq' t) : int =
+    global "import gleam/list"
+    $'!items |> list.length' : int
+
 := length' \* t. (items : seq' t) : int =
     backend_switch {
-        Gleam = \ () =>
-            global "import gleam/list"
-            $'!items |> list.length' : int
+        Gleam = \ () => (gleam_length' items : int)
         Fsharp = \ () => items |> $'Seq.length' : int
         Python = \ () => $'len(!items)' : int
         Rust = \ () => ($'!items.len()' : convert::unativeint) |> convert::convert : int
@@ -354,19 +356,19 @@
         Zig = \ () => $'!items ' : listm'::list' t
     }
 
+:= fsharp_new_seq \* t. fn : seq' t =
+    \ () =>
+        $'seq {'
+        fn |> indent
+        $'}' : ()
+    |> let'
+    |> \ x => x : seq' t
+
 := new_seq \* t. fn : seq' t =
     backend_switch {
-        Gleam = \ () =>
-            $'!fn()' : seq' t
-        Fsharp = \ () =>
-            \ () =>
-                $'seq {'
-                fn |> indent
-                $'}' : ()
-            |> let'
-            |> \ x => x : seq' t
-        Python = \ () =>
-            $'list(!fn())' : seq' t
+        Gleam = \ () => $'!fn()' : seq' t
+        Fsharp = \ () => (fsharp_new_seq fn : seq' t)
+        Python = \ () => $'list(!fn())' : seq' t
     }
 
 ///> fsharp
@@ -380,14 +382,15 @@
     |> listm'::unbox
     |> _assert_eq [ "a"; "b" ]
 
+:= fsharp_of_array' \* t. (items : array t) : seq' t =
+    \ () => $'for i = 0 to !items.Length - 1 do yield !items.[i]'
+    |> new_seq
+    |> \ x => x : seq' t
+
 := of_array' \* t. (items : array t) : seq' t =
     backend_switch {
         Gleam = \ () => $'!items |> spiral_array_to_list' : seq' t
-        Fsharp = \ () =>
-            \ () =>
-                $'for i = 0 to !items.Length - 1 do yield !items.[i]'
-            |> new_seq
-            |> \ x => x : seq' t
+        Fsharp = \ () => (fsharp_of_array' items : seq' t)
         Python = \ () => $'[item for item in !items]' : seq' t
         Rust = \ () => $'Rc::new(!items.borrow().clone())' : seq' t
         TypeScript = \ () => $'[...!items]' : seq' t
@@ -439,13 +442,15 @@
     |> listm'::unbox
     |> _assert_eq [ "a"; "b" ]
 
+:= python_to_array' \* t. (items : seq' t) : array t =
+    := x = ($'!items ' : listm'::list' t) |> listm'::to_array'
+    $'!x ' : array t
+
 := to_array' \* t. (items : seq' t) : array t =
     backend_switch {
         Gleam = \ () => $'!items |> spiral_array_from_list' : array t
         Fsharp = \ () => items |> $'Seq.toArray' : array t
-        Python = \ () =>
-            := x = ($'!items ' : listm'::list' t) |> listm'::to_array'
-            $'!x ' : array t
+        Python = \ () => (python_to_array' items : array t)
         Rust = \ () => $'Rc::new(RefCell::new((*!items).clone()))' : array t
         TypeScript = \ () => $'[...!items]' : array t
         Zig = \ () => $'(spiral_gpa.dupe(`t, !items) catch @@panic("out of memory"))' : array t
@@ -463,50 +468,58 @@
     |> listm'::unbox
     |> _assert_eq [ "a"; "b" ]
 
+:= fsharp_of_list' \* t. (items : listm'::list' t) : seq' t =
+    \ () => items |> yield_from
+    |> new_seq
+    |> \ x => x : seq' t
+
 := of_list' \* t. (items : listm'::list' t) : seq' t =
     backend_switch {
         Gleam = \ () => $'!items ' : seq' t
-        Fsharp = \ () =>
-            \ () =>
-                items |> yield_from
-            |> new_seq
-            |> \ x => x : seq' t
+        Fsharp = \ () => (fsharp_of_list' items : seq' t)
         Python = \ () => $'!items ' : seq' t
         Rust = \ () => $'(!items).clone()' : seq' t
         TypeScript = \ () => $'[...!items]' : seq' t
         Zig = \ () => $'!items ' : seq' t
     }
 
+:= rust_cast' \* t u. (items : u) : seq' t =
+    := x : seq' t =
+        ~>
+            ?: u ?|
+            | seq' ~x => $'(!items).clone()' : seq' t
+            | listm'::list' ~x => $'(!items).clone()' : seq' t
+            | array_base ~x => $'Rc::new(!items.borrow().clone())' : seq' t
+            | array ~x => $'Rc::new(!items.borrow().clone())' : seq' t
+            | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t
+    x
+
 := cast' \* t u. (items : u) : seq' t =
     backend_switch {
         Gleam = \ () => $'!items ' : seq' t
         Fsharp = \ () => items |> $'Seq.cast' : seq' t
         Python = \ () => $'list(!items)' : seq' t
-        Rust = \ () =>
-            := x : seq' t =
-                ~>
-                    ?: u ?|
-                    | seq' ~x => $'(!items).clone()' : seq' t
-                    | listm'::list' ~x => $'(!items).clone()' : seq' t
-                    | array_base ~x => $'Rc::new(!items.borrow().clone())' : seq' t
-                    | array ~x => $'Rc::new(!items.borrow().clone())' : seq' t
-                    | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t
-            x
+        Rust = \ () => (rust_cast' items : seq' t)
         TypeScript = \ () => $'Array.from(!items)' : seq' t
         Zig = \ () => $'!items ' : seq' t
     }
 
+:= gleam_rev'' \* t. (items : seq' t) : seq' t =
+    global "import gleam/list"
+    $'!items |> list.reverse' : seq' t
+
+:= zig_rev'' \* t. (items : seq' t) : seq' t =
+    $'blk: { const r = spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"); \
+        std.mem.reverse(`t, r); break :blk r; }' : seq' t
+
 := rev'' \* t. (items : seq' t) : seq' t =
     backend_switch {
-        Gleam = \ () =>
-            global "import gleam/list"
-            $'!items |> list.reverse' : seq' t
+        Gleam = \ () => (gleam_rev'' items : seq' t)
         Fsharp = \ () => items |> $'Seq.rev' : seq' t
         Python = \ () => $'list(reversed(!items))' : seq' t
         Rust = \ () => $'Rc::new((!items).as_ref().iter().rev().cloned().collect::<Vec<_>>())' : seq' t
         TypeScript = \ () => $'[...!items].reverse()' : seq' t
-        Zig = fun () => $'blk: { const r = spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"); \
-            std.mem.reverse(`t, r); break :blk r; }' : seq' t
+        Zig = \ () => (zig_rev'' items : seq' t)
     }
 
 ///> cuda

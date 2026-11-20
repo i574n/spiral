@@ -1,0 +1,46 @@
+///- --package .
+:< erlang_term
+
+:# tables static =
+    :< testing
+
+:~ ets (f : string) (args : list term) : term = apply "ets" f args
+
+:~ made_source () : string = "Made = try ets:new(N, [named_table, public | O]) of _ -> true catch error:badarg -> false end"
+
+:~ owner_fun () : string =
+    "fun() -> " ^^ made_source () ^^ ", Caller ! {Ref, N}, case Made of true -> receive after infinity -> ok end; false -> ok end end"
+
+:~ owner_source () : string =
+    "Caller = self(), Ref = make_ref(), spawn(" ^^ owner_fun () ^^ "), receive {Ref, N} -> N after 5000 -> N end."
+
+:~ created (name : term) (opts : term) : term = file_lock::evaluated (owner_source ()) [ ("N", name); ("O", opts) ]
+
+:~ missing (name : term) : bool = equal (ets "whereis" [ name ]) (atom "undefined")
+
+:~ ensure (name : term) (opts : term) : term = ? missing name ?> created name opts |: name
+
+:~ sets () : term = list_term [ atom "set" ]
+
+:~ trial (suffix : string) : term = atom ("spiral_cells_tables_trial_" ^^ suffix)
+
+:~ info_is (name : term) (key : string) (want : term) : bool = equal (ets "info" [ name; atom key ]) want
+
+:~ me () : term = apply "erlang" "self" []
+
+:~ row_count (name : term) (key : string) : i32 = listm::length (items_of (ets "lookup" [ name; atom key ]))
+
+:~ put_k (name : term) : term = ets "insert" [ name; tuple [ atom "k"; of 1i32 ] ]
+
+///> gleam
+:# a_new_table_is_public_and_owned_by_another_process =
+    := name = trial "owner"
+    := made = equal (ensure name (sets ())) name
+    (made, info_is name "owner" (me ()), info_is name "protection" (atom "public")) |> _assert_eq (!+, !-, !+)
+
+///> gleam
+:# a_second_ensure_reuses_the_table_and_keeps_its_rows =
+    := name = trial "reuse"
+    := _p = put_k (ensure name (sets ()))
+    := again = equal (ensure name (sets ())) name
+    (again, row_count name "k") |> _assert_eq (!+, 1i32)

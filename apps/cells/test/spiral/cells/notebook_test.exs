@@ -87,7 +87,7 @@ defmodule Spiral.Cells.NotebookTest do
 
   test "host cells share the job slots instead of all starting at once", %{dir: dir} do
     path = Path.join(dir, "many.dib")
-    count = Spiral.Cells.Slots.limit() + 3
+    count = Spiral.Cells.Domain.slots_jobs_limit() + 3
     File.write!(path, Enum.map_join(1..count, "\n", &"#!fsharp\n\nlet v#{&1} = #{&1}\n"))
     {:ok, gauge} = Agent.start_link(fn -> {0, 0} end)
 
@@ -103,7 +103,7 @@ defmodule Spiral.Cells.NotebookTest do
              )
 
     {0, peak} = Agent.get(gauge, & &1)
-    assert peak <= Spiral.Cells.Slots.limit()
+    assert peak <= Spiral.Cells.Domain.slots_jobs_limit()
   end
 
   defp lines(source), do: String.split(source, "\n")
@@ -374,5 +374,80 @@ defmodule Spiral.Cells.NotebookTest do
     assert real =~ "inl spiral_cells_real () =\n    inl y = twice_real 2i32\n    y"
     {_, real, _} = Enum.find(runs, fn {source, _, _} -> calls?(source, "twice 21i32") end)
     refute real =~ "inl y = twice_real 2i32", "a real test's code reached a later block"
+  end
+
+  test "--accept persists the actual values and the run passes; without it the file is untouched and the run fails" do
+    spi = """
+    ///> rust
+    inl one () = 1i32
+
+    ///> rust
+    test one =
+        one ()
+        |> _assert_eq 2i32
+
+    ///> rust
+    test other =
+        one () |> _assert_eq 2i32
+    """
+
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("accept")
+    path = Path.join(dir, "accept.spi")
+    File.write!(path, spi)
+
+    execute = fn %{exe_path: exe} ->
+      if File.read!(Path.join(Path.dirname(exe), "main.spi")) =~ "_assert_eq 2i32",
+        do: {:ok, %{exit_status: 101, output: "__assert_eq { actual = 1; expected = 2 }\n", duration_ms: 1}},
+        else: {:ok, %{exit_status: 0, output: "", duration_ms: 1}}
+    end
+
+    stubs = [compile: fn _ -> {:ok, "fn main() {}\n"} end, rustc: fn _ -> :ok end, execute: execute]
+
+    assert {{:error, _}, report} = Notebook.run_report(path, stubs)
+    assert %{"failed" => 2, "accepted" => 0} = report
+    assert File.read!(path) == spi
+
+    assert {:ok, report} = Notebook.run_report(path, [accept: true] ++ stubs)
+    assert %{"failed" => 0, "accepted" => 2} = report
+    assert File.read!(path) == String.replace(spi, "_assert_eq 2i32", "_assert_eq 1i32")
+
+    assert {:ok, %{"passed" => 2, "accepted" => 0}} = Notebook.run_report(path, stubs)
+  end
+
+  test "--accept re-runs an accepted test until every assertion holds, picking repeated literals by position" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("accept_rounds")
+    path = Path.join(dir, "rounds.spi")
+
+    File.write!(path, """
+    ///> rust
+    test stats =
+        5i32 |> _assert_eq 5i32
+        3i32 |> _assert_eq 5i32
+        8i32 |> _assert_eq 9i32
+    """)
+
+    actuals = [5, 3, 8]
+
+    execute = fn %{exe_path: exe} ->
+      expected =
+        Regex.scan(~r/_assert_eq (\d+)i32/, File.read!(Path.join(Path.dirname(exe), "main.spi")))
+        |> Enum.map(fn [_, n] -> String.to_integer(n) end)
+
+      {lines, status} =
+        Enum.zip(actuals, expected)
+        |> Enum.reduce_while({[], 0}, fn {actual, wanted}, {lines, _} ->
+          if actual == wanted,
+            do: {:cont, {lines ++ ["__assert_eq { expected = #{wanted} }"], 0}},
+            else: {:halt, {lines ++ ["__assert_eq { actual = #{actual}; expected = #{wanted} }"], 101}}
+        end)
+
+      {:ok, %{exit_status: status, output: Enum.join(lines, "\n") <> "\n", duration_ms: 1}}
+    end
+
+    stubs = [compile: fn _ -> {:ok, "fn main() {}\n"} end, rustc: fn _ -> :ok end, execute: execute]
+
+    assert {:ok, %{"accepted" => 1, "failed" => 0}} = Notebook.run_report(path, [accept: true] ++ stubs)
+    assert File.read!(path) =~ "    5i32 |> _assert_eq 5i32\n    3i32 |> _assert_eq 3i32\n    8i32 |> _assert_eq 8i32\n"
+    assert {:ok, %{"passed" => 1}} = Notebook.run_report(path, stubs)
   end
 end

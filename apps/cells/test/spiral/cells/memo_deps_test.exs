@@ -1,7 +1,7 @@
 defmodule Spiral.Cells.MemoDepsTest do
   use ExUnit.Case, async: true
 
-  alias Spiral.Cells.Memo
+  alias Spiral.Cells.Domain
 
   setup do
     dir = Spiral.Cells.TestHelpers.tmp_dir!("memo_deps")
@@ -15,7 +15,7 @@ defmodule Spiral.Cells.MemoDepsTest do
     File.write!(Path.join(app, "package.spiproj"), "packageDir: ..\npackages:\n    |core-\n    dep-\nmodules:\n    helper-\n")
     File.write!(Path.join(app, "helper.spi"), "inl h () = 0i32\n")
     step = %{program: "///- --package #{app}\n\ninl main () = used.u ()\n", real: ""}
-    key = fn -> Memo.key(Memo.context([memo: true, memo_dir: Path.join(dir, "memo")], [step]), step, []) end
+    key = fn -> Domain.memo_key(Domain.memo_context([memo: true, memo_dir: Path.join(dir, "memo")], [step]), step, []) end
     %{dep: dep, key: key}
   end
 

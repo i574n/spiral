@@ -1,0 +1,502 @@
+///- --package .
+:# dedup_gold_v2 static =
+    :< testing
+
+:< sm'_operators
+:< dedup_score
+
+:~ gold_v2 () : list gold_row =
+    [
+        { file = "spi/daemon_pool.spi"; line = 50; verdict = DomainAlias }
+        { file = "spi/document.spi"; line = 59; verdict = DomainAlias }
+        { file = "spi/document.spi"; line = 7; verdict = DomainAlias }
+        { file = "spi/slot_table.spi"; line = 9; verdict = DomainAlias }
+        { file = "spi/package_reach.spi"; line = 395; verdict = Duplicate 4 }
+        { file = "spi/phase_clock.spi"; line = 57; verdict = Duplicate 4 }
+        { file = "spi/fsi_text.spi"; line = 49; verdict = Duplicate 7 }
+        { file = "spi/lisp.spi"; line = 9; verdict = Duplicate 7 }
+        { file = "spi/canonical.spi"; line = 9; verdict = Duplicate 8 }
+        { file = "spi/main_shape.spi"; line = 86; verdict = Duplicate 8 }
+        { file = "spi/notebook.spi"; line = 488; verdict = Duplicate 8 }
+        { file = "spi/accept_mark.spi"; line = 17; verdict = Duplicate 10 }
+        { file = "spi/builder_calls.spi"; line = 61; verdict = Duplicate 10 }
+        { file = "spi/ipynb.spi"; line = 31; verdict = Duplicate 10 }
+        { file = "spi/report_row.spi"; line = 27; verdict = Duplicate 10 }
+        { file = "spi/cli_text.spi"; line = 11; verdict = Duplicate 11 }
+        { file = "spi/mount_plan.spi"; line = 17; verdict = Duplicate 11 }
+        { file = "spi/package_reach.spi"; line = 374; verdict = Duplicate 11 }
+        { file = "spi/runner_edges.spi"; line = 154; verdict = Duplicate 11 }
+        { file = "spi/runner_loop.spi"; line = 154; verdict = Duplicate 11 }
+        { file = "spi/daemon.spi"; line = 119; verdict = Duplicate 12 }
+        { file = "spi/memo_context.spi"; line = 125; verdict = Duplicate 12 }
+        { file = "spi/memo_store.spi"; line = 21; verdict = Duplicate 12 }
+        { file = "spi/tool_env.spi"; line = 15; verdict = Duplicate 12 }
+        { file = "spi/cell_result.spi"; line = 9; verdict = Duplicate 13 }
+        { file = "spi/compile_outcome.spi"; line = 11; verdict = Duplicate 13 }
+        { file = "spi/document.spi"; line = 308; verdict = Duplicate 13 }
+        { file = "spi/missing_notes.spi"; line = 9; verdict = Duplicate 13 }
+        { file = "spi/target_agree.spi"; line = 9; verdict = Duplicate 13 }
+        { file = "spi/target_record.spi"; line = 11; verdict = Duplicate 13 }
+        { file = "spi/targets.spi"; line = 134; verdict = Duplicate 13 }
+        { file = "spi/builders.spi"; line = 506; verdict = Duplicate 14 }
+        { file = "spi/livemd.spi"; line = 72; verdict = Duplicate 14 }
+        { file = "spi/verdict_text.spi"; line = 80; verdict = Duplicate 15 }
+        { file = "spi/memo.spi"; line = 347; verdict = Duplicate 16 }
+        { file = "spi/cell_result.spi"; line = 13; verdict = Duplicate 17 }
+        { file = "spi/runner_loop.spi"; line = 60; verdict = Duplicate 17 }
+        { file = "spi/cell.spi"; line = 392; verdict = Duplicate 18 }
+        { file = "spi/directives.spi"; line = 122; verdict = Duplicate 18 }
+        { file = "spi/file_lock.spi"; line = 59; verdict = Duplicate 19 }
+        { file = "spi/html.spi"; line = 40; verdict = Duplicate 19 }
+        { file = "spi/memo_store.spi"; line = 95; verdict = Duplicate 19 }
+        { file = "spi/cell.spi"; line = 12; verdict = Duplicate 20 }
+        { file = "spi/cell_display.spi"; line = 25; verdict = Duplicate 20 }
+        { file = "spi/mount_text.spi"; line = 108; verdict = Duplicate 20 }
+        { file = "spi/builder_calls.spi"; line = 24; verdict = Duplicate 21 }
+        { file = "spi/memo_context.spi"; line = 123; verdict = Duplicate 21 }
+        { file = "spi/memo_store.spi"; line = 19; verdict = Duplicate 21 }
+        { file = "spi/memo_bounds.spi"; line = 9; verdict = Duplicate 23 }
+        { file = "spi/package_reach.spi"; line = 35; verdict = Duplicate 23 }
+        { file = "spi/daemon.spi"; line = 70; verdict = Duplicate 25 }
+        { file = "spi/document.spi"; line = 547; verdict = Duplicate 25 }
+        { file = "spi/memo.spi"; line = 349; verdict = Duplicate 26 }
+        { file = "spi/runner_edges.spi"; line = 83; verdict = Duplicate 26 }
+        { file = "spi/canonical.spi"; line = 195; verdict = Duplicate 27 }
+        { file = "spi/daemon.spi"; line = 254; verdict = Duplicate 27 }
+        { file = "spi/main_shape.spi"; line = 43; verdict = Duplicate 27 }
+        { file = "spi/main_text.spi"; line = 23; verdict = Duplicate 27 }
+        { file = "spi/mount_plan.spi"; line = 129; verdict = Duplicate 29 }
+        { file = "spi/tool_env.spi"; line = 11; verdict = Duplicate 29 }
+        { file = "spi/accept.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/builders.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/canonical.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/cell.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/cell_display.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/cell_result.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/cli_text.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/client.spi"; line = 10; verdict = Duplicate 31 }
+        { file = "spi/daemon.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/directives.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/display_value.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/document.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/fsi_text.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/gleam_project.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/host_text.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/html.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/html_markdown.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/html_page.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/ipynb.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/json_value.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/lisp.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/livemd.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/main_shape.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/main_text.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/manifest.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/memo.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/memo_bounds.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/memo_key.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/mount_place.spi"; line = 8; verdict = Duplicate 31 }
+        { file = "spi/mount_plan.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/mount_stats.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/mount_text.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/notebook.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/package_reach.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/prepared.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/run_result.spi"; line = 6; verdict = Duplicate 31 }
+        { file = "spi/runner_edges.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/runner_loop.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/shown_text.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/source_blocks.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/source_map.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/target_agree.spi"; line = 71; verdict = Duplicate 31 }
+        { file = "spi/targets.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/temp_sweep.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/text.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/tool_env.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/verdict_text.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/verdicts.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/watch_probe.spi"; line = 5; verdict = Duplicate 31 }
+        { file = "spi/accept.spi"; line = 326; verdict = Duplicate 32 }
+        { file = "spi/daemon_host.spi"; line = 112; verdict = Duplicate 32 }
+        { file = "spi/html.spi"; line = 35; verdict = Duplicate 32 }
+        { file = "spi/lisp.spi"; line = 28; verdict = Duplicate 32 }
+        { file = "spi/source_blocks.spi"; line = 111; verdict = Duplicate 32 }
+        { file = "spi/temp_sweep.spi"; line = 59; verdict = Duplicate 32 }
+        { file = "spi/main_shape.spi"; line = 56; verdict = Duplicate 33 }
+        { file = "spi/notebook.spi"; line = 599; verdict = Duplicate 33 }
+        { file = "spi/memo.spi"; line = 539; verdict = Duplicate 34 }
+        { file = "spi/targets.spi"; line = 261; verdict = Duplicate 34 }
+        { file = "spi/document.spi"; line = 1102; verdict = Duplicate 40 }
+        { file = "spi/ipynb.spi"; line = 63; verdict = Duplicate 40 }
+        { file = "spi/builders.spi"; line = 578; verdict = Duplicate 41 }
+        { file = "spi/ipynb.spi"; line = 11; verdict = Duplicate 41 }
+        { file = "spi/notebook.spi"; line = 550; verdict = Duplicate 41 }
+        { file = "spi/targets.spi"; line = 138; verdict = Duplicate 41 }
+        { file = "spi/builder_calls.spi"; line = 16; verdict = Duplicate 42 }
+        { file = "spi/memo_context.spi"; line = 37; verdict = Duplicate 42 }
+        { file = "spi/file_lock.spi"; line = 21; verdict = Duplicate 43 }
+        { file = "spi/temp_sweep.spi"; line = 51; verdict = Duplicate 43 }
+        { file = "spi/memo_bounds.spi"; line = 15; verdict = Duplicate 44 }
+        { file = "spi/mount_plan.spi"; line = 15; verdict = Duplicate 44 }
+        { file = "spi/mount_stats.spi"; line = 121; verdict = Duplicate 44 }
+        { file = "spi/mount_plan.spi"; line = 33; verdict = Duplicate 47 }
+        { file = "spi/mount_stats.spi"; line = 105; verdict = Duplicate 47 }
+        { file = "spi/accept_mark.spi"; line = 19; verdict = Duplicate 49 }
+        { file = "spi/cell_collect.spi"; line = 11; verdict = Duplicate 49 }
+        { file = "spi/document.spi"; line = 1413; verdict = Duplicate 50 }
+        { file = "spi/verdicts.spi"; line = 61; verdict = Duplicate 50 }
+        { file = "spi/cell_budget.spi"; line = 575; verdict = Duplicate 51 }
+        { file = "spi/mount_plan.spi"; line = 141; verdict = Duplicate 51 }
+        { file = "spi/compile_outcome.spi"; line = 13; verdict = Duplicate 55 }
+        { file = "spi/ipynb.spi"; line = 108; verdict = Duplicate 55 }
+        { file = "spi/cell_budget.spi"; line = 63; verdict = Duplicate 56 }
+        { file = "spi/shown_text.spi"; line = 13; verdict = Duplicate 56 }
+        { file = "spi/canonical.spi"; line = 206; verdict = Duplicate 57 }
+        { file = "spi/cell_budget.spi"; line = 73; verdict = Duplicate 57 }
+        { file = "spi/builder_output.spi"; line = 56; verdict = Duplicate 58 }
+        { file = "spi/manifest.spi"; line = 127; verdict = Duplicate 58 }
+        { file = "spi/memo.spi"; line = 289; verdict = Duplicate 58 }
+        { file = "spi/memo.spi"; line = 326; verdict = Duplicate 59 }
+        { file = "spi/mount_text.spi"; line = 243; verdict = Duplicate 59 }
+        { file = "spi/run_result.spi"; line = 46; verdict = Duplicate 60 }
+        { file = "spi/source_blocks.spi"; line = 48; verdict = Duplicate 60 }
+        { file = "spi/builders.spi"; line = 199; verdict = Duplicate 61 }
+        { file = "spi/document.spi"; line = 336; verdict = Duplicate 61 }
+        { file = "spi/canonical.spi"; line = 22; verdict = Duplicate 62 }
+        { file = "spi/notebook.spi"; line = 490; verdict = Duplicate 62 }
+        { file = "spi/accept_mark.spi"; line = 11; verdict = Duplicate 64 }
+        { file = "spi/cell_collect.spi"; line = 9; verdict = Duplicate 64 }
+        { file = "spi/report_row.spi"; line = 11; verdict = Duplicate 64 }
+        { file = "spi/report_tail.spi"; line = 11; verdict = Duplicate 64 }
+        { file = "spi/host_text.spi"; line = 13; verdict = Duplicate 65 }
+        { file = "spi/shown_text.spi"; line = 128; verdict = Duplicate 65 }
+        { file = "spi/display_value.spi"; line = 26; verdict = Duplicate 66 }
+        { file = "spi/json_value.spi"; line = 17; verdict = Duplicate 66 }
+        { file = "spi/builders.spi"; line = 603; verdict = Duplicate 68 }
+        { file = "spi/mount_place.spi"; line = 55; verdict = Duplicate 68 }
+        { file = "spi/mount_plan.spi"; line = 95; verdict = Duplicate 68 }
+        { file = "spi/directives.spi"; line = 18; verdict = Duplicate 70 }
+        { file = "spi/document.spi"; line = 208; verdict = Duplicate 70 }
+        { file = "spi/notebook.spi"; line = 63; verdict = Duplicate 70 }
+        { file = "spi/accept.spi"; line = 9; verdict = Duplicate 71 }
+        { file = "spi/display_value.spi"; line = 18; verdict = Duplicate 71 }
+        { file = "spi/host_text.spi"; line = 9; verdict = Duplicate 71 }
+        { file = "spi/json_value.spi"; line = 15; verdict = Duplicate 71 }
+        { file = "spi/livemd.spi"; line = 9; verdict = Duplicate 71 }
+        { file = "spi/shown_text.spi"; line = 9; verdict = Duplicate 71 }
+        { file = "spi/text.spi"; line = 449; verdict = Duplicate 71 }
+        { file = "spi/livemd.spi"; line = 11; verdict = Duplicate 73 }
+        { file = "spi/main_shape.spi"; line = 7; verdict = Duplicate 73 }
+        { file = "spi/memo.spi"; line = 243; verdict = Duplicate 73 }
+        { file = "spi/notebook.spi"; line = 431; verdict = Duplicate 73 }
+        { file = "spi/cell_result.spi"; line = 15; verdict = Duplicate 75 }
+        { file = "spi/ipynb.spi"; line = 37; verdict = Duplicate 75 }
+        { file = "spi/target_agree.spi"; line = 80; verdict = Duplicate 75 }
+        { file = "spi/builders.spi"; line = 576; verdict = Duplicate 76 }
+        { file = "spi/compile_outcome.spi"; line = 54; verdict = Duplicate 76 }
+        { file = "spi/document.spi"; line = 295; verdict = Duplicate 76 }
+        { file = "spi/error_terms.spi"; line = 9; verdict = Duplicate 76 }
+        { file = "spi/ipynb.spi"; line = 19; verdict = Duplicate 76 }
+        { file = "spi/memo_context.spi"; line = 19; verdict = Duplicate 76 }
+        { file = "spi/missing_notes.spi"; line = 33; verdict = Duplicate 76 }
+        { file = "spi/notebook.spi"; line = 554; verdict = Duplicate 76 }
+        { file = "spi/prepared.spi"; line = 27; verdict = Duplicate 76 }
+        { file = "spi/runner_loop.spi"; line = 83; verdict = Duplicate 76 }
+        { file = "spi/verdicts.spi"; line = 65; verdict = Duplicate 76 }
+        { file = "spi/mount_text.spi"; line = 266; verdict = Duplicate 77 }
+        { file = "spi/package_reach.spi"; line = 208; verdict = Duplicate 77 }
+        { file = "spi/cell_display.spi"; line = 20; verdict = Duplicate 79 }
+        { file = "spi/document.spi"; line = 293; verdict = Duplicate 79 }
+        { file = "spi/targets.spi"; line = 357; verdict = Duplicate 79 }
+        { file = "spi/canonical.spi"; line = 20; verdict = Duplicate 80 }
+        { file = "spi/daemon.spi"; line = 251; verdict = Duplicate 80 }
+        { file = "spi/fsi_text.spi"; line = 7; verdict = Duplicate 80 }
+        { file = "spi/main_shape.spi"; line = 51; verdict = Duplicate 80 }
+        { file = "spi/notebook.spi"; line = 597; verdict = Duplicate 80 }
+        { file = "spi/source_map.spi"; line = 90; verdict = Duplicate 80 }
+        { file = "spi/display_value.spi"; line = 28; verdict = Duplicate 83 }
+        { file = "spi/json_value.spi"; line = 19; verdict = Duplicate 83 }
+        { file = "spi/runner_edges.spi"; line = 27; verdict = Duplicate 84 }
+        { file = "spi/toolchain.spi"; line = 141; verdict = Duplicate 84 }
+        { file = "spi/missing_notes.spi"; line = 11; verdict = Duplicate 85 }
+        { file = "spi/target_agree.spi"; line = 13; verdict = Duplicate 85 }
+        { file = "spi/canonical.spi"; line = 11; verdict = Duplicate 86 }
+        { file = "spi/notebook.spi"; line = 593; verdict = Duplicate 86 }
+        { file = "spi/directives.spi"; line = 233; verdict = Duplicate 87 }
+        { file = "spi/phase_clock.spi"; line = 11; verdict = Duplicate 87 }
+        { file = "spi/accept.spi"; line = 11; verdict = Duplicate 88 }
+        { file = "spi/display_value.spi"; line = 20; verdict = Duplicate 88 }
+        { file = "spi/host_text.spi"; line = 11; verdict = Duplicate 88 }
+        { file = "spi/json_value.spi"; line = 21; verdict = Duplicate 88 }
+        { file = "spi/shown_text.spi"; line = 11; verdict = Duplicate 88 }
+        { file = "spi/accept.spi"; line = 17; verdict = Duplicate 89 }
+        { file = "spi/display_value.spi"; line = 30; verdict = Duplicate 89 }
+        { file = "spi/host_text.spi"; line = 17; verdict = Duplicate 89 }
+        { file = "spi/json_value.spi"; line = 23; verdict = Duplicate 89 }
+        { file = "spi/shown_text.spi"; line = 19; verdict = Duplicate 89 }
+        { file = "spi/temp_sweep.spi"; line = 7; verdict = Duplicate 91 }
+        { file = "spi/toolchain.spi"; line = 159; verdict = Duplicate 91 }
+        { file = "spi/ipynb.spi"; line = 35; verdict = Duplicate 93 }
+        { file = "spi/json_value.spi"; line = 331; verdict = Duplicate 93 }
+        { file = "spi/manifest.spi"; line = 205; verdict = Duplicate 96 }
+        { file = "spi/memo_store.spi"; line = 68; verdict = Duplicate 96 }
+        { file = "spi/mount_stats.spi"; line = 35; verdict = Duplicate 96 }
+        { file = "spi/temp_sweep.spi"; line = 9; verdict = Duplicate 96 }
+        { file = "spi/toolchain.spi"; line = 157; verdict = Duplicate 96 }
+        { file = "spi/main_shape.spi"; line = 114; verdict = Duplicate 97 }
+        { file = "spi/main_text.spi"; line = 7; verdict = Duplicate 97 }
+        { file = "spi/directives.spi"; line = 7; verdict = Duplicate 98 }
+        { file = "spi/notebook.spi"; line = 52; verdict = Duplicate 98 }
+        { file = "spi/memo_key.spi"; line = 11; verdict = Duplicate 100 }
+        { file = "spi/mount_stats.spi"; line = 76; verdict = Duplicate 100 }
+        { file = "spi/prepared.spi"; line = 75; verdict = Duplicate 100 }
+        { file = "spi/gleam_project.spi"; line = 216; verdict = Duplicate 101 }
+        { file = "spi/lisp.spi"; line = 37; verdict = Duplicate 101 }
+        { file = "spi/source_blocks.spi"; line = 131; verdict = Duplicate 101 }
+        { file = "spi/host_text.spi"; line = 15; verdict = Duplicate 102 }
+        { file = "spi/shown_text.spi"; line = 130; verdict = Duplicate 102 }
+        { file = "spi/canonical.spi"; line = 102; verdict = Duplicate 103 }
+        { file = "spi/main_shape.spi"; line = 88; verdict = Duplicate 103 }
+        { file = "spi/memo.spi"; line = 91; verdict = Duplicate 103 }
+        { file = "spi/notebook.spi"; line = 493; verdict = Duplicate 103 }
+        { file = "spi/text.spi"; line = 9; verdict = Duplicate 104 }
+        { file = "spi/runner_edges.spi"; line = 106; verdict = Duplicate 105 }
+        { file = "spi/source_stamp.spi"; line = 9; verdict = Duplicate 105 }
+        { file = "spi/cli_text.spi"; line = 13; verdict = Duplicate 106 }
+        { file = "spi/mount_stats.spi"; line = 23; verdict = Duplicate 106 }
+        { file = "spi/document.spi"; line = 1356; verdict = Duplicate 107 }
+        { file = "spi/livemd.spi"; line = 76; verdict = Duplicate 107 }
+        { file = "spi/file_lock.spi"; line = 19; verdict = Duplicate 108 }
+        { file = "spi/memo_store.spi"; line = 87; verdict = Duplicate 108 }
+        { file = "spi/runner_loop.spi"; line = 32; verdict = Duplicate 108 }
+        { file = "spi/html.spi"; line = 32; verdict = Duplicate 109 }
+        { file = "spi/source_blocks.spi"; line = 109; verdict = Duplicate 109 }
+        { file = "spi/report_row.spi"; line = 80; verdict = Duplicate 110 }
+        { file = "spi/verdicts.spi"; line = 63; verdict = Duplicate 110 }
+        { file = "spi/json_value.spi"; line = 338; verdict = Duplicate 112 }
+        { file = "spi/shown_text.spi"; line = 81; verdict = Duplicate 112 }
+        { file = "spi/memo.spi"; line = 484; verdict = Duplicate 114 }
+        { file = "spi/memo_context.spi"; line = 21; verdict = Duplicate 114 }
+        { file = "spi/gleam_project.spi"; line = 222; verdict = Duplicate 117 }
+        { file = "spi/source_blocks.spi"; line = 129; verdict = Duplicate 117 }
+        { file = "spi/builders.spi"; line = 271; verdict = Duplicate 118 }
+        { file = "spi/manifest.spi"; line = 7; verdict = Duplicate 118 }
+        { file = "spi/accept_mark.spi"; line = 25; verdict = Duplicate 119 }
+        { file = "spi/report_row.spi"; line = 19; verdict = Duplicate 119 }
+        { file = "spi/memo_context.spi"; line = 25; verdict = Duplicate 120 }
+        { file = "spi/report_row.spi"; line = 25; verdict = Duplicate 120 }
+        { file = "spi/document.spi"; line = 815; verdict = Duplicate 121 }
+        { file = "spi/type_trial.spi"; line = 43; verdict = Duplicate 121 }
+        { file = "spi/gleam_project.spi"; line = 220; verdict = Duplicate 122 }
+        { file = "spi/lisp.spi"; line = 35; verdict = Duplicate 122 }
+        { file = "spi/temp_sweep.spi"; line = 64; verdict = Duplicate 122 }
+        { file = "spi/cell.spi"; line = 190; verdict = Duplicate 501 }
+        { file = "spi/text.spi"; line = 215; verdict = Duplicate 501 }
+        { file = "spi/accept.spi"; line = 178; verdict = Duplicate 502 }
+        { file = "spi/cell.spi"; line = 7; verdict = Duplicate 502 }
+        { file = "spi/cell_budget.spi"; line = 95; verdict = Duplicate 503 }
+        { file = "spi/cell_budget_ruled.spi"; line = 151; verdict = Duplicate 503 }
+        { file = "spi/canonical.spi"; line = 24; verdict = Duplicate 504 }
+        { file = "spi/text.spi"; line = 64; verdict = Duplicate 504 }
+        { file = "spi/mount_text.spi"; line = 268; verdict = Duplicate 505 }
+        { file = "spi/toolchain.spi"; line = 155; verdict = Duplicate 505 }
+        { file = "spi/manifest.spi"; line = 179; verdict = Duplicate 506 }
+        { file = "spi/mount_text.spi"; line = 270; verdict = Duplicate 506 }
+        { file = "spi/document.spi"; line = 568; verdict = Duplicate 507 }
+        { file = "spi/verdict_text.spi"; line = 85; verdict = Duplicate 507 }
+        { file = "spi/json_value.spi"; line = 250; verdict = Duplicate 508 }
+        { file = "spi/json_value.spi"; line = 263; verdict = Duplicate 508 }
+        { file = "spi/daemon.spi"; line = 79; verdict = Duplicate 509 }
+        { file = "spi/runner_edges.spi"; line = 21; verdict = Duplicate 509 }
+        { file = "spi/json_value.spi"; line = 348; verdict = Duplicate 510 }
+        { file = "spi/json_value.spi"; line = 361; verdict = Duplicate 510 }
+        { file = "spi/memo.spi"; line = 320; verdict = Duplicate 511 }
+        { file = "spi/temp_sweep.spi"; line = 12; verdict = Duplicate 511 }
+        { file = "spi/cell_budget.spi"; line = 379; verdict = Duplicate 512 }
+        { file = "spi/mount_place.spi"; line = 24; verdict = Duplicate 512 }
+        { file = "spi/source_map.spi"; line = 15; verdict = Duplicate 600 }
+        { file = "spi/source_map.spi"; line = 17; verdict = Duplicate 600 }
+        { file = "spi/accept_mark.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/builder_calls.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/cell_collect.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/compile_outcome.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/file_lock.spi"; line = 9; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/memo_context.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/memo_key.spi"; line = 9; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/memo_store.spi"; line = 15; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/missing_notes.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/mount_plan.spi"; line = 11; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/phase_clock.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/prepared.spi"; line = 9; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/report_row.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/report_tail.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/source_stamp.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/tables.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/target_agree.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/target_record.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/targets.spi"; line = 159; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/tool_lookup.spi"; line = 7; verdict = LibCopy { group = 1; target = "erlang_term::atom" } }
+        { file = "spi/mount_place.spi"; line = 22; verdict = LibCopy { group = 2; target = "erlang_file::list_dir" } }
+        { file = "spi/watch_probe.spi"; line = 7; verdict = LibCopy { group = 5; target = "erlang_port::erl_eval_args" } }
+        { file = "spi/mount_place.spi"; line = 20; verdict = LibCopy { group = 6; target = "erlang_file::file_text" } }
+        { file = "spi/accept_mark.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/builder_calls.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/cell_collect.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/cell_display.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/cell_result.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/cells_boot.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/cli_text.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/compile_outcome.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/daemon_host.spi"; line = 199; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/document.spi"; line = 289; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/error_terms.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/ipynb.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/memo_bounds.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/memo_context.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/memo_key.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/memory_guard.spi"; line = 9; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/missing_notes.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/mount_place.spi"; line = 6; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/mount_plan.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/mount_stats.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/notebook.spi"; line = 548; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/package_reach.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/package_write.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/phase_clock.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/prepared.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/report_row.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/report_tail.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/runner_edges.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/runner_loop.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/slot_table.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/source_stamp.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/tables.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/target_agree.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/target_record.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/targets.spi"; line = 155; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/tool_env.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/tool_lookup.spi"; line = 5; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/verdict_text.spi"; line = 7; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/verdicts.spi"; line = 57; verdict = LibCopy { group = 9; target = "erlang_term::term" } }
+        { file = "spi/cell_collect.spi"; line = 17; verdict = LibCopy { group = 22; target = "erlang_http::pair_of" } }
+        { file = "spi/ipynb.spi"; line = 17; verdict = LibCopy { group = 22; target = "erlang_http::pair_of" } }
+        { file = "spi/accept_mark.spi"; line = 13; verdict = LibCopy { group = 28; target = "erlang_term::element_at" } }
+        { file = "spi/cell_collect.spi"; line = 13; verdict = LibCopy { group = 28; target = "erlang_term::element_at" } }
+        { file = "spi/cells_boot.spi"; line = 15; verdict = LibCopy { group = 28; target = "erlang_term::element_at" } }
+        { file = "spi/file_lock.spi"; line = 13; verdict = LibCopy { group = 28; target = "erlang_term::element_at" } }
+        { file = "spi/ipynb.spi"; line = 27; verdict = LibCopy { group = 28; target = "erlang_term::element_at" } }
+        { file = "spi/package_reach.spi"; line = 15; verdict = LibCopy { group = 28; target = "erlang_term::element_at" } }
+        { file = "spi/prepared.spi"; line = 71; verdict = LibCopy { group = 28; target = "erlang_term::element_at" } }
+        { file = "spi/report_row.spi"; line = 21; verdict = LibCopy { group = 28; target = "erlang_term::element_at" } }
+        { file = "spi/targets.spi"; line = 161; verdict = LibCopy { group = 28; target = "erlang_term::element_at" } }
+        { file = "spi/mount_place.spi"; line = 18; verdict = LibCopy { group = 35; target = "erlang_file::file_written" } }
+        { file = "spi/daemon_host.spi"; line = 81; verdict = LibCopy { group = 36; target = "erlang_file::joined_path" } }
+        { file = "spi/mount_place.spi"; line = 14; verdict = LibCopy { group = 36; target = "erlang_file::joined_path" } }
+        { file = "spi/package_write.spi"; line = 12; verdict = LibCopy { group = 38; target = "erlang_text::trimmed_trailing" } }
+        { file = "spi/ipynb.spi"; line = 29; verdict = LibCopy { group = 39; target = "erlang_term::items_of" } }
+        { file = "spi/text.spi"; line = 248; verdict = LibCopy { group = 48; target = "sm'::to_lower" } }
+        { file = "spi/cells_boot.spi"; line = 9; verdict = LibCopy { group = 52; target = "erlang_term::apply" } }
+        { file = "spi/file_lock.spi"; line = 7; verdict = LibCopy { group = 52; target = "erlang_term::apply" } }
+        { file = "spi/ipynb.spi"; line = 25; verdict = LibCopy { group = 52; target = "erlang_term::apply" } }
+        { file = "spi/memo_context.spi"; line = 11; verdict = LibCopy { group = 52; target = "erlang_term::apply" } }
+        { file = "spi/memo_store.spi"; line = 13; verdict = LibCopy { group = 52; target = "erlang_term::apply" } }
+        { file = "spi/runner_edges.spi"; line = 11; verdict = LibCopy { group = 52; target = "erlang_term::apply" } }
+        { file = "spi/file_lock.spi"; line = 11; verdict = LibCopy { group = 54; target = "erlang_term::equal" } }
+        { file = "spi/memo.spi"; line = 328; verdict = LibCopy { group = 54; target = "erlang_term::equal" } }
+        { file = "spi/ipynb.spi"; line = 180; verdict = LibCopy { group = 63; target = "decimal::scale_after" } }
+        { file = "spi/accept_mark.spi"; line = 15; verdict = LibCopy { group = 67; target = "erlang_tcp::is_atom" } }
+        { file = "spi/builder_calls.spi"; line = 22; verdict = LibCopy { group = 67; target = "erlang_tcp::is_atom" } }
+        { file = "spi/cell_collect.spi"; line = 15; verdict = LibCopy { group = 67; target = "erlang_tcp::is_atom" } }
+        { file = "spi/cells_boot.spi"; line = 17; verdict = LibCopy { group = 67; target = "erlang_tcp::is_atom" } }
+        { file = "spi/daemon.spi"; line = 121; verdict = LibCopy { group = 67; target = "erlang_tcp::is_atom" } }
+        { file = "spi/memo_context.spi"; line = 23; verdict = LibCopy { group = 67; target = "erlang_tcp::is_atom" } }
+        { file = "spi/memo_store.spi"; line = 17; verdict = LibCopy { group = 67; target = "erlang_tcp::is_atom" } }
+        { file = "spi/phase_clock.spi"; line = 9; verdict = LibCopy { group = 67; target = "erlang_tcp::is_atom" } }
+        { file = "spi/report_row.spi"; line = 23; verdict = LibCopy { group = 67; target = "erlang_tcp::is_atom" } }
+        { file = "spi/target_record.spi"; line = 9; verdict = LibCopy { group = 67; target = "erlang_tcp::is_atom" } }
+        { file = "spi/targets.spi"; line = 136; verdict = LibCopy { group = 67; target = "erlang_tcp::is_atom" } }
+        { file = "spi/builder_calls.spi"; line = 9; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/builders.spi"; line = 574; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/cell_result.spi"; line = 58; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/daemon.spi"; line = 168; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/daemon.spi"; line = 482; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/daemon_host.spi"; line = 325; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/daemon_host.spi"; line = 357; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/document.spi"; line = 291; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/error_terms.spi"; line = 7; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/memo_context.spi"; line = 17; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/missing_notes.spi"; line = 35; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/mount_plan.spi"; line = 13; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/notebook.spi"; line = 552; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/prepared.spi"; line = 11; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/runner_edges.spi"; line = 68; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/runner_loop.spi"; line = 81; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/target_record.spi"; line = 25; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/tool_lookup.spi"; line = 69; verdict = LibCopy { group = 69; target = "erlang_tcp::option_pair" } }
+        { file = "spi/cells_boot.spi"; line = 13; verdict = LibCopy { group = 72; target = "erlang_term::list_term" } }
+        { file = "spi/ipynb.spi"; line = 21; verdict = LibCopy { group = 72; target = "erlang_term::list_term" } }
+        { file = "spi/memo_context.spi"; line = 13; verdict = LibCopy { group = 72; target = "erlang_term::list_term" } }
+        { file = "spi/package_reach.spi"; line = 13; verdict = LibCopy { group = 72; target = "erlang_term::list_term" } }
+        { file = "spi/accept.spi"; line = 7; verdict = LibCopy { group = 74; target = "text::length" } }
+        { file = "spi/display_value.spi"; line = 16; verdict = LibCopy { group = 74; target = "text::length" } }
+        { file = "spi/host_text.spi"; line = 7; verdict = LibCopy { group = 74; target = "text::length" } }
+        { file = "spi/livemd.spi"; line = 7; verdict = LibCopy { group = 74; target = "text::length" } }
+        { file = "spi/shown_text.spi"; line = 7; verdict = LibCopy { group = 74; target = "text::length" } }
+        { file = "spi/text.spi"; line = 7; verdict = LibCopy { group = 74; target = "unicode::byte_count" } }
+        { file = "spi/ipynb.spi"; line = 13; verdict = LibCopy { group = 78; target = "erlang_term::of" } }
+        { file = "spi/runner_loop.spi"; line = 79; verdict = LibCopy { group = 78; target = "erlang_term::of" } }
+        { file = "spi/targets.spi"; line = 157; verdict = LibCopy { group = 78; target = "erlang_term::of" } }
+        { file = "spi/gleam_project.spi"; line = 218; verdict = LibCopy { group = 81; target = "erlang_file::is_directory" } }
+        { file = "spi/daemon.spi"; line = 15; verdict = LibCopy { group = 90; target = "csv::tsv_line" } }
+        { file = "spi/json_value.spi"; line = 79; verdict = LibCopy { group = 92; target = "json_scan::is_low_surrogate" } }
+        { file = "spi/mount_place.spi"; line = 16; verdict = LibCopy { group = 94; target = "erlang_file::make_dir_all" } }
+        { file = "spi/json_value.spi"; line = 77; verdict = LibCopy { group = 95; target = "json_scan::is_high_surrogate" } }
+        { file = "spi/file_lock.spi"; line = 15; verdict = LibCopy { group = 99; target = "erlang_http::ok_tagged" } }
+        { file = "spi/mount_text.spi"; line = 245; verdict = LibCopy { group = 99; target = "erlang_http::ok_tagged" } }
+        { file = "spi/source_stamp.spi"; line = 11; verdict = LibCopy { group = 99; target = "erlang_http::ok_tagged" } }
+        { file = "spi/canonical.spi"; line = 7; verdict = LibCopy { group = 104; target = "text::index" } }
+        { file = "spi/memo_bounds.spi"; line = 13; verdict = LibCopy { group = 111; target = "erlang_term::tuple" } }
+        { file = "spi/memo_context.spi"; line = 15; verdict = LibCopy { group = 111; target = "erlang_term::tuple" } }
+        { file = "spi/mount_place.spi"; line = 10; verdict = LibCopy { group = 111; target = "erlang_term::tuple" } }
+        { file = "spi/mount_stats.spi"; line = 11; verdict = LibCopy { group = 111; target = "erlang_term::tuple" } }
+        { file = "spi/package_reach.spi"; line = 11; verdict = LibCopy { group = 111; target = "erlang_term::tuple" } }
+        { file = "spi/accept_mark.spi"; line = 9; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/cell_collect.spi"; line = 71; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/cells_boot.spi"; line = 7; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/cli_text.spi"; line = 9; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/compile_outcome.spi"; line = 9; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/daemon_host.spi"; line = 79; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/memo_bounds.spi"; line = 11; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/memo_context.spi"; line = 9; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/mount_place.spi"; line = 12; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/mount_plan.spi"; line = 9; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/mount_stats.spi"; line = 9; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/package_reach.spi"; line = 9; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/prepared.spi"; line = 13; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/report_row.spi"; line = 9; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/report_tail.spi"; line = 9; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/runner_edges.spi"; line = 9; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/tool_env.spi"; line = 9; verdict = LibCopy { group = 116; target = "erlang_term::of" } }
+        { file = "spi/prepared.spi"; line = 41; verdict = LocalWrapper { group = 15; target = "verdict_text::elixir_inspect" } }
+        { file = "spi/memo_context.spi"; line = 56; verdict = LocalWrapper { group = 16; target = "memo::tool_stamp" } }
+        { file = "spi/targets.spi"; line = 163; verdict = LocalWrapper { group = 24; target = "notebook::nb_kv" } }
+        { file = "spi/package_reach.spi"; line = 17; verdict = LocalWrapper { group = 37; target = "mount_text::is_ok_tuple" } }
+        { file = "spi/runner_edges.spi"; line = 13; verdict = LocalWrapper { group = 37; target = "mount_text::is_ok_tuple" } }
+        { file = "spi/runner_loop.spi"; line = 9; verdict = LocalWrapper { group = 45; target = "erlang_port::port" } }
+        { file = "spi/runner_loop.spi"; line = 11; verdict = LocalWrapper { group = 46; target = "erlang_process::monitor" } }
+        { file = "spi/ipynb.spi"; line = 9; verdict = LocalWrapper { group = 53; target = "document::cell_kind" } }
+        { file = "spi/targets.spi"; line = 165; verdict = LocalWrapper { group = 76; target = "notebook::nb_map" } }
+        { file = "spi/accept_mark.spi"; line = 21; verdict = NameCollision }
+        { file = "spi/cell_collect.spi"; line = 54; verdict = NameCollision }
+        { file = "spi/slot_table.spi"; line = 77; verdict = TypedPin 3 }
+        { file = "spi/ipynb.spi"; line = 33; verdict = TypedPin 30 }
+        { file = "spi/package_reach.spi"; line = 206; verdict = TypedPin 115 }
+    ]
+
+///> rust
+///> fsharp
+///> gleam
+:# gold_v2_holds_every_judged_site_once =
+    := g = gold_v2 ()
+    (listm::length g, count_if (\ (r : gold_row) => must_not_flag r.verdict) g, count_if (\ (r : gold_row) => lib_target_of r.verdict <> "") g)
+    |> _assert_eq (484, 9, 170)

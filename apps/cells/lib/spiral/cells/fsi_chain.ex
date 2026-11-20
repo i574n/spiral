@@ -7,13 +7,13 @@ defmodule Spiral.Cells.FsiChain do
     redefines `US0` shadows the previous one instead of clashing with it.
   - A relative import path is resolved against the notebook's directory. Other files, notebooks included, are
     refused: F# cells come from the notebook itself.
-  - Each cell holds a job slot (`Spiral.Cells.Slots`) while it runs. The session starts inside the first cell's slot.
+  - Each cell holds a job slot (`Spiral.Cells.Domain.slots_run`) while it runs. The session starts inside the first cell's slot.
   - A cell's budget is the `:timeout` option, else its `///- --timeout <ms>` line, else 300 s (an import cell: per
     submission, i.e. per imported file). A cell that times out
     kills the session; the cells after it fail with a note instead of running against a session that lost its
     definitions.
   """
-  alias Spiral.Cells.{FsiSession, Slots}
+  alias Spiral.Cells.FsiSession
 
   @default_timeout 300_000
 
@@ -52,7 +52,7 @@ defmodule Spiral.Cells.FsiChain do
     if opts[:slots] == false do
       fun.()
     else
-      {result, _waited} = Slots.run(fun)
+      {result, _waited} = Spiral.Cells.Domain.slots_run(fun, nil, nil)
       result
     end
   end
@@ -108,7 +108,7 @@ defmodule Spiral.Cells.FsiChain do
             {:error, %{output: output, reason: :timeout}} ->
               message =
                 join(
-                  Spiral.Cells.Domain.cell_timeout_text("F#", Spiral.Cells.Targets.budget_ms(budget), Spiral.Cells.Directives.scale_note(), "fsi "),
+                  Spiral.Cells.Domain.cell_timeout_text("F#", Spiral.Cells.Targets.budget_ms(budget), Spiral.Cells.Domain.scale_note(), "fsi "),
                   join(acc.stdout, output)
                 )
 
@@ -140,7 +140,7 @@ defmodule Spiral.Cells.FsiChain do
 
   @doc false
   def budget(cell, opts) do
-    opts[:timeout] || Spiral.Cells.Directives.scale_budget(directive_timeout(cell) || @default_timeout)
+    opts[:timeout] || Spiral.Cells.Domain.scale_budget(directive_timeout(cell) || @default_timeout)
   end
 
   defp directive_timeout(%{kind: :fsharp, source: source}) do

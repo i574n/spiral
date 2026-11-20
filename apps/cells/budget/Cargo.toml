@@ -1,0 +1,14 @@
+[package]
+name = "cell_budget"
+version = "0.0.1"
+edition = "2024"
+
+[package.metadata.spiral]
+entry = "cell_budget_cli.spi"
+output = "cell_budget_cli.rs"
+
+[[bin]]
+name = "cell-budget"
+path = "cell_budget_cli.rs"
+
+[workspace]

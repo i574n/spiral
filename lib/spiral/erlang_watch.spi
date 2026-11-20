@@ -1,0 +1,84 @@
+:< sm'_operators
+
+:# erlang_watch static =
+    :< testing
+
+:= erlang_watch_imports () =
+    global "import gleam/erlang/process"
+
+:== trm = erlang_term::term
+
+:| watch_event =
+    | Data : string
+    | ExitStatus : i32
+    | CallerDown
+    | PortClosed
+    | OtherExit : trm
+    | TimedOut
+
+:== ewport = erlang_port::port
+
+:== ewmon = erlang_process::monitor
+
+:== ewsel = erlang_process::selector watch_event
+
+:~ pe_of (kind : string) (v : trm) : watch_event =
+    ? kind = "data"
+    ?> Data (erlang_term::cast v)
+    |? kind = "exit_status"
+    ?> ExitStatus (erlang_term::cast v)
+    |: TimedOut
+
+:~ port_to_event (msg : trm) : watch_event =
+    := payload = erlang_port::message_event msg
+    pe_of (erlang_port::event_kind payload) (erlang_port::event_value payload)
+
+:= exit_from (exm : erlang_process::exit_message) : trm =
+    erlang_watch_imports ()
+    $'!exm.pid' : trm
+
+:~ trapped_to_event (p : ewport) (e : erlang_process::exit_message) : watch_event =
+    ? erlang_term::equal (exit_from e) (erlang_term::of p)
+    ?> PortClosed
+    |: OtherExit (erlang_term::of (erlang_process::exit_message_reason e))
+
+:= select_port \* u. (p : ewport) (mapping : trm -> u) (choices : erlang_process::selector u) : erlang_process::selector u =
+    erlang_watch_imports ()
+    $'process.select_record(!choices, !p, 1, !mapping)' : erlang_process::selector u
+
+:~ caller_gone (_ : erlang_process::down) : watch_event = CallerDown
+
+:~ trap_and_monitor (caller : erlang_process::pid) : ewmon =
+    erlang_process::trap_exits !+
+    erlang_process::monitor caller
+
+:~ watch_main (p : ewport) (caller_mon : ewmon) : ewsel =
+    erlang_process::new_selector ()
+    |> select_port p port_to_event
+    |> erlang_process::select_specific_monitor caller_mon caller_gone
+    |> erlang_process::select_trapped_exits (trapped_to_event p)
+
+:~ watch_after (p : ewport) : ewsel =
+    erlang_process::new_selector ()
+    |> select_port p port_to_event
+    |> erlang_process::select_trapped_exits (trapped_to_event p)
+
+:~ watch_drain (p : ewport) : ewsel =
+    erlang_process::new_selector () |> select_port p port_to_event
+
+:~ watch_within (sel : ewsel) (timeout_ms : i32) : watch_event =
+    ?= erlang_process::selector_receive_within sel timeout_ms |> erlang_process::receipt_value ?|
+    | Some ev => ev
+    | None => TimedOut
+
+:~ watch_forever (sel : ewsel) : watch_event =
+    erlang_process::selector_receive_forever sel
+
+:~ ev_tag (e : watch_event) : string =
+    ?= e ?|
+    | Data _ => "data"
+    | ExitStatus s => "exit" ++#? s
+    | CallerDown => "caller_down"
+    | PortClosed => "port_closed"
+    | OtherExit _ => "other_exit"
+    | TimedOut => "timed_out"

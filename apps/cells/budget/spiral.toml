@@ -1,0 +1,6 @@
+packageDir = '../../../lib'
+packages = ['|core-', 'spiral-', '../spi-']
+modules = '''
+cell_budget_sources
+cell_budget_cli
+'''

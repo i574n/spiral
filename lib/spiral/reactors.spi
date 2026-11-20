@@ -187,11 +187,12 @@
 := merge_four () : reactor () four_signals (signal i64) =
     { init = (); react = \ () _ ((a, b), (c, d)) => (), add_signals (add_signals a b) (add_signals c d) }
 
+:= four_scales () = both (both (scale 1i64) (scale 2i64)) (both (scale 3i64) (scale 4i64))
+
 ///> c
 ///> rust
 :# both_fans_out_and_joins =
-    := bank = both (both (scale 1i64) (scale 2i64)) (both (scale 3i64) (scale 4i64))
-    := _, total = run_ticks (chain (chain (chain (timer 3i64) bank) (merge_four ())) (sink ())) (\ _ => ()) 12i64
+    := _, total = run_ticks (chain (chain (chain (timer 3i64) (four_scales ())) (merge_four ())) (sink ())) (\ _ => ()) 12i64
     total |> _assert_eq (100i64, 4i64)
 
 := burst_start (period : i64) (burst : i32) (now : tag) : i32 * signal i32 =
@@ -363,17 +364,33 @@
 
 :== action_run s a o = { state : s; queue : list (pending a); seq : i64; trace : list (tag * o) }
 
-:~ ^ microsteps \* s i a o.
+:= traced \* o. (now : tag) (out : signal o) (trace : list (tag * o)) : list (tag * o) =
+    ?= out ?|
+    | Present y => (now, y) :: trace
+    | Absent => trace
+
+:= rebuilt \* s a o.
+    (now : tag) (state : s) (out : signal o) (requests : list (i64 * a)) (queue : list (pending a)) (run : action_run s a o)
+    : action_run s a o
+    =
+    := queue, seq = schedule_all now requests run::seq queue
+    { state = state; queue = queue; seq = seq; trace = traced now out run::trace }
+
+:= stepped \* s i a o.
     (program : action_reactor s i a o) (input : tag -> i) (now : tag) (run : action_run s a o)
     : action_run s a o
     =
     := triggered, queue = take_at now run::queue Absent
     := state, out, requests = program::react run::state now (input now) triggered
-    := queue, seq = schedule_all now requests run::seq queue
-    := trace = ?= out ?| Present y => (now, y) :: run::trace | Absent => run::trace
-    := run = { state = state; queue = queue; seq = seq; trace = trace }
+    rebuilt now state out requests queue run
+
+:~ ^ microsteps \* s i a o.
+    (program : action_reactor s i a o) (input : tag -> i) (now : tag) (run : action_run s a o)
+    : action_run s a o
+    =
+    := run = stepped program input now run
     := next = { time = now::time; micro = now::micro + 1i32 }
-    ? has_at next queue ?> microsteps program input next run |: run
+    ? has_at next run::queue ?> microsteps program input next run |: run
 
 :~ ^ action_ticks \* s i a o.
     (program : action_reactor s i a o) (input : tag -> i) (time : i64) (ticks : i64) (run : action_run s a o)
@@ -451,15 +468,22 @@
 :~ ^ reaches (reactions : list declared_reaction) (path : list string) (current : declared_reaction)
     : option (list string)
     =
-    reactions |> listm::fold (\ (found : option (list string)) (next : declared_reaction) =>
-        ?= found ?|
-        | Some _ => found
-        | None =>
-            ? not (feeds current next)
-            ?> None
-            |? listed next::name path
-            ?> Some (listm::rev (next::name :: path))
-            |: reaches reactions (next::name :: path) next) None
+    reactions
+    |> listm::fold (\ (found : option (list string)) (next : declared_reaction) => reach_next reactions path current found next) None
+
+:& :~ reach_next
+    (reactions : list declared_reaction) (path : list string) (current : declared_reaction) (found : option (list string))
+    (next : declared_reaction)
+    : option (list string)
+    =
+    ?= found ?|
+    | Some _ => found
+    | None =>
+        ? not (feeds current next)
+        ?> None
+        |? listed next::name path
+        ?> Some (listm::rev (next::name :: path))
+        |: reaches reactions (next::name :: path) next
 
 := causality_cycle (reactions : list declared_reaction) : option (list string) =
     reactions |> listm::fold (\ (found : option (list string)) (start : declared_reaction) =>
@@ -494,14 +518,16 @@
         physical_queue rest (Some at) (seq + 1i64) (queued { at = at; payload = payload; seq = seq } queue)
     | [] => queue
 
+:= physical_start \* s i a o. (program : action_reactor s i a o) (arrivals : list (i64 * a)) : action_run s a o =
+    := queue = physical_queue arrivals None 0i64 []
+    := count : i32 = listm::length arrivals
+    { state = program::init; queue = queue; seq = conv count; trace = [] }
+
 := run_physical \* s i a o.
     (program : action_reactor s i a o) (input : tag -> i) (arrivals : list (i64 * a)) (ticks : i64)
     : list (tag * o)
     =
-    := queue = physical_queue arrivals None 0i64 []
-    := count : i32 = listm::length arrivals
-    := start = { state = program::init; queue = queue; seq = conv count; trace = [] }
-    := finished = action_ticks program input 0i64 ticks start
+    := finished = action_ticks program input 0i64 ticks (physical_start program arrivals)
     listm::rev finished::trace
 
 := relay_react (count : i32) (now : tag) (x : signal i64) (fired : signal i64) : i32 * signal i64 * list (i64 * i64) =
@@ -513,8 +539,10 @@
 
 := nothing_in (now : tag) : signal i64 = Absent
 
+:= sample_arrivals () : list (i64 * i64) = [ 5i64, 10i64; 5i64, 11i64; 9i64, 12i64 ]
+
 ///> c
 ///> rust
 :# physical_arrivals_take_their_time_as_tag_and_share_a_time_by_microstep =
-    run_physical (relay ()) nothing_in [ 5i64, 10i64; 5i64, 11i64; 9i64, 12i64 ] 12i64 |> trace_stamps
+    run_physical (relay ()) nothing_in (sample_arrivals ()) 12i64 |> trace_stamps
     |> _assert_eq [ 5i64, 0i32, 10i64; 5i64, 1i32, 11i64; 9i64, 0i32, 12i64 ]

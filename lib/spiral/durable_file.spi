@@ -8,32 +8,30 @@
 
 := rust_renamed (to : string) (from : string) : bool = $'std::fs::rename(&*!from, &*!to).is_ok()'
 
+:= rust_write_then_sync (file : file_system::rust_open_file) (text : string) : result () string =
+    ? file_system::rust_written_all file text |> file_system::rust_io_ok |> not
+    ?> Error "the write failed"
+    |: ? rust_synced file |> file_system::rust_io_ok ?> Ok () |: Error "the sync failed"
+
 := rust_written_and_synced (opened : file_system::rust_file_opened) (text : string) : result () string =
     ? file_system::rust_file_opened_ok opened |> not
     ?> Error "the file could not be opened"
-    |:
-        := file = file_system::rust_file_of opened
-        ? file_system::rust_written_all file text |> file_system::rust_io_ok |> not
-        ?> Error "the write failed"
-        |: ? rust_synced file |> file_system::rust_io_ok ?> Ok () |: Error "the sync failed"
+    |: rust_write_then_sync (file_system::rust_file_of opened) text
 
 := durable_append (path : string) (text : string) : result () string =
     run_target_args' (path, text) \|
         | Rust => \ path, text => rust_written_and_synced (file_system::rust_append_opened path) text
         | _ => \ _ => failwith "durable_file.durable_append: only the Rust backend syncs today"
 
+:= dropped_temp (temp : string) (message : string) : result () string =
+    file_system::file_delete temp
+    Error message
+
 := rust_replace (path : string) (text : string) : result () string =
     := temp = path ++# ".tmp"
     ?= rust_written_and_synced (rust_created temp) text ?|
-    | Ok () =>
-        ? rust_renamed path temp
-        ?> Ok ()
-        |:
-            file_system::file_delete temp
-            Error "the rename failed"
-    | Error message =>
-        file_system::file_delete temp
-        Error message
+    | Ok () => ? rust_renamed path temp ?> Ok () |: dropped_temp temp "the rename failed"
+    | Error message => dropped_temp temp message
 
 := replace_atomic (path : string) (text : string) : result () string =
     run_target_args' (path, text) \|
@@ -42,25 +40,43 @@
 
 := trial_path (name : string) : string = file_system::get_temp_path () ++# "/" ++# name
 
+:= expect_none (problem : option string) : () =
+    ?= problem ?|
+    | Some why => failwith why
+    | None => ()
+
+:= append_problem (trial : string) : option string =
+    ? durable_append trial "a" <> Ok () || durable_append trial "b" <> Ok () ?> Some "both appends are synced"
+    |? file_system::read_all_text trial <> "ab" ?> Some "the appends read back in order"
+    |: None
+
+:= temp_left (trial : string) : bool = file_system::file_exists (trial ++# ".tmp")
+
+:= replace_problem (trial : string) : option string =
+    ? replace_atomic trial "new" <> Ok () ?> Some "the replacement is synced and renamed"
+    |? file_system::read_all_text trial <> "new" ?> Some "the file holds the new text"
+    |? temp_left trial ?> Some "no temp file is left behind"
+    |: None
+
+:= missing_problem (missing : string) : option string =
+    ? durable_append missing "a" <> Error "the file could not be opened" ?> Some "append reports the open failure"
+    |? replace_atomic missing "a" <> Error "the file could not be opened" ?> Some "replace reports the open failure"
+    |: None
+
 ///> rust
 :# durable_append_appends_twice_and_reads_back =
     := trial = trial_path "spiral-durable-append-trial.txt"
     file_system::file_delete trial
-    ? durable_append trial "a" <> Ok () || durable_append trial "b" <> Ok () ?> failwith "both appends are synced"
-    ? file_system::read_all_text trial <> "ab" ?> failwith "the appends read back in order"
+    expect_none (append_problem trial)
     file_system::file_delete trial
 
 ///> rust
 :# replace_atomic_replaces_and_leaves_no_temp_file =
     := trial = trial_path "spiral-durable-replace-trial.txt"
     file_system::write_all_text trial "old"
-    ? replace_atomic trial "new" <> Ok () ?> failwith "the replacement is synced and renamed"
-    ? file_system::read_all_text trial <> "new" ?> failwith "the file holds the new text"
-    ? file_system::file_exists (trial ++# ".tmp") ?> failwith "no temp file is left behind"
+    expect_none (replace_problem trial)
     file_system::file_delete trial
 
 ///> rust
 :# durable_writes_report_a_missing_folder =
-    := missing = trial_path "spiral-no-such-folder-for-durable" ++# "/x.txt"
-    ? durable_append missing "a" <> Error "the file could not be opened" ?> failwith "append reports the open failure"
-    ? replace_atomic missing "a" <> Error "the file could not be opened" ?> failwith "replace reports the open failure"
+    expect_none (missing_problem (trial_path "spiral-no-such-folder-for-durable" ++# "/x.txt"))

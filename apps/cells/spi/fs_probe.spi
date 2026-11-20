@@ -1,0 +1,39 @@
+:< sm'_operators
+:< erlang_file
+
+:# fs_probe static =
+    :< testing
+
+:~ probe_dir (name : string) : string =
+    := d = joined_path (test_cache_directory ()) name
+    := _ = remove_tree d
+    := _ = make_dir_all d
+    d
+
+///> gleam
+:# make_dir_all_then_rm_tree =
+    := b = joined_path (test_cache_directory ()) "fsp"
+    := d = joined_path b "a/b/c"
+    (make_dir_all d, is_directory d, remove_tree b, is_directory b) |> _assert_eq (!+, !+, !+, !-)
+
+///> gleam
+:# copy_file_duplicates_content =
+    := d = probe_dir "fsc"
+    := s = joined_path d "s"
+    := _ = file_written s "payload"
+    (copy_file s (joined_path d "t"), file_text (joined_path d "t")) |> _assert_eq (!+, "payload")
+
+///> gleam
+:# list_dir_sees_every_entry =
+    := d = probe_dir "fsl"
+    := _ = file_written (joined_path d "one") "1"
+    := _ = file_written (joined_path d "two") "2"
+    listm::length (list_dir d) |> _assert_eq 2i32
+
+///> gleam
+:# a_symlink_points_at_its_target_and_follows =
+    := d = probe_dir "fsk"
+    := t = joined_path d "real"
+    := _ = file_written t "hi"
+    := l = joined_path d "link"
+    (make_symlink t l, read_symlink l, file_text l) |> _assert_eq (!+, t, "hi")

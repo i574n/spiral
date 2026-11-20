@@ -95,8 +95,8 @@ if ($Compiler) {
 
     { pwsh ../apps/compiler/scripts/formatter/report.ps1 } | Invoke-Block
 
-    $matrixRustToolchain = [regex]::Match([IO.File]::ReadAllText((Resolve-Path ../apps/compiler/scripts/test.ps1)), "'\+((?:nightly-)?[0-9][0-9.-]*)', '-C', 'opt-level").Groups[1].Value
-    if (-not $matrixRustToolchain) { throw 'test.ps1 no longer names the matrix rustc toolchain' }
+    $matrixRustToolchain = [regex]::Match([IO.File]::ReadAllText((Resolve-Path ../rust-toolchain.toml)), '(?m)^\s*channel\s*=\s*"([^"]+)"').Groups[1].Value
+    if (-not $matrixRustToolchain) { throw 'rust-toolchain.toml names no channel (test.ps1 reads the matrix rustc from it through Get-SpiralRustPin)' }
     { rustup toolchain install $matrixRustToolchain --profile minimal } | Invoke-Block
 
     if ($IsLinux) {

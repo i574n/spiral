@@ -1,0 +1,1595 @@
+:# zeta_nat static =
+    :< testing
+
+:= mega_runtime_fail \* t. (message : string) : t = !!!!FailWith(`t, message)
+
+:! interval lower upper = lower * upper * string
+
+:! z_nat_zero = string
+
+:! z_nat_succ n = n * string
+
+:! positional_one = ()
+
+:! positional_zero_bit tail = tail
+
+:! positional_one_bit tail = tail
+
+:| ^ positive_positional_nat bits =
+    | PositivePositionalOne :: positive_positional_nat positional_one
+    | PositivePositionalZeroBit :: \* tail.
+        positive_positional_nat tail ->
+        positive_positional_nat (positional_zero_bit tail)
+    | PositivePositionalOneBit :: \* tail.
+        positive_positional_nat tail ->
+        positive_positional_nat (positional_one_bit tail)
+
+:| ^ positive_positional_successor input output =
+    | PositivePositionalSuccessorOne ::
+        positive_positional_successor positional_one (positional_zero_bit positional_one)
+    | PositivePositionalSuccessorZeroBit :: \* tail.
+        positive_positional_nat tail ->
+        positive_positional_successor (positional_zero_bit tail) (positional_one_bit tail)
+    | PositivePositionalSuccessorOneBit :: \* tail next.
+        positive_positional_successor tail next ->
+        positive_positional_successor (positional_one_bit tail) (positional_zero_bit next)
+
+:= positional_fourteen () :
+    positive_positional_nat (positional_zero_bit (positional_one_bit (positional_one_bit positional_one))) =
+    PositivePositionalZeroBit (
+        PositivePositionalOneBit (
+            PositivePositionalOneBit PositivePositionalOne))
+
+:| ^ positive_positional_add left right result =
+    | PositivePositionalAddOneOne ::
+        positive_positional_add positional_one positional_one (positional_zero_bit positional_one)
+    | PositivePositionalAddOneZeroBit :: \* right.
+        positive_positional_nat right ->
+        positive_positional_add positional_one (positional_zero_bit right) (positional_one_bit right)
+    | PositivePositionalAddZeroBitOne :: \* left.
+        positive_positional_nat left ->
+        positive_positional_add (positional_zero_bit left) positional_one (positional_one_bit left)
+    | PositivePositionalAddOneOneBit :: \* right next.
+        positive_positional_successor right next ->
+        positive_positional_add positional_one (positional_one_bit right) (positional_zero_bit next)
+    | PositivePositionalAddOneBitOne :: \* left next.
+        positive_positional_successor left next ->
+        positive_positional_add (positional_one_bit left) positional_one (positional_zero_bit next)
+    | PositivePositionalAddZeroZero :: \* left right sum.
+        positive_positional_add left right sum ->
+        positive_positional_add (positional_zero_bit left) (positional_zero_bit right) (positional_zero_bit sum)
+    | PositivePositionalAddZeroOne :: \* left right sum.
+        positive_positional_add left right sum ->
+        positive_positional_add (positional_zero_bit left) (positional_one_bit right) (positional_one_bit sum)
+    | PositivePositionalAddOneZero :: \* left right sum.
+        positive_positional_add left right sum ->
+        positive_positional_add (positional_one_bit left) (positional_zero_bit right) (positional_one_bit sum)
+    | PositivePositionalAddOneOneBits :: \* left right next.
+        (\? sum.
+            positive_positional_add left right sum *
+            positive_positional_successor sum next) ->
+        positive_positional_add (positional_one_bit left) (positional_one_bit right) (positional_zero_bit next)
+
+:| ^ positive_positional_multiply left right result =
+    | PositivePositionalMultiplyOne :: \* left.
+        positive_positional_nat left ->
+        positive_positional_multiply left positional_one left
+    | PositivePositionalMultiplyZeroBit :: \* left right product.
+        positive_positional_multiply left right product ->
+        positive_positional_multiply left
+            (positional_zero_bit right)
+            (positional_zero_bit product)
+    | PositivePositionalMultiplyOneBit :: \* left right result.
+        (\? product.
+            positive_positional_multiply left right product *
+            positive_positional_add (positional_zero_bit product) left result) ->
+        positive_positional_multiply left
+            (positional_one_bit right)
+            result
+
+:= ^ positive_positional_successor_output_value \* input output.
+    (proof : positive_positional_successor input output) : positive_positional_nat output =
+    ?= proof ?|
+    | PositivePositionalSuccessorOne =>
+        PositivePositionalZeroBit PositivePositionalOne
+    | PositivePositionalSuccessorZeroBit tail =>
+        PositivePositionalOneBit tail
+    | PositivePositionalSuccessorOneBit tail_proof =>
+        PositivePositionalZeroBit (positive_positional_successor_output_value tail_proof)
+
+:= ^ positive_positional_add_result_value \* left right result.
+    (proof : positive_positional_add left right result) : positive_positional_nat result =
+    ?= proof ?|
+    | PositivePositionalAddOneOne =>
+        PositivePositionalZeroBit PositivePositionalOne
+    | PositivePositionalAddOneZeroBit right_value =>
+        PositivePositionalOneBit right_value
+    | PositivePositionalAddZeroBitOne left_value =>
+        PositivePositionalOneBit left_value
+    | PositivePositionalAddOneOneBit successor_proof =>
+        PositivePositionalZeroBit (positive_positional_successor_output_value successor_proof)
+    | PositivePositionalAddOneBitOne successor_proof =>
+        PositivePositionalZeroBit (positive_positional_successor_output_value successor_proof)
+    | PositivePositionalAddZeroZero inner =>
+        PositivePositionalZeroBit (positive_positional_add_result_value inner)
+    | PositivePositionalAddZeroOne inner =>
+        PositivePositionalOneBit (positive_positional_add_result_value inner)
+    | PositivePositionalAddOneZero inner =>
+        PositivePositionalOneBit (positive_positional_add_result_value inner)
+    | PositivePositionalAddOneOneBits payload =>
+        := \? sum. _, successor_proof = payload
+        PositivePositionalZeroBit (positive_positional_successor_output_value successor_proof)
+
+:= ^ positive_positional_multiply_result_value \* left right result.
+    (proof : positive_positional_multiply left right result) : positive_positional_nat result =
+    ?= proof ?|
+    | PositivePositionalMultiplyOne left_value => left_value
+    | PositivePositionalMultiplyZeroBit inner =>
+        PositivePositionalZeroBit (positive_positional_multiply_result_value inner)
+    | PositivePositionalMultiplyOneBit payload =>
+        := \? product. _, add_proof = payload
+        positive_positional_add_result_value add_proof
+
+:= positive_positional_three_value () :
+    positive_positional_nat (positional_one_bit positional_one) =
+    PositivePositionalOneBit PositivePositionalOne
+
+:| ^ positive_positional_equal left right =
+    | PositivePositionalEqualOne ::
+        positive_positional_equal positional_one positional_one
+    | PositivePositionalEqualZeroBit :: \* left right.
+        positive_positional_equal left right ->
+        positive_positional_equal
+            (positional_zero_bit left)
+            (positional_zero_bit right)
+    | PositivePositionalEqualOneBit :: \* left right.
+        positive_positional_equal left right ->
+        positive_positional_equal
+            (positional_one_bit left)
+            (positional_one_bit right)
+
+:= ^ positive_positional_equal_consume \* left right.
+    (proof : positive_positional_equal left right) : () =
+    ?= proof ?|
+    | PositivePositionalEqualOne => ()
+    | PositivePositionalEqualZeroBit inner =>
+        positive_positional_equal_consume inner
+    | PositivePositionalEqualOneBit inner =>
+        positive_positional_equal_consume inner
+
+:| ^ positive_positional_less left right =
+    | PositivePositionalLessOneZeroBit :: \* right.
+        positive_positional_nat right ->
+        positive_positional_less positional_one (positional_zero_bit right)
+    | PositivePositionalLessOneOneBit :: \* right.
+        positive_positional_nat right ->
+        positive_positional_less positional_one (positional_one_bit right)
+    | PositivePositionalLessHigherZeroZero :: \* left right.
+        positive_positional_less left right ->
+        positive_positional_less
+            (positional_zero_bit left)
+            (positional_zero_bit right)
+    | PositivePositionalLessHigherZeroOne :: \* left right.
+        positive_positional_less left right ->
+        positive_positional_less
+            (positional_zero_bit left)
+            (positional_one_bit right)
+    | PositivePositionalLessHigherOneZero :: \* left right.
+        positive_positional_less left right ->
+        positive_positional_less
+            (positional_one_bit left)
+            (positional_zero_bit right)
+    | PositivePositionalLessHigherOneOne :: \* left right.
+        positive_positional_less left right ->
+        positive_positional_less
+            (positional_one_bit left)
+            (positional_one_bit right)
+    | PositivePositionalLessSameTailZeroOne :: \* left right.
+        positive_positional_equal left right ->
+        positive_positional_less
+            (positional_zero_bit left)
+            (positional_one_bit right)
+
+:= positional_three_equal () :
+    positive_positional_equal
+        (positional_one_bit positional_one)
+        (positional_one_bit positional_one) =
+    PositivePositionalEqualOneBit PositivePositionalEqualOne
+
+:= positional_six_less_seven () :
+    positive_positional_less
+        (positional_zero_bit (positional_one_bit positional_one))
+        (positional_one_bit (positional_one_bit positional_one)) =
+    PositivePositionalLessSameTailZeroOne (positional_three_equal ())
+
+:= positional_thirteen_less_fourteen () :
+    positive_positional_less
+        (positional_one_bit (positional_zero_bit (positional_one_bit positional_one)))
+        (positional_zero_bit (positional_one_bit (positional_one_bit positional_one))) =
+    PositivePositionalLessHigherOneZero (positional_six_less_seven ())
+
+:= positive_positional_two_value () :
+    positive_positional_nat (positional_zero_bit positional_one) =
+    PositivePositionalZeroBit PositivePositionalOne
+
+:= positive_positional_four_value () :
+    positive_positional_nat (positional_zero_bit (positional_zero_bit positional_one)) =
+    PositivePositionalZeroBit (PositivePositionalZeroBit PositivePositionalOne)
+
+:= positive_positional_twelve_value () :
+    positive_positional_nat
+        (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) =
+    PositivePositionalZeroBit (
+        PositivePositionalZeroBit (
+            PositivePositionalOneBit PositivePositionalOne))
+
+:= positive_positional_five_value () :
+    positive_positional_nat (positional_one_bit (positional_zero_bit positional_one)) =
+    PositivePositionalOneBit (positive_positional_two_value ())
+
+:= positive_positional_six_value () :
+    positive_positional_nat (positional_zero_bit (positional_one_bit positional_one)) =
+    PositivePositionalZeroBit (positive_positional_three_value ())
+
+:= positional_four_times_one () :
+    positive_positional_multiply
+        (positional_zero_bit (positional_zero_bit positional_one))
+        positional_one
+        (positional_zero_bit (positional_zero_bit positional_one)) =
+    PositivePositionalMultiplyOne (positive_positional_four_value ())
+
+:= positional_eight_plus_four () :
+    positive_positional_add
+        (positional_zero_bit (positional_zero_bit (positional_zero_bit positional_one)))
+        (positional_zero_bit (positional_zero_bit positional_one))
+        (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) =
+    PositivePositionalAddZeroZero (
+        PositivePositionalAddZeroZero (
+            PositivePositionalAddZeroBitOne PositivePositionalOne))
+
+:= positional_four_times_three () :
+    positive_positional_multiply
+        (positional_zero_bit (positional_zero_bit positional_one))
+        (positional_one_bit positional_one)
+        (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) =
+    PositivePositionalMultiplyOneBit (\? (
+        positional_four_times_one (),
+        positional_eight_plus_four ()))
+
+:= positional_twelve_plus_two () :
+    positive_positional_add
+        (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+        (positional_zero_bit positional_one)
+        (positional_zero_bit (positional_one_bit (positional_one_bit positional_one))) =
+    PositivePositionalAddZeroZero (
+        PositivePositionalAddZeroBitOne (
+            PositivePositionalOneBit PositivePositionalOne))
+
+:= positional_two_less_three () :
+    positive_positional_less
+        (positional_zero_bit positional_one)
+        (positional_one_bit positional_one) =
+    PositivePositionalLessSameTailZeroOne PositivePositionalEqualOne
+
+:! positional_zero = ()
+
+:| nonnegative_positional_nat bits =
+    | NonnegativePositionalZero :: nonnegative_positional_nat positional_zero
+    | NonnegativePositionalPositive :: \* bits.
+        positive_positional_nat bits ->
+        nonnegative_positional_nat bits
+
+:= positive_positional_seven_value () :
+    positive_positional_nat (positional_one_bit (positional_one_bit positional_one)) =
+    PositivePositionalOneBit (positive_positional_three_value ())
+
+:| nonnegative_positional_successor input output =
+    | NonnegativePositionalSuccessorZero ::
+        nonnegative_positional_successor positional_zero positional_one
+    | NonnegativePositionalSuccessorPositive :: \* input output.
+        positive_positional_successor input output ->
+        nonnegative_positional_successor input output
+
+:| positive_positional_successor_synthesis input =
+    | PositivePositionalSuccessorSynthesis :: \* input.
+        (\? output.
+            positive_positional_nat output *
+            positive_positional_successor input output) ->
+        positive_positional_successor_synthesis input
+
+:= ^ synthesize_positive_positional_successor \* input.
+    (value : positive_positional_nat input)
+    : positive_positional_successor_synthesis input =
+    ?= value ?|
+    | PositivePositionalOne =>
+        PositivePositionalSuccessorSynthesis (\? (
+            PositivePositionalZeroBit PositivePositionalOne,
+            PositivePositionalSuccessorOne))
+    | PositivePositionalZeroBit tail =>
+        PositivePositionalSuccessorSynthesis (\? (
+            PositivePositionalOneBit tail,
+            PositivePositionalSuccessorZeroBit tail))
+    | PositivePositionalOneBit tail =>
+        ?= synthesize_positive_positional_successor tail ?|
+        | PositivePositionalSuccessorSynthesis payload =>
+            := \? output. output_value, successor = payload
+            PositivePositionalSuccessorSynthesis (\? (
+                PositivePositionalZeroBit output_value,
+                PositivePositionalSuccessorOneBit successor))
+
+:| nonnegative_positional_successor_synthesis input =
+    | NonnegativePositionalSuccessorSynthesis :: \* input.
+        (\? output.
+            nonnegative_positional_nat output *
+            nonnegative_positional_successor input output) ->
+        nonnegative_positional_successor_synthesis input
+
+:= synthesize_nonnegative_positional_successor \* input.
+    (value : nonnegative_positional_nat input)
+    : nonnegative_positional_successor_synthesis input =
+    ?= value ?|
+    | NonnegativePositionalZero =>
+        NonnegativePositionalSuccessorSynthesis (\? (
+            NonnegativePositionalPositive PositivePositionalOne,
+            NonnegativePositionalSuccessorZero))
+    | NonnegativePositionalPositive positive =>
+        ?= synthesize_positive_positional_successor positive ?|
+        | PositivePositionalSuccessorSynthesis payload =>
+            := \? output. output_value, successor = payload
+            NonnegativePositionalSuccessorSynthesis (\? (
+                NonnegativePositionalPositive output_value,
+                NonnegativePositionalSuccessorPositive successor))
+
+:| positive_positional_order_decision left right =
+    | PositivePositionalOrderDecisionLess :: \* left right.
+        positive_positional_less left right ->
+        positive_positional_order_decision left right
+    | PositivePositionalOrderDecisionEqual :: \* left right.
+        positive_positional_equal left right ->
+        positive_positional_order_decision left right
+    | PositivePositionalOrderDecisionGreater :: \* left right.
+        positive_positional_less right left ->
+        positive_positional_order_decision left right
+
+:= ^ positive_positional_equal_symmetry \* left right.
+    (equal : positive_positional_equal left right)
+    : positive_positional_equal right left =
+    ?= equal ?|
+    | PositivePositionalEqualOne => PositivePositionalEqualOne
+    | PositivePositionalEqualZeroBit tail =>
+        PositivePositionalEqualZeroBit (
+            positive_positional_equal_symmetry tail)
+    | PositivePositionalEqualOneBit tail =>
+        PositivePositionalEqualOneBit (
+            positive_positional_equal_symmetry tail)
+
+:= ^ synthesize_positive_positional_order \* left right.
+    (left_value : positive_positional_nat left)
+    (right_value : positive_positional_nat right)
+    : positive_positional_order_decision left right =
+    ?= left_value ?|
+    | PositivePositionalOne =>
+        ?= right_value ?|
+        | PositivePositionalOne =>
+            PositivePositionalOrderDecisionEqual PositivePositionalEqualOne
+        | PositivePositionalZeroBit right_tail =>
+            PositivePositionalOrderDecisionLess (
+                PositivePositionalLessOneZeroBit right_tail)
+        | PositivePositionalOneBit right_tail =>
+            PositivePositionalOrderDecisionLess (
+                PositivePositionalLessOneOneBit right_tail)
+    | PositivePositionalZeroBit left_tail =>
+        ?= right_value ?|
+        | PositivePositionalOne =>
+            PositivePositionalOrderDecisionGreater (
+                PositivePositionalLessOneZeroBit left_tail)
+        | PositivePositionalZeroBit right_tail =>
+            ?= synthesize_positive_positional_order left_tail right_tail ?|
+            | PositivePositionalOrderDecisionLess less =>
+                PositivePositionalOrderDecisionLess (
+                    PositivePositionalLessHigherZeroZero less)
+            | PositivePositionalOrderDecisionEqual equal =>
+                PositivePositionalOrderDecisionEqual (
+                    PositivePositionalEqualZeroBit equal)
+            | PositivePositionalOrderDecisionGreater greater =>
+                PositivePositionalOrderDecisionGreater (
+                    PositivePositionalLessHigherZeroZero greater)
+        | PositivePositionalOneBit right_tail =>
+            ?= synthesize_positive_positional_order left_tail right_tail ?|
+            | PositivePositionalOrderDecisionLess less =>
+                PositivePositionalOrderDecisionLess (
+                    PositivePositionalLessHigherZeroOne less)
+            | PositivePositionalOrderDecisionEqual equal =>
+                PositivePositionalOrderDecisionLess (
+                    PositivePositionalLessSameTailZeroOne equal)
+            | PositivePositionalOrderDecisionGreater greater =>
+                PositivePositionalOrderDecisionGreater (
+                    PositivePositionalLessHigherOneZero greater)
+    | PositivePositionalOneBit left_tail =>
+        ?= right_value ?|
+        | PositivePositionalOne =>
+            PositivePositionalOrderDecisionGreater (
+                PositivePositionalLessOneOneBit left_tail)
+        | PositivePositionalZeroBit right_tail =>
+            ?= synthesize_positive_positional_order left_tail right_tail ?|
+            | PositivePositionalOrderDecisionLess less =>
+                PositivePositionalOrderDecisionLess (
+                    PositivePositionalLessHigherOneZero less)
+            | PositivePositionalOrderDecisionEqual equal =>
+                PositivePositionalOrderDecisionGreater (
+                    PositivePositionalLessSameTailZeroOne (
+                        positive_positional_equal_symmetry equal))
+            | PositivePositionalOrderDecisionGreater greater =>
+                PositivePositionalOrderDecisionGreater (
+                    PositivePositionalLessHigherZeroOne greater)
+        | PositivePositionalOneBit right_tail =>
+            ?= synthesize_positive_positional_order left_tail right_tail ?|
+            | PositivePositionalOrderDecisionLess less =>
+                PositivePositionalOrderDecisionLess (
+                    PositivePositionalLessHigherOneOne less)
+            | PositivePositionalOrderDecisionEqual equal =>
+                PositivePositionalOrderDecisionEqual (
+                    PositivePositionalEqualOneBit equal)
+            | PositivePositionalOrderDecisionGreater greater =>
+                PositivePositionalOrderDecisionGreater (
+                    PositivePositionalLessHigherOneOne greater)
+
+:| ^ positive_positional_predecessor input output =
+    | PositivePositionalPredecessorTwo ::
+        positive_positional_predecessor
+            (positional_zero_bit positional_one)
+            positional_one
+    | PositivePositionalPredecessorZeroBitHigher :: \* input output.
+        positive_positional_predecessor input output ->
+        positive_positional_predecessor
+            (positional_zero_bit input)
+            (positional_one_bit output)
+    | PositivePositionalPredecessorOneBit :: \* input.
+        positive_positional_nat input ->
+        positive_positional_predecessor
+            (positional_one_bit input)
+            (positional_zero_bit input)
+
+:= ^ positive_positional_predecessor_output_value \* input output.
+    (predecessor : positive_positional_predecessor input output)
+    : positive_positional_nat output =
+    ?= predecessor ?|
+    | PositivePositionalPredecessorTwo =>
+        PositivePositionalOne
+    | PositivePositionalPredecessorZeroBitHigher tail =>
+        PositivePositionalOneBit (
+            positive_positional_predecessor_output_value tail)
+    | PositivePositionalPredecessorOneBit input_value =>
+        PositivePositionalZeroBit input_value
+
+:= ^ positive_positional_predecessor_input_value \* input output.
+    (predecessor : positive_positional_predecessor input output)
+    : positive_positional_nat input =
+    ?= predecessor ?|
+    | PositivePositionalPredecessorTwo =>
+        PositivePositionalZeroBit PositivePositionalOne
+    | PositivePositionalPredecessorZeroBitHigher tail =>
+        PositivePositionalZeroBit (
+            positive_positional_predecessor_input_value tail)
+    | PositivePositionalPredecessorOneBit input_value =>
+        PositivePositionalOneBit input_value
+
+:| positive_positional_predecessor_result input =
+    | PositivePositionalPredecessorResultOne ::
+        positive_positional_predecessor_result positional_one
+    | PositivePositionalPredecessorResultSome :: \* input.
+        (\? output.
+            positive_positional_nat output *
+            positive_positional_predecessor input output) ->
+        positive_positional_predecessor_result input
+
+:= ^ synthesize_positive_positional_predecessor \* input.
+    (value : positive_positional_nat input)
+    : positive_positional_predecessor_result input =
+    ?= value ?|
+    | PositivePositionalOne =>
+        PositivePositionalPredecessorResultOne
+    | PositivePositionalZeroBit tail =>
+        ?= tail ?|
+        | PositivePositionalOne =>
+            PositivePositionalPredecessorResultSome (\? (
+                PositivePositionalOne,
+                PositivePositionalPredecessorTwo))
+        | PositivePositionalZeroBit _ =>
+            ?= synthesize_positive_positional_predecessor tail ?|
+            | PositivePositionalPredecessorResultSome payload =>
+                := \? output. output_value, predecessor = payload
+                PositivePositionalPredecessorResultSome (\? (
+                    PositivePositionalOneBit output_value,
+                    PositivePositionalPredecessorZeroBitHigher predecessor))
+        | PositivePositionalOneBit _ =>
+            ?= synthesize_positive_positional_predecessor tail ?|
+            | PositivePositionalPredecessorResultSome payload =>
+                := \? output. output_value, predecessor = payload
+                PositivePositionalPredecessorResultSome (\? (
+                    PositivePositionalOneBit output_value,
+                    PositivePositionalPredecessorZeroBitHigher predecessor))
+    | PositivePositionalOneBit tail =>
+        PositivePositionalPredecessorResultSome (\? (
+            PositivePositionalZeroBit tail,
+            PositivePositionalPredecessorOneBit tail))
+
+:= positional_three_predecessor_two () :
+    positive_positional_predecessor
+        (positional_one_bit positional_one)
+        (positional_zero_bit positional_one) =
+    PositivePositionalPredecessorOneBit PositivePositionalOne
+
+:= positional_four_predecessor_three () :
+    positive_positional_predecessor
+        (positional_zero_bit (positional_zero_bit positional_one))
+        (positional_one_bit positional_one) =
+    PositivePositionalPredecessorZeroBitHigher PositivePositionalPredecessorTwo
+
+:= positional_five_predecessor_four () :
+    positive_positional_predecessor
+        (positional_one_bit (positional_zero_bit positional_one))
+        (positional_zero_bit (positional_zero_bit positional_one)) =
+    PositivePositionalPredecessorOneBit (positive_positional_two_value ())
+
+:= positional_six_predecessor_five () :
+    positive_positional_predecessor
+        (positional_zero_bit (positional_one_bit positional_one))
+        (positional_one_bit (positional_zero_bit positional_one)) =
+    PositivePositionalPredecessorZeroBitHigher (positional_three_predecessor_two ())
+
+:| ^ synthesized_positive_positional_subtract minuend subtrahend difference =
+    | SynthesizedPositiveSubtractOneFromTwo ::
+        synthesized_positive_positional_subtract
+            (positional_zero_bit positional_one)
+            positional_one
+            positional_one
+    | SynthesizedPositiveSubtractOneFromEvenHigher :: \* tail predecessor.
+        positive_positional_predecessor tail predecessor ->
+        synthesized_positive_positional_subtract
+            (positional_zero_bit tail)
+            positional_one
+            (positional_one_bit predecessor)
+    | SynthesizedPositiveSubtractOneFromOdd :: \* tail.
+        positive_positional_nat tail ->
+        synthesized_positive_positional_subtract
+            (positional_one_bit tail)
+            positional_one
+            (positional_zero_bit tail)
+    | SynthesizedPositiveSubtractEvenEven :: \* minuend subtrahend difference.
+        synthesized_positive_positional_subtract minuend subtrahend difference ->
+        synthesized_positive_positional_subtract
+            (positional_zero_bit minuend)
+            (positional_zero_bit subtrahend)
+            (positional_zero_bit difference)
+    | SynthesizedPositiveSubtractOddOdd :: \* minuend subtrahend difference.
+        synthesized_positive_positional_subtract minuend subtrahend difference ->
+        synthesized_positive_positional_subtract
+            (positional_one_bit minuend)
+            (positional_one_bit subtrahend)
+            (positional_zero_bit difference)
+    | SynthesizedPositiveSubtractOddEvenEqual :: \* left right.
+        positive_positional_equal left right ->
+        synthesized_positive_positional_subtract
+            (positional_one_bit right)
+            (positional_zero_bit left)
+            positional_one
+    | SynthesizedPositiveSubtractOddEvenGreater :: \* minuend subtrahend difference.
+        synthesized_positive_positional_subtract minuend subtrahend difference ->
+        synthesized_positive_positional_subtract
+            (positional_one_bit minuend)
+            (positional_zero_bit subtrahend)
+            (positional_one_bit difference)
+    | SynthesizedPositiveSubtractEvenOddUnit :: \* minuend subtrahend.
+        synthesized_positive_positional_subtract
+            minuend subtrahend positional_one ->
+        synthesized_positive_positional_subtract
+            (positional_zero_bit minuend)
+            (positional_one_bit subtrahend)
+            positional_one
+    | SynthesizedPositiveSubtractEvenOddHigher :: \* minuend subtrahend predecessor.
+        (\? difference.
+            synthesized_positive_positional_subtract
+                minuend subtrahend difference *
+            positive_positional_predecessor difference predecessor) ->
+        synthesized_positive_positional_subtract
+            (positional_zero_bit minuend)
+            (positional_one_bit subtrahend)
+            (positional_one_bit predecessor)
+
+:| synthesized_positive_positional_subtraction minuend subtrahend =
+    | SynthesizedPositivePositionalSubtraction :: \* minuend subtrahend.
+        (\? difference.
+            positive_positional_nat difference *
+            synthesized_positive_positional_subtract
+                minuend subtrahend difference) ->
+        synthesized_positive_positional_subtraction minuend subtrahend
+
+:= ^ synthesize_positive_positional_subtraction \* minuend subtrahend.
+    (greater : positive_positional_less subtrahend minuend)
+    : synthesized_positive_positional_subtraction minuend subtrahend =
+    ?= greater ?|
+    | PositivePositionalLessOneZeroBit right =>
+        ?= right ?|
+        | PositivePositionalOne =>
+            SynthesizedPositivePositionalSubtraction (\? (
+                PositivePositionalOne,
+                SynthesizedPositiveSubtractOneFromTwo))
+        | PositivePositionalZeroBit _ =>
+            ?= synthesize_positive_positional_predecessor right ?|
+            | PositivePositionalPredecessorResultSome payload =>
+                := \? predecessor.
+                    predecessor_value, predecessor_proof = payload
+                SynthesizedPositivePositionalSubtraction (\? (
+                    PositivePositionalOneBit predecessor_value,
+                    SynthesizedPositiveSubtractOneFromEvenHigher
+                        predecessor_proof))
+        | PositivePositionalOneBit _ =>
+            ?= synthesize_positive_positional_predecessor right ?|
+            | PositivePositionalPredecessorResultSome payload =>
+                := \? predecessor.
+                    predecessor_value, predecessor_proof = payload
+                SynthesizedPositivePositionalSubtraction (\? (
+                    PositivePositionalOneBit predecessor_value,
+                    SynthesizedPositiveSubtractOneFromEvenHigher
+                        predecessor_proof))
+    | PositivePositionalLessOneOneBit right =>
+        SynthesizedPositivePositionalSubtraction (\? (
+            PositivePositionalZeroBit right,
+            SynthesizedPositiveSubtractOneFromOdd right))
+    | PositivePositionalLessHigherZeroZero tail_less =>
+        ?= synthesize_positive_positional_subtraction tail_less ?|
+        | SynthesizedPositivePositionalSubtraction payload =>
+            := \? difference. difference_value, subtraction = payload
+            SynthesizedPositivePositionalSubtraction (\? (
+                PositivePositionalZeroBit difference_value,
+                SynthesizedPositiveSubtractEvenEven subtraction))
+    | PositivePositionalLessHigherZeroOne tail_less =>
+        ?= synthesize_positive_positional_subtraction tail_less ?|
+        | SynthesizedPositivePositionalSubtraction payload =>
+            := \? difference. difference_value, subtraction = payload
+            SynthesizedPositivePositionalSubtraction (\? (
+                PositivePositionalOneBit difference_value,
+                SynthesizedPositiveSubtractOddEvenGreater subtraction))
+    | PositivePositionalLessHigherOneZero tail_less =>
+        ?= synthesize_positive_positional_subtraction tail_less ?|
+        | SynthesizedPositivePositionalSubtraction payload =>
+            := \? difference. difference_value, subtraction = payload
+            ?= difference_value ?|
+            | PositivePositionalOne =>
+                SynthesizedPositivePositionalSubtraction (\? (
+                    PositivePositionalOne,
+                    SynthesizedPositiveSubtractEvenOddUnit subtraction))
+            | PositivePositionalZeroBit _ =>
+                ?= synthesize_positive_positional_predecessor difference_value ?|
+                | PositivePositionalPredecessorResultSome predecessor_payload =>
+                    := \? predecessor.
+                        predecessor_value, predecessor_proof = predecessor_payload
+                    SynthesizedPositivePositionalSubtraction (\? (
+                        PositivePositionalOneBit predecessor_value,
+                        SynthesizedPositiveSubtractEvenOddHigher (\? (
+                            subtraction,
+                            predecessor_proof))))
+            | PositivePositionalOneBit _ =>
+                ?= synthesize_positive_positional_predecessor difference_value ?|
+                | PositivePositionalPredecessorResultSome predecessor_payload =>
+                    := \? predecessor.
+                        predecessor_value, predecessor_proof = predecessor_payload
+                    SynthesizedPositivePositionalSubtraction (\? (
+                        PositivePositionalOneBit predecessor_value,
+                        SynthesizedPositiveSubtractEvenOddHigher (\? (
+                            subtraction,
+                            predecessor_proof))))
+    | PositivePositionalLessHigherOneOne tail_less =>
+        ?= synthesize_positive_positional_subtraction tail_less ?|
+        | SynthesizedPositivePositionalSubtraction payload =>
+            := \? difference. difference_value, subtraction = payload
+            SynthesizedPositivePositionalSubtraction (\? (
+                PositivePositionalZeroBit difference_value,
+                SynthesizedPositiveSubtractOddOdd subtraction))
+    | PositivePositionalLessSameTailZeroOne equal =>
+        SynthesizedPositivePositionalSubtraction (\? (
+            PositivePositionalOne,
+            SynthesizedPositiveSubtractOddEvenEqual equal))
+
+:= positive_positional_eighteen_value () =
+    PositivePositionalZeroBit (
+        PositivePositionalOneBit (
+            PositivePositionalZeroBit (
+                PositivePositionalZeroBit PositivePositionalOne)))
+
+:| ival_recursive_descent_blocked parent child =
+    | CertifiedIntervalPositivePositionalRecursiveDescentBlockedEqual :: \* parent child.
+        positive_positional_equal child parent ->
+        ival_recursive_descent_blocked parent child
+    | CertifiedIntervalPositivePositionalRecursiveDescentBlockedGreater :: \* parent child.
+        positive_positional_less parent child ->
+        ival_recursive_descent_blocked parent child
+
+:= ^ positive_positional_equal_transitive \* left middle right.
+    (left_middle : positive_positional_equal left middle)
+    (middle_right : positive_positional_equal middle right)
+    : positive_positional_equal left right =
+    ?= left_middle, middle_right ?|
+    | PositivePositionalEqualOne, PositivePositionalEqualOne =>
+        PositivePositionalEqualOne
+    | PositivePositionalEqualZeroBit left_tail, PositivePositionalEqualZeroBit right_tail =>
+        PositivePositionalEqualZeroBit (
+            positive_positional_equal_transitive left_tail right_tail)
+    | PositivePositionalEqualOneBit left_tail, PositivePositionalEqualOneBit right_tail =>
+        PositivePositionalEqualOneBit (
+            positive_positional_equal_transitive left_tail right_tail)
+
+:= ^ positive_positional_less_rewrite_left \* left middle right.
+    (left_middle : positive_positional_equal left middle)
+    (middle_right : positive_positional_less middle right)
+    : positive_positional_less left right =
+    ?= left_middle ?|
+    | PositivePositionalEqualOne => middle_right
+    | PositivePositionalEqualZeroBit equal_tail =>
+        ?= middle_right ?|
+        | PositivePositionalLessHigherZeroZero less_tail =>
+            PositivePositionalLessHigherZeroZero (
+                positive_positional_less_rewrite_left equal_tail less_tail)
+        | PositivePositionalLessHigherZeroOne less_tail =>
+            PositivePositionalLessHigherZeroOne (
+                positive_positional_less_rewrite_left equal_tail less_tail)
+        | PositivePositionalLessSameTailZeroOne equal_tail_right =>
+            PositivePositionalLessSameTailZeroOne (
+                positive_positional_equal_transitive equal_tail equal_tail_right)
+    | PositivePositionalEqualOneBit equal_tail =>
+        ?= middle_right ?|
+        | PositivePositionalLessHigherOneZero less_tail =>
+            PositivePositionalLessHigherOneZero (
+                positive_positional_less_rewrite_left equal_tail less_tail)
+        | PositivePositionalLessHigherOneOne less_tail =>
+            PositivePositionalLessHigherOneOne (
+                positive_positional_less_rewrite_left equal_tail less_tail)
+
+:! ival_canonical_group_shape_last = ()
+
+:! ival_canonical_group_shape_more next = next
+
+:= assert_ival_complete_reconstruction_runtime
+    (nodes : i64) (primes : i64) (splits : i64) (descents : i64)
+    (root_sum : i64) (product_sum : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(nodes, 11i64)
+    := ok_1 = !!!!EQ(primes, 7i64)
+    := ok_2 = !!!!EQ(splits, 4i64)
+    := ok_3 = !!!!EQ(descents, 8i64)
+    := ok_4 = !!!!EQ(root_sum, 33i64)
+    := ok_5 = !!!!EQ(product_sum, 33i64)
+    ? ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5
+    ?> ()
+    |: mega_runtime_fail "certified-interval-positive-positional-complete-reconstruction-runtime-mismatch"
+
+:= ^ positive_positional_equal_reflexive \* natural.
+    (value : positive_positional_nat natural)
+    : positive_positional_equal natural natural =
+    ?= value ?|
+    | PositivePositionalOne => PositivePositionalEqualOne
+    | PositivePositionalZeroBit tail =>
+        PositivePositionalEqualZeroBit
+            (positive_positional_equal_reflexive tail)
+    | PositivePositionalOneBit tail =>
+        PositivePositionalEqualOneBit
+            (positive_positional_equal_reflexive tail)
+
+:= ^ positive_positional_predecessor_unique \* input left right.
+    (left_predecessor : positive_positional_predecessor input left)
+    (right_predecessor : positive_positional_predecessor input right)
+    : positive_positional_equal left right =
+    ?= left_predecessor, right_predecessor ?|
+    | PositivePositionalPredecessorTwo,
+      PositivePositionalPredecessorTwo =>
+        PositivePositionalEqualOne
+    | PositivePositionalPredecessorZeroBitHigher left_tail,
+      PositivePositionalPredecessorZeroBitHigher right_tail =>
+        PositivePositionalEqualOneBit (
+            positive_positional_predecessor_unique left_tail right_tail)
+    | PositivePositionalPredecessorOneBit input_value,
+      PositivePositionalPredecessorOneBit _ =>
+        PositivePositionalEqualZeroBit (
+            positive_positional_equal_reflexive input_value)
+
+:= positive_positional_predecessor_unique_terminal () : string =
+    := explicit = positional_six_predecessor_five ()
+    ?= synthesize_positive_positional_predecessor (positive_positional_six_value ()) ?|
+    | PositivePositionalPredecessorResultSome payload =>
+        := \? synthesized_output. _, synthesized = payload
+        := _ = positive_positional_predecessor_unique explicit synthesized
+        "the-structural-predecessor-of-one-positive-positional-parent-is-unique-so-the-explicit-six-to-five-proof-a"
+        ^^ "nd-the-independently-synthesized-six-predecessor-must-index-the-same-child"
+
+:= ^ positive_positional_predecessor_implies_less \* input output.
+    (predecessor : positive_positional_predecessor input output)
+    : positive_positional_less output input =
+    ?= predecessor ?|
+    | PositivePositionalPredecessorTwo =>
+        PositivePositionalLessOneZeroBit PositivePositionalOne
+    | PositivePositionalPredecessorZeroBitHigher tail =>
+        PositivePositionalLessHigherOneZero
+            (positive_positional_predecessor_implies_less tail)
+    | PositivePositionalPredecessorOneBit tail =>
+        PositivePositionalLessSameTailZeroOne
+            (positive_positional_equal_reflexive tail)
+
+:= assert_positive_positional_predecessor_less_runtime
+    (input : i64) (output : i64) : () =
+    := ok_0 = !!!!EQ(input, 12i64)
+    := ok_1 = !!!!EQ(output, 11i64)
+    := ok_2 = !!!!LT(output, input)
+    ? ok_0 && ok_1 && ok_2 ?> () |: mega_runtime_fail "positive-positional-predecessor-less-runtime-mismatch"
+
+:| ^ positive_positional_predecessor_accessibility natural =
+    | PositivePositionalPredecessorAccessibilityOne ::
+        string -> positive_positional_predecessor_accessibility positional_one
+    | PositivePositionalPredecessorAccessibilityStep :: \* input.
+        (\? predecessor.
+            positive_positional_predecessor input predecessor *
+            positive_positional_predecessor_accessibility predecessor * string) ->
+        positive_positional_predecessor_accessibility input
+
+:= ^ derive_positive_positional_predecessor_accessibility \* input.
+    (value : positive_positional_nat input)
+    : positive_positional_predecessor_accessibility input =
+    ?= synthesize_positive_positional_predecessor value ?|
+    | PositivePositionalPredecessorResultOne =>
+        PositivePositionalPredecessorAccessibilityOne
+            "one-closes-the-total-positive-predecessor-accessibility-chain"
+    | PositivePositionalPredecessorResultSome payload =>
+        := \? predecessor. _, predecessor_proof = payload
+        := predecessor_value =
+            positive_positional_predecessor_output_value predecessor_proof
+        PositivePositionalPredecessorAccessibilityStep (\? (
+            predecessor_proof,
+            derive_positive_positional_predecessor_accessibility predecessor_value,
+            "every-nonunit-positive-value-derives-its-smaller-predecessor-and-recursive-accessibility"))
+
+:= assert_positive_positional_predecessor_accessibility_runtime
+    (root : i64) (nodes : i64) (edges : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(root, 12i64)
+    := ok_1 = !!!!EQ(nodes, 12i64)
+    := ok_2 = !!!!EQ(edges, 11i64)
+    ? ok_0 && ok_1 && ok_2
+    ?> ()
+    |: mega_runtime_fail "positive-positional-predecessor-accessibility-runtime-mismatch"
+
+:= positive_positional_predecessor_accessibility_root_value \* natural.
+    (accessibility : positive_positional_predecessor_accessibility natural) :
+    positive_positional_nat natural =
+    ?= accessibility ?|
+    | PositivePositionalPredecessorAccessibilityOne _ => PositivePositionalOne
+    | PositivePositionalPredecessorAccessibilityStep payload =>
+        := \? predecessor. predecessor_proof, _, _ = payload
+        positive_positional_predecessor_input_value predecessor_proof
+
+:| positive_positional_parent_derived_child_accessibility child =
+    | PositivePositionalParentDerivedChildAccessibility :: \* child.
+        (\? parent synthesized_child.
+            positive_positional_predecessor_accessibility parent *
+            positive_positional_predecessor parent synthesized_child *
+            positive_positional_equal synthesized_child child *
+            positive_positional_predecessor_accessibility synthesized_child) ->
+        positive_positional_parent_derived_child_accessibility child
+
+:= derive_positive_positional_parent_child_accessibility \* parent child.
+    (parent_accessibility : positive_positional_predecessor_accessibility parent)
+    (child_predecessor : positive_positional_predecessor parent child) :
+    positive_positional_parent_derived_child_accessibility child =
+    ?= parent_accessibility, child_predecessor ?|
+    | PositivePositionalPredecessorAccessibilityStep payload, child_predecessor =>
+        := \? synthesized_child. synthesized_predecessor, synthesized_accessibility, _ = payload
+        := equal = positive_positional_predecessor_unique synthesized_predecessor child_predecessor
+        PositivePositionalParentDerivedChildAccessibility (\? (
+            parent_accessibility,
+            synthesized_predecessor,
+            equal,
+            synthesized_accessibility))
+
+:= assert_ival_accessible_child_unit_runtime
+    (nodes : i64) (primes : i64) (splits : i64) (root : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(nodes, 1i64)
+    := ok_1 = !!!!EQ(primes, 0i64)
+    := ok_2 = !!!!EQ(splits, 0i64)
+    := ok_3 = !!!!EQ(root, 1i64)
+    ? ok_0 && ok_1 && ok_2 && ok_3
+    ?> ()
+    |: mega_runtime_fail "certified-interval-positive-positional-accessible-child-unit-runtime-mismatch"
+
+:= assert_ival_membership_accessible_child_runtime
+    (first_candidate : i64) (first_nodes : i64) (first_primes : i64)
+    (first_splits : i64) (first_root : i64) (first_blocked : i64)
+    (second_candidate : i64) (second_nodes : i64) (second_primes : i64)
+    (second_splits : i64) (second_root : i64) (second_blocked : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(first_candidate, 6i64)
+    := ok_1 = !!!!EQ(first_nodes, 3i64)
+    := ok_2 = !!!!EQ(first_primes, 2i64)
+    := ok_3 = !!!!EQ(first_splits, 1i64)
+    := ok_4 = !!!!EQ(first_root, 6i64)
+    := ok_5 = !!!!EQ(first_blocked, 0i64)
+    := ok_6 = !!!!EQ(second_candidate, 9i64)
+    := ok_7 = !!!!EQ(second_nodes, 3i64)
+    := ok_8 = !!!!EQ(second_primes, 2i64)
+    := ok_9 = !!!!EQ(second_splits, 1i64)
+    := ok_10 = !!!!EQ(second_root, 9i64)
+    := ok_11 = !!!!EQ(second_blocked, 0i64)
+    ? ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11
+    ?> ()
+    |: mega_runtime_fail "certified-interval-positive-positional-membership-accessible-child-runtime-mismatch"
+
+:= ^ positive_positional_equal_left_value \* left right.
+    (proof : positive_positional_equal left right)
+    : positive_positional_nat left =
+    ?= proof ?|
+    | PositivePositionalEqualOne => PositivePositionalOne
+    | PositivePositionalEqualZeroBit tail =>
+        PositivePositionalZeroBit
+            (positive_positional_equal_left_value tail)
+    | PositivePositionalEqualOneBit tail =>
+        PositivePositionalOneBit
+            (positive_positional_equal_left_value tail)
+
+:= ^ positive_positional_less_left_value \* left right.
+    (proof : positive_positional_less left right)
+    : positive_positional_nat left =
+    ?= proof ?|
+    | PositivePositionalLessOneZeroBit _ => PositivePositionalOne
+    | PositivePositionalLessOneOneBit _ => PositivePositionalOne
+    | PositivePositionalLessHigherZeroZero tail =>
+        PositivePositionalZeroBit
+            (positive_positional_less_left_value tail)
+    | PositivePositionalLessHigherZeroOne tail =>
+        PositivePositionalZeroBit
+            (positive_positional_less_left_value tail)
+    | PositivePositionalLessHigherOneZero tail =>
+        PositivePositionalOneBit
+            (positive_positional_less_left_value tail)
+    | PositivePositionalLessHigherOneOne tail =>
+        PositivePositionalOneBit
+            (positive_positional_less_left_value tail)
+    | PositivePositionalLessSameTailZeroOne equal_tail =>
+        PositivePositionalZeroBit
+            (positive_positional_equal_left_value equal_tail)
+
+:= derive_positive_positional_strict_predecessor_accessibility \* lower upper.
+    (_upper_value : positive_positional_nat upper)
+    (proof : positive_positional_less lower upper)
+    : positive_positional_nat lower *
+      positive_positional_predecessor_accessibility lower =
+    := lower_value = positive_positional_less_left_value proof
+    lower_value,
+    derive_positive_positional_predecessor_accessibility lower_value
+
+:= assert_positive_positional_strict_predecessor_accessibility_runtime
+    (first_lower : i64) (first_upper : i64)
+    (first_nodes : i64) (first_edges : i64)
+    (second_lower : i64) (second_upper : i64)
+    (second_nodes : i64) (second_edges : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(first_lower, 6i64)
+    := ok_1 = !!!!EQ(first_upper, 7i64)
+    := ok_2 = !!!!EQ(first_nodes, 6i64)
+    := ok_3 = !!!!EQ(first_edges, 5i64)
+    := ok_4 = !!!!EQ(second_lower, 13i64)
+    := ok_5 = !!!!EQ(second_upper, 14i64)
+    := ok_6 = !!!!EQ(second_nodes, 13i64)
+    := ok_7 = !!!!EQ(second_edges, 12i64)
+    ? ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7
+    ?> ()
+    |: mega_runtime_fail "positive-positional-strict-predecessor-accessibility-runtime-mismatch"
+
+:= ^ positive_positional_multiply_left_value \* left right result.
+    (proof : positive_positional_multiply left right result)
+    : positive_positional_nat left =
+    ?= proof ?|
+    | PositivePositionalMultiplyOne left_value => left_value
+    | PositivePositionalMultiplyZeroBit tail =>
+        positive_positional_multiply_left_value tail
+    | PositivePositionalMultiplyOneBit payload =>
+        := \? product. tail, _ = payload
+        positive_positional_multiply_left_value tail
+
+:= ^ positive_positional_multiply_right_value \* left right result.
+    (proof : positive_positional_multiply left right result)
+    : positive_positional_nat right =
+    ?= proof ?|
+    | PositivePositionalMultiplyOne _ =>
+        PositivePositionalOne
+    | PositivePositionalMultiplyZeroBit tail =>
+        PositivePositionalZeroBit (positive_positional_multiply_right_value tail)
+    | PositivePositionalMultiplyOneBit payload =>
+        := \? product. multiplication, _ = payload
+        PositivePositionalOneBit (positive_positional_multiply_right_value multiplication)
+
+:= assert_positive_positional_quotient_accessibility_runtime
+    (dividend : i64) (divisor : i64) (quotient : i64)
+    (remainder : i64) (nodes : i64) (edges : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(dividend, 14i64)
+    := ok_1 = !!!!EQ(divisor, 3i64)
+    := ok_2 = !!!!EQ(quotient, 4i64)
+    := ok_3 = !!!!EQ(remainder, 2i64)
+    := term_0 = !!!!Mult(quotient, divisor)
+    := term_1 = !!!!Add(term_0, remainder)
+    := ok_4 = !!!!EQ(dividend, term_1)
+    := ok_5 = !!!!EQ(nodes, quotient)
+    := term_2 = !!!!Sub(quotient, 1i64)
+    := ok_6 = !!!!EQ(edges, term_2)
+    ? ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6
+    ?> ()
+    |: mega_runtime_fail "positive-positional-quotient-accessibility-runtime-mismatch"
+
+:= positional_one_times_three () :
+    positive_positional_multiply
+        positional_one
+        (positional_one_bit positional_one)
+        (positional_one_bit positional_one) =
+    PositivePositionalMultiplyOneBit (\? (
+        PositivePositionalMultiplyOne PositivePositionalOne,
+        PositivePositionalAddZeroBitOne PositivePositionalOne))
+
+:= positional_three_plus_one () :
+    positive_positional_add
+        (positional_one_bit positional_one)
+        positional_one
+        (positional_zero_bit (positional_zero_bit positional_one)) =
+    PositivePositionalAddOneBitOne PositivePositionalSuccessorOne
+
+:= positional_one_less_three () :
+    positive_positional_less
+        positional_one
+        (positional_one_bit positional_one) =
+    PositivePositionalLessOneOneBit PositivePositionalOne
+
+:= assert_positive_positional_two_stage_quotient_accessibility_runtime
+    (middle : i64) (quotient : i64)
+    (middle_nodes : i64) (middle_edges : i64)
+    (quotient_nodes : i64) (quotient_edges : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(middle, 4i64)
+    := ok_1 = !!!!EQ(quotient, 1i64)
+    := ok_2 = !!!!EQ(middle_nodes, 4i64)
+    := ok_3 = !!!!EQ(middle_edges, 3i64)
+    := ok_4 = !!!!EQ(quotient_nodes, 1i64)
+    := ok_5 = !!!!EQ(quotient_edges, 0i64)
+    ? ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5
+    ?> ()
+    |: mega_runtime_fail "positive-positional-two-stage-quotient-accessibility-runtime-mismatch"
+
+:= positional_one_times_one () :
+    positive_positional_multiply positional_one positional_one positional_one =
+    PositivePositionalMultiplyOne PositivePositionalOne
+
+:= positional_one_times_two () :
+    positive_positional_multiply
+        positional_one
+        (positional_zero_bit positional_one)
+        (positional_zero_bit positional_one) =
+    PositivePositionalMultiplyZeroBit (positional_one_times_one ())
+
+:= positional_one_times_four () :
+    positive_positional_multiply
+        positional_one
+        (positional_zero_bit (positional_zero_bit positional_one))
+        (positional_zero_bit (positional_zero_bit positional_one)) =
+    PositivePositionalMultiplyZeroBit (positional_one_times_two ())
+
+:= positional_eight_plus_one () :
+    positive_positional_add
+        (positional_zero_bit
+            (positional_zero_bit
+                (positional_zero_bit positional_one)))
+        positional_one
+        (positional_one_bit
+            (positional_zero_bit
+                (positional_zero_bit positional_one))) =
+    PositivePositionalAddZeroBitOne (positive_positional_four_value ())
+
+:= positional_one_times_nine () :
+    positive_positional_multiply
+        positional_one
+        (positional_one_bit
+            (positional_zero_bit
+                (positional_zero_bit positional_one)))
+        (positional_one_bit
+            (positional_zero_bit
+                (positional_zero_bit positional_one))) =
+    PositivePositionalMultiplyOneBit (\? (
+        positional_one_times_four (),
+        positional_eight_plus_one ()))
+
+:= positional_four_plus_two () :
+    positive_positional_add
+        (positional_zero_bit (positional_zero_bit positional_one))
+        (positional_zero_bit positional_one)
+        (positional_zero_bit (positional_one_bit positional_one)) =
+    PositivePositionalAddZeroZero (
+        PositivePositionalAddZeroBitOne PositivePositionalOne)
+
+:= positional_six_successor_seven () :
+    positive_positional_successor
+        (positional_zero_bit (positional_one_bit positional_one))
+        (positional_one_bit (positional_one_bit positional_one)) =
+    PositivePositionalSuccessorZeroBit (positive_positional_three_value ())
+
+:= positional_nine_plus_five () :
+    positive_positional_add
+        (positional_one_bit
+            (positional_zero_bit
+                (positional_zero_bit positional_one)))
+        (positional_one_bit (positional_zero_bit positional_one))
+        (positional_zero_bit
+            (positional_one_bit
+                (positional_one_bit positional_one))) =
+    PositivePositionalAddOneOneBits (\? (
+        positional_four_plus_two (),
+        positional_six_successor_seven ()))
+
+:= positional_five_less_nine () :
+    positive_positional_less
+        (positional_one_bit (positional_zero_bit positional_one))
+        (positional_one_bit
+            (positional_zero_bit
+                (positional_zero_bit positional_one))) =
+    PositivePositionalLessHigherOneOne (
+        PositivePositionalLessHigherZeroZero (
+            PositivePositionalLessOneZeroBit PositivePositionalOne))
+
+:= assert_positive_positional_flattened_quotient_composition_runtime
+    (dividend : i64) (composite_divisor : i64)
+    (quotient : i64) (remainder : i64)
+    (nodes : i64) (edges : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(dividend, 14i64)
+    := ok_1 = !!!!EQ(composite_divisor, 9i64)
+    := ok_2 = !!!!EQ(quotient, 1i64)
+    := ok_3 = !!!!EQ(remainder, 5i64)
+    := term_0 = !!!!Mult(quotient, composite_divisor)
+    := term_1 = !!!!Add(term_0, remainder)
+    := ok_4 = !!!!EQ(dividend, term_1)
+    := ok_5 = !!!!LT(remainder, composite_divisor)
+    := ok_6 = !!!!EQ(nodes, 1i64)
+    := ok_7 = !!!!EQ(edges, 0i64)
+    ? ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7
+    ?> ()
+    |: mega_runtime_fail "positive-positional-flattened-quotient-composition-runtime-mismatch"
+
+:= assert_positive_positional_generic_flattened_quotient_chain_runtime
+    (middle : i64) (staged_quotient : i64) (flattened_quotient : i64)
+    (middle_nodes : i64) (middle_edges : i64)
+    (staged_nodes : i64) (staged_edges : i64)
+    (flattened_nodes : i64) (flattened_edges : i64)
+    (quotients_definitionally_shared : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(middle, 4i64)
+    := ok_1 = !!!!EQ(staged_quotient, 1i64)
+    := ok_2 = !!!!EQ(flattened_quotient, 1i64)
+    := ok_3 = !!!!EQ(middle_nodes, 4i64)
+    := ok_4 = !!!!EQ(middle_edges, 3i64)
+    := ok_5 = !!!!EQ(staged_nodes, 1i64)
+    := ok_6 = !!!!EQ(staged_edges, 0i64)
+    := ok_7 = !!!!EQ(flattened_nodes, 1i64)
+    := ok_8 = !!!!EQ(flattened_edges, 0i64)
+    := ok_9 = !!!!EQ(quotients_definitionally_shared, 1i64)
+    ? ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9
+    ?> ()
+    |: mega_runtime_fail "positive-positional-generic-flattened-quotient-chain-runtime-mismatch"
+
+:| ^ positive_positional_transitive_predecessor_path input output =
+    | PositivePositionalTransitivePredecessorPathDone :: \* natural.
+        positive_positional_nat natural ->
+        positive_positional_transitive_predecessor_path natural natural
+    | PositivePositionalTransitivePredecessorPathStep :: \* input output.
+        (\? middle.
+            positive_positional_nat middle *
+            positive_positional_predecessor input middle *
+            positive_positional_less middle input *
+            positive_positional_transitive_predecessor_path middle output) ->
+        positive_positional_transitive_predecessor_path input output
+
+:| positive_positional_strict_predecessor_path input output =
+    | PositivePositionalStrictPredecessorPathOne :: \* input output.
+        positive_positional_nat output *
+        positive_positional_predecessor input output *
+        positive_positional_less output input ->
+        positive_positional_strict_predecessor_path input output
+    | PositivePositionalStrictPredecessorPathMore :: \* input output.
+        (\? middle.
+            positive_positional_nat middle *
+            positive_positional_predecessor input middle *
+            positive_positional_less middle input *
+            positive_positional_transitive_predecessor_path middle output) ->
+        positive_positional_strict_predecessor_path input output
+
+:= positive_positional_strict_predecessor_path_to_transitive_path \* input output.
+    (path : positive_positional_strict_predecessor_path input output)
+    : positive_positional_transitive_predecessor_path input output =
+    ?= path ?|
+    | PositivePositionalStrictPredecessorPathOne
+        (output_value, predecessor, strict_less) =>
+        PositivePositionalTransitivePredecessorPathStep (\? (
+            output_value,
+            predecessor,
+            strict_less,
+            PositivePositionalTransitivePredecessorPathDone output_value))
+    | PositivePositionalStrictPredecessorPathMore payload =>
+        := \? middle. middle_value, predecessor, strict_less, tail = payload
+        PositivePositionalTransitivePredecessorPathStep (\? (
+            middle_value,
+            predecessor,
+            strict_less,
+            tail))
+
+:= ^ positive_positional_transitive_predecessor_path_output_value \* input output.
+    (path : positive_positional_transitive_predecessor_path input output)
+    : positive_positional_nat output =
+    ?= path ?|
+    | PositivePositionalTransitivePredecessorPathDone output_value =>
+        output_value
+    | PositivePositionalTransitivePredecessorPathStep payload =>
+        := \? middle. _, _, _, tail = payload
+        positive_positional_transitive_predecessor_path_output_value tail
+
+:= positive_positional_transitive_predecessor_path_output_accessibility \* input output.
+    (path : positive_positional_transitive_predecessor_path input output)
+    : positive_positional_predecessor_accessibility output =
+    derive_positive_positional_predecessor_accessibility
+        (positive_positional_transitive_predecessor_path_output_value path)
+
+:= ^ positive_positional_accessibility_to_transitive_path \* natural.
+    (value : positive_positional_nat natural)
+    (accessibility : positive_positional_predecessor_accessibility natural)
+    : positive_positional_transitive_predecessor_path natural positional_one =
+    ?= accessibility ?|
+    | PositivePositionalPredecessorAccessibilityOne _ =>
+        PositivePositionalTransitivePredecessorPathDone PositivePositionalOne
+    | PositivePositionalPredecessorAccessibilityStep payload =>
+        := \? predecessor.
+            predecessor_proof, tail, _ = payload
+        := predecessor_value =
+            positive_positional_predecessor_output_value predecessor_proof
+        := predecessor_less =
+            positive_positional_predecessor_implies_less predecessor_proof
+        PositivePositionalTransitivePredecessorPathStep (\? (
+            predecessor_value,
+            predecessor_proof,
+            predecessor_less,
+            positive_positional_accessibility_to_transitive_path
+                predecessor_value tail))
+
+:= assert_positive_positional_transitive_predecessor_path_runtime
+    (input : i64) (output : i64) (nodes : i64) (edges : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(input, 12i64)
+    := ok_1 = !!!!EQ(output, 1i64)
+    := ok_2 = !!!!EQ(nodes, 12i64)
+    := ok_3 = !!!!EQ(edges, 11i64)
+    ? ok_0 && ok_1 && ok_2 && ok_3
+    ?> ()
+    |: mega_runtime_fail "positive-positional-transitive-predecessor-path-runtime-mismatch"
+
+:= ^ positive_positional_transitive_predecessor_path_append \* input bridge output.
+    (left : positive_positional_transitive_predecessor_path input bridge)
+    (right : positive_positional_transitive_predecessor_path bridge output)
+    : positive_positional_transitive_predecessor_path input output =
+    ?= left ?|
+    | PositivePositionalTransitivePredecessorPathDone _ => right
+    | PositivePositionalTransitivePredecessorPathStep payload =>
+        := \? next. next_value, predecessor, strict_less, tail = payload
+        PositivePositionalTransitivePredecessorPathStep (\? (
+            next_value,
+            predecessor,
+            strict_less,
+            positive_positional_transitive_predecessor_path_append tail right))
+
+:= assert_positive_positional_nonidentity_three_segment_path_associativity_runtime
+    (left_input : i64) (left_output : i64)
+    (left_nodes : i64) (left_edges : i64)
+    (right_input : i64) (right_output : i64)
+    (right_nodes : i64) (right_edges : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(left_input, 4i64)
+    := ok_1 = !!!!EQ(left_output, 1i64)
+    := ok_2 = !!!!EQ(left_nodes, 4i64)
+    := ok_3 = !!!!EQ(left_edges, 3i64)
+    := ok_4 = !!!!EQ(right_input, 4i64)
+    := ok_5 = !!!!EQ(right_output, 1i64)
+    := ok_6 = !!!!EQ(right_nodes, 4i64)
+    := ok_7 = !!!!EQ(right_edges, 3i64)
+    ? ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7
+    ?> ()
+    |: mega_runtime_fail "positive-positional-nonidentity-three-segment-path-associativity-runtime-mismatch"
+
+:= assert_positive_positional_transitive_predecessor_path_append_measure_runtime
+    (input : i64) (output : i64)
+    (joined_nodes : i64) (joined_edges : i64)
+    (expected_nodes : i64) (expected_edges : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(input, 4i64)
+    := ok_1 = !!!!EQ(output, 1i64)
+    := ok_2 = !!!!EQ(joined_nodes, 4i64)
+    := ok_3 = !!!!EQ(joined_edges, 3i64)
+    := ok_4 = !!!!EQ(joined_nodes, expected_nodes)
+    := ok_5 = !!!!EQ(joined_edges, expected_edges)
+    ? ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5
+    ?> ()
+    |: mega_runtime_fail "positive-positional-transitive-predecessor-path-append-measure-runtime-mismatch"
+
+:= ^ positive_positional_successor_output_value \* input output.
+    (successor : positive_positional_successor input output)
+    : positive_positional_nat output =
+    ?= successor ?|
+    | PositivePositionalSuccessorOne =>
+        PositivePositionalZeroBit PositivePositionalOne
+    | PositivePositionalSuccessorZeroBit tail =>
+        PositivePositionalOneBit tail
+    | PositivePositionalSuccessorOneBit tail =>
+        PositivePositionalZeroBit (
+            positive_positional_successor_output_value tail)
+
+:= nonnegative_positional_successor_output_value \* input output.
+    (successor : nonnegative_positional_successor input output)
+    : nonnegative_positional_nat output =
+    ?= successor ?|
+    | NonnegativePositionalSuccessorZero =>
+        NonnegativePositionalPositive PositivePositionalOne
+    | NonnegativePositionalSuccessorPositive positive =>
+        NonnegativePositionalPositive (
+            positive_positional_successor_output_value positive)
+
+:= assert_ival_sealed_composite_children_runtime
+    (first_divisor : i64) (first_quotient : i64)
+    (second_divisor : i64) (second_quotient : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(first_divisor, 6i64)
+    := ok_1 = !!!!EQ(first_quotient, 2i64)
+    := ok_2 = !!!!EQ(second_divisor, 9i64)
+    := ok_3 = !!!!EQ(second_quotient, 2i64)
+    ? ok_0 && ok_1 && ok_2 && ok_3
+    ?> ()
+    |: mega_runtime_fail "certified-interval-positive-positional-sealed-composite-children-runtime-mismatch"
+
+:= assert_ival_membership_strict_path_runtime
+    (first_root : i64) (first_divisor : i64)
+    (first_path_nodes : i64) (first_path_edges : i64)
+    (first_parent_nodes : i64) (first_parent_edges : i64)
+    (first_child_nodes : i64) (first_child_edges : i64)
+    (second_root : i64) (second_divisor : i64)
+    (second_path_nodes : i64) (second_path_edges : i64)
+    (second_parent_nodes : i64) (second_parent_edges : i64)
+    (second_child_nodes : i64) (second_child_edges : i64)
+    : ()
+    =
+    := ok_0 = !!!!EQ(first_root, 12i64)
+    := ok_1 = !!!!EQ(first_divisor, 6i64)
+    := ok_2 = !!!!EQ(first_path_nodes, 7i64)
+    := ok_3 = !!!!EQ(first_path_edges, 6i64)
+    := ok_4 = !!!!EQ(first_parent_nodes, 12i64)
+    := ok_5 = !!!!EQ(first_parent_edges, 11i64)
+    := ok_6 = !!!!EQ(first_child_nodes, 6i64)
+    := ok_7 = !!!!EQ(first_child_edges, 5i64)
+    := term_0 = !!!!Add(first_path_edges, first_child_edges)
+    := ok_8 = !!!!EQ(first_parent_edges, term_0)
+    := term_1 = !!!!Add(first_path_edges, first_child_nodes)
+    := ok_9 = !!!!EQ(first_parent_nodes, term_1)
+    := ok_10 = !!!!EQ(second_root, 18i64)
+    := ok_11 = !!!!EQ(second_divisor, 9i64)
+    := ok_12 = !!!!EQ(second_path_nodes, 10i64)
+    := ok_13 = !!!!EQ(second_path_edges, 9i64)
+    := ok_14 = !!!!EQ(second_parent_nodes, 18i64)
+    := ok_15 = !!!!EQ(second_parent_edges, 17i64)
+    := ok_16 = !!!!EQ(second_child_nodes, 9i64)
+    := ok_17 = !!!!EQ(second_child_edges, 8i64)
+    := term_2 = !!!!Add(second_path_edges, second_child_edges)
+    := ok_18 = !!!!EQ(second_parent_edges, term_2)
+    := term_3 = !!!!Add(second_path_edges, second_child_nodes)
+    := ok_19 = !!!!EQ(second_parent_nodes, term_3)
+    ?
+        ok_0
+        && ok_1
+        && ok_2
+        && ok_3
+        && ok_4
+        && ok_5
+        && ok_6
+        && ok_7
+        && ok_8
+        && ok_9
+        && ok_10
+        && ok_11
+        && ok_12
+        && ok_13
+        && ok_14
+        && ok_15
+        && ok_16
+        && ok_17
+        && ok_18
+        && ok_19
+    ?> ()
+    |: mega_runtime_fail "certified-interval-positive-positional-membership-strict-path-runtime-mismatch"
+
+:! ival_first_run_multiplicity_shape_last head = head
+
+:! ival_first_run_multiplicity_shape_more head = head
+
+:= assert_ival_same_root_first_run_multiplicity_shape_runtime
+    (left_shape : i64) (right_shape : i64) : () =
+    := ok_0 = !!!!EQ(left_shape, 1i64)
+    := ok_1 = !!!!EQ(right_shape, 1i64)
+    ? ok_0 && ok_1 ?> () |: mega_runtime_fail "same-root-six-first-run-multiplicity-shape-mismatch"
+
+:! ival_canonical_profile_outer_shape_done = ()
+
+:! ival_canonical_profile_outer_shape_some head = head
+
+:= assert_ival_six_distinct_tree_normalization_runtime
+    (left_divisor : i64) (left_quotient : i64)
+    (right_divisor : i64) (right_quotient : i64)
+    (left_groups : i64) (left_cells : i64) (left_product : i64)
+    (left_first : i64) (left_last : i64) (left_max : i64) (left_mismatch : i64)
+    (right_groups : i64) (right_cells : i64) (right_product : i64)
+    (right_first : i64) (right_last : i64) (right_max : i64) (right_mismatch : i64)
+    : ()
+    =
+    := same (a : i64) (b : i64) : bool = !!!!EQ(a, b)
+    ? same left_divisor 3i64 && same left_quotient 2i64 && same right_divisor 2i64 && same right_quotient 3i64 ?> ()
+    |: mega_runtime_fail "same-root-six-factorization-shapes-are-not-distinct"
+    ?
+        same left_groups right_groups
+        && same left_cells right_cells
+        && same left_product right_product
+        && same left_first right_first
+        && same left_last right_last
+        && same left_max right_max
+        && same left_mismatch right_mismatch
+    ?> ()
+    |: mega_runtime_fail "same-root-six-canonical-normalization-disagrees"
+    ?
+        same left_groups 2i64
+        && same left_cells 2i64
+        && same left_product 6i64
+        && same left_first 2i64
+        && same left_last 3i64
+        && same left_max 1i64
+        && same left_mismatch 0i64
+    ?> ()
+    |: mega_runtime_fail "same-root-six-canonical-normalization-unexpected"
+
+:| ^ certified_arithmetic_positive_exponent count =
+    | CertifiedArithmeticPositiveExponentOne ::
+        certified_arithmetic_positive_exponent (z_nat_succ z_nat_zero)
+    | CertifiedArithmeticPositiveExponentMore :: \* previous.
+        certified_arithmetic_positive_exponent previous ->
+        certified_arithmetic_positive_exponent (z_nat_succ previous)
+
+:| ^ certified_arithmetic_positive_exponent_equal left right =
+    | CertifiedArithmeticPositiveExponentEqualOne ::
+        certified_arithmetic_positive_exponent_equal
+            (z_nat_succ z_nat_zero)
+            (z_nat_succ z_nat_zero)
+    | CertifiedArithmeticPositiveExponentEqualMore :: \* left_previous right_previous.
+        certified_arithmetic_positive_exponent_equal left_previous right_previous ->
+        certified_arithmetic_positive_exponent_equal
+            (z_nat_succ left_previous)
+            (z_nat_succ right_previous)
+
+:= ^ certified_arithmetic_positive_exponent_equal_make \* left right.
+    (left : certified_arithmetic_positive_exponent left)
+    (right : certified_arithmetic_positive_exponent right) :
+    certified_arithmetic_positive_exponent_equal left right =
+    ?= left, right ?|
+    | CertifiedArithmeticPositiveExponentOne, CertifiedArithmeticPositiveExponentOne =>
+        CertifiedArithmeticPositiveExponentEqualOne
+    | CertifiedArithmeticPositiveExponentMore left_previous,
+      CertifiedArithmeticPositiveExponentMore right_previous =>
+        CertifiedArithmeticPositiveExponentEqualMore (
+            certified_arithmetic_positive_exponent_equal_make
+                left_previous right_previous)
+    | CertifiedArithmeticPositiveExponentOne,
+      CertifiedArithmeticPositiveExponentMore _ =>
+        mega_runtime_fail "zeta-positive-exponent-structural-equality-left-shorter"
+    | CertifiedArithmeticPositiveExponentMore _,
+      CertifiedArithmeticPositiveExponentOne =>
+        mega_runtime_fail "zeta-positive-exponent-structural-equality-right-shorter"
+
+:= ival_two_times_one () :
+    positive_positional_multiply
+        (positional_zero_bit positional_one)
+        positional_one
+        (positional_zero_bit positional_one) =
+    PositivePositionalMultiplyOne (positive_positional_two_value ())
+
+:= ival_two_times_two () :
+    positive_positional_multiply
+        (positional_zero_bit positional_one)
+        (positional_zero_bit positional_one)
+        (positional_zero_bit (positional_zero_bit positional_one)) =
+    PositivePositionalMultiplyZeroBit (
+        ival_two_times_one ())
+
+:= ival_two_times_four () :
+    positive_positional_multiply
+        (positional_zero_bit positional_one)
+        (positional_zero_bit (positional_zero_bit positional_one))
+        (positional_zero_bit (positional_zero_bit (positional_zero_bit positional_one))) =
+    PositivePositionalMultiplyZeroBit (
+        ival_two_times_two ())
+
+:= ival_six_plus_three () :
+    positive_positional_add
+        (positional_zero_bit (positional_one_bit positional_one))
+        (positional_one_bit positional_one)
+        (positional_one_bit (positional_zero_bit (positional_zero_bit positional_one))) =
+    PositivePositionalAddZeroOne (
+        PositivePositionalAddOneBitOne PositivePositionalSuccessorOne)
+
+:= ival_three_times_three () :
+    positive_positional_multiply
+        (positional_one_bit positional_one)
+        (positional_one_bit positional_one)
+        (positional_one_bit (positional_zero_bit (positional_zero_bit positional_one))) =
+    PositivePositionalMultiplyOneBit (\? (
+        PositivePositionalMultiplyOne (positive_positional_three_value ()),
+        ival_six_plus_three ()))
+
+:= ^ certified_arithmetic_positive_exponent_equal_consume \* left right.
+    (equal : certified_arithmetic_positive_exponent_equal left right) : string =
+    ?= equal ?|
+    | CertifiedArithmeticPositiveExponentEqualOne =>
+        "positive-exponent-equality-consumed-at-one"
+    | CertifiedArithmeticPositiveExponentEqualMore previous =>
+        certified_arithmetic_positive_exponent_equal_consume previous
+
+///> rust
+:# a_positive_positional_predecessor_is_unique_on_rust =
+    positive_positional_predecessor_unique_terminal () |> ignore
+
+///> zig
+:# a_positive_positional_predecessor_is_unique_on_zig =
+    positive_positional_predecessor_unique_terminal () |> ignore
+
+///> c
+:# a_positive_positional_predecessor_is_unique_on_c =
+    positive_positional_predecessor_unique_terminal () |> ignore
+
+///> rust
+:# positional_sums_and_products_are_certified_by_their_types_on_rust =
+    (positional_eight_plus_four (), positional_four_times_three (), positional_twelve_plus_two ()) |> ignore
+
+///> zig
+:# positional_sums_and_products_are_certified_by_their_types_on_zig =
+    (positional_eight_plus_four (), positional_four_times_three (), positional_twelve_plus_two ()) |> ignore
+
+///> c
+:# positional_sums_and_products_are_certified_by_their_types_on_c =
+    (positional_eight_plus_four (), positional_four_times_three (), positional_twelve_plus_two ()) |> ignore
+
+///> rust
+:# positional_order_is_certified_by_its_type_on_rust =
+    (positional_six_less_seven (), positional_two_less_three (), positional_thirteen_less_fourteen ()) |> ignore
+
+///> zig
+:# positional_order_is_certified_by_its_type_on_zig =
+    (positional_six_less_seven (), positional_two_less_three (), positional_thirteen_less_fourteen ()) |> ignore
+
+///> c
+:# positional_order_is_certified_by_its_type_on_c =
+    (positional_six_less_seven (), positional_two_less_three (), positional_thirteen_less_fourteen ()) |> ignore

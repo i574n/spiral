@@ -1,7 +1,7 @@
 defmodule Spiral.Cells.MemoToolIdentityTest do
   use ExUnit.Case, async: false
 
-  alias Spiral.Cells.Memo
+  alias Spiral.Cells.Domain
 
   setup do
     dir = Path.join(System.tmp_dir!(), "memo-tool-identity-#{System.unique_integer([:positive])}")
@@ -22,17 +22,17 @@ defmodule Spiral.Cells.MemoToolIdentityTest do
     File.write!(old, "old")
     File.write!(new, "newer")
     System.put_env("SPIRAL_ZIG", old)
-    first = Memo.tool_identity([])
+    first = Domain.memo_tool_identity([])
     System.put_env("SPIRAL_ZIG", new)
-    refute Memo.tool_identity([]) == first
+    refute Domain.memo_tool_identity([]) == first
   end
 
   test "an explicit zig option wins over the environment, as Toolchain resolves it", %{dir: dir} do
     chosen = Path.join(dir, "zig-chosen.exe")
     File.write!(chosen, "chosen")
     System.put_env("SPIRAL_ZIG", Path.join(dir, "zig-env.exe"))
-    assert Memo.tool_identity(zig: chosen) == Memo.tool_identity(zig: chosen)
-    refute Memo.tool_identity(zig: chosen) == Memo.tool_identity([])
+    assert Domain.memo_tool_identity(zig: chosen) == Domain.memo_tool_identity(zig: chosen)
+    refute Domain.memo_tool_identity(zig: chosen) == Domain.memo_tool_identity([])
   end
 
   test "a scoop shim is keyed by the executable it points at", %{dir: dir} do
@@ -44,8 +44,8 @@ defmodule Spiral.Cells.MemoToolIdentityTest do
     File.write!(second_target, "zig 0.18-dev")
     System.put_env("SPIRAL_ZIG", shim)
     File.write!(Path.join(dir, "zig.shim"), "path = \"#{first_target}\"\n")
-    first = Memo.tool_identity([])
+    first = Domain.memo_tool_identity([])
     File.write!(Path.join(dir, "zig.shim"), "path = \"#{second_target}\"\n")
-    refute Memo.tool_identity([]) == first
+    refute Domain.memo_tool_identity([]) == first
   end
 end

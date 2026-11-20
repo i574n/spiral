@@ -46,7 +46,17 @@ pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
 
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
-  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  case value >= 0 - half && value < half {
+    True -> value
+    False -> int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  }
+}
+
+pub fn spiral_wrap_i32(value: Int) -> Int {
+  case value >= -2147483648 && value <= 2147483647 {
+    True -> value
+    False -> spiral_wrap_signed(value, 32)
+  }
 }
 
 
@@ -73,9 +83,9 @@ pub fn main() {
             True -> 100
             False -> 0
         }
-    let v13 = spiral_wrap_signed(v3 + v5, 32)
-    let v14 = spiral_wrap_signed(v13 + v8, 32)
-    let v15 = spiral_wrap_signed(v14 + v10, 32)
-    let v16 = spiral_wrap_signed(v15 + v11, 32)
-    spiral_wrap_signed(v16 + v12, 32)
+    let v13 = spiral_wrap_i32(v3 + v5)
+    let v14 = spiral_wrap_i32(v13 + v8)
+    let v15 = spiral_wrap_i32(v14 + v10)
+    let v16 = spiral_wrap_i32(v15 + v11)
+    spiral_wrap_i32(v16 + v12)
 }

@@ -289,16 +289,6 @@
     |> decode_numeric_references
     |> sm'::replace "&amp;" "&"
 
-:~ ^ reverse_nodes (rest : list xml_node) (acc : list xml_node) : list xml_node =
-    ?= rest ?|
-    | x :: xs => reverse_nodes xs (x :: acc)
-    | [] => acc
-
-:~ ^ reverse_attributes (rest : list (string * string)) (acc : list (string * string)) : list (string * string) =
-    ?= rest ?|
-    | x :: xs => reverse_attributes xs (x :: acc)
-    | [] => acc
-
 := xml_attribute_value_at (s : string) (quote_at : i32) : string * i32 =
     := value_stop = find_from (at s quote_at) s (quote_at + 1i32)
     sm'::substring (quote_at + 1i32) (value_stop - quote_at - 1i32) s |> decode_entities, value_stop + 1i32
@@ -313,7 +303,7 @@
 :~ ^ read_attributes (s : string) (pos : i32) (acc : list (string * string)) : list (string * string) * i32 =
     := pos = skip_spaces s pos
     ? xml_attributes_end (at s pos)
-    ?> reverse_attributes acc [], pos
+    ?> listm::rev acc, pos
     |:
         := attribute, next = xml_attribute_at s pos
         read_attributes s next (attribute :: acc)
@@ -337,11 +327,11 @@
 
 :~ ^ read_nodes (s : string) (pos : i32) (acc : list xml_node) : list xml_node * i32 =
     ? pos >= sm'::length s
-    ?> reverse_nodes acc [], pos
+    ?> listm::rev acc, pos
     |? at s pos <> "<"
     ?> xml_read_text s pos acc
     |? sm'::substring pos 2i32 s = "</"
-    ?> reverse_nodes acc [], find_from ">" s pos + 1i32
+    ?> listm::rev acc, find_from ">" s pos + 1i32
     |: xml_read_markup s pos acc
 
 :& :~ xml_read_markup (s : string) (pos : i32) (acc : list xml_node) : list xml_node * i32 =
@@ -406,30 +396,65 @@
     | Some value => value = expected
     | None => !-
 
+:= total_digit_cases () : list (string * i32 * string) =
+    [
+        ("123.4500", 5i32, "trailing fraction zeros are not significant")
+        ("-0.5", 1i32, "a sign and a leading zero are not digits")
+        ("0.05", 2i32, "0.05 is 5 x 10^-2: n = 2 needs two digits (XSD 1.1)")
+        ("007", 1i32, "leading zeros are not significant")
+        ("0", 1i32, "zero has one digit")
+    ]
+
+:= expect_cases \* t. (f : string -> t) (cases : list (string * t * string)) : () =
+    cases |> listm::iter (\ (input, want, why) => ? f input <> want ?> failwith why)
+
+:= fraction_digit_cases () : list (string * i32 * string) =
+    [
+        ("123.4500", 2i32, "fraction digits drop trailing zeros")
+        ("10", 0i32, "an integer has no fraction digits")
+    ]
+
 ///> rust
 :# digit_counts_follow_xsd =
-    ? total_digits "123.4500" <> 5i32 ?> failwith "trailing fraction zeros are not significant"
-    ? fraction_digits "123.4500" <> 2i32 ?> failwith "fraction digits drop trailing zeros"
-    ? total_digits "-0.5" <> 1i32 ?> failwith "a sign and a leading zero are not digits"
-    ? total_digits "0.05" <> 2i32 ?> failwith "0.05 is 5 x 10^-2: n = 2 needs two digits (XSD 1.1)"
-    ? total_digits "007" <> 1i32 ?> failwith "leading zeros are not significant"
-    ? total_digits "0" <> 1i32 ?> failwith "zero has one digit"
-    ? fraction_digits "10" <> 0i32 ?> failwith "an integer has no fraction digits"
+    expect_cases total_digits (total_digit_cases ())
+    expect_cases fraction_digits (fraction_digit_cases ())
+
+:| bound_facet =
+    | MinInclusive
+    | MaxInclusive
+    | MinExclusive
+    | MaxExclusive
+
+:= facet_holds (facet : bound_facet) (bound : string) (value : string) : bool =
+    ?= facet ?|
+    | MinInclusive => min_inclusive bound value
+    | MaxInclusive => max_inclusive bound value
+    | MinExclusive => min_exclusive bound value
+    | MaxExclusive => max_exclusive bound value
+
+:= bound_cases () : list (bound_facet * string * string * bool * string) =
+    [
+        (MinInclusive, "0.000001", "0.0000001", !-, "a smaller fraction is under the bound")
+        (MinInclusive, "0.000001", "0.000001", !+, "the bound itself is inclusive")
+        (MaxInclusive, "9999999999999.99999", "10000000000000", !-, "a longer whole part is over the bound")
+        (MaxInclusive, "99999999999999999999", "99999999999999999999", !+, "twenty digits compare as text")
+        (MinExclusive, "0", "0.00", !-, "0.00 equals 0")
+        (MinExclusive, "0", "-1", !-, "a negative is under zero")
+        (MaxExclusive, "-1", "-0.5", !-, "-0.5 is over -1")
+        (MinInclusive, "-2", "-1.5", !+, "-1.5 is over -2")
+        (MinInclusive, "1", "abc", !-, "a non-decimal never meets a decimal bound")
+        (MinInclusive, "1", "1.2.3", !-, "two points are not a decimal")
+        (MinInclusive, "1970-01-01", "1969-12-31", !-, "dates order as text")
+        (MaxInclusive, "2025-01", "2025-01", !+, "a year-month meets itself")
+    ]
 
 ///> rust
 :# bound_facets_order_decimals_by_value_and_other_text_lexically =
-    ? min_inclusive "0.000001" "0.0000001" ?> failwith "a smaller fraction is under the bound"
-    ? min_inclusive "0.000001" "0.000001" = !- ?> failwith "the bound itself is inclusive"
-    ? max_inclusive "9999999999999.99999" "10000000000000" ?> failwith "a longer whole part is over the bound"
-    ? max_inclusive "99999999999999999999" "99999999999999999999" = !- ?> failwith "twenty digits compare as text"
-    ? min_exclusive "0" "0.00" ?> failwith "0.00 equals 0"
-    ? min_exclusive "0" "-1" ?> failwith "a negative is under zero"
-    ? max_exclusive "-1" "-0.5" ?> failwith "-0.5 is over -1"
-    ? min_inclusive "-2" "-1.5" = !- ?> failwith "-1.5 is over -2"
-    ? min_inclusive "1" "abc" ?> failwith "a non-decimal never meets a decimal bound"
-    ? min_inclusive "1" "1.2.3" ?> failwith "two points are not a decimal"
-    ? min_inclusive "1970-01-01" "1969-12-31" ?> failwith "dates order as text"
-    ? max_inclusive "2025-01" "2025-01" = !- ?> failwith "a year-month meets itself"
+    bound_cases ()
+    |> listm::iter (\ (facet, bound, value, holds, why) => ? facet_holds facet bound value <> holds ?> failwith why)
+
+///> rust
+:# decimal_order_keeps_signs_and_padding_zeros =
     ? decimal_order "+007.50" "7.5" <> 0i32 ?> failwith "signs and padding zeros keep the value"
     ? decimal_order "-0" "0" <> 0i32 ?> failwith "negative zero is zero"
 
@@ -438,24 +463,27 @@
     (text_order "abc" "abd", text_order "b" "ab", text_order "same" "same", text_order "" "a", text_order "é" "z")
     |> testing::_assert_eq (-1i32, 1i32, 0i32, -1i32, 1i32)
 
-///> rust
-///> zig
-:# reads_elements_attributes_and_text =
-    := doc = "<?xml version=\"1.0\"?><!-- c --><a x=\"1\" y='two'><b/><c>hi &amp; bye</c></a>"
-    ?= single_root (read_xml doc) ?|
+:= elements_doc () : string = "<?xml version=\"1.0\"?><!-- c --><a x=\"1\" y='two'><b/><c>hi &amp; bye</c></a>"
+
+:= elements_root_facts () : bool * bool * bool =
+    ?= single_root (read_xml (elements_doc ())) ?|
     | Some { name attributes children } =>
-        ? name <> "a" ?> failwith "root name"
-        ? attribute_is "y" "two" attributes = !- ?> failwith "single-quoted attribute"
-        ? children_shape_is_b_then_c_text children = !- ?> failwith "children"
+        name = "a", attribute_is "y" "two" attributes, children_shape_is_b_then_c_text children
     | None => failwith "one root element"
 
 ///> rust
 ///> zig
+:# reads_elements_attributes_and_text =
+    elements_root_facts () |> testing::_assert_eq (!+, !+, !+)
+
+:= schema_doc () : string =
+    "<xs:schema><xs:simpleType name=\"T\"><xs:restriction base=\"xs:string\"><xs:enumeration "
+    ^^ "value=\"1\"/><xs:enumeration value=\"2\"/></xs:restriction></xs:simpleType></xs:schema>"
+
+///> rust
+///> zig
 :# counts_prefixed_schema_elements =
-    := doc =
-        "<xs:schema><xs:simpleType name=\"T\"><xs:restriction base=\"xs:string\"><xs:enumeration "
-        ^^ "value=\"1\"/><xs:enumeration value=\"2\"/></xs:restriction></xs:simpleType></xs:schema>"
-    := nodes = read_xml doc
+    := nodes = read_xml (schema_doc ())
     ? count_named "enumeration" nodes <> 2i32 ?> failwith "two enumerations"
     ? count_named "simpleType" nodes <> 1i32 ?> failwith "one simpleType"
 
@@ -490,13 +518,9 @@
 ///> rust
 ///> zig
 :# measures_the_shape_of_a_schema =
-    := doc =
-        "<xs:schema><xs:simpleType name=\"T\"><xs:restriction base=\"xs:string\"><xs:enumeration "
-        ^^ "value=\"1\"/><xs:enumeration value=\"2\"/></xs:restriction></xs:simpleType></xs:schema>"
-    := nodes = read_xml doc
-    ? listm::length (element_names nodes []) <> 4i32 ?> failwith "four element kinds"
-    ? count_attribute "value" nodes <> 2i32 ?> failwith "two value attributes"
-    ? depth nodes <> 4i32 ?> failwith "depth four"
+    := nodes = read_xml (schema_doc ())
+    (listm::length (element_names nodes []) : i32, count_attribute "value" nodes, depth nodes)
+    |> testing::_assert_eq (4i32, 2i32, 4i32)
 
 := element_children (node : xml_node) : list xml_node =
     ?= node ?|
@@ -733,15 +757,22 @@
     | y :: others => same_node x y && same_nodes rest others
     | [] => !-
 
+:= xml_root_of (text : string) : xml_node =
+    ?= read_xml text ?|
+    | node :: [] => node
+    | _ => failwith "one root element"
+
+:= root_children (text : string) : list xml_node = element_children (xml_root_of text)
+
+:= element_name (node : xml_node) : string =
+    ?= node ?|
+    | XmlElement (name, _, _) => name
+    | XmlText _ => ""
+
 ///> rust
 :# written_xml_reads_back_the_same =
-    := text = "<a x=\"1\" xmlns=\"n\"><b>t &amp; u</b><c/>  </a>"
-    ?= read_xml text ?|
-    | original :: [] =>
-        ?= read_xml (write_node original) ?|
-        | again :: [] => ? same_node original again = !- ?> failwith "write then read keeps the tree"
-        | _ => failwith "one element after writing"
-    | _ => failwith "one element"
+    := original = xml_root_of "<a x=\"1\" xmlns=\"n\"><b>t &amp; u</b><c/>  </a>"
+    ? same_node original (xml_root_of (write_node original)) = !- ?> failwith "write then read keeps the tree"
 
 :~ ^ with_namespace (target : string) (uri : string) (node : xml_node) : xml_node =
     ?= node ?|
@@ -763,43 +794,25 @@
 
 ///> rust
 :# unclaimed_children_keep_only_unknown_elements =
-    := nodes = read_xml "<r><a/><modal><x/></modal><b/></r>"
-    ?= nodes ?|
-    | XmlElement (_, _, children) :: [] =>
-        ?= unclaimed_children [ "a"; "b" ] children ?|
-        | XmlElement (name, _, _) :: [] => ? name <> "modal" ?> failwith "the unknown element is kept"
-        | _ => failwith "exactly the one unknown element is kept, in order"
-    | _ => failwith "one root element"
+    unclaimed_children [ "a"; "b" ] (root_children "<r><a/><modal><x/></modal><b/></r>")
+    |> listm::map element_name
+    |> testing::_assert_eq [ "modal" ]
 
 ///> rust
 :# a_default_namespace_drops_the_element_prefix =
-    ?= with_namespace "Signature" "urn:dsig" (XmlElement ("ds:Signature", [], [])) ?|
-    | XmlElement (name, attributes, _) =>
-        ? name <> "Signature" ?> failwith "the prefix is dropped"
-        ?= attributes ?|
-        | (key, uri) :: [] => ? key <> "xmlns" || uri <> "urn:dsig" ?> failwith "the default namespace is declared"
-        | _ => failwith "exactly one namespace declaration"
-    | XmlText _ => failwith "an element"
+    := node = with_namespace "Signature" "urn:dsig" (XmlElement ("ds:Signature", [], []))
+    (element_name node, element_attributes node) |> testing::_assert_eq ("Signature", [ ("xmlns", "urn:dsig") ])
 
 ///> rust
 :# a_prefixed_target_matches_the_same_local_element =
-    := nodes = read_xml "<r xmlns:cbc=\"urn:cbc\"><cbc:ID>1</cbc:ID></r>"
-    ?= nodes ?|
-    | XmlElement (_, _, children) :: [] =>
-        ? has_child "cbc:ID" children = !- ?> failwith "a prefixed lookup finds the prefixed element"
-        ? has_child "ID" children = !- ?> failwith "an unprefixed lookup still finds it"
-    | _ => failwith "one root element"
+    := children = root_children "<r xmlns:cbc=\"urn:cbc\"><cbc:ID>1</cbc:ID></r>"
+    (has_child "cbc:ID" children, has_child "ID" children) |> testing::_assert_eq (!+, !+)
 
 ///> rust
 :# claimed_children_keep_the_named_elements_in_order =
-    := nodes = read_xml "<r><b/><x/><a/><b/></r>"
-    ?= nodes ?|
-    | XmlElement (_, _, children) :: [] =>
-        ?= claimed_children [ "a"; "b" ] children ?|
-        | XmlElement (first, _, _) :: XmlElement (second, _, _) :: XmlElement (third, _, _) :: [] =>
-            ? first <> "b" || second <> "a" || third <> "b" ?> failwith "document order is kept"
-        | _ => failwith "exactly the three named elements are kept"
-    | _ => failwith "one root element"
+    claimed_children [ "a"; "b" ] (root_children "<r><b/><x/><a/><b/></r>")
+    |> listm::map element_name
+    |> testing::_assert_eq [ "b"; "a"; "b" ]
 
 :~ ^ elements_of (nodes : list xml_node) (acc : list xml_node) : list xml_node =
     ?= nodes ?|
@@ -816,15 +829,10 @@
         |: content_attributes rest ((local_name key, value) :: acc)
     | [] => acc
 
-:~ ^ has_attribute_pair (key : string) (value : string) (pairs : list (string * string)) : bool =
-    ?= pairs ?|
-    | (k, v) :: rest => (k = key && v = value) || has_attribute_pair key value rest
-    | [] => !-
-
 :~ ^ missing_attribute (from : list (string * string)) (into : list (string * string)) : option string =
     ?= from ?|
     | (key, value) :: rest =>
-        ? has_attribute_pair key value into ?> missing_attribute rest into |: Some (key ++# "=" ++# value)
+        ? has_pair key value into ?> missing_attribute rest into |: Some (key ++# "=" ++# value)
     | [] => None
 
 := xml_extra_attribute
@@ -917,79 +925,121 @@
 := first_difference (expected : xml_node) (actual : xml_node) : option string =
     first_difference_by (\ (e : string) (a : string) => e = a) expected actual
 
+:= plain_root () : xml_node = xml_root_of "<r xmlns=\"urn:x\"><a k=\"1\">x</a><b> y </b></r>"
+
+:= prefixed_root () : xml_node = xml_root_of "<p:r xmlns:p=\"urn:x\"><p:a k=\"1\">x</p:a><p:b>y</p:b></p:r>"
+
+:= changed_root () : xml_node = xml_root_of "<r><a k=\"2\">x</a><b>y</b></r>"
+
+///> rust
+:# first_difference_ignores_prefixes_and_surrounding_whitespace =
+    first_difference (plain_root ()) (prefixed_root ()) |> testing::_assert_eq None
+
+:= changed_difference () : option string = first_difference (plain_root ()) (changed_root ())
+
 ///> rust
 :# first_difference_ignores_prefixes_and_names_the_first_lost_content =
-    := root_of (text : string) : xml_node =
-        ?= read_xml text ?|
-        | node :: [] => node
-        | _ => failwith "one root element"
-    := plain = root_of "<r xmlns=\"urn:x\"><a k=\"1\">x</a><b> y </b></r>"
-    := prefixed = root_of "<p:r xmlns:p=\"urn:x\"><p:a k=\"1\">x</p:a><p:b>y</p:b></p:r>"
-    := changed = root_of "<r><a k=\"2\">x</a><b>y</b></r>"
-    ?= first_difference plain prefixed ?|
-    | Some d => failwith ("prefixes and surrounding whitespace are not differences: " ++# d)
-    | None => ()
-    ?= first_difference plain changed ?|
-    | Some d =>
-        ? sm'::contains "/r/a: missing attribute k=1" d = !- ?> failwith ("the changed attribute is named: " ++# d)
+    ?= changed_difference () ?|
+    | Some d => sm'::contains "/r/a: missing attribute k=1" d |> testing::_assert_eq !+
     | None => failwith "a changed attribute is a difference"
+
+:= caseless (e : string) (a : string) : bool = sm'::to_lower e = sm'::to_lower a
+
+:= upper_root () : xml_node = xml_root_of "<r><a>ABC</a></r>"
+
+:= lower_root () : xml_node = xml_root_of "<r><a>abc</a></r>"
+
+///> rust
+:# first_difference_tells_ABC_from_abc =
+    (first_difference (upper_root ()) (lower_root ()) = None) |> testing::_assert_eq !-
 
 ///> rust
 :# first_difference_by_lets_the_caller_decide_text_equality =
-    := root_of (text : string) : xml_node =
-        ?= read_xml text ?|
-        | node :: [] => node
-        | _ => failwith "one root element"
-    := upper = root_of "<r><a>ABC</a></r>"
-    := lower = root_of "<r><a>abc</a></r>"
-    := caseless (e : string) (a : string) : bool = sm'::to_lower e = sm'::to_lower a
-    ? first_difference upper lower = None ?> failwith "plain equality tells ABC from abc"
-    ? first_difference_by caseless upper lower <> None ?> failwith "the given equality decides the texts"
+    first_difference_by caseless (upper_root ()) (lower_root ()) |> testing::_assert_eq None
+
+:= collapse_cases () : list (string * string * string) =
+    [
+        ("\n  12.00 \t", "12.00", "collapse trims")
+        (" a  \n b   c ", "a b c", "collapse joins inner runs into one space")
+        ("  é  ü ", "é ü", "collapse keeps non-ASCII code points whole")
+        (" \n\t ", "", "only spaces collapse to nothing")
+    ]
+
+:= replace_cases () : list (string * string * string) =
+    [
+        ("a\tb\nc\r", "a b c ", "replace turns tab, newline and return into spaces")
+    ]
 
 ///> rust
 :# white_space_and_fixed_attributes_follow_the_xsd_rules =
-    ? replaced_space "a\tb\nc\r" <> "a b c " ?> failwith "replace turns tab, newline and return into spaces"
-    ? collapsed_space "\n  12.00 \t" <> "12.00" ?> failwith "collapse trims"
-    ? collapsed_space " a  \n b   c " <> "a b c" ?> failwith "collapse joins inner runs into one space"
-    ? collapsed_space "  é  ü " <> "é ü" ?> failwith "collapse keeps non-ASCII code points whole"
-    ? collapsed_space " \n\t " <> "" ?> failwith "only spaces collapse to nothing"
-    ? listm::length (checked_fixed "Version" "4.0" [ ("Version", "4.0") ]) <> 1i32 ?> failwith "the fixed value reads"
-    ? listm::length (checked_fixed "Version" "4.0" []) <> 0i32 ?> failwith "an absent fixed attribute stays absent"
+    expect_cases replaced_space (replace_cases ())
+    expect_cases collapsed_space (collapse_cases ())
+
+///> rust
+:# a_present_fixed_attribute_reads =
+    (listm::length (checked_fixed "Version" "4.0" [ ("Version", "4.0") ]) : i32) |> testing::_assert_eq 1i32
+
+///> rust
+:# an_absent_fixed_attribute_stays_absent =
+    (listm::length (checked_fixed "Version" "4.0" []) : i32) |> testing::_assert_eq 0i32
+
+:= delimiter_char () : string = code_point_string 127u32
+
+:= decoded_reference_cases () : list (string * string * string) =
+    [
+        ("&#x7f;04&#127;", delimiter_char () ++# "04" ++# delimiter_char (), "hex and decimal references decode")
+        ("caf&#233;", "caf" ++# code_point_string 233u32, "a decimal reference becomes its code point")
+    ]
 
 ///> rust
 :# numeric_character_references_decode =
-    := delimiter = code_point_string 127u32
-    ? decode_entities "&#x7f;04&#127;" <> delimiter ++# "04" ++# delimiter
-    ?> failwith "hex and decimal references decode"
-    ? decode_entities "caf&#233;" <> "caf" ++# code_point_string 233u32
-    ?> failwith "a decimal reference becomes its code point"
-    ? decode_entities "&amp;#x41;" <> "&#x41;" ?> failwith "an escaped ampersand stays a literal reference"
-    ? decode_entities "&#xZZ; &#; &#12" <> "&#xZZ; &#; &#12" ?> failwith "malformed references stay as written"
-    ?= read_xml "<a k=\"&#x7f;05&#x7f;\">x&#62;y</a>" ?|
-    | XmlElement (_, attributes, children) :: [] =>
-        ?= attribute_of "k" attributes ?|
-        | Some v => ? v <> delimiter ++# "05" ++# delimiter ?> failwith "attribute values decode references"
-        | None => failwith "the attribute reads"
-        ? text_in children <> "x>y" ?> failwith "text decodes references"
-    | _ => failwith "one element"
+    expect_cases decode_entities (decoded_reference_cases ())
+
+:= literal_reference_cases () : list (string * string * string) =
+    [
+        ("&amp;#x41;", "&#x41;", "an escaped ampersand stays a literal reference")
+        ("&#xZZ; &#; &#12", "&#xZZ; &#; &#12", "malformed references stay as written")
+    ]
+
+///> rust
+:# escaped_and_malformed_references_stay_literal =
+    expect_cases decode_entities (literal_reference_cases ())
+
+:= referenced_root () : xml_node = xml_root_of "<a k=\"&#x7f;05&#x7f;\">x&#62;y</a>"
+
+///> rust
+:# attributes_decode_references =
+    := delimiter = delimiter_char ()
+    attribute_of "k" (element_attributes (referenced_root ())) |> testing::_assert_eq (Some (delimiter ++# "05" ++# delimiter))
+
+///> rust
+:# text_decodes_references =
+    text_in (element_children (referenced_root ())) |> testing::_assert_eq "x>y"
+
+///> rust
+///> pascal
+:# code_points_count_utf8_scalars =
+    ? code_point_count "aé€" <> 3i32 ?> failwith "three code points"
+
+///> rust
+///> pascal
+:# code_point_widths_follow_utf8 =
+    := s = "aé€"
+    ? code_point_width s 0i32 <> 1i32 || code_point_width s 1i32 <> 2i32 || code_point_width s 3i32 <> 3i32
+    ?> failwith "UTF-8 widths 1, 2, 3"
 
 ///> rust
 ///> pascal
 :# code_points_step_through_utf8 =
     := s = "aé€"
-    ? code_point_count s <> 3i32 ?> failwith "three code points"
-    ? code_point_width s 0i32 <> 1i32 || code_point_width s 1i32 <> 2i32 || code_point_width s 3i32 <> 3i32
-    ?> failwith "UTF-8 widths 1, 2, 3"
     ? code_point_at s 0i32 <> 97u32 || code_point_at s 1i32 <> 233u32 || code_point_at s 3i32 <> 8364u32
     ?> failwith "code points a, e acute, euro"
 
+:= group_doc () : string = "<S><D>d</D><W>w1</W><L>l1</L><W>w2</W><L>l2</L><L>l3</L><A>a</A></S>"
+
+:= group_sizes () : list i32 =
+    group_runs [ "W"; "L" ] (root_children (group_doc ())) |> listm::map (\ run => (listm::length run : i32))
+
 ///> rust
 :# group_runs_split_repeated_groups_in_document_order =
-    ?= read_xml "<S><D>d</D><W>w1</W><L>l1</L><W>w2</W><L>l2</L><L>l3</L><A>a</A></S>" ?|
-    | node :: [] =>
-        := runs = group_runs [ "W"; "L" ] (element_children node)
-        ? (listm::length runs : i32) <> 3i32 ?> failwith "three groups: (w1, l1), (w2, l2) and (l3)"
-        ?= runs ?|
-        | first :: _ => ? (listm::length first : i32) <> 2i32 ?> failwith "the first group keeps both members"
-        | [] => failwith "a run exists"
-    | _ => failwith "one root element"
+    group_sizes () |> testing::_assert_eq [ 2i32; 2i32; 1i32 ]

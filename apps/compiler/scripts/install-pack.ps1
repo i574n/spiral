@@ -230,9 +230,10 @@ if ($fetched) {
     }
     $candidateBin = Join-Path $candidate 'cache/bin/single-flight/SpiralCompiler/Release/net11.0'
     foreach ($dll in 'SpiralCompiler.dll', 'SpiralCompilerCore.dll') {
-        $want = Get-Short (Join-Path $candidateBin $dll)
         $got = Get-Short (Join-Path $installedBin $dll)
-        "$dll installed $got, reviewed candidate $want, equal=$($got -eq $want)"
+        $reviewed = Join-Path $candidateBin $dll
+        if (Test-Path -LiteralPath $reviewed) { $want = Get-Short $reviewed; "$dll installed $got, reviewed candidate $want, equal=$($got -eq $want)" }
+        else { "$dll installed $got (source-only candidate: no reviewed build to compare)" }
     }
 }
 function Test-Launches([string] $dotnet) {

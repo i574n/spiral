@@ -1,0 +1,115 @@
+///- --package .
+:< erlang_term
+:# target_agree static =
+    :< testing
+
+:~ truthy (t : term) : bool = not (erlang_term::equal t (atom "nil") || erlang_term::equal t (atom "false"))
+
+:~ text_of (t : term) : string =
+    ? erlang_term::is_binary t ?> erlang_term::cast t
+    |: ? erlang_term::equal t (atom "nil") ?> "" |: erlang_term::apply "erlang" "atom_to_binary" [ t ] |> erlang_term::cast
+
+:~ shown (chunk : term) : string = shown_text::shown_text (canonical::shown_lines (text_of (field_or_nil "stdout" chunk)))
+
+:~ named (reference : term) (chunk : term) : bool = erlang_term::is_binary reference && text_of (field_or_nil "target" chunk) = erlang_term::cast reference
+
+:~ ^ first_named (reference : term) (chunks : list term) : option term =
+    ?= chunks ?| [] => None | h :: t => ? named reference h ?> Some h |: first_named reference t
+
+:~ ^ first_differing (shown_ref : string) (chunks : list term) : option term =
+    ?= chunks ?| [] => None | h :: t => ? shown h <> shown_ref ?> Some h |: first_differing shown_ref t
+
+:~ ^ printed (chunks : list term) : list term =
+    ?= chunks ?| [] => [] | h :: t => ? shown h <> "" ?> h :: printed t |: printed t
+
+:~ reference_of (chunks : list term) (first : term) (reference : term) : term =
+    ?= first_named reference chunks ?| Some c => c | None => first
+
+:~ split (chunks : list term) (first : term) (reference : term) : term =
+    := picked = reference_of chunks first reference
+    ?= first_differing (shown picked) chunks ?| Some other => erlang_term::tuple [ picked; other ] | None => atom "nil"
+
+:~ compared (chunks : list term) (reference : term) : term =
+    := kept = printed chunks
+    ?= kept ?| first :: _ => split kept first reference | [] => atom "nil"
+
+:~ disagreement (chunks : term) (print_code : term) (agree : bool) (reference : term) : term =
+    ? not agree || truthy print_code ?> atom "nil" |: compared (erlang_term::items_of chunks) reference
+
+:~ chunk (target : string) (stdout : string) : term =
+    erlang_term::apply "maps" "from_list" [ erlang_term::list_term [ erlang_term::tuple [ atom "target"; atom target ]; erlang_term::tuple [ atom "stdout"; erlang_term::of stdout ] ] ]
+
+:~ two (a : string) (b : string) : term = erlang_term::list_term [ chunk "rust" a; chunk "gleam" b ]
+
+///> gleam
+:# matching_targets_agree =
+    disagreement (two "1\n" "1\n") (atom "false") !+ (atom "nil") |> erlang_term::equal (atom "nil") |> _assert_eq !+
+
+///> gleam
+:# a_differing_target_is_paired_with_the_first =
+    := pair = disagreement (two "1\n" "2\n") (atom "false") !+ (atom "nil")
+    text_of (field_or_nil "target" (erlang_term::element_at 2i32 pair)) |> _assert_eq "gleam"
+
+///> gleam
+:# a_named_reference_is_compared_against_instead_of_the_first =
+    := pair = disagreement (two "1\n" "2\n") (atom "false") !+ (erlang_term::of "gleam")
+    text_of (field_or_nil "target" (erlang_term::element_at 1i32 pair)) |> _assert_eq "gleam"
+
+///> gleam
+:# without_agree_nothing_is_compared =
+    disagreement (two "1" "2") (atom "false") !- (atom "nil") |> erlang_term::equal (atom "nil") |> _assert_eq !+
+
+///> gleam
+:# with_print_code_nothing_is_compared =
+    disagreement (two "1" "2") (atom "true") !+ (atom "nil") |> erlang_term::equal (atom "nil") |> _assert_eq !+
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ pd_get (key : string) : term = erlang_term::apply "erlang" "get" [ atom key ]
+
+:~ pd_put (key : string) (value : term) : () = erlang_term::apply "erlang" "put" [ atom key; value ] |> ignore
+
+:~ mark_row (other_target : string) (row : term) : term =
+    ? text_of (field_or_nil "target" row) = other_target ?> erlang_term::apply "maps" "put" [ atom "status"; erlang_term::of "disagrees"; row ] |: row
+
+:~ a_list (t : term) : bool = erlang_term::apply "erlang" "is_list" [ t ] |> erlang_term::cast
+
+:~ mark_disagrees (other_target : string) : () =
+    := rows = pd_get "spiral_cells_targets"
+    := lst = ? a_list rows ?> erlang_term::items_of rows |: []
+    pd_put "spiral_cells_targets" (erlang_term::list_term (listm::map (mark_row other_target) lst))
+
+:~ disagree_head (first_target : string) (has_reference : bool) : string =
+    ? has_reference ?> "targets disagree with the reference " ++ first_target |: "targets disagree"
+
+:~ printed_part (chunk : term) : string = text_of (field_or_nil "target" chunk) ++ " printed " ++ verdict_text::elixir_inspect (shown chunk)
+
+:~ disagree_msg (first : term) (other : term) (has_reference : bool) : string =
+    disagree_head (text_of (field_or_nil "target" first)) has_reference ++ ": " ++ printed_part first ++ ", " ++ printed_part other
+
+:~ disagree_error (msg : string) : term =
+    erlang_term::tuple [ atom "error"; error_terms::process_error (erlang_term::of msg) (atom "nil") (atom "nil") (atom "disagree") ]
+
+:~ disagree_result (first : term) (other : term) (has_reference : bool) : term =
+    mark_disagrees (text_of (field_or_nil "target" other))
+    disagree_error (disagree_msg first other has_reference)
+
+:~ trow (target : string) (status : string) : term =
+    erlang_term::apply "maps" "from_list" [ erlang_term::list_term [ erlang_term::tuple [ atom "target"; atom target ]; erlang_term::tuple [ atom "status"; erlang_term::of status ] ] ]
+
+:~ ^ status_of (target : string) (rows : list term) : string =
+    ?= rows ?| [] => "" | h :: t => ? text_of (field_or_nil "target" h) = target ?> text_of (field_or_nil "status" h) |: status_of target t
+
+:~ marked_rows () : list term =
+    pd_put "spiral_cells_targets" (erlang_term::list_term [ trow "lua" "ok"; trow "gleam" "ok" ])
+    mark_disagrees "gleam"
+    erlang_term::items_of (pd_get "spiral_cells_targets")
+
+///> gleam
+:# the_disagree_head_names_the_reference_only_when_present =
+    (disagree_head "gleam" !+, disagree_head "lua" !-) |> _assert_eq ("targets disagree with the reference gleam", "targets disagree")
+
+///> gleam
+:# the_disagreeing_row_is_marked_and_others_are_left =
+    := rows = marked_rows ()
+    (status_of "lua" rows, status_of "gleam" rows) |> _assert_eq ("ok", "disagrees")

@@ -804,10 +804,10 @@
         'Fsharp,C,Rust,Pascal,TypeScript,Cpp,Python' = @(
             'samples/portable_math_rounding'
             'samples/gadt_rank_matrix'
+            'samples/portable_console_lines'
         )
         'Fsharp,C,Rust,Pascal,TypeScript,Python' = @(
             'samples/portable_convert_parse'
-            'samples/portable_console_lines'
             'samples/printf_portable'
             'samples/op_args_deref_if'
         )

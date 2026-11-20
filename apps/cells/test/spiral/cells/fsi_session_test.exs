@@ -1,12 +1,12 @@
 defmodule Spiral.Cells.FsiSessionTest do
   use ExUnit.Case, async: false
 
-  alias Spiral.Cells.{FsiChain, FsiSession, Notebook, Runner, Toolchain}
+  alias Spiral.Cells.{Domain, FsiChain, FsiSession, Notebook, Runner}
 
   @moduletag timeout: 600_000
 
   setup do
-    dotnet = Toolchain.dotnet([])
+    dotnet = Domain.tool("dotnet", [])
 
     if is_binary(dotnet) and (File.regular?(dotnet) or System.find_executable(dotnet)) do
       %{dir: Spiral.Cells.TestHelpers.tmp_dir!("fsi")}

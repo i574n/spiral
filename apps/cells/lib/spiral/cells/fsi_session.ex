@@ -21,7 +21,7 @@ defmodule Spiral.Cells.FsiSession do
   """
   use GenServer
 
-  alias Spiral.Cells.{Runner, Toolchain}
+  alias Spiral.Cells.{Domain, Runner}
 
   @startup_timeout 300_000
 
@@ -37,7 +37,7 @@ defmodule Spiral.Cells.FsiSession do
   """
   @spec start(keyword()) :: {:ok, pid()} | {:error, String.t()}
   def start(opts \\ []) do
-    dotnet = opts[:dotnet] || Toolchain.dotnet(opts)
+    dotnet = opts[:dotnet] || Domain.tool("dotnet", opts)
 
     cond do
       not (is_binary(dotnet) and (File.regular?(dotnet) or System.find_executable(dotnet) != nil)) ->

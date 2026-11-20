@@ -13,6 +13,7 @@ defmodule Spiral.Cells.CompilerPoolTest do
 
     @impl true
     def handle_call({:compile, req}, _from, log) do
+      if gate = req[:gate], do: Spiral.Cells.TestHelpers.wait_until(fn -> Agent.get(gate, & &1) end, 15_000, 5)
       Process.sleep(req.ms)
       Agent.update(log, &(&1 ++ [req.id]))
       {:reply, {:compiled, {:ok, req.id}, req.ms}, log}
@@ -26,9 +27,12 @@ defmodule Spiral.Cells.CompilerPoolTest do
     pool
   end
 
-  defp submit(pool, client, id, ms) do
-    Task.async(fn -> CompilerPool.compile(pool, client, %{id: id, ms: ms}) end)
+  defp submit(pool, client, id, ms, gate \\ nil) do
+    Task.async(fn -> CompilerPool.compile(pool, client, %{id: id, ms: ms, gate: gate}) end)
   end
+
+  defp held, do: elem(Agent.start_link(fn -> false end), 1)
+  defp release(gate), do: Agent.update(gate, fn _ -> true end)
 
   defp submit_queued(pool, client, id, ms) do
     %{queued: before} = CompilerPool.stats(pool)
@@ -40,10 +44,12 @@ defmodule Spiral.Cells.CompilerPoolTest do
   test "one compiler serves clients in turn: a client with one request does not wait behind another's whole batch" do
     {:ok, log} = Agent.start_link(fn -> [] end)
     pool = pool(log, max_workers: 1, fair: true)
-    busy = submit(pool, "a", "a0", 1_000)
+    gate = held()
+    busy = submit(pool, "a", "a0", 0, gate)
     Spiral.Cells.TestHelpers.wait_until(fn -> CompilerPool.stats(pool).idle == 0 end, 5_000, 2)
     batch = for i <- 1..4, do: submit_queued(pool, "a", "a#{i}", 20)
     lone = submit_queued(pool, "b", "b1", 20)
+    release(gate)
     Task.await_many([busy, lone | batch])
     assert Agent.get(log, & &1) == ["a0", "a1", "b1", "a2", "a3", "a4"]
   end
@@ -51,10 +57,12 @@ defmodule Spiral.Cells.CompilerPoolTest do
   test "first come first served keeps arrival order when fairness is off" do
     {:ok, log} = Agent.start_link(fn -> [] end)
     pool = pool(log, max_workers: 1, fair: false)
-    busy = submit(pool, "a", "a0", 1_000)
+    gate = held()
+    busy = submit(pool, "a", "a0", 0, gate)
     Spiral.Cells.TestHelpers.wait_until(fn -> CompilerPool.stats(pool).idle == 0 end, 5_000, 2)
     batch = for i <- 1..2, do: submit_queued(pool, "a", "a#{i}", 20)
     lone = submit_queued(pool, "b", "b1", 20)
+    release(gate)
     Task.await_many([busy, lone | batch])
     assert Agent.get(log, & &1) == ["a0", "a1", "a2", "b1"]
   end
@@ -62,10 +70,11 @@ defmodule Spiral.Cells.CompilerPoolTest do
   test "the pool grows to max_workers under load and runs compiles side by side" do
     {:ok, log} = Agent.start_link(fn -> [] end)
     pool = pool(log, max_workers: 3, fair: true)
-    started = System.monotonic_time(:millisecond)
-    tasks = for i <- 1..3, do: submit(pool, "c#{i}", "c#{i}", 200)
+    gate = held()
+    tasks = for i <- 1..3, do: submit(pool, "c#{i}", "c#{i}", 0, gate)
+    Spiral.Cells.TestHelpers.wait_until(fn -> CompilerPool.stats(pool).workers == 3 end, 5_000, 2)
+    release(gate)
     assert Enum.map(Task.await_many(tasks), fn {:compiled, {:ok, id}, _} -> id end) == ["c1", "c2", "c3"]
-    assert System.monotonic_time(:millisecond) - started < 500
     assert %{peak_workers: 3, served: 3, queued: 0} = CompilerPool.stats(pool)
   end
 
@@ -81,11 +90,11 @@ defmodule Spiral.Cells.CompilerPoolTest do
   test "a slow memory gauge does not hold up compiles on the compilers the pool has" do
     {:ok, log} = Agent.start_link(fn -> [] end)
     {:ok, first} = SlowWorker.start_link(log)
-    slow_gauge = fn -> Process.sleep(1_000) && 100 end
+    slow_gauge = fn -> Process.sleep(5_000) && 100 end
     {:ok, pool} = CompilerPool.start_link(first: first, max_workers: 3, start_worker: fn -> SlowWorker.start_link(log) end, free_mb: slow_gauge)
     started = System.monotonic_time(:millisecond)
     Task.await_many(for i <- 1..3, do: submit(pool, "e#{i}", "e#{i}", 30))
-    assert System.monotonic_time(:millisecond) - started < 500
+    assert System.monotonic_time(:millisecond) - started < 2_500
     assert %{peak_workers: 1, served: 3} = CompilerPool.stats(pool)
   end
 

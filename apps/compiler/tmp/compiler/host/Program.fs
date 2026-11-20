@@ -804,6 +804,8 @@ module Program =
                                     if File.Exists source then
                                         if suffix = ".hpp" || suffix = ".cpp" || suffix = ".cu" then
                                             File.WriteAllText(outBase + suffix, File.ReadAllText(source).Replace(coreInclude, outInclude))
+                                        elif suffix = ".py" then
+                                            File.WriteAllText(outBase + suffix, File.ReadAllText(source).Replace($"from {Path.GetFileName coreBase}_auto import *", $"from {Path.GetFileName outBase}_auto import *"))
                                         else File.Copy(source, outBase + suffix, true)
                         | None ->
                             let generated =
@@ -905,9 +907,73 @@ module Program =
 
     let mutable private checkSessionState : SupervisorState option = None
 
-    let private runCheckWith (full : bool) inputPath =
+    let private runDedup (args : string list) =
+        match args with
+        | [ input ] when File.Exists input || Directory.Exists input ->
+            try
+                let inputPath = input |> Path.GetFullPath |> SpiralFileSystem.standardize_path
+                let rec findOwner (directory : DirectoryInfo) =
+                    if isNull directory then failwith $"Cannot find spiral.toml or package.spiproj for {inputPath}"
+                    let candidate = directory.FullName |> SpiralFileSystem.standardize_path
+                    if File.Exists(spiproj_suffix candidate) then candidate else findOwner directory.Parent
+                let packageDir = findOwner (if Directory.Exists inputPath then DirectoryInfo inputPath else Directory.GetParent inputPath)
+                let defaultEnv = startupParse [|"--port"; "0"|]
+                let emptyState : SupervisorState =
+                    { packages = Map.empty; modules = Map.empty
+                      packages_infer = {ok = Map.empty; error = Map.empty}
+                      packages_prepass = {ok = Map.empty; error = Map.empty}
+                      graph = mirrored_graph_empty; package_ids = Map.empty, Map.empty }
+                let _, state = proj_open defaultEnv emptyState (packageDir, None)
+                if not state.packages_infer.error.IsEmpty then failwith $"Package graph rejected: {packageDir}"
+                let order, dirtyPackages = topological_sort' (fst state.graph) [packageDir]
+                let prepassPackages =
+                    wdiff_projenvr_prepass defaultEnv (fst state.package_ids) state.packages state.packages_infer.ok state.packages_prepass (dirtyPackages, order.ToArray())
+                let definitions = ResizeArray<PrepassDedup.Definition> ()
+                for KeyValue(pid, prepassPackage) in prepassPackages.ok do
+                    match Map.tryFind pid state.packages_infer.ok with
+                    | None -> ()
+                    | Some tc ->
+                        let rec files node acc =
+                            match node with
+                            | ProjFilesTree.File(mid, path, _) -> (mid, path) :: acc
+                            | ProjFilesTree.Directory(_, _, children) -> List.foldBack files children acc
+                        for mid, path in List.foldBack files tc.files.files.tree [] do
+                            let slot = if mid < prepassPackage.files.uids_file.Length then prepassPackage.files.uids_file.[mid] else Unchecked.defaultof<_>
+                            if not (isNull (box slot)) && not (isNull (box (fst slot))) then
+                                let moduleName = Path.GetFileNameWithoutExtension path
+                                let rec items (stream : Stream<PrepassStateValue>) =
+                                    match Hopac.run stream with
+                                    | Cons((infer, addition, _), next) ->
+                                        let env = match addition with AInclude x -> Some x | AIncludePrivate (_, x) -> Some x | AOpen _ -> None
+                                        let add ((struct (from, _)) : VSCRange) (name : string) =
+                                            match env |> Option.bind (fun env -> Map.tryFind (TermNameIdOps.create name) env.term) with
+                                            | Some body -> definitions.Add { name = name; path = path; line = from.line + 1; module_name = moduleName; body = body }
+                                            | None -> ()
+                                        match Hopac.run infer.filled_top with
+                                        | FInl(_, (range, name), _) -> add range name
+                                        | FRecInl l -> for _, (range, name), _ in l do add range name
+                                        | _ -> ()
+                                        items next
+                                    | Nil -> ()
+                                items (fst slot).result
+                let inScope (d : PrepassDedup.Definition) = d.path.StartsWith (packageDir + "/", StringComparison.Ordinal) || d.path.StartsWith (packageDir + "\\", StringComparison.Ordinal)
+                let rows = PrepassDedup.report inScope (List.ofSeq definitions)
+                for row in rows do printfn "%s" row
+                eprintfn "dedup %s: %d definitions, %d in scope, %d rows" packageDir definitions.Count (definitions |> Seq.filter inScope |> Seq.length) rows.Length
+                0
+            with error ->
+                eprintfn "dedup error: %s" error.Message
+                2
+        | _ -> eprintfn "usage: SpiralCompiler dedup <package dir | file in it>   (one row per duplicated definition: hash, DUPLICATE|LIB-COPY|LOCAL-WRAPPER|NAME-COLLISION, lib target, path:line, name, nodes)"; 2
+
+    type private CheckScope =
+        | ModulesOnly
+        | WithCells
+
+    let private runCheckWith (full : bool) (scope : CheckScope) inputPath =
         check_lean <- not full
         check_stream <- not full && Environment.GetEnvironmentVariable "SPIRAL_CHECK_STREAM" <> "0"
+        if scope = WithCells then Environment.SetEnvironmentVariable("SPIRAL_SHARED_TEST_ENTRIES", "1")
         try
             let inputPath = inputPath |> Path.GetFullPath |> SpiralFileSystem.standardize_path
             if not (File.Exists inputPath) then failwith $"Missing check input: {inputPath}"
@@ -916,6 +982,7 @@ module Program =
                 let candidate = directory.FullName |> SpiralFileSystem.standardize_path
                 if File.Exists(spiproj_suffix candidate) then candidate else findOwner directory.Parent
             let packageDir = findOwner (Directory.GetParent inputPath)
+            if scope = WithCells then select_every_test_entry_under packageDir
             let emptyState : SupervisorState =
                 { packages = Map.empty; modules = Map.empty
                   packages_infer = {ok = Map.empty; error = Map.empty}
@@ -983,13 +1050,36 @@ module Program =
                  with ex -> [$"(could not list the typer's errors: {ex.GetType().Name}: {ex.Message})"])
                 |> List.iter (eprintfn "%s")
                 failwith $"Package typecheck rejected: {packageDir}"
-            printfn "checked package %s (parse and type inference only: partial evaluation and test blocks did not run, so a --backend build can still fail)" packageDir
+            let exportLiteral = Text.RegularExpressions.Regex("^\\s*export\\s+\"([^\"]+)\"")
+            let duplicateExports =
+                File.ReadAllLines inputPath
+                |> Array.indexed
+                |> Array.choose (fun (i, line) -> let m = exportLiteral.Match line in if m.Success then Some (m.Groups.[1].Value, i + 1) else None)
+                |> Array.groupBy fst
+                |> Array.filter (fun (_, rows) -> rows.Length > 1)
+            if duplicateExports.Length > 0 then
+                for name, rows in duplicateExports do
+                    let first = snd rows.[0]
+                    for _, line in rows.[1..] do eprintfn "%s:%d: duplicate export \"%s\" (first at line %d); a Gleam build rejects two exports with one name" inputPath line name first
+                failwith $"Duplicate exports in {inputPath}"
+            match scope with
+            | ModulesOnly -> printfn "checked package %s (parse and type inference only: partial evaluation and test blocks did not run, so a --backend build can still fail)" packageDir
+            | WithCells -> printfn "checked package %s with its test cells (parse and type inference of the modules and their ///> cell bodies; partial evaluation did not run, so a --backend build can still fail)" packageDir
             0
         with error ->
             eprintfn "%s" error.Message
             5
 
-    let private runCheck inputPath = runCheckWith (Environment.GetEnvironmentVariable "CHECK_REPEAT_FULL" = "1") inputPath
+    let private runCheck (scope : CheckScope) inputPath = runCheckWith (Environment.GetEnvironmentVariable "CHECK_REPEAT_FULL" = "1") scope inputPath
+
+    let private checkOptions (flags : string list) =
+        let rec read scope timeout flags =
+            match flags with
+            | [] -> Some (scope, defaultArg timeout 600000)
+            | "--cells" :: rest when scope = ModulesOnly -> read WithCells timeout rest
+            | "--timeout-ms" :: n :: rest when timeout.IsNone && fst (Int32.TryParse n) && int n > 0 -> read scope (Some (int n)) rest
+            | _ -> None
+        read ModulesOnly None flags
 
     let private applyCheckEdit (edited : string) =
         match checkSessionState with
@@ -1019,7 +1109,7 @@ module Program =
         let previous = Console.Error
         Console.SetError captured
         let code =
-            try (startOnCompileStack (fun () -> (for path in edited do applyCheckEdit path); runCheckWith true input)).Result
+            try (startOnCompileStack (fun () -> (for path in edited do applyCheckEdit path); runCheckWith true ModulesOnly input)).Result
             finally Console.SetError previous
         let lines = captured.ToString().Split([|'\n'|], StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun line -> line.TrimEnd '\r')
         lines, code, watch.ElapsedMilliseconds
@@ -1062,7 +1152,7 @@ module Program =
                 Some p.ExitCode
             with _ -> None
 
-    let private runAttestationBounded timeoutMs work =
+    let private runAttestationBounded (label : string) timeoutMs work =
         let mutable result = 5
         let thread = Threading.Thread(Threading.ThreadStart(fun () ->
             try result <- work ()
@@ -1071,7 +1161,7 @@ module Program =
         thread.Start()
         if thread.Join(timeoutMs : int) then result
         else
-            eprintfn "Attestation timed out after %d ms" timeoutMs
+            eprintfn "%s timed out after %d ms (pass --timeout-ms N to raise the bound)" label timeoutMs
             3
 
     let private runPlanIr inputPath outputPath =
@@ -1573,7 +1663,7 @@ module Program =
             eprintfn "%s" defaultTypeFlagsError.Value
             2
         elif argv.Length = 1 && argv.[0] = "--capabilities" then
-            printfn "server-tcp test-blocks source-blocks resolve-manifest"
+            printfn "server-tcp test-blocks source-blocks resolve-manifest tokens"
             0
         elif argv.Length = 1 && argv.[0] = "--version" then
             printfn "SpiralCompiler alpha418"
@@ -1607,40 +1697,40 @@ module Program =
         elif argv.Length >= 2 && argv.[0] = "--check-repeat" then
             let input = argv.[argv.Length - 1]
             let edits = argv.[1 .. argv.Length - 2]
-            exit (runAttestationBounded 3600000 (fun () ->
+            exit (runAttestationBounded "check-repeat" 3600000 (fun () ->
                 let watch = Diagnostics.Stopwatch.StartNew()
-                let first = runCheck input
+                let first = runCheck ModulesOnly input
                 eprintfn "check-repeat cold ms=%d exit=%d" watch.ElapsedMilliseconds first
                 watch.Restart()
-                let second = runCheck input
+                let second = runCheck ModulesOnly input
                 eprintfn "check-repeat warm ms=%d exit=%d" watch.ElapsedMilliseconds second
                 for edited in edits do
                     File.AppendAllText(edited, (match Environment.GetEnvironmentVariable "CHECK_REPEAT_TEXT" with null | "" -> "\n" | t -> t.Replace("\\n", "\n")))
                     watch.Restart()
                     applyCheckEdit edited
-                    let after = runCheck input
+                    let after = runCheck ModulesOnly input
                     eprintfn "check-repeat after-edit %s ms=%d exit=%d" (Path.GetFileName edited) watch.ElapsedMilliseconds after
                 max first second))
-        elif (argv.Length = 2 || (argv.Length = 4 && argv.[1] = "--timeout-ms")) && argv.[0] = "--check" then
-            let parsed, timeoutMs = if argv.Length = 4 then Int32.TryParse argv.[2] else true, 30000
-            if not parsed || timeoutMs <= 0 then
-                eprintfn "--timeout-ms must be a positive 32-bit integer"
+        elif argv.Length >= 2 && argv.[0] = "--check" then
+            match checkOptions (List.ofArray argv.[1 .. argv.Length - 2]) with
+            | None ->
+                eprintfn "usage: --check [--cells] [--timeout-ms N] <entry.spi>, N a positive 32-bit integer"
                 2
-            else
+            | Some (scope, timeoutMs) ->
                 match lowMemoryCheck () with
                 | Some code -> exit code
                 | None ->
                     watchCheckParent ()
-                    exit (runAttestationBounded timeoutMs (fun () -> runCheck argv.[argv.Length - 1]))
+                    exit (runAttestationBounded "check" timeoutMs (fun () -> runCheck scope argv.[argv.Length - 1]))
         elif (argv.Length = 3 || (argv.Length = 5 && argv.[1] = "--timeout-ms")) && argv.[0] = "--plan-ir" then
             let inputIndex = if argv.Length = 5 then 3 else 1
             let outputIndex = if argv.Length = 5 then 4 else 2
-            let parsed, timeoutMs = if argv.Length = 5 then Int32.TryParse argv.[2] else true, 30000
+            let parsed, timeoutMs = if argv.Length = 5 then Int32.TryParse argv.[2] else true, 600000
             if not parsed || timeoutMs <= 0 then
                 eprintfn "--timeout-ms must be a positive 32-bit integer"
                 2
             else
-                exit (runAttestationBounded timeoutMs (fun () -> runPlanIr argv.[inputIndex] argv.[outputIndex]))
+                exit (runAttestationBounded "plan-ir" timeoutMs (fun () -> runPlanIr argv.[inputIndex] argv.[outputIndex]))
         elif (argv.Length = 3 || argv.Length = 5) && argv.[0] = "--batch" then
             let timeoutMs = if argv.Length = 5 && argv.[3] = "--timeout-ms" then int argv.[4] else 120000
             exit (runBatch argv.[1] argv.[2] timeoutMs)
@@ -1648,10 +1738,12 @@ module Program =
             Spiral.spiral_compiler.FormatterCli.run (List.ofArray argv.[1..])
         elif argv.Length >= 1 && argv.[0] = "tokens" then
             Spiral.spiral_compiler.TokensCli.run (List.ofArray argv.[1..])
+        elif argv.Length >= 1 && argv.[0] = "blocks" then
+            Spiral.spiral_compiler.BlocksCli.run (List.ofArray argv.[1..])
+        elif argv.Length >= 1 && argv.[0] = "dedup" then
+            runDedup (List.ofArray argv.[1..])
         elif argv.Length >= 1 && argv.[0] = "split-units" then
             Spiral.spiral_compiler.SplitUnitsCli.run (List.ofArray argv.[1..])
-        elif argv.Length >= 1 && argv.[0] = "partition-rust" then
-            Spiral.spiral_compiler.RustPartitionCli.run (List.ofArray argv.[1..])
         elif argv.Length >= 1 && argv.[0] = "format-corpus" then
             Spiral.spiral_compiler.FormatterCli.corpus (List.ofArray argv.[1..])
         elif argv.Length >= 1 && (argv.[0] = "build-file" || argv.[0] = "--build-file" || argv.[0] = "fsharp") then

@@ -1,0 +1,151 @@
+///- --package .
+:< erlang_term
+:# runner_edges static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ ok_of (t : term) : bool = mount_text::is_ok_tuple t
+
+:~ any_in (s : string) (needles : list string) : bool = memo::any (\ (n : string) => text::contains s n) needles
+
+:~ unquotable () : list string = [ "\""; "%"; "\r"; "\n" ]
+
+:~ needs_quotes () : list string = [ " "; "\t"; "&"; "|"; "<"; ">"; "("; ")"; "^"; ","; ";"; "=" ]
+
+:~ quoted (w : string) : string = "\"" ++ w ++ "\""
+
+:~ cmd_word (w : string) : string = ? w = "" ?> quoted "" |? any_in w (needs_quotes ()) ?> quoted w |: w
+
+:~ windows_path (p : string) : string = text::replace p "/" "\\"
+
+:~ is_windows () : bool = erlang_term::equal (erlang_term::element_at 1i32 (apply "os" "type" [])) (erlang_term::atom "win32")
+
+:~ found_or_empty (t : term) : string = ? erlang_term::equal t (erlang_term::atom "false") ?> "" |: erlang_file::text_of t
+
+:~ find_executable (name : string) : string = found_or_empty (apply "os" "find_executable" [ erlang_term::charlist name ])
+
+:~ command_shell () : string =
+    := spec = toolchain::beam_env "ComSpec"
+    ? spec <> "" ?> spec |: find_executable "cmd.exe"
+
+:~ words_of (args : list string) : string = sm'::concat_list "" (listm::map (\ (a : string) => " " ++ cmd_word a) args)
+
+:~ redirect_to (file : string) : string = "> " ++ quoted (windows_path file) ++ " 2>&1 "
+
+:~ shell_run (shell : string) : string = quoted (windows_path shell) ++ " /d /v:off /s /c "
+
+:~ command_line_with (shell : string) (path : string) (args : list string) (file : string) : string =
+    shell_run shell ++ quoted (redirect_to file ++ quoted (windows_path path) ++ words_of args)
+
+:~ sample_line () : string = command_line_with "C:/cmd.exe" "C:/bin/cell.exe" [ "a b"; ""; "x=1"; "/flag" ] "C:/tmp/out.txt"
+
+:~ sample_expected () : string = "\"C:\\cmd.exe\" /d /v:off /s /c \"> \"C:\\tmp\\out.txt\" 2>&1 \"C:\\bin\\cell.exe\" \"a b\" \"\" \"x=1\" /flag\""
+
+///> gleam
+:# a_capture_line_quotes_words_cmd_would_split =
+    sample_line () |> _assert_eq (sample_expected ())
+
+:~ captured_command_line (path : string) (args : list string) (file : string) : string = command_line_with (command_shell ()) path args file
+
+:~ capture_ok (path : string) (file : string) (args : list string) : bool =
+    := shell = command_shell ()
+    is_windows () && shell <> "" && not (memo::any (\ (w : string) => any_in w (unquotable ())) (shell :: path :: file :: args))
+
+///> gleam
+:# cmd_unsafe_arguments_are_left_to_the_direct_port =
+    (any_in "100%" (unquotable ()), any_in "say \"hi\"" (unquotable ()), any_in "plain" (unquotable ())) |> _assert_eq (!+, !+, !-)
+
+:~ size_of (file : string) : i32 =
+    := r = apply "file" "read_file_info" [ str file ]
+    ? ok_of r ?> erlang_term::element_at 2i32 (erlang_term::element_at 2i32 r) |> erlang_term::cast |: -1i32
+
+:~ tagged (tag : string) (v : term) : term = erlang_term::tuple [ erlang_term::atom tag; v ]
+
+:~ eof_as_empty (got : term) : term = ? erlang_term::equal got (erlang_term::atom "eof") ?> tagged "ok" (str "") |: got
+
+:~ pread_tail (io : term) (size : i32) (limit : i32) : term =
+    := from = ? size > limit ?> size - limit |: 0i32
+    := len = ? size < limit ?> size |: limit
+    eof_as_empty (apply "file" "pread" [ io; erlang_term::of from; erlang_term::of len ])
+
+:~ read_opened (opened : term) (size : i32) (limit : i32) : term =
+    := io = erlang_term::element_at 2i32 opened
+    := got = pread_tail io size limit
+    apply "file" "close" [ io ] |> ignore
+    got
+
+:~ read_mode () : term = erlang_term::list_term [ erlang_term::atom "read"; erlang_term::atom "binary" ]
+
+:~ opened_if (file : string) (size : i32) : term = ? size < 0i32 ?> erlang_term::atom "error" |: apply "file" "open" [ str file; read_mode () ]
+
+:~ read_tail (file : string) (limit : i32) : term =
+    := size = size_of file
+    := opened = opened_if file size
+    ? ok_of opened ?> read_opened opened size limit |: tagged "error" (erlang_term::atom "enoent")
+
+:~ gone_or_last (r : term) (attempts : i32) : bool = ok_of r || erlang_term::equal r (erlang_term::tuple [ erlang_term::atom "error"; erlang_term::atom "enoent" ]) || attempts <= 1i32
+
+:~ ^ remove_capture (file : string) (attempts : i32) : () =
+    := r = apply "file" "delete" [ str file ]
+    ? gone_or_last r attempts ?> () |: retry_remove file attempts
+
+:& :~ retry_remove (file : string) (attempts : i32) : () =
+    apply "timer" "sleep" [ erlang_term::of 100i32 ] |> ignore
+    remove_capture file (attempts - 1i32)
+
+:~ remove_done (file : string) (attempts : i32) : term =
+    remove_capture file attempts
+    erlang_term::atom "ok"
+
+:~ is_absolute (p : string) : bool = erlang_term::equal (apply "filename" "pathtype" [ str p ]) (erlang_term::atom "absolute")
+
+:~ resolve_executable (exe : string) : string =
+    ? is_absolute exe && erlang_file::regular_file exe ?> exe |: find_executable exe
+
+:~ pid_words (out : string) : list i32 = listm::map text::parse_i32 (memo::keep (\ (w : string) => w <> "" && text::parse_i32 w > 0i32) (sm'::split_list "\n" (text::replace out " " "\n")))
+
+:~ ^ descendants (pid : i32) : list i32 =
+    := r = process::captured_by "pgrep" [ "-P"; text::show_i32 pid ] !+
+    ? r::ran && r::code = 0i32 ?> children_and_below (pid_words r::stdout) |: []
+
+:& :~ children_and_below (children : list i32) : list i32 = listm::append children (listm::concat (listm::map descendants children))
+
+:~ kill_tree (pid : i32) : () =
+    ? is_windows ()
+    ?> process::captured_by "taskkill" [ "/T"; "/F"; "/PID"; text::show_i32 pid ] !+ |> ignore
+    |: process::captured_by "kill" ("-KILL" :: listm::map text::show_i32 (pid :: descendants pid)) !+ |> ignore
+
+///> gleam
+:# pgrep_output_splits_into_pids =
+    pid_words "12\n34 56\n\nx\n" |> _assert_eq [ 12i32; 34i32; 56i32 ]
+
+:~ kill_done (pid : i32) : term =
+    kill_tree pid
+    erlang_term::atom "ok"
+
+:~ pidfile_killed (path : string) : term =
+    ?= daemon_host::text_file path ?|
+    | Some text =>
+        := pid = daemon::file_number text
+        ? pid > 0i32 ?> kill_done pid |: erlang_term::atom "ok"
+    | None => erlang_term::atom "ok"
+
+:~ killed_nothing (path : string) : bool = erlang_term::equal (pidfile_killed path) (erlang_term::atom "ok")
+
+:~ blank_pidfile () : string =
+    := blank = erlang_file::test_cache_file "c7b15-blank-pid"
+    erlang_file::file_written blank "\n" |> ignore
+    blank
+
+///> gleam
+:# a_missing_pidfile_kills_nothing =
+    killed_nothing "/no/such/c7b15-pid" |> _assert_eq !+
+
+///> gleam
+:# a_blank_pidfile_kills_nothing =
+    killed_nothing (blank_pidfile ()) |> _assert_eq !+
+
+:~ texts (t : term) : list string = listm::map erlang_file::text_of (erlang_term::items_of t)

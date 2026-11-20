@@ -3,7 +3,7 @@ defmodule Spiral.Cells.BuildOnlyTest do
 
   @moduletag timeout: 900_000
 
-  alias Spiral.Cells.{NotebookCli, Targets, Toolchain}
+  alias Spiral.Cells.{Domain, NotebookCli, Targets}
 
   setup do
     %{dir: Spiral.Cells.TestHelpers.tmp_dir!("build_only")}
@@ -47,8 +47,8 @@ defmodule Spiral.Cells.BuildOnlyTest do
   end
 
   test "a gleam program is built but not run, and the receipt runs it", %{dir: dir} do
-    erl = Toolchain.erl([])
-    gleam = Toolchain.gleam([])
+    erl = Domain.tool("erl", [])
+    gleam = Domain.tool("gleam", [])
 
     if is_nil(erl) or is_nil(gleam) do
       IO.puts("skipped: gleam or erl is not installed")

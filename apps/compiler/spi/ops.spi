@@ -1,0 +1,358 @@
+///- --package .
+:< sm'_operators
+
+:# ops static =
+    :< testing
+
+:| op =
+    | ToFunPtr
+    | ToFunClosure
+    | HashSetCreate
+    | HashSetAdd
+    | HashSetContains
+    | HashSetRemove
+    | HashSetCount
+    | HashMapCreate
+    | HashMapSetImmutable
+    | HashMapSet
+    | HashMapAdd
+    | HashMapTryAdd
+    | HashMapContains
+    | HashMapRemove
+    | HashMapCount
+    | HashMapTryGet
+    | PragmaUnrollPush
+    | PragmaUnrollPop
+    | UnsafeBackendSwitch
+    | BackendSwitch
+    | UsesOriginalTermVars
+    | UsesOriginalNominals
+    | Global
+    | ToPythonRecord
+    | ToPythonNamedTuple
+    | While
+    | Do
+    | Indent
+    | LayoutToHeap
+    | LayoutToHeapMutable
+    | LayoutToStackMutable
+    | LayoutToStackRefs
+    | LayoutToHeapRefs
+    | LayoutIndex
+    | TypeToVar
+    | TypeToSymbol
+    | NominalName
+    | TypeLitToLit
+    | LitToTypeLit
+    | LitToSymbol
+    | Dyn
+    | Export
+    | NominalCreate
+    | NominalStrip
+    | NominalTypeApply
+    | Unbox
+    | Unbox2
+    | UnionTag
+    | UnionCaseName
+    | UnionUntag
+    | UnionToRecord
+    | StringLength
+    | StringIndex
+    | StringSlice
+    | StaticStringConcat
+    | PrimToString
+    | Printf
+    | StdoutFlush
+    | MonotonicDelayMs
+    | Assign
+    | ArrayCreate
+    | ArrayLength
+    | ArrayIndex
+    | ArrayIndexSet
+    | ArrayAtomicAdd
+    | GpuStageBoundary
+    | GpuCarryIn
+    | GpuCarryOut
+    | RecordMap
+    | RecordIter
+    | RecordFilter
+    | RecordFold
+    | RecordFoldBack
+    | RecordLength
+    | RecordTypeMap
+    | RecordTypeIter
+    | RecordTypeFold
+    | RecordTypeFoldBack
+    | RecordTypeLength
+    | RecordTypeTryFind
+    | Add
+    | Sub
+    | Mult
+    | Div
+    | Mod
+    | Pow
+    | LTE
+    | LT
+    | EQ
+    | TypeEq
+    | NEQ
+    | GT
+    | GTE
+    | BoolAnd
+    | BoolOr
+    | BitwiseAnd
+    | BitwiseOr
+    | BitwiseXor
+    | BitwiseComplement
+    | ShiftLeft
+    | ShiftRight
+    | Neg
+    | Tanh
+    | Log
+    | Exp
+    | Sin
+    | Cos
+    | Sqrt
+    | NanIs
+    | Conv
+    | Infinity
+    | Pi
+    | LitIs
+    | PrimIs
+    | SymbolIs
+    | VarIs
+    | UnionIs
+    | HeapUnionIs
+    | LayoutIs
+    | NominalIs
+    | FunctionIs
+    | ExistsIs
+    | PrototypeHas
+    | PrimTypeIs
+    | SymbolTypeIs
+    | UnionTypeIs
+    | HeapUnionTypeIs
+    | LayoutTypeIs
+    | ExistsTypeIs
+    | NominalTypeIs
+    | FailWith
+    | PrintStatic
+    | PrintRaw
+    | ErrorType
+    | ExistsStrip
+    | StringLitToSymbol
+    | SymbolToString
+    | VarTag
+    | TagToSymbol
+    | FunctionTermSlotsGet
+    | FunctionTermSlotsSet
+    | FreeVars
+    | FreeVarsReplace
+    | SizeOf
+
+:~ op_of_name (name : string) : option op =
+    ?= name ?|
+    | "ToFunPtr" => Some ToFunPtr
+    | "ToFunClosure" => Some ToFunClosure
+    | "HashSetCreate" => Some HashSetCreate
+    | "HashSetAdd" => Some HashSetAdd
+    | "HashSetContains" => Some HashSetContains
+    | "HashSetRemove" => Some HashSetRemove
+    | "HashSetCount" => Some HashSetCount
+    | "HashMapCreate" => Some HashMapCreate
+    | "HashMapSetImmutable" => Some HashMapSetImmutable
+    | "HashMapSet" => Some HashMapSet
+    | "HashMapAdd" => Some HashMapAdd
+    | "HashMapTryAdd" => Some HashMapTryAdd
+    | "HashMapContains" => Some HashMapContains
+    | "HashMapRemove" => Some HashMapRemove
+    | "HashMapCount" => Some HashMapCount
+    | "HashMapTryGet" => Some HashMapTryGet
+    | "PragmaUnrollPush" => Some PragmaUnrollPush
+    | "PragmaUnrollPop" => Some PragmaUnrollPop
+    | "UnsafeBackendSwitch" => Some UnsafeBackendSwitch
+    | "BackendSwitch" => Some BackendSwitch
+    | "UsesOriginalTermVars" => Some UsesOriginalTermVars
+    | "UsesOriginalNominals" => Some UsesOriginalNominals
+    | "Global" => Some Global
+    | "ToPythonRecord" => Some ToPythonRecord
+    | "ToPythonNamedTuple" => Some ToPythonNamedTuple
+    | "While" => Some While
+    | "Do" => Some Do
+    | "Indent" => Some Indent
+    | "LayoutToHeap" => Some LayoutToHeap
+    | "LayoutToHeapMutable" => Some LayoutToHeapMutable
+    | "LayoutToStackMutable" => Some LayoutToStackMutable
+    | "LayoutToStackRefs" => Some LayoutToStackRefs
+    | "LayoutToHeapRefs" => Some LayoutToHeapRefs
+    | "LayoutIndex" => Some LayoutIndex
+    | "TypeToVar" => Some TypeToVar
+    | "TypeToSymbol" => Some TypeToSymbol
+    | "NominalName" => Some NominalName
+    | "TypeLitToLit" => Some TypeLitToLit
+    | "LitToTypeLit" => Some LitToTypeLit
+    | "LitToSymbol" => Some LitToSymbol
+    | "Dyn" => Some Dyn
+    | "Export" => Some Export
+    | "NominalCreate" => Some NominalCreate
+    | "NominalStrip" => Some NominalStrip
+    | "NominalTypeApply" => Some NominalTypeApply
+    | "Unbox" => Some Unbox
+    | "Unbox2" => Some Unbox2
+    | "UnionTag" => Some UnionTag
+    | "UnionCaseName" => Some UnionCaseName
+    | "UnionUntag" => Some UnionUntag
+    | "UnionToRecord" => Some UnionToRecord
+    | "StringLength" => Some StringLength
+    | "StringIndex" => Some StringIndex
+    | "StringSlice" => Some StringSlice
+    | "StaticStringConcat" => Some StaticStringConcat
+    | "PrimToString" => Some PrimToString
+    | "Printf" => Some Printf
+    | "StdoutFlush" => Some StdoutFlush
+    | "MonotonicDelayMs" => Some MonotonicDelayMs
+    | "Assign" => Some Assign
+    | "ArrayCreate" => Some ArrayCreate
+    | "ArrayLength" => Some ArrayLength
+    | "ArrayIndex" => Some ArrayIndex
+    | "ArrayIndexSet" => Some ArrayIndexSet
+    | "ArrayAtomicAdd" => Some ArrayAtomicAdd
+    | "GpuStageBoundary" => Some GpuStageBoundary
+    | "GpuCarryIn" => Some GpuCarryIn
+    | "GpuCarryOut" => Some GpuCarryOut
+    | "RecordMap" => Some RecordMap
+    | "RecordIter" => Some RecordIter
+    | "RecordFilter" => Some RecordFilter
+    | "RecordFold" => Some RecordFold
+    | "RecordFoldBack" => Some RecordFoldBack
+    | "RecordLength" => Some RecordLength
+    | "RecordTypeMap" => Some RecordTypeMap
+    | "RecordTypeIter" => Some RecordTypeIter
+    | "RecordTypeFold" => Some RecordTypeFold
+    | "RecordTypeFoldBack" => Some RecordTypeFoldBack
+    | "RecordTypeLength" => Some RecordTypeLength
+    | "RecordTypeTryFind" => Some RecordTypeTryFind
+    | "Add" => Some Add
+    | "Sub" => Some Sub
+    | "Mult" => Some Mult
+    | "Div" => Some Div
+    | "Mod" => Some Mod
+    | "Pow" => Some Pow
+    | "LTE" => Some LTE
+    | "LT" => Some LT
+    | "EQ" => Some EQ
+    | "TypeEq" => Some TypeEq
+    | "NEQ" => Some NEQ
+    | "GT" => Some GT
+    | "GTE" => Some GTE
+    | "BoolAnd" => Some BoolAnd
+    | "BoolOr" => Some BoolOr
+    | "BitwiseAnd" => Some BitwiseAnd
+    | "BitwiseOr" => Some BitwiseOr
+    | "BitwiseXor" => Some BitwiseXor
+    | "BitwiseComplement" => Some BitwiseComplement
+    | "ShiftLeft" => Some ShiftLeft
+    | "ShiftRight" => Some ShiftRight
+    | "Neg" => Some Neg
+    | "Tanh" => Some Tanh
+    | "Log" => Some Log
+    | "Exp" => Some Exp
+    | "Sin" => Some Sin
+    | "Cos" => Some Cos
+    | "Sqrt" => Some Sqrt
+    | "NanIs" => Some NanIs
+    | "Conv" => Some Conv
+    | "Infinity" => Some Infinity
+    | "Pi" => Some Pi
+    | "LitIs" => Some LitIs
+    | "PrimIs" => Some PrimIs
+    | "SymbolIs" => Some SymbolIs
+    | "VarIs" => Some VarIs
+    | "UnionIs" => Some UnionIs
+    | "HeapUnionIs" => Some HeapUnionIs
+    | "LayoutIs" => Some LayoutIs
+    | "NominalIs" => Some NominalIs
+    | "FunctionIs" => Some FunctionIs
+    | "ExistsIs" => Some ExistsIs
+    | "PrototypeHas" => Some PrototypeHas
+    | "PrimTypeIs" => Some PrimTypeIs
+    | "SymbolTypeIs" => Some SymbolTypeIs
+    | "UnionTypeIs" => Some UnionTypeIs
+    | "HeapUnionTypeIs" => Some HeapUnionTypeIs
+    | "LayoutTypeIs" => Some LayoutTypeIs
+    | "ExistsTypeIs" => Some ExistsTypeIs
+    | "NominalTypeIs" => Some NominalTypeIs
+    | "FailWith" => Some FailWith
+    | "PrintStatic" => Some PrintStatic
+    | "PrintRaw" => Some PrintRaw
+    | "ErrorType" => Some ErrorType
+    | "ExistsStrip" => Some ExistsStrip
+    | "StringLitToSymbol" => Some StringLitToSymbol
+    | "SymbolToString" => Some SymbolToString
+    | "VarTag" => Some VarTag
+    | "TagToSymbol" => Some TagToSymbol
+    | "FunctionTermSlotsGet" => Some FunctionTermSlotsGet
+    | "FunctionTermSlotsSet" => Some FunctionTermSlotsSet
+    | "FreeVars" => Some FreeVars
+    | "FreeVarsReplace" => Some FreeVarsReplace
+    | "SizeOf" => Some SizeOf
+    | _ => None
+
+:| associativity = AssocNone | AssocLeft | AssocRight
+
+:~ inbuilt_operators (x : string) : option (i32 * associativity) =
+    ? x = "+" || x = "-" ?> Some (60, AssocLeft)
+    |? x = "*" || x = "/" || x = "%" ?> Some (70, AssocLeft)
+    |? x = "</>" ?> Some (43, AssocLeft)
+    |? x = "<|>" ?> Some (42, AssocLeft)
+    |? x = "|>" || x = "||>" || x = "|||>" ?> Some (41, AssocLeft)
+    |? x = ">>" || x = "<<" ?> Some (45, AssocLeft)
+    |? x = "<-" ?> Some (4, AssocLeft)
+    |? x = "<=" || x = "<" || x = "=" || x = "`=" || x = ">" || x = ">=" || x = "<>" ?> Some (40, AssocNone)
+    |? x = "<<<" || x = ">>>" || x = "&&&" || x = "|||" ?> Some (40, AssocNone)
+    |? x = "||" ?> Some (20, AssocLeft)
+    |? x = "&&" ?> Some (30, AssocLeft)
+    |? x = "::" ?> Some (50, AssocRight)
+    |? x = "^" ?> Some (45, AssocRight)
+    |? x = "<|" ?> Some (41, AssocRight)
+    |? x = "." ?> Some (2, AssocRight)
+    |? x = "," ?> Some (6, AssocRight)
+    |? x = ":>" || x = ":?>" ?> Some (35, AssocRight)
+    |? x = "**" ?> Some (80, AssocRight)
+    |: None
+
+:~ ^ precedence_associativity (name : string) : option (i32 * associativity) =
+    := n = (sm'::length name : i32)
+    ? n = 0 ?> None
+    |? n > 1 && sm'::index 0i32 name = '.' ?> precedence_associativity (sm'::slice 1 (n - 1) name)
+    |? n = 1 ?> inbuilt_operators name
+    |:
+        ?= inbuilt_operators name ?|
+        | Some found => Some found
+        | None => precedence_associativity (sm'::slice 0 (n - 2) name)
+
+:~ is_separator (x : string) : bool = x = "=>" || x = "|" || x = ":" || x = ";"
+
+:~ assoc_word (a : associativity) : string =
+    ?= a ?|
+    | AssocNone => "N"
+    | AssocLeft => "L"
+    | AssocRight => "R"
+
+:~ shown (name : string) : string =
+    ?= precedence_associativity name ?|
+    | Some (p, a) => sm'::format p ++# assoc_word a
+    | None => "none"
+
+///> rust
+///> fsharp
+///> gleam
+:# operator_precedence_strips_dots_and_trailing_chars_like_the_reference =
+    listm::map shown [ "+"; ".+"; "+++"; "|>>"; "<=>"; "."; ".."; "^^"; "**"; "abc"; "::" ]
+    |> _assert_eq [ "60L"; "60L"; "60L"; "41L"; "40N"; "2R"; "2R"; "45R"; "80R"; "none"; "50R" ]
+
+///> rust
+///> fsharp
+///> gleam
+:# op_of_name_finds_every_case_by_its_reference_name =
+    (op_of_name "StringLength", op_of_name "SizeOf", op_of_name "ToFunPtr", op_of_name "Nope") |> _assert_eq (Some StringLength, Some SizeOf, Some ToFunPtr, None)

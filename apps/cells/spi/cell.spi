@@ -1,3 +1,7 @@
+///- --package .
+:# cell static =
+    :< testing
+
 := (++) (left : string) (right : string) : string = left ^^ right
 
 :~ ^ nth_line (xs : list string) (i : i32) : string =
@@ -386,3 +390,48 @@ inl unit_join (panic_code : string) : string = """
 :~ unit_result (output : string) : bool = unit_from output 0i32
 
 :~ flag_text (b : bool) : string = ? b ?> "1" |: "0"
+
+:~ run_output_tuple (r : run_output) : erlang_term::term =
+    ?= r ?|
+    | StdoutOnly stdout => erlang_term::tuple [ erlang_term::atom "nil"; erlang_term::of stdout ]
+    | ValueAndStdout (value, stdout) => erlang_term::tuple [ erlang_term::of value; erlang_term::of stdout ]
+
+:~ ^ big_lines (n : i32) (acc : list string) : list string =
+    ? n <= 0i32 ?> acc |: big_lines (n - 1i32) (("line " ++ text::show_i32 n) :: acc)
+
+///> gleam
+:# split_output_stays_linear_on_a_large_input =
+    := big = sm'::concat_list "\n" (big_lines 2000i32 []) ++ "\nSPIRAL_CELLS_VALUE:7"
+    := wire = run_output_text (split_output big)
+    (text::starts_with wire "1\n7\n", (listm::length (sm'::split_list "\n" wire) : i32)) |> _assert_eq (!+, 2002i32)
+
+///> gleam
+:# patch_rust_unwrap_exit_shows_or_hides_the_value =
+    := rust = "fn main() {\n    let main = x.spawn(spiral_main).unwrap();\n    std::process::exit(main.join().unwrap());\n}\n"
+    := shown = patch_rust rust ShowValue
+    := unit = patch_rust rust UnitValue
+    [ text::contains shown "SPIRAL_CELLS_VALUE:{}"; text::contains shown "std::process::exit(0);"; text::contains unit "SPIRAL_CELLS_VALUE" = !-; text::contains unit "let _ = main.join().unwrap();" ]
+    |> _assert_eq [ !+; !+; !+; !+ ]
+
+///> gleam
+:# patch_rust_maps_the_panic_join_keeping_the_exit_code =
+    := rust = "fn main() {\n    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });\n}\n"
+    := shown = patch_rust rust ShowValue
+    := unit = patch_rust rust UnitValue
+    [ text::contains shown "Ok(spiral_cells_value) => { println!(\"SPIRAL_CELLS_VALUE:{}\", spiral_cells_value); std::process::exit(0) }"; text::contains shown "Err(_) => std::process::exit(101)"; text::contains shown "Ok(code) => code" = !-; text::contains unit "Ok(_) => std::process::exit(0)"; text::contains unit "Err(_) => std::process::exit(101)" ]
+    |> _assert_eq [ !+; !+; !+; !+; !+ ]
+
+///> gleam
+:# split_output_splits_the_value_marker_from_stdout =
+    (run_output_text (split_output "Hello from Spiral!\nSPIRAL_CELLS_VALUE:49\n"), run_output_text (split_output "Hello\n"))
+    |> _assert_eq ("1\n49\nHello from Spiral!", "0\nHello")
+
+///> gleam
+:# split_output_normalizes_panic_thread_ids_and_run_dirs =
+    (run_output_text (split_output "thread '<unnamed>' (52388) panicked at src/main.rs:9:5:\nassertion failed"), run_output_text (split_output "thread '<unnamed>' (9) panicked at C:\\Users\\me\\AppData\\Local\\Temp/spiral_cells/1791980730691-35\\main.rs:9:5:\nboom"))
+    |> _assert_eq ("0\nthread '<unnamed>' panicked at src/main.rs:9:5:\nassertion failed", "0\nthread '<unnamed>' panicked at main.rs:9:5:\nboom")
+
+///> gleam
+:# unit_result_recognizes_a_unit_unification_failure =
+    [ unit_result "Unification failure.\nGot:      ()\nExpected: i32"; unit_result "Got:      ()\nExpected: i32\")]"; unit_result "Unification failure.\nGot:      i32 -> i32\nExpected: i32 -> ()"; unit_result "Got:      i32\nExpected: string" = !-; unit_result "Got:      () -> string\nExpected: () -> i32" = !- ]
+    |> _assert_eq [ !+; !+; !+; !+; !+ ]

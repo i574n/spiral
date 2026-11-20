@@ -1,15 +1,4 @@
 defmodule Spiral.Cells.Mounts do
-  @skip MapSet.new([
-          "target",
-          "node_modules",
-          "build",
-          "dist",
-          ".git",
-          "deps",
-          "playwright-report",
-          "test-results"
-        ])
-
   @spec root() :: String.t()
   def root do
     base =
@@ -26,17 +15,17 @@ defmodule Spiral.Cells.Mounts do
     dir = Path.join(root(), key(entries))
 
     if File.regular?(Path.join(dir, "ready")) do
-      {:ok, forward(dir)}
+      {:ok, Spiral.Cells.Domain.mounts_forward(dir)}
     else
       build_locked(dir, entries)
     end
   end
 
   defp build_locked(dir, entries) do
-    case Spiral.Cells.FileLock.with_lock(dir <> ".lock", fn -> build(dir, entries) end, 180_000) do
-      :ok -> {:ok, forward(dir)}
+    case Spiral.Cells.Domain.with_lock(dir <> ".lock", fn -> build(dir, entries) end, 180_000) do
+      :ok -> {:ok, Spiral.Cells.Domain.mounts_forward(dir)}
       {:error, reason} when is_binary(reason) -> {:error, reason}
-      {:error, :lock_timeout} -> {:error, %Spiral.Cells.TimeoutError{message: "waited 180 s on the mount lock #{dir}.lock, held by a live build", timeout: 180_000}}
+      {:error, :lock_timeout} -> {:error, Spiral.Cells.Domain.timeout_error("waited 180 s on the mount lock #{dir}.lock, held by a live build", 180_000, nil)}
       {:error, reason} -> {:error, "could not mount packages: #{inspect(reason)}"}
     end
   end
@@ -56,23 +45,10 @@ defmodule Spiral.Cells.Mounts do
   end
 
   @spec newest(String.t()) :: non_neg_integer()
-  def newest(dir), do: walk(dir, 0)
+  def newest(dir), do: Spiral.Cells.Domain.mounts_newest(dir)
 
   @spec share_mounted_deps?(String.t(), [String.t()]) :: boolean()
-  def share_mounted_deps?(target, sibling_names) do
-    text = Spiral.Cells.Manifest.read!(target)
-
-    deps = local_package_names(text) |> Enum.map(&mount_name/1)
-    Spiral.Cells.Domain.package_dir_value(text) != "" and deps != [] and Enum.all?(deps, &(&1 in sibling_names))
-  end
-
-  @spec escapes_through_link?(String.t()) :: boolean()
-  def escapes_through_link?(target) do
-    case Spiral.Cells.Domain.package_dir_value(Spiral.Cells.Manifest.read!(target)) do
-      "" -> false
-      dir -> Path.type(dir) == :relative and (dir |> String.replace("\\", "/") |> String.trim_trailing("/")) not in [".", ".."]
-    end
-  end
+  def share_mounted_deps?(target, sibling_names), do: Spiral.Cells.Domain.mounts_share(target, sibling_names, Spiral.Cells.Domain.tool("dotnet", []) || "", Spiral.Cells.Domain.tool("compiler_dll", []) || "")
 
   defp build(dir, entries) do
     if File.regular?(Path.join(dir, "ready")) do
@@ -82,16 +58,7 @@ defmodule Spiral.Cells.Mounts do
       File.mkdir_p!(dir)
 
       Enum.reduce_while(entries, :ok, fn entry, :ok ->
-        link = Path.join(dir, entry.name)
-
-        placed =
-          case entry.kind do
-            :link -> make_link(link, entry.target)
-            :shadow -> shadow(link, entry.target)
-            :patched -> patched(link, entry.target, entry.patches, entry.package_dir)
-          end
-
-        case placed do
+        case place(dir, entry) do
           :ok -> {:cont, :ok}
           {:error, message} -> {:halt, {:error, message}}
         end
@@ -107,114 +74,33 @@ defmodule Spiral.Cells.Mounts do
     end
   end
 
-  defp key(entries) do
-    payload =
-      entries
-      |> Enum.sort_by(& &1.name)
-      |> Enum.map_join("\n", fn entry ->
-        stamp =
-          case entry.kind do
-            :shadow -> "\t#{sources_fingerprint(entry.target)}"
-            :patched -> "\t#{sources_fingerprint(entry.target)}\t#{patches_fingerprint({entry.package_dir, entry.patches})}"
-            :link -> ""
-          end
+  defp place(dir, entry) do
+    link = Path.join(dir, entry.name)
 
-        "#{entry.name}\t#{entry.kind}\t#{forward(entry.target)}#{stamp}"
-      end)
-      |> then(&("v3\n" <> &1))
+    case entry.kind do
+      :link ->
+        make_link(link, entry.target)
 
-    :crypto.hash(:sha256, payload) |> Base.encode16(case: :lower) |> binary_part(0, 16)
-  end
+      :shadow ->
+        plan_links(Spiral.Cells.Domain.mount_plan_shadow(link, entry.target, Spiral.Cells.Domain.manifest_read!(entry.target), false))
 
-  defp sources_fingerprint(dir) do
-    stats = source_stats(dir, dir, []) |> Enum.sort()
-    :crypto.hash(:sha256, :erlang.term_to_binary(stats)) |> Base.encode16(case: :lower) |> binary_part(0, 16)
-  end
-
-  defp source_stats(dir, root, acc) do
-    case File.ls(dir) do
-      {:ok, names} ->
-        Enum.reduce(names, acc, fn name, acc ->
-          path = Path.join(dir, name)
-
-          cond do
-            File.regular?(path) and source?(name) -> [{Path.relative_to(path, root), size_and_mtime(path)} | acc]
-            File.dir?(path) and name not in @skip -> source_stats(path, root, acc)
-            true -> acc
-          end
-        end)
-
-      _ ->
-        acc
+      :patched ->
+        plan_links(Spiral.Cells.Domain.mount_plan_patched(link, entry.target, Spiral.Cells.Domain.manifest_read!(entry.target), entry.patches, entry.package_dir == :absolute))
     end
   end
 
-  defp size_and_mtime(path) do
-    case File.stat(path, time: :posix) do
-      {:ok, %{size: size, mtime: mtime}} -> {size, mtime}
-      _ -> {0, 0}
-    end
+  defp plan_links({:ok, links}) do
+    Enum.reduce_while(links, :ok, fn {link, target}, :ok ->
+      case make_link(link, target) do
+        :ok -> {:cont, :ok}
+        error -> {:halt, error}
+      end
+    end)
   end
 
-  defp patches_fingerprint(patches) do
-    :crypto.hash(:sha256, :erlang.term_to_binary(patches)) |> Base.encode16(case: :lower) |> binary_part(0, 16)
-  end
+  defp plan_links({:error, message}), do: {:error, message}
 
-  defp patched(link, target, patches, package_dir) do
-    patched_names = patches |> Enum.map(&elem(&1, 0)) |> MapSet.new()
-
-    with :ok <- top_level_only(patched_names),
-         :ok <- shadow(link, target, patched_names, package_dir) do
-      Enum.reduce_while(patches, :ok, fn {file, old, new}, :ok ->
-        case Spiral.Cells.Domain.mount_patch_first(File.read!(Path.join(target, file)), old, new) do
-          {:ok, patched} ->
-            File.write!(Path.join(link, file), patched)
-            {:cont, :ok}
-
-          :error ->
-            {:halt, {:error, "patch for #{file} does not apply: #{inspect(old)} is not in #{Path.join(target, file)}"}}
-        end
-      end)
-    end
-  end
-
-  defp top_level_only(names) do
-    case Spiral.Cells.Domain.mount_nested_name(Enum.to_list(names)) do
-      nil -> :ok
-      nested -> {:error, "patch target #{nested} is nested; patched mounts take top-level package files only"}
-    end
-  end
-
-  defp project_for_mount(text, _target, :siblings), do: Spiral.Cells.Domain.mount_sibling_project(text)
-
-  defp project_for_mount(text, target, :absolute) do
-    Regex.replace(~r/^packageDir:\s*(.+)$/m, text, fn _, dir -> "packageDir: " <> (dir |> String.trim() |> Path.expand(target)) end)
-  end
-
-  defp shadow(link, target, skipped \\ MapSet.new(), package_dir \\ :siblings) do
-    File.mkdir_p!(link)
-    text = Spiral.Cells.Manifest.read!(target)
-    rewritten = project_for_mount(text, target, package_dir)
-    File.write!(Path.join(link, "package.spiproj"), rewritten)
-    File.write!(Path.join(link, "spiral_cells_shadow"), "")
-
-    case File.ls(target) do
-      {:ok, names} ->
-        Enum.reduce_while(names, :ok, fn name, :ok ->
-          if name in Spiral.Cells.Manifest.names() or MapSet.member?(skipped, name) do
-            {:cont, :ok}
-          else
-            case make_link(Path.join(link, name), Path.join(target, name)) do
-              :ok -> {:cont, :ok}
-              {:error, message} -> {:halt, {:error, message}}
-            end
-          end
-        end)
-
-      {:error, reason} ->
-        {:error, "could not read #{target}: #{inspect(reason)}"}
-    end
-  end
+  defp key(entries), do: Spiral.Cells.Domain.mounts_key(entries)
 
   defp make_link(link, target) do
     case :os.type() do
@@ -229,7 +115,7 @@ defmodule Spiral.Cells.Mounts do
         end
 
       _ ->
-        case File.ln_s(target, link) do
+        case Spiral.Cells.Domain.make_symlink_result(target, link) do
           :ok -> :ok
           {:error, reason} -> {:error, "could not link #{link}: #{inspect(reason)}"}
         end
@@ -296,56 +182,11 @@ defmodule Spiral.Cells.Mounts do
     end
   end
 
-  defp walk(dir, acc) do
-    case File.ls(dir) do
-      {:ok, names} ->
-        Enum.reduce(names, acc, fn name, acc ->
-          path = Path.join(dir, name)
-
-          cond do
-            File.regular?(path) and source?(name) -> max(acc, mtime(path))
-            File.dir?(path) and name not in @skip -> walk(path, acc)
-            true -> acc
-          end
-        end)
-
-      _ ->
-        acc
-    end
-  end
-
-  defp source?(name) do
-    name in Spiral.Cells.Manifest.names() or String.ends_with?(name, ".spi") or
-      String.ends_with?(name, ".spir")
-  end
-
-  defp mtime(path) do
-    case File.stat(path, time: :posix) do
-      {:ok, %{mtime: mtime}} -> mtime
-      _ -> 0
-    end
-  end
-
-  defp local_package_names(text), do: Enum.map(package_entries(text), &elem(&1, 0))
-
   @spec declared_dependencies(String.t()) :: [%{name: String.t(), target: String.t(), import: String.t()}]
   def declared_dependencies(dir) do
-    case Spiral.Cells.Manifest.read(dir) do
-      {:ok, text} ->
-        base = package_base(dir, text)
-
-        for {item, declared} <- package_entries(text) do
-          name = Path.basename(item)
-          suffix = String.replace_prefix(declared, item, "")
-          target = if relative_entry?(item), do: Path.expand(item, dir), else: Path.expand(item, base)
-          %{name: name, target: target, import: name <> suffix}
-        end
-
-      _ ->
-        []
-    end
+    for {name, target, import} <- Spiral.Cells.Domain.mount_dependencies(dir, Spiral.Cells.Domain.tool("dotnet", []) || "", Spiral.Cells.Domain.tool("compiler_dll", []) || ""),
+        do: %{name: name, target: target, import: import}
   end
-
 
   @spec mount_name(String.t()) :: String.t()
   def mount_name(target) do
@@ -353,90 +194,10 @@ defmodule Spiral.Cells.Mounts do
   end
 
   @spec dependency_closure([{String.t(), String.t()}]) :: [{String.t(), String.t()}]
-  def dependency_closure(targets) do
-    named = MapSet.new(targets, &elem(&1, 1))
-    closure(Enum.map(targets, &elem(&1, 0)), named, [])
-  end
+  def dependency_closure(targets), do: Spiral.Cells.Domain.mounts_closure(targets, Spiral.Cells.Domain.tool("dotnet", []) || "", Spiral.Cells.Domain.tool("compiler_dll", []) || "")
 
   @spec qualified_imports([{String.t(), String.t()}]) :: [String.t()]
-  def qualified_imports(targets) do
-    named = MapSet.new(targets, &elem(&1, 1))
-
-    targets
-    |> Enum.flat_map(fn {target, _name} -> declared_dependencies(target) end)
-    |> Enum.reject(&MapSet.member?(named, &1.name))
-    |> Enum.map(& &1.import)
-    |> Enum.uniq()
-  end
-
-  defp closure([], _named, found), do: Enum.reverse(found)
-
-  defp closure([dir | rest], named, found) do
-    {named, found, queue} =
-      Enum.reduce(declared_dependencies(dir), {named, found, rest}, fn dependency, {named, found, queue} ->
-        if MapSet.member?(named, dependency.name) or
-             not Spiral.Cells.Manifest.exists?(dependency.target) do
-          {named, found, queue}
-        else
-          {MapSet.put(named, dependency.name), [{dependency.target, dependency.name} | found],
-           queue ++ [dependency.target]}
-        end
-      end)
-
-    closure(queue, named, found)
-  end
-
-  defp relative_entry?(item), do: String.starts_with?(item, ["./", "../", ".\\", "..\\"])
-
-  defp package_base(dir, text) do
-    case Spiral.Cells.Domain.package_dir_value(text) do
-      "" -> Path.expand("..", dir)
-      packages -> Path.expand(packages, dir)
-    end
-  end
-
-  defp package_entries(text) do
-    {entries, _mode} =
-      Enum.reduce(text |> String.replace("\r\n", "\n") |> String.split("\n"), {[], :out}, fn line, {entries, mode} ->
-        cond do
-          String.starts_with?(line, "packages:") ->
-            {entries, :in}
-
-          String.starts_with?(line, "modules:") ->
-            {entries, :out}
-
-          line != "" and not String.starts_with?(line, [" ", "\t"]) ->
-            {entries, :out}
-
-          mode == :in and package_entry(line) != nil ->
-            {[package_entry(line) | entries], :in}
-
-          true ->
-            {entries, mode}
-        end
-      end)
-
-    Enum.reverse(entries)
-  end
-
-  defp package_entry(line) do
-    item = String.trim(line)
-
-    cond do
-      item == "" -> nil
-      String.starts_with?(item, "|") -> nil
-      true -> {item |> String.trim_trailing("-") |> String.trim_trailing("*"), item}
-    end
-  end
-
-  defp forward(path) do
-    path = String.replace(path, "\\", "/")
-
-    case String.split(path, ":", parts: 2) do
-      [drive, rest] when byte_size(drive) == 1 -> String.downcase(drive) <> ":" <> rest
-      _ -> path
-    end
-  end
+  def qualified_imports(targets), do: Spiral.Cells.Domain.mounts_imports(targets, Spiral.Cells.Domain.tool("dotnet", []) || "", Spiral.Cells.Domain.tool("compiler_dll", []) || "")
 
   defp win_path(path), do: String.replace(path, "/", "\\")
 end

@@ -11,24 +11,24 @@ fn score_0(mut v0: US0) -> i32 {
         US0::US0_Empty => {
             0i32
         }
-        US0::US0_Values(v1) => {
-            let mut v1: Rc<RefCell<Vec<i32>>> = v1;
-            let v2: i32 = (v1.clone().borrow().len() as i32);
-            let v3: i32 = v1.borrow()[0i32 as usize];
+        US0::US0_Values(values_v1) => {
+            let mut values_v1: Rc<RefCell<Vec<i32>>> = values_v1;
+            let v2: i32 = (values_v1.borrow().len() as i32);
+            let v3: i32 = values_v1.borrow()[0i32 as usize];
             let v4: i32 = v2.wrapping_add(v3);
-            let v5: i32 = v1.borrow()[1i32 as usize];
+            let v5: i32 = values_v1.borrow()[1i32 as usize];
             let v6: i32 = v4.wrapping_add(v5);
             v6
         }
     }
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 2i32;
-    let mut v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
-    v1.borrow_mut()[0i32 as usize] = 4i32;
-    v1.borrow_mut()[1i32 as usize] = 5i32;
-    let v2: US0 = US0::US0_Values(v1);
-    let v3: i32 = score_0(v2);
+    let n_v0: i32 = 2i32;
+    let mut values_v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); n_v0 as usize]));
+    values_v1.borrow_mut()[0i32 as usize] = 4i32;
+    values_v1.borrow_mut()[1i32 as usize] = 5i32;
+    let x_v2: US0 = US0::US0_Values(values_v1);
+    let v3: i32 = score_0(x_v2);
     let v4: i32 = v3.wrapping_sub(11i32);
     v4
 }

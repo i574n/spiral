@@ -1,8 +1,6 @@
 defmodule Spiral.Cells.UnitFirstTest do
   use ExUnit.Case, async: false
 
-  alias Spiral.Cells.Result
-
   defp counting_compile(accept) do
     parent = self()
 
@@ -23,7 +21,7 @@ defmodule Spiral.Cells.UnitFirstTest do
   defp run_ok(_ctx), do: {:ok, %{exit_status: 0, output: "", duration_ms: 4}}
 
   test "a unit-result --test cell reaches the compiler once, already ended by 0i32" do
-    assert {:ok, %Result{exit_status: 0}} =
+    assert {:ok, %{exit_status: 0}} =
              Spiral.Cells.run("///> rust\n_assert_eq 1i32 1i32",
                test_cell: true,
                compile: counting_compile(&String.ends_with?(&1, "0i32\n")),

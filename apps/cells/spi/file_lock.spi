@@ -1,0 +1,170 @@
+///- --package .
+:< erlang_term
+:# file_lock static =
+    :< testing
+
+:< sm'_operators
+
+:~ nth (n : i32) (t : erlang_term::term) : erlang_term::term = erlang_term::element_at n t
+
+:~ is_ok (t : erlang_term::term) : bool = erlang_term::is_tuple t && equal (nth 1i32 t) (atom "ok")
+
+:~ error_of (reason : erlang_term::term) : erlang_term::term = erlang_term::tuple [ atom "error"; reason ]
+
+:~ now_ms () : i64 = (apply "erlang" "monotonic_time" [ atom "millisecond" ] |> erlang_term::cast : i64)
+
+:~ now_s () : i64 = (apply "os" "system_time" [ atom "second" ] |> erlang_term::cast : i64)
+
+:~ os_pid () : string = erlang_file::text_of_call "os" "getpid" []
+
+:~ is_int (t : erlang_term::term) : bool = (apply "erlang" "is_integer" [ t ] |> erlang_term::cast : bool)
+
+:~ digits_only (s : string) : bool =
+    := r = apply "string" "to_integer" [ erlang_term::of s ]
+    erlang_term::is_tuple r && equal (nth 2i32 r) (erlang_term::of "") && is_int (nth 1i32 r)
+
+///> gleam
+:# only_a_whole_integer_reads_as_a_pid =
+    (digits_only "1234", digits_only "12x", digits_only "", digits_only "abc") |> _assert_eq (!+, !-, !-, !-)
+
+:~ tasklist_out (pid : string) : string = (process::captured_by "tasklist" [ "/FI"; "PID eq " ++# pid; "/NH"; "/FO"; "CSV" ] !+)::stdout
+
+:~ kill_zero (pid : string) : bool = (process::captured_by "kill" [ "-0"; pid ] !+)::code = 0i32
+
+:~ pid_alive (pid : string) : bool =
+    ? toolchain::on_windows () ?> sm'::contains ("\"" ++# pid ++# "\"") (tasklist_out pid) |: kill_zero pid
+
+:~ mtime_s (path : string) : option i64 =
+    := r = apply "file" "read_file_info" [ erlang_term::of path; toolchain::posix_opts () ]
+    ? is_ok r ?> Some (nth 6i32 (nth 2i32 r) |> erlang_term::cast) |: None
+
+:~ older_than_grace (path : string) : bool = ?= mtime_s path ?| Some m => now_s () - m > 5i64 | None => !-
+
+:~ dead_pid (text : string) : bool = text <> os_pid () && not (pid_alive text)
+
+:~ holder_text (path : string) : option string =
+    := r = apply "file" "read_file" [ erlang_term::of path ]
+    ? is_ok r ?> Some (sm'::trim (nth 2i32 r |> erlang_term::cast)) |: None
+
+:~ holder_dead (path : string) : bool =
+    ?= holder_text path ?|
+    | Some text => ? digits_only text ?> dead_pid text |: older_than_grace path
+    | None => !-
+
+:~ removed (path : string) : () = apply "file" "delete" [ erlang_term::of path ] |> ignore
+
+:~ released (io : erlang_term::term) (path : string) : erlang_term::term =
+    apply "file" "close" [ io ] |> ignore
+    removed path
+    atom "ok"
+
+:~ busy (r : erlang_term::term) : bool = erlang_term::is_tuple r && (equal (nth 2i32 r) (atom "eexist") || equal (nth 2i32 r) (atom "eacces"))
+
+:~ parsed (source : string) : erlang_term::term =
+    := tokens = nth 2i32 (apply "erl_scan" "string" [ erlang_term::charlist source ])
+    nth 2i32 (apply "erl_parse" "parse_exprs" [ tokens ])
+
+:~ with_binding (acc : erlang_term::term) ((n, v) : string * erlang_term::term) : erlang_term::term = apply "erl_eval" "add_binding" [ atom n; v; acc ]
+
+:~ bound (names : list (string * erlang_term::term)) : erlang_term::term = listm::fold with_binding (apply "erl_eval" "new_bindings" []) names
+
+:~ evaluated (source : string) (names : list (string * erlang_term::term)) : erlang_term::term =
+    nth 2i32 (apply "erl_eval" "exprs" [ parsed source; bound names ])
+
+:~ guarded (body : erlang_term::term) (cleanup : erlang_term::term) : erlang_term::term =
+    evaluated "try F() after C(nil) end." [ ("F", body); ("C", cleanup) ]
+
+:~ nullary (f : erlang_term::term) : erlang_term::term = evaluated "fun() -> F(nil) end." [ ("F", f) ]
+
+:~ probe_key () : erlang_term::term = atom "file_lock_guarded_probe"
+
+:~ probe_cleanup () : erlang_term::term = erlang_term::of (\ () => apply "erlang" "put" [ probe_key (); atom "cleaned" ])
+
+:~ ran_body () : erlang_term::term = nullary (erlang_term::of (\ () => atom "ran"))
+
+///> gleam
+:# guarded_returns_the_body_value =
+    equal (guarded (ran_body ()) (probe_cleanup ())) (atom "ran") |> _assert_eq !+
+
+///> gleam
+:# guarded_runs_the_cleanup_in_this_process =
+    guarded (ran_body ()) (probe_cleanup ()) |> ignore
+    equal (apply "erlang" "get" [ probe_key () ]) (atom "cleaned") |> _assert_eq !+
+
+:~ write_opts () : erlang_term::term = erlang_term::list_term [ atom "write"; atom "exclusive" ]
+
+:~ held_run (path : string) (body : erlang_term::term) (io : erlang_term::term) : erlang_term::term =
+    apply "file" "write" [ io; erlang_term::of (os_pid ()) ] |> ignore
+    guarded body (erlang_term::of (\ () => released io path))
+
+:~ next_due (check : bool) (now : i64) (next_check : i64) : i64 = ? check ?> now + 2000i64 |: next_check
+
+:~ open_lock (path : string) : erlang_term::term = apply "file" "open" [ erlang_term::of path; write_opts () ]
+
+:~ lock_timeout () : erlang_term::term = error_of (atom "lock_timeout")
+
+:== attempt = { path : string; body : erlang_term::term; deadline : i64 }
+
+:~ ^ claim (a : attempt) (next_check : i64) : erlang_term::term =
+    := opened = open_lock a::path
+    ? is_ok opened ?> held_run a::path a::body (nth 2i32 opened)
+    |? busy opened ?> waited a next_check
+    |: error_of (nth 2i32 opened)
+
+:& :~ waited (a : attempt) (next_check : i64) : erlang_term::term =
+    := now = now_ms ()
+    := check = now >= next_check
+    ? check && holder_dead a::path ?> taken_over a now
+    |? now > a::deadline ?> lock_timeout ()
+    |: slept a (next_due check now next_check)
+
+:& :~ taken_over (a : attempt) (now : i64) : erlang_term::term =
+    removed a::path
+    claim a now
+
+:& :~ slept (a : attempt) (next_check : i64) : erlang_term::term =
+    apply "timer" "sleep" [ erlang_term::of 50i32 ] |> ignore
+    claim a next_check
+
+:~ with_lock (path : string) (body : erlang_term::term) (timeout_ms : i64) : erlang_term::term =
+    apply "filelib" "ensure_dir" [ erlang_term::of path ] |> ignore
+    claim { path = path; body = body; deadline = now_ms () + timeout_ms } (now_ms ())
+
+:~ locked (path : string) (f : () -> erlang_term::term) (timeout_ms : i64) : erlang_term::term = with_lock path (nullary (erlang_term::of f)) timeout_ms
+
+:~ lock_path (name : string) : string =
+    := path = erlang_file::joined_path (erlang_file::test_cache_directory ()) ("file_lock/" ++# name)
+    removed path
+    apply "filelib" "ensure_dir" [ erlang_term::of path ] |> ignore
+    path
+
+:~ test_lock (name : string) (holder : string) : string =
+    := path = lock_path name
+    ? holder <> "" ?> erlang_file::file_written path holder |> ignore |: ()
+    path
+
+///> gleam
+:# a_free_lock_runs_the_body_while_held =
+    := path = test_lock "free.lock" ""
+    equal (locked path (\ () => erlang_term::of (erlang_file::regular_file path)) 1000i64) (erlang_term::of !+) |> _assert_eq !+
+
+///> gleam
+:# a_free_lock_is_gone_afterwards =
+    := path = test_lock "after.lock" ""
+    locked path (\ () => atom "ran") 1000i64 |> ignore
+    erlang_file::regular_file path |> _assert_eq !-
+
+///> gleam
+:# a_lock_held_by_this_os_process_times_out =
+    equal (locked (test_lock "mine.lock" (os_pid ())) (\ () => atom "ran") 0i64) (error_of (atom "lock_timeout")) |> _assert_eq !+
+
+///> gleam
+:# a_timed_out_lock_keeps_the_holder_file =
+    := path = test_lock "kept.lock" (os_pid ())
+    locked path (\ () => atom "ran") 0i64 |> ignore
+    erlang_file::regular_file path |> _assert_eq !+
+
+///> gleam
+:# a_lock_left_by_a_dead_pid_is_taken_over =
+    := path = test_lock "dead.lock" "999999999"
+    (equal (locked path (\ () => atom "ran") 5000i64) (atom "ran"), erlang_file::regular_file path) |> _assert_eq (!+, !-)

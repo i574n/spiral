@@ -54,6 +54,33 @@
     := reasons = listm::map (\ (r, n) => "no_agree\t" ++ r ++ "\t" ++ text::show_i32 n) (reasons_of ts)
     sm'::concat_list "\n" (listm::append fixed reasons)
 
+:== trm = erlang_term::term
+
+:== lt = list trm
+
+:~ vc_int (s : string) : trm = erlang_term::of (text::parse_i32 s)
+
+:~ vc_kv (k : string) (v : trm) : trm = erlang_term::tuple [ erlang_term::of k; v ]
+
+:~ vc_map (xs : lt) : trm = erlang_term::apply "maps" "from_list" [ erlang_term::list_term xs ]
+
+:~ cm_add (line : string) (top : lt) (na : lt) : lt * lt =
+    ?= sm'::split_list "\t" line ?|
+    | key :: n :: [] => (vc_kv key (vc_int n) :: top, na)
+    | _ :: reason :: n :: [] => (top, vc_kv reason (vc_int n) :: na)
+    | _ => (top, na)
+
+:~ ^ cm_go (lines : list string) (top : lt) (na : lt) : lt * lt =
+    ?= lines ?|
+    | [] => (top, na)
+    | line :: rest =>
+        := (t2, n2) = cm_add line top na
+        cm_go rest t2 n2
+
+:~ counts_map (rows : string) : trm =
+    := (top, na) = cm_go (sm'::split_list "\n" (counts_wire rows)) [] []
+    vc_map (vc_kv "no_agree_reasons" (vc_map na) :: top)
+
 :~ timed_entry (line : string) : string =
     ?= sm'::split_list "\t" line ?|
     | name :: "timed_out" :: ms :: _ ?& ms <> "" => name ++ " at " ++ ms ++ " ms"

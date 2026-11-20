@@ -65,11 +65,13 @@
     backend_switch {
         Gleam = \ () => global "import gleam/option"
     }
+
 :! option'_gleam t =
     `(
         option'_types ()
         $'' : $'option.Option(`t)'
     )
+
 :== option'_switch t =
     {
         Gleam : option'_gleam t
@@ -81,6 +83,7 @@
         Zig : $'?`(t)'
         Lean : $'(Option `t)'
     }
+
 :! option' t = $'backend_switch `(option'_switch t)'
 
 := none' \* t. () : option' t =
@@ -118,25 +121,31 @@
 := nullable_value' \* t. (x : option' t) : t =
     $'!x' : t
 
+:= nullable_default \* t. (value : t) (x : option' t) : t = ? is_none' x ?> value |: nullable_value' x
+
+:= rust_default_value' \* t. (value : t) (x : option' t) : t =
+    := value = rust::clone value
+    $'!x.unwrap_or(!value)' : t
+
 := default_value' \* t. (value : t) (x : option' t) : t =
     backend_switch {
         Gleam = \ () => $'!x |> option.unwrap(!value)' : t
-        Lua = \ () => ? is_none' x ?> value |: nullable_value' x
+        Lua = \ () => (nullable_default value x : t)
         Fsharp = \ () => $'!x |> Option.defaultValue !value ' : t
-        Python = \ () => ? is_none' x ?> value |: nullable_value' x
-        Rust = \ () =>
-            := value = rust::clone value
-            $'!x.unwrap_or(!value)' : t
-        TypeScript = \ () => ? is_none' x ?> value |: nullable_value' x
+        Python = \ () => (nullable_default value x : t)
+        Rust = \ () => (rust_default_value' value x : t)
+        TypeScript = \ () => (nullable_default value x : t)
         Zig = \ () => $'(!x orelse !value)' : t
         Lean = \ () => $'((!x).getD !value)' : t
     }
 
+:= gleam_get' \* t. (x : option' t) : t =
+    option'_types ()
+    $'!x |> option.unwrap (Nil)' : t
+
 := get' \* t. (x : option' t) : t =
     backend_switch {
-        Gleam = \ () =>
-            option'_types ()
-            $'!x |> option.unwrap (Nil)' : t
+        Gleam = \ () => (gleam_get' x : t)
         Lua = \ () => $'!x ' : t
         Fsharp = \ () => $'!x |> Option.get' : t
         Python = \ () => $'!x ' : t
@@ -151,38 +160,49 @@
     | Some x => some' x
     | None => none' ()
 
+:= gleam_map \* t u. (fn : t -> u) (x : option' t) : option' u =
+    option'_types ()
+    $'!x |> option.map(!fn)' : option' u
+
+:= nullable_map \* t u. (fn : t -> u) (x : option' t) : option' u =
+    ? x =. none' ()
+    ?> none' ()
+    |: fn $'!x ' |> \ x => $'!x ' : option' u
+
+:= fsharp_map \* t u. (fn : t -> u) (x : option' t) : option' u =
+    := fn = ~~ fn
+    $'!x |> Option.map !fn ' : option' u
+
+:= rust_map \* t u. (fn : t -> u) (x : option' t) : option' u =
+    := fn = rust::one_param_fn fn
+    := x = ~~ x
+    $'!x.map(|x| !fn(x))' : option' u
+
+:= typescript_map \* t u. (fn : t -> u) (x : option' t) : option' u =
+    ? $'!x === undefined' : bool
+    ?> none' ()
+    |: fn $'!x ' |> \ x => $'!x ' : option' u
+
+:= zig_map \* t u. (fn : t -> u) (x : option' t) : option' u =
+    ? $'(!x == null)' : bool
+    ?> none' ()
+    |: x |> get' |> fn |> some'
+
+:= lean_map \* t u. (fn : t -> u) (x : option' t) : option' u =
+    ? $'(!x).isNone' : bool
+    ?> none' ()
+    |: x |> get' |> fn |> some'
+
 := map \* t u. (fn : t -> u) (x : option' t) : option' u =
     backend_switch {
-        Gleam = \ () =>
-            option'_types ()
-            $'!x |> option.map(!fn)' : option' u
-        Lua = \ () =>
-            ? x =. none' ()
-            ?> none' ()
-            |: fn $'!x ' |> \ x => $'!x ' : option' u
-        Fsharp = \ () =>
-            := fn = ~~ fn
-            $'!x |> Option.map !fn ' : option' u
-        Python = \ () =>
-            ? x =. none' ()
-            ?> none' ()
-            |: fn $'!x ' |> \ x => $'!x ' : option' u
-        Rust = \ () =>
-            := fn = rust::one_param_fn fn
-            := x = ~~ x
-            $'!x.map(|x| !fn(x))' : option' u
-        TypeScript = \ () =>
-            ? $'!x === undefined' : bool
-            ?> none' ()
-            |: fn $'!x ' |> \ x => $'!x ' : option' u
-        Zig = \ () =>
-            ? $'(!x == null)' : bool
-            ?> none' ()
-            |: x |> get' |> fn |> some'
-        Lean = \ () =>
-            ? $'(!x).isNone' : bool
-            ?> none' ()
-            |: x |> get' |> fn |> some'
+        Gleam = \ () => (gleam_map fn x : option' u)
+        Lua = \ () => (nullable_map fn x : option' u)
+        Fsharp = \ () => (fsharp_map fn x : option' u)
+        Python = \ () => (nullable_map fn x : option' u)
+        Rust = \ () => (rust_map fn x : option' u)
+        TypeScript = \ () => (typescript_map fn x : option' u)
+        Zig = \ () => (zig_map fn x : option' u)
+        Lean = \ () => (lean_map fn x : option' u)
     }
 
 := map'' \* t u. (fn : t -> u) (x : option' t) : option' u =
@@ -202,16 +222,16 @@
     := y' = y |> box |> map id |> unbox
     (x', y') |> _assert_eq' (x, y)
 
+:= gleam_of_obj \* t. (x : t) : option' t =
+    option'_types ()
+    $'!x |> option.Some' : option' t
+
 := of_obj \* t. (x : t) : option' t =
     backend_switch {
-        Gleam = \ () =>
-            option'_types ()
-            $'!x |> option.Some' : option' t
-        Lua = \ () =>
-            $'!x ' : option' t
+        Gleam = \ () => (gleam_of_obj x : option' t)
+        Lua = \ () => $'!x ' : option' t
         Fsharp = \ () => (x |> $'Option.ofObj') : option' t
-        Python = \ () =>
-            $'!x ' : option' t
+        Python = \ () => $'!x ' : option' t
         Rust = \ () => $'Some(!x.clone())' : option' t
         TypeScript = \ () => $'(!x ?? undefined)' : option' t
         Zig = \ () => $'!x ' : option' t

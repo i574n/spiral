@@ -963,7 +963,9 @@
 
 := convert_to_utf32 (c : char) : int =
     backend_switch {
-        Gleam = \ () => c |> convert::i32
+        Gleam = \ () =>
+            global "import gleam/string"
+            $'case string.to_utf_codepoints(!c) { [cp, ..] -> string.utf_codepoint_to_int(cp) [] -> 0 }' : int
         Lua = \ () => c |> convert::i32
         Fsharp = \ () =>
             run_target_args' c \|
@@ -974,6 +976,13 @@
         TypeScript = \ () => $'(!c)' : int
         Zig = \ () => $'@@as(`int, !c)' : int
     }
+
+///> gleam
+///> rust
+///> fsharp
+///> python
+:# convert_to_utf32_gives_codepoints =
+    (convert_to_utf32 'a', convert_to_utf32 'z', convert_to_utf32 '0', convert_to_utf32 '~') |> _assert_eq (97, 122, 48, 126)
 
 := ends_with (value : string) (s : string) : bool =
     backend_switch {
@@ -1029,7 +1038,11 @@
         | TypeScript => \ () =>
             := until = start + len
             $'(!str).substring(!start, !until)' : string
-        | _ => \ () => $'!str.Substring (!start, !len)'
+        | Fsharp => \ () => $'!str.Substring (!start, !len)'
+        | _ => \ () => sm::slice str { from = start; to = start + len - 1 }
+
+:= slice_or_empty (from : i32) (until : i32) (s : string) : string =
+    ? until <= from ?> "" |: sm::slice s { from = from; to = until - 1i32 }
 
 ///> gleam
 ///> rust

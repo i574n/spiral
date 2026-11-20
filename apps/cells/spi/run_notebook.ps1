@@ -126,7 +126,7 @@ function Resolve-RealPath([string] $Path) {
 }
 Set-Location (Resolve-RealPath (Join-Path $PSScriptRoot ".."))
 $mix = Join-Path $elixir "mix.bat"
-if (-not (Test-Path $mix)) { $mix = "mix" }
+if (-not (Test-Path $mix)) { $mix = (Get-Command mix -CommandType Application -All -ErrorAction Ignore | Where-Object { -not $IsWindows -or $_.Extension -in '.bat', '.cmd', '.exe' } | Select-Object -First 1).Source ?? 'mix' }
 
 $bundleScripts = Join-Path (Get-Location) "../compiler/scripts"
 $dotnetRoot = $env:DOTNET_ROOT
@@ -160,7 +160,7 @@ if (-not (Test-Path "deps/kino/mix.exs")) {
     }
 }
 
-$notebook = Start-Process $mix (@('spiral.notebook') + $fixed | ForEach-Object { $_ -match '\s' ?"`"$_`"" : $_ }) -NoNewWindow -Wait -PassThru -RedirectStandardError "$env:ERL_CRASH_DUMP.stderr.log"
+$notebook = Start-Process $mix (@('spiral.notebook') + $fixed | ForEach-Object { $_ -match '\s' ?"`"$_`"" : $_ }) -NoNewWindow -PassThru -RedirectStandardError "$env:ERL_CRASH_DUMP.stderr.log"; $null = $notebook.Handle; $notebook.WaitForExit()
 $notebookExit = $notebook.ExitCode ?? 1; try { [Console]::Error.Write([IO.File]::ReadAllText("$env:ERL_CRASH_DUMP.stderr.log")) } catch { }
 Write-NotebookLedger 'mix' $notebookExit
 Exit-Notebook $notebookExit

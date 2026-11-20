@@ -386,9 +386,6 @@
         | Fsharp => \ () => $'!task.AsTask' ()
         | _ => \ () => null ()
 
-:= main () =
-    ()
-
 ///> rust
 :# run_synchronously_drives_a_future_to_its_value =
     := ~n = 41i32
@@ -414,3 +411,6 @@
     := failed =
         new_future_move (\ () => failwith message : i32) |> async_of_future |> catch_rust |> run_synchronously
     (async_outcome fine, async_outcome failed) |> _assert_eq ("7", "error")
+
+:= main () =
+    ()

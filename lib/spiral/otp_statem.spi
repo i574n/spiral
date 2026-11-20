@@ -1,0 +1,44 @@
+:< sm'_operators
+
+:# otp_statem static =
+    :< testing
+
+:! state_ref (msg : * -> * -> *) st = { trail : list string }
+
+:= origin \* (msg : * -> * -> *) st. () : state_ref msg st = state_ref { trail = [] }
+
+:= send \* (msg : * -> * -> *) from to. ((state_ref r) : state_ref msg from) (m : msg from to) (label : msg from to -> string) : state_ref msg to =
+    state_ref { trail = label m :: r::trail }
+
+:= trail_of \* (msg : * -> * -> *) st. ((state_ref r) : state_ref msg st) : list string = listm::rev r::trail
+
+:! locked = ()
+:! unlocked = ()
+
+:| door from to =
+    | Unlock :: string -> door locked unlocked
+    | Lock :: door unlocked locked
+    | Push :: door unlocked unlocked
+
+:= door_label \* from to. (d : door from to) : string =
+    ?= d ?|
+    | Unlock code => "unlock " ++# code
+    | Lock => "lock"
+    | Push => "push"
+
+///> rust
+:# a_door_walks_its_protocol_and_records_the_trail =
+    := shut : state_ref door locked = origin ()
+    := opened = send shut (Unlock "1234") door_label
+    := closed = send (send (send opened Push door_label) Push door_label) Lock door_label
+    trail_of closed |> _assert_eq [ "unlock 1234"; "push"; "push"; "lock" ]
+
+///> rust
+:# pushing_a_locked_door_does_not_compile fails "Unification failure" =
+    := shut : state_ref door locked = origin ()
+    trail_of (send shut Push door_label) |> ignore
+
+///> rust
+:# locking_a_locked_door_does_not_compile fails "Unification failure" =
+    := shut : state_ref door locked = origin ()
+    trail_of (send shut Lock door_label) |> ignore

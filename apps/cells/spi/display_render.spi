@@ -1,0 +1,178 @@
+///- --package .
+:< erlang_term
+:< sm'_operators
+
+:# display_render static =
+    :< testing
+
+:~ svg_mime () : string = "image/svg+xml"
+
+:~ plot_mime () : string = "application/vnd.spiral.plot+json"
+
+:~ frames_mime () : string = "application/vnd.spiral.plot-frames+json"
+
+:~ shown (mime : string) (data : string) : term = apply "maps" "from_list" [ list_term [ pair "mime" (of mime); pair "data" (of data) ] ]
+
+:~ text_shown (data : string) : term = shown "text/plain" data
+
+:~ failed (text : string) : term = tuple [ atom "error"; of text ]
+
+:~ ok_of (r : term) : bool = has_tag "ok" r
+
+:~ second (r : term) : term = element_at 2i32 r
+
+:~ fixed (x : term) (places : i32) : string = binary_text (apply "erlang" "float_to_binary" [ x; list_term [ tuple [ atom "decimals"; of places ] ] ])
+
+:~ ratio (a : i32) (b : i32) : string = fixed (apply "erlang" "/" [ of a; of b ]) 4i32
+
+:~ key_times (n : i32) (i : i32) : string = "0;" ++# ratio i n ++# ";" ++# ratio (i + 1i32) n
+
+:~ seconds (n : i32) : string = fixed (apply "erlang" "*" [ of n; of 0.1f64 ]) 2i32
+
+:~ animate_tag (times : string) (secs : string) : string =
+    "<animate attributeName=\"visibility\" values=\"hidden;visible;hidden\" keyTimes=\"" ++# times ++# "\" dur=\"" ++# secs ++# "s\" repeatCount=\"indefinite\"/>"
+
+:~ frame_markup (n : i32) (i : i32) (svg : string) : string =
+    "<g visibility=\"hidden\">" ++# animate_tag (key_times n i) (seconds n) ++# svg ++# "</g>"
+
+:~ ^ frames_markup (n : i32) (i : i32) (svgs : list string) : string =
+    ?= svgs ?|
+    | [] => ""
+    | s :: rest => frame_markup n i s ++# frames_markup n (i + 1i32) rest
+
+:~ svg_head () : string = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 640 480\" width=\"640\" height=\"480\">"
+
+:~ animated (svgs : list string) : string = svg_head () ++# frames_markup (listm::length svgs : i32) 0i32 svgs ++# "</svg>"
+
+:~ field_text (key : string) (m : term) : string = binary_text (field_or key m (of ""))
+
+:~ render_hook (opts : term) : term = apply "proplists" "get_value" [ atom "render_plot"; opts; atom "nil" ]
+
+:~ is_unary (f : term) : bool = cast (apply "erlang" "is_function" [ f; of 1i32 ])
+
+:~ unique_name () : string = "spiral_cells_plot_" ++# integer_text (apply "erlang" "unique_integer" [ list_term [ atom "positive" ] ])
+
+:~ unique_dir () : string = erlang_file::joined_path (source_blocks::temp_root ()) (unique_name ())
+
+:~ ran_plot (exe : string) (input : string) (output : string) : term =
+    apply "Elixir.Spiral.Cells.Runner" "run" [ of exe; list_term [ of input; of output ]; list_term [ pair "timeout" (of 60000i32) ] ]
+
+:~ read_svg (output : string) : term =
+    := r = apply "file" "read_file" [ of output ]
+    ? ok_of r ?> r |: failed (output ++# ": " ++# inspect (second r))
+
+:~ exited_zero (r : term) : bool = ok_of r && equal (field_or "exit_status" (second r) (atom "nil")) (of 0i32)
+
+:~ plot_outcome (r : term) (output : string) : term =
+    ? exited_zero r ?> read_svg output
+    |? ok_of r ?> tuple [ atom "error"; field_or "output" (second r) (of "") ]
+    |: failed (inspect (second r))
+
+:~ plotted (exe : string) (input : string) (output : string) (json : string) : term =
+    := _w = apply "file" "write_file" [ of input; of json ]
+    plot_outcome (ran_plot exe input output) output
+
+:~ plot_in (exe : string) (dir : string) (json : string) : term =
+    plotted exe (erlang_file::joined_path dir "plot.json") (erlang_file::joined_path dir "plot.svg") json
+
+:~ plot_with (exe : string) (json : string) : term =
+    := dir = unique_dir ()
+    := _m = erlang_file::make_dir_all dir
+    := r = plot_in exe dir json
+    := _d = erlang_file::remove_tree dir
+    r
+
+:~ usable (exe : term) : bool = not (is_atom "nil" exe) && erlang_file::regular_file (binary_text exe)
+
+:~ run_plot (json : string) (opts : term) : term =
+    := exe = tool_lookup::tool "plot" opts
+    ? usable exe ?> plot_with (binary_text exe) json |: failed "plot tool not found"
+
+:~ render_svg (json : string) (opts : term) : term =
+    := hook = render_hook opts
+    ? is_unary hook ?> apply "erlang" "apply" [ hook; list_term [ of json ] ] |: run_plot json opts
+
+:~ text_of_second (r : term) : string = binary_text (second r)
+
+:~ plot_display (data : string) (opts : term) : term =
+    := r = render_svg data opts
+    ? ok_of r ?> shown (svg_mime ()) (text_of_second r) |: text_shown ("plot not rendered: " ++# text_of_second r)
+
+:~ frame_svg (opts : term) (f : term) : term = render_svg (json_encoded f) opts
+
+:~ ^ svgs_of (opts : term) (fs : list term) (a : list string) : option (list string) * term =
+    ?= fs ?|
+    | [] => (Some (listm::rev a), of 0i32)
+    | f :: t =>
+        := r = frame_svg opts f
+        ? ok_of r ?> svgs_of opts t (text_of_second r :: a) |: (None, r)
+
+:~ decoded (json : string) : term = file_lock::evaluated "try {ok, json:decode(B)} catch error:E -> {error, E} end." [ ("B", of json) ]
+
+:~ frames_failed (why : string) : term = text_shown ("plot frames not rendered: " ++# why)
+
+:~ reason_text (r : term) : string =
+    := why = second r
+    ? is_binary why ?> binary_text why |: inspect why
+
+:~ frames_rendered (opts : term) (frames : list term) : term =
+    ?= svgs_of opts frames [] ?|
+    | Some svgs, _ => shown (svg_mime ()) (animated svgs)
+    | None, r => frames_failed (reason_text r)
+
+:~ frame_list (d : term) : list term = ? cast (apply "erlang" "is_list" [ second d ]) ?> items_of (second d) |: []
+
+:~ frames_from (opts : term) (frames : list term) : term =
+    ? (listm::length frames : i32) = 0i32 ?> frames_failed "no frames" |: frames_rendered opts frames
+
+:~ frames_display (data : string) (opts : term) : term =
+    := d = decoded data
+    ? ok_of d ?> frames_from opts (frame_list d) |: frames_failed (reason_text d)
+
+:~ rendered (opts : term) (d : term) : term =
+    := mime = field_text "mime" d
+    ? mime = plot_mime () ?> plot_display (field_text "data" d) opts
+    |? mime = frames_mime () ?> frames_display (field_text "data" d) opts
+    |: d
+
+:~ render_values (displays : term) (opts : term) : term = list_term (listm::map (rendered opts) (items_of displays))
+
+:~ ^ all_svgs (opts : term) (jsons : list string) (acc : list string) : option (list string) =
+    ?= jsons ?|
+    | [] => Some (listm::rev acc)
+    | j :: rest =>
+        := r = render_svg j opts
+        ? ok_of r ?> all_svgs opts rest (text_of_second r :: acc) |: None
+
+:~ plot_lines (value : string) : list string = listm'::filter (\ (l : string) => l <> "") (sm'::split_list "\n" (display_value::plot_jsons value))
+
+:~ kept_value (value : term) : term = tuple [ value; list_term [] ]
+
+:~ svg_value (svgs : list string) : term = tuple [ atom "nil"; list_term (listm::map (shown (svg_mime ())) svgs) ]
+
+:~ lines_value (value : term) (opts : term) (lines : list string) : term =
+    ?= (? (listm::length lines : i32) = 0i32 ?> None |: all_svgs opts lines []) ?| Some svgs => svg_value svgs | None => kept_value value
+
+:~ from_value (value : term) (opts : term) : term =
+    ? is_atom "nil" value ?> kept_value value |: lines_value value opts (plot_lines (binary_text value))
+
+:~ fake () : term = of (\ (j : string) => tuple [ atom "ok"; of ("<svg>" ++# j ++# "</svg>") ])
+
+:~ hooked () : term = list_term [ pair "render_plot" (fake ()) ]
+
+:~ two_displays () : term = list_term [ shown (plot_mime ()) "J"; shown "text/html" "<b/>" ]
+
+:~ key_times_seen (svg : string) : bool = sm'::contains "keyTimes=\"0;0.5000;1.0000\"" svg
+
+///> gleam
+:# frames_animate_with_fixed_key_times =
+    := svg = animated [ "a"; "b" ]
+    (key_times_seen svg, sm'::contains "dur=\"0.20s\"" svg, (listm::length (sm'::split_list "<animate " svg) : i32)) |> _assert_eq (!+, !+, 3i32)
+
+///> gleam
+:# a_plot_display_renders_through_the_hook_and_others_pass_through =
+    listm::map (field_text "data") (items_of (render_values (two_displays ()) (hooked ()))) |> _assert_eq [ "<svg>J</svg>"; "<b/>" ]
+
+///> gleam
+:# a_nil_value_stays_nil_with_no_displays =
+    equal (from_value (atom "nil") (list_term [])) (tuple [ atom "nil"; list_term [] ]) |> _assert_eq !+

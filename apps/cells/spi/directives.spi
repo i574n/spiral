@@ -227,3 +227,43 @@
     canon_package_flags src "/abs/lib\n/abs/pkg" |> _assert_eq "  ///- --package /abs/lib --x\n:= f = 1\n///- --package\n///- --package /abs/pkg b\n///-x --package c\n///- "
     := ~plain = "///- --package"
     (canon_package_paths plain, canon_package_flags "x\n" "", nth_line "a\nb\nc" 2i32 0i32, nth_line "a\nb" 0i32 0i32) |> _assert_eq ("", "x\n", "c", "a")
+
+:~ getenv_or (name : string) (default : string) : erlang_term::term = erlang_term::apply "os" "getenv" [ erlang_term::charlist name; erlang_term::charlist default ]
+
+:~ ea (f : string) (args : list erlang_term::term) : erlang_term::term = erlang_term::apply "erlang" f args
+
+:~ el1 (t : erlang_term::term) : erlang_term::term = erlang_term::element_at 1i32 t
+
+:~ isc (f : string) (t : erlang_term::term) : bool = ea f [ t ] |> erlang_term::cast
+
+:~ str_num (m : string) (s : string) : erlang_term::term = erlang_term::apply "string" m [ erlang_term::charlist s ]
+
+:~ parse_scale (s : string) : f64 =
+    := pf = el1 (str_num "to_float" s)
+    := pi = el1 (str_num "to_integer" s)
+    ? isc "is_float" pf ?> (erlang_term::cast pf : f64)
+    |? isc "is_integer" pi ?> (erlang_term::cast (ea "float" [ pi ]) : f64)
+    |: 0.0
+
+:~ timeout_scale () : f64 =
+    := s = parse_scale (erlang_term::cast (getenv_or "SPIRAL_CELLS_TIMEOUT_SCALE" "") : string)
+    ? s > 0.0 ?> s |: 1.0
+
+:~ scale_budget (ms : erlang_term::term) : erlang_term::term =
+    ? isc "is_integer" ms ?> ea "max" [ erlang_term::of 1i32; ea "round" [ ea "*" [ ms; erlang_term::of (timeout_scale ()) ] ] ] |: ms
+
+:~ float_str (f : f64) : string = erlang_term::cast (erlang_term::apply "erlang" "float_to_binary" [ erlang_term::of f; erlang_term::list_term [ erlang_term::atom "short" ] ]) : string
+
+:~ scale_note () : string =
+    := s = timeout_scale ()
+    ? s =. 1.0 ?> "" |: " (header and default budgets scaled by SPIRAL_CELLS_TIMEOUT_SCALE=" ++ float_str s ++ ")"
+
+:~ per_test_compile () : bool = not (erlang_term::equal (erlang_term::apply "os" "getenv" [ erlang_term::charlist "SPIRAL_CELLS_PER_TEST" ]) (erlang_term::charlist "0"))
+
+///> gleam
+:# parse_scale_reads_float_then_int_else_zero =
+    (parse_scale "1.5", parse_scale "2", parse_scale "x", parse_scale "") |> _assert_eq (1.5, 2.0, 0.0, 0.0)
+
+///> gleam
+:# scale_budget_identity_at_default_scale_and_passes_non_ints =
+    (erlang_term::cast (scale_budget (erlang_term::of 5000i32)) : i32, erlang_term::equal (scale_budget (erlang_term::atom "nil")) (erlang_term::atom "nil")) |> _assert_eq (5000i32, !+)

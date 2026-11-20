@@ -5,7 +5,7 @@
 := (++) (left : string) (right : string) : string = left ^^ right
 
 :~ ^ digits_end (s : string) (i : i32) : i32 =
-    ? i < text::length s && json_value::is_digit (text::byte_at s i)
+    ? i < text::length s && json_tree::is_digit (text::byte_at s i)
     ?> digits_end s (i + 1i32)
     |: i
 
@@ -142,3 +142,176 @@
     := odd = "x = 1\nname = \"\"\nname = \"cells\"\ntarget = javascript\n"
     := facts = (manifest_facts made, manifest_facts odd, manifest_facts "name = \"a\"")
     facts |> _assert_eq ("main\t1\t\"erlang\"", "cells\t1\tjavascript", "a\t0\t")
+
+:~ sha256_hex (data : erlang_term::term) : string =
+    := digest = erlang_term::apply "crypto" "hash" [ erlang_term::atom "sha256"; data ]
+    erlang_term::apply "binary" "encode_hex" [ digest; erlang_term::atom "lowercase" ] |> erlang_term::cast
+
+:~ hex24 (data : erlang_term::term) : string = sm'::substring 0i32 24i32 (sha256_hex data)
+
+:~ warm_name (manifest_text : string) (slot : i32) : string = hex24 (erlang_term::of manifest_text) ++ "-" ++ text::show_i32 slot
+
+:~ warm_dir (cache : string) (manifest_text : string) (slot : i32) : string =
+    erlang_file::joined_path cache ("cells-gleam-warm/" ++ warm_name manifest_text slot)
+
+:~ ^ from_dependencies (lines : list string) : list string =
+    ?= lines ?|
+    | [] => []
+    | l :: rest => ? l = "[dependencies]" ?> lines |: from_dependencies rest
+
+:~ facts_fields (manifest_text : string) : list string = sm'::split_list "\t" (manifest_facts manifest_text)
+
+:~ found_target (found : string) (target : string) : erlang_term::term = erlang_term::list_term (? found = "1" ?> [ erlang_term::of target ] |: [])
+
+:~ target_list (manifest_text : string) : erlang_term::term =
+    ?= facts_fields manifest_text ?|
+    | _ :: found :: target :: _ => found_target found target
+    | _ => erlang_term::list_term []
+
+:~ requirements (manifest_text : string) : string = sm'::concat_list "\n" (from_dependencies (sm'::split_list "\n" manifest_text))
+
+:~ lock_key (manifest_text : string) : erlang_term::term =
+    := pair = erlang_term::tuple [ target_list manifest_text; erlang_term::of (requirements manifest_text) ]
+    erlang_term::apply "erlang" "term_to_binary" [ pair ]
+
+:~ lock_path (cache : string) (manifest_text : string) : string =
+    erlang_file::joined_path cache ("cells-gleam-locks/" ++ hex24 (lock_key manifest_text) ++ ".toml")
+
+:~ plain_lock () : string = lock_path "cache" (manifest "main" "erlang" [])
+
+///> gleam
+:# a_lock_is_shared_by_equal_dependencies_and_lives_under_the_cache =
+    (plain_lock () = lock_path "cache" (manifest "main_real" "erlang" []), sm'::starts_with "cache/cells-gleam-locks/" (plain_lock ())) |> _assert_eq (!+, !+)
+
+///> gleam
+:# a_lock_is_split_by_target =
+    (plain_lock () = lock_path "cache" (manifest "main" "javascript" [])) |> _assert_eq !-
+
+:~ json_manifest () : string = manifest "main" "erlang" [ { name = "gleam_json"; version = Some ">=3.0.0" } ]
+
+///> gleam
+:# a_lock_is_split_by_extra_deps =
+    (plain_lock () = lock_path "cache" (json_manifest ())) |> _assert_eq !-
+
+:~ copied_to (from : string) (into : string) : () = erlang_term::apply "file" "copy" [ erlang_term::of from; erlang_term::of into ] |> ignore
+
+:~ moved_into (pending : string) (locked : string) : bool =
+    := renamed = memo_store::ok_call "file" "rename" [ erlang_term::of pending; erlang_term::of locked ]
+    memo_store::deleted pending
+    renamed
+
+:~ kept_copy (manifest_path : string) (locked : string) : bool =
+    := pending = memo_store::tmp_path locked
+    erlang_term::apply "filelib" "ensure_dir" [ erlang_term::of locked ] |> ignore
+    copied_to manifest_path pending
+    moved_into pending locked
+
+:~ keep_lock (manifest_path : string) (locked : string) : bool =
+    ? erlang_file::regular_file locked || not (erlang_file::regular_file manifest_path) ?> !- |: kept_copy manifest_path locked
+
+:~ listed (dir : string) : list string =
+    := r = erlang_term::apply "file" "list_dir" [ erlang_term::of dir ]
+    ? memo_store::tagged "ok" r ?> erlang_term::element_at 2i32 r |> erlang_term::items_of |> listm::map erlang_file::text_of |: []
+
+:~ removed (path : string) : () = erlang_term::apply "file" "del_dir_r" [ erlang_term::of path ] |> ignore
+
+:~ is_dir (path : string) : bool = erlang_term::equal (erlang_term::apply "filelib" "is_dir" [ erlang_term::of path ]) (erlang_term::atom "true")
+
+:~ ensured_dir_of (path : string) : () = erlang_term::apply "filelib" "ensure_dir" [ erlang_term::of path ] |> ignore
+
+:~ ensured_path (dir : string) : () = erlang_term::apply "filelib" "ensure_path" [ erlang_term::charlist dir ] |> ignore
+
+:~ copied_file (src : string) (dst : string) : () =
+    ensured_dir_of dst
+    copied_to src dst
+
+:~ copied_entry (from : string) (into : string) (rel : string) : () =
+    := src = erlang_file::joined_path from rel
+    := dst = erlang_file::joined_path into rel
+    ? is_dir src ?> ensured_path dst |: copied_file src dst
+
+:~ relative_entries (from : string) : list string =
+    erlang_term::apply "filelib" "wildcard" [ erlang_term::charlist "**/*"; erlang_term::charlist from ] |> erlang_term::items_of |> listm::map erlang_file::text_of
+
+:~ copied_tree (from : string) (into : string) : () = listm::iter (copied_entry from into) (relative_entries from)
+
+:~ dropped_in_mode (build : string) (name : string) (mode : string) : () =
+    := at = erlang_file::joined_path build mode
+    listm::iter (\ target => removed (erlang_file::joined_path (erlang_file::joined_path at target) name)) (listed at)
+
+:~ package_name (manifest_text : string) : string = ?= facts_fields manifest_text ?| n :: _ => n | [] => ""
+
+:~ fresh_sources (warm : string) (package : string) : () =
+    := src = erlang_file::joined_path warm "src"
+    removed src
+    ensured_path src
+    copied_tree (erlang_file::joined_path package "src") src
+
+:~ cell_sources (warm : string) (package : string) (manifest_text : string) : string =
+    fresh_sources warm package
+    := build = erlang_file::joined_path warm "build"
+    listm::iter (dropped_in_mode build (package_name manifest_text)) (listed build)
+    warm
+
+:~ written_at (path : string) (content : string) : () =
+    ensured_dir_of path
+    erlang_file::file_written path content |> ignore
+
+:~ under (root : string) (rel : string) (content : string) : () = written_at (erlang_file::joined_path root rel) content
+
+:~ fresh_root (name : string) : string =
+    := root = erlang_file::joined_path (erlang_file::test_cache_directory ()) name
+    removed root
+    root
+
+:~ build_markers (root : string) : () =
+    under root "warm/build/dev/erlang/main/stale.marker" ""
+    under root "warm/build/dev/erlang/gleam_stdlib/kept.marker" ""
+
+:~ warm_fixture (name : string) : string =
+    := root = fresh_root name
+    under root "cell/src/nested/x.gleam" "new"
+    under root "warm/src/old.gleam" "old"
+    build_markers root
+    root
+
+:~ warmed (name : string) : string =
+    := root = warm_fixture name
+    cell_sources (erlang_file::joined_path root "warm") (erlang_file::joined_path root "cell") (manifest "main" "erlang" []) |> ignore
+    erlang_file::joined_path root "warm"
+
+///> gleam
+:# a_warm_package_takes_the_cell_sources =
+    erlang_file::file_text (erlang_file::joined_path (warmed "gleam_project_warm_new") "src/nested/x.gleam") |> _assert_eq "new"
+
+///> gleam
+:# a_warm_package_drops_its_own_old_sources =
+    erlang_file::regular_file (erlang_file::joined_path (warmed "gleam_project_warm_old") "src/old.gleam") |> _assert_eq !-
+
+///> gleam
+:# a_warm_package_drops_its_own_stale_build =
+    erlang_file::regular_file (erlang_file::joined_path (warmed "gleam_project_warm_stale") "build/dev/erlang/main/stale.marker") |> _assert_eq !-
+
+///> gleam
+:# a_warm_package_keeps_its_dependencies_builds =
+    erlang_file::regular_file (erlang_file::joined_path (warmed "gleam_project_warm_kept") "build/dev/erlang/gleam_stdlib/kept.marker") |> _assert_eq !+
+
+:~ built_pattern (spelled : string) (target : string) : string = spelled ++ "/build/dev/" ++ target ++ (? target = "javascript" ?> "/*" |: "/*/ebin")
+
+:~ sorted_texts (xs : list string) : list string =
+    erlang_term::apply "lists" "sort" [ erlang_term::list_term (listm::map (\ (p : string) => erlang_term::of p) xs) ] |> erlang_term::items_of |> listm::map erlang_term::cast
+
+:~ entry_module (target : string) : string = ? target = "javascript" ?> "main/main.mjs" |: "main"
+
+:~ ebin_lines (spelled : string) (target : string) : list string =
+    listm::map (\ p => "cells-build-only ebin=" ++ p) (sorted_texts (memo_store::wildcard (built_pattern spelled target)))
+
+:~ receipt_lines (spelled : string) (target : string) : list string =
+    := ebins = ebin_lines spelled target
+    ("cells-build-only package=" ++ spelled) :: listm::append ebins [ "cells-build-only entry=" ++ entry_module target ]
+
+:~ appended (path : string) (text : string) : bool =
+    memo_store::ok_call "file" "write_file" [ erlang_term::of path; erlang_term::of text; erlang_term::list_term [ erlang_term::atom "append" ] ]
+
+:~ build_only_receipt (package : string) (target : string) (receipt : string) : bool =
+    appended receipt (sm'::concat_list "\n" (receipt_lines (sm'::replace "\\" "/" package) target) ++ "\n")

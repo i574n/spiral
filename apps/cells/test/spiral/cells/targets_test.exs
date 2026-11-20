@@ -1,7 +1,7 @@
 defmodule Spiral.Cells.TargetsTest do
   use ExUnit.Case, async: false
 
-  alias Spiral.Cells.{ProcessError, Targets, Toolchain}
+  alias Spiral.Cells.{Domain, ProcessError, Targets}
 
   defp deadline, do: System.monotonic_time(:millisecond) + 30_000
 
@@ -19,7 +19,7 @@ defmodule Spiral.Cells.TargetsTest do
     assert {"PYTHONWARNINGS", "default,ignore:CUDA path could not be detected:UserWarning"} =
              [{"PYTHONWARNINGS", "default"}] |> Targets.without_cupy_cuda_path_warning() |> List.keyfind("PYTHONWARNINGS", 0)
 
-    case Toolchain.python([]) do
+    case Domain.tool("python", []) do
       nil ->
         :ok
 
@@ -90,7 +90,7 @@ defmodule Spiral.Cells.TargetsTest do
   end
 
   test "an F# cell runs from the notebook's directory (cwd and __SOURCE_DIRECTORY__)" do
-    if is_binary(Toolchain.dotnet([])) do
+    if is_binary(Domain.tool("dotnet", [])) do
       root = Path.join(System.tmp_dir!(), "spiral_cells_root_#{System.unique_integer([:positive])}")
       cell = Path.join(System.tmp_dir!(), "spiral_cells_cell_#{System.unique_integer([:positive])}")
       File.mkdir_p!(root)
@@ -115,7 +115,7 @@ defmodule Spiral.Cells.TargetsTest do
 
   @tag timeout: 600_000
   test "a Gleam cell runs from the notebook's directory, so relative fixture paths resolve" do
-    if is_binary(Toolchain.gleam([])) and is_binary(Toolchain.erl([])) do
+    if is_binary(Domain.tool("gleam", [])) and is_binary(Domain.tool("erl", [])) do
       root = Path.join(System.tmp_dir!(), "spiral_cells_root_#{System.unique_integer([:positive])}")
       cell = Path.join(System.tmp_dir!(), "spiral_cells_cell_#{System.unique_integer([:positive])}")
       source_dir = Path.join([cell, "gleam", "src"])
@@ -228,7 +228,7 @@ defmodule Spiral.Cells.TargetsTest do
     assert {:ok, %{stdout: "ok"}} = Targets.run(%{tool: :c}, passing, [], 60_000, deadline())
   end
 
-  @fpc Toolchain.fpc([])
+  @fpc Domain.tool("fpc", [])
   @tag skip: is_nil(@fpc) && "fpc is not installed"
   test "a Pascal cell's output is the program's stdout, never the build's warnings" do
     dir = Spiral.Cells.TestHelpers.tmp_dir!("pascal-cell")
@@ -250,11 +250,11 @@ defmodule Spiral.Cells.TargetsTest do
   end
 
   test "zig runs its program; wgsl runs the shader: exit 0 passes, 3 (no adapter) or no runner is unsupported, others fail" do
-    assert [%{tool: :zig}, %{tool: :wgsl}] = Spiral.Cells.Builders.commands("///> zig\n///> wgsl\nx")
-    assert Spiral.Cells.Builders.backend(%{tool: :zig}) == "Zig"
-    assert [%{tool: :lean}] = Spiral.Cells.Builders.commands("///> lean\nx")
-    assert {Spiral.Cells.Builders.backend(%{tool: :lean}), Spiral.Cells.Builders.ext(%{tool: :lean})} == {"Lean", ".lean"}
-    assert Spiral.Cells.Builders.backend(%{tool: :wgsl}) == "Wgsl"
+    assert [%{tool: :zig}, %{tool: :wgsl}] = Spiral.Cells.Domain.builders_commands("///> zig\n///> wgsl\nx")
+    assert Spiral.Cells.Domain.builders_backend(%{tool: :zig}) == "Zig"
+    assert [%{tool: :lean}] = Spiral.Cells.Domain.builders_commands("///> lean\nx")
+    assert {Spiral.Cells.Domain.builders_backend(%{tool: :lean}), Spiral.Cells.Domain.builders_ext(%{tool: :lean})} == {"Lean", ".lean"}
+    assert Spiral.Cells.Domain.builders_backend(%{tool: :wgsl}) == "Wgsl"
     dir = Spiral.Cells.TestHelpers.tmp_dir!("zig-wgsl")
     missing = Path.join(dir, "no-tool.exe")
 
@@ -280,14 +280,14 @@ defmodule Spiral.Cells.TargetsTest do
     assert {:error, %ProcessError{reason: :tool_missing}} = Targets.run(%{tool: :wgsl}, shader.(0), [wgsl_run: missing, naga: nil], 30_000, deadline())
   end
   test "an erlang gleam target is run by Cells in its own package with the CLI's dependencies" do
-    [builder] = Spiral.Cells.Builders.commands("///> gleam -d gleam_json=\\\">=3.0.0\\\"")
-    assert {:gleam, "x/gleam/src/main.gleam", [%{name: "gleam_json"}]} = Spiral.Cells.Builders.dispatch(builder, "x/gleam/src/main.gleam")
+    [builder] = Spiral.Cells.Domain.builders_commands("///> gleam -d gleam_json=\\\">=3.0.0\\\"")
+    assert {:gleam, "x/gleam/src/main.gleam", [%{name: "gleam_json"}]} = Spiral.Cells.Domain.builders_dispatch(builder, "x/gleam/src/main.gleam")
     manifest = Targets.gleam_manifest("x/gleam/src/main.gleam", builder.deps)
     assert manifest =~ ~s(name = "main"\ntarget = "erlang")
     assert manifest =~ ~s(gleam_stdlib = ">=1.0.5 and <2.0.0")
     assert manifest =~ ~s(gleam_json = ">=3.0.0")
-    [js] = Spiral.Cells.Builders.commands("///> gleam -t javascript")
-    assert {:spiral, _} = Spiral.Cells.Builders.dispatch(js, "main.gleam")
+    [js] = Spiral.Cells.Domain.builders_commands("///> gleam -t javascript")
+    assert {:spiral, _} = Spiral.Cells.Domain.builders_dispatch(js, "main.gleam")
   end
   test "gleam projects with the same dependencies share one resolved manifest, so Hex resolution happens once per dependency set" do
     opts = [bin_cache_dir: "cache"]
@@ -412,7 +412,7 @@ defmodule Spiral.Cells.TargetsTest do
   end
 
   defp cc!(dir, name, source) do
-    cc = Toolchain.cc([])
+    cc = Domain.tool("cc", [])
     assert is_binary(cc)
     src = Path.join(dir, name <> ".c")
     exe = Path.join(dir, name <> if(match?({:win32, _}, :os.type()), do: ".exe", else: ""))

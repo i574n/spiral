@@ -1,8 +1,8 @@
 program SpiralGenerated;
 {$mode delphi}{$H+}
 {$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}
-{$MAXSTACKSIZE $10000000}
-uses SysUtils, Math;
+{$IFDEF WINDOWS}{$MAXSTACKSIZE $10000000}{$ENDIF}
+uses {$IFDEF UNIX}cthreads, {$ENDIF}SysUtils, Math;
 type
   TUS0 = record tag: LongInt; c0_0: Double; c1_0: LongInt; end;
 function twice_1(v0: Double): LongInt; forward;
@@ -20,7 +20,7 @@ var
   v1: Double;
   v2: LongInt;
 begin
-  v1 := v0 * 2.0;
+  v1 := v0 * Double(2.0);
   v2 := LongInt(Trunc(v1));
   Result := v2;
 end;
@@ -53,7 +53,7 @@ var
   v11: Boolean;
 begin
   v0 := True;
-  v1 := 1.5;
+  v1 := Double(1.5);
   if v0 then begin
       v4 := US0_Real(v1);
   end else begin
@@ -80,8 +80,30 @@ begin
   end;
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
+var SpiralExitCode: LongInt;
+procedure SpiralRun;
 begin
+  {$IFDEF WINDOWS}SetTextCodePage(Output, CP_UTF8); SetTextCodePage(StdErr, CP_UTF8);{$ENDIF}
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
-  Halt(SpiralMain);
+  SpiralExitCode := SpiralMain;
+  Flush(Output);
+end;
+{$IFNDEF WINDOWS}
+function SpiralThreadMain(p: Pointer): PtrInt;
+begin
+  SpiralRun;
+  Result := 0;
+end;
+var SpiralThread, SpiralThreadId: TThreadID;
+{$ENDIF}
+begin
+  {$IFDEF WINDOWS}
+  SpiralRun;
+  Halt(SpiralExitCode);
+  {$ELSE}
+  SpiralThread := BeginThread(@SpiralThreadMain, nil, SpiralThreadId, 268435456);
+  WaitForThreadTerminate(SpiralThread, 0);
+  Halt(SpiralExitCode and 255);
+  {$ENDIF}
 end.

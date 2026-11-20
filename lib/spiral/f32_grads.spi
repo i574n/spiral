@@ -358,16 +358,10 @@
 
 := rope_backward (dv : floats) (pos : i32) (hs : i32) : () = rope_from dv pos hs (0.0f32 - 1.0f32) 0
 
-:= probs_of (logits : floats) : floats =
-    := p = zeros (length logits)
-    f32_kernels::copy_into p 0 logits 0 (length logits) 0
-    f32_kernels::softmax p 0 (length p)
-    p
-
-:= cross_entropy (logits : floats) (target : i32) : f32 = 0.0f32 - log (index (probs_of logits) target)
+:= cross_entropy (logits : floats) (target : i32) : f32 = 0.0f32 - log (index (softmax_of logits) target)
 
 := cross_entropy_backward (dlogits : floats) (logits : floats) (target : i32) : () =
-    f32_kernels::axpy dlogits 0 1.0f32 (probs_of logits) 0 (length logits) 0
+    f32_kernels::axpy dlogits 0 1.0f32 (softmax_of logits) 0 (length logits) 0
     set dlogits target (index dlogits target - 1.0f32)
 
 := rp_v () : floats = f32_kernels::floats_of [ 0.3f32; 1.1f32; 0.7f32; (0.0f32 - 0.2f32); 0.4f32; 0.9f32 ]

@@ -45,6 +45,7 @@ pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
 }
 
 
+
 pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
   int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
 }

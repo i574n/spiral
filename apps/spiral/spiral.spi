@@ -1324,6 +1324,41 @@
         |:
             failwith ("spiral.process_cpp / child failed\n" ++# run_result)
 
+/// ## wasm
+
+/// ### process_wasm
+:~ ^ process_wasm { wat_path } =
+    := extension = "wat"
+
+    := new_code_path = wat_path
+    := new_code = new_code_path |> file_system.read_all_text
+
+    := package_dir = new_code_path |> file_system.directory_get_parent |> optionm'.default_value' ""
+
+    := wasmtime =
+        := wasmtime = "SPIRAL_WASMTIME" |> env.get_environment_variable
+        ? wasmtime = ""
+        ?> "wasmtime"
+        |: wasmtime
+    := quoted (text : string) : string = "\"" ++# text ++# "\""
+    := command = sm'.concat_list " " [ quoted wasmtime; "run"; "-W"; "max-wasm-stack=1073741824"; quoted new_code_path ]
+    := exit_code, run_result =
+        process.execution_options \ x => { x ?|
+            command
+            working_directory = package_dir |> optionm'.some'
+        }
+        |> process.execute_with_options
+
+    ? exit_code = 0
+    ?>
+        {
+            extension = Some extension
+            code = Some new_code
+            code_path = Some new_code_path
+            output = Some run_result
+        }
+    |: failwith (sm'.concat_list " / " [ reflection.nameof { process_wasm }; "child failed\n" ++# run_result ])
+
 /// ## run
 
 /// ### get_args
@@ -1344,6 +1379,9 @@
         }
         cpp = "cpp", {
             cpp_path = "cpp-path", 'c'
+        }
+        wasm = "wasm", {
+            wat_path = "wat-path", 'w'
         }
         rust = "rust", {
             rs_path = "rs-path", 'r'
@@ -1483,6 +1521,13 @@
             clap.arg_required !+
         )
     )
+    |> clap.command_subcommand (
+        ###(get_args () .wasm |> fst)
+        |> clap.new_command
+        |> clap.command_init_arg ((get_args () .wasm |> snd).wat_path) (
+            clap.arg_required !+
+        )
+    )
 
 /// ### run
 :~ run trace_level (matches : clap.arg_matches) : async.future_pin (resultm.result' string string) =
@@ -1529,7 +1574,7 @@
                 command_result
                 |> am'.base
                 |> am'.to_vec
-                |> am'.vec_map' \ k, v =>
+                |> am'.vec_map \ k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
                 |> map.b_tree_map_from_vec_pairs
                 |> sm'.serialize
@@ -1561,7 +1606,7 @@
                 command_result
                 |> am'.base
                 |> am'.to_vec
-                |> am'.vec_map' \ k, v =>
+                |> am'.vec_map \ k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
                 |> map.b_tree_map_from_vec_pairs
                 |> sm'.serialize
@@ -1610,7 +1655,7 @@
                 command_result
                 |> am'.base
                 |> am'.to_vec
-                |> am'.vec_map' \ k, v =>
+                |> am'.vec_map \ k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
                 |> map.b_tree_map_from_vec_pairs
                 |> sm'.serialize
@@ -1642,7 +1687,39 @@
                 command_result
                 |> am'.base
                 |> am'.to_vec
-                |> am'.vec_map' \ k, v =>
+                |> am'.vec_map \ k, v =>
+                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)
+                |> map.b_tree_map_from_vec_pairs
+                |> sm'.serialize
+                |> resultm.unwrap'
+                |> sm'.from_std_string
+            ]
+
+        | Some (subcommand, arg_matches)
+                ?& (subcommand |> sm'.from_std_string) = (get_args () .wasm |> fst) =>
+
+            := wat_path =
+                arg_matches
+                |> clap.matches_get_one ((get_args () .wasm |> snd).wat_path |> fst)
+                |> optionm'.unbox
+                |> optionm.value
+                |> sm'.from_std_string
+
+            := command_result =
+                process_wasm { wat_path }
+                |> \ { extension code output } =>
+                    ;[
+                        "extension", extension |> optionm'.default_value ""
+                        "code", code |> optionm'.default_value ""
+                        "output", output |> optionm'.default_value ""
+                    ]
+
+            ;[
+                "command_result",
+                command_result
+                |> am'.base
+                |> am'.to_vec
+                |> am'.vec_map \ k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
                 |> map.b_tree_map_from_vec_pairs
                 |> sm'.serialize
@@ -1668,7 +1745,7 @@
                     |> \ x =>
                         !\\(x, $'$"$0.chunks_exact(2).map(|chunk| chunk.to_vec()).collect()"')
                         : am'.vec (am'.vec sm'.std_string)
-                    |> am'.vec_map' \ chunk =>
+                    |> am'.vec_map \ chunk =>
                         := exts () =
                             reflection.get_union_fields_untag () : _ (_ * export_output)
                         chunk
@@ -1754,7 +1831,7 @@
                 ]
         |> am'.base
         |> am'.to_vec
-        |> am'.vec_map' \ k, v =>
+        |> am'.vec_map \ k, v =>
             new_pair (sm'.to_std_string k) (sm'.to_std_string v)
         |> map.b_tree_map_from_vec_pairs
         |> sm'.serialize

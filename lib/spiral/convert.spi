@@ -288,6 +288,36 @@
                     global "import gleam/string"
                     := (n : int), (err : int) =
                         $'case int.parse(string.trim(!x)) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'
+                    := fits : bool =
+                        ~>
+                            ?: u ?|
+                            | i8 => $'!n >= -128 && !n <= 127' : bool
+                            | i16 => $'!n >= -32768 && !n <= 32767' : bool
+                            | i32 => $'!n >= -2147483648 && !n <= 2147483647' : bool
+                            | i64 => $'!n >= -9223372036854775808 && !n <= 9223372036854775807' : bool
+                            | u8 => $'!n >= 0 && !n <= 255' : bool
+                            | u16 => $'!n >= 0 && !n <= 65535' : bool
+                            | u32 => $'!n >= 0 && !n <= 4294967295' : bool
+                            | u64 => $'!n >= 0 && !n <= 18446744073709551615' : bool
+                            | _ => !+
+                    ? err = 0 && fits
+                    ?> n |> to |> Some
+                    |: None : _ u
+                |?
+                    is_string_type x
+                    && (
+                        ~>
+                            ?: u ?|
+                            | f32 => !+
+                            | f64 => !+
+                            | _ => !-
+                    )
+                ?>
+                    global "import gleam/float"
+                    global "import gleam/int"
+                    global "import gleam/string"
+                    := (n : f64), (err : int) =
+                        $'case float.parse(string.trim(!x)) { Ok(f) -> ##(f, 0) Error(Nil) -> case int.parse(string.trim(!x)) { Ok(i) -> ##(int.to_float(i), 0) Error(Nil) -> ##(0.0, 1) } }'
                     ? err = 0
                     ?> n |> to |> Some
                     |: None : _ u
@@ -425,7 +455,16 @@
     |> try_convert
     |> _assert_eq (0i32 |> Some)
 
+///> gleam
+///> fsharp
+///> rust
+:# try_convert_parses_floats =
+    (("1.5" |> try_convert : option f64), ("2" |> try_convert : option f64), ("x" |> try_convert : option f64))
+    |> _assert_eq (Some 1.5f64, Some 2.0f64, None)
+    ("1.5" |> try_convert : option f32) |> _assert_eq (Some 1.5f32)
+
 ///> lua
+///> gleam
 :# try_convert_reads_narrow_integers_natively =
     := ~small = "3"
     := ~negative = " -12 "

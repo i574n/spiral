@@ -35,17 +35,25 @@
         None
         entries
 
+:= repeated_outcome \* ev. (hash : payload_hash) (e : entry ev) : append_outcome ev =
+    ? entry_hash e = hash ?> Replayed (entry_position e) |: Collided (entry_position e)
+
+:= fresh_append \* ev.
+    (expected : i64) (id : command_id) (hash : payload_hash) (event : ev) (log : event_log ev)
+    : append_outcome ev
+    =
+    := head = head_of log
+    ? expected = head
+    ?> Appended (event_log (head + 1i64, entry (head + 1i64, id, hash, event) :: entries_of log))
+    |: Stale head
+
 := append \* ev.
     (expected : i64) (id : command_id) (hash : payload_hash) (event : ev) (log : event_log ev)
     : append_outcome ev
     =
     ?= earlier id (entries_of log) ?|
-    | Some e => ? entry_hash e = hash ?> Replayed (entry_position e) |: Collided (entry_position e)
-    | None =>
-        := head = head_of log
-        ? expected = head
-        ?> Appended (event_log (head + 1i64, entry (head + 1i64, id, hash, event) :: entries_of log))
-        |: Stale head
+    | Some e => repeated_outcome hash e
+    | None => fresh_append expected id hash event log
 
 := outcome_position \* ev. (outcome : append_outcome ev) : i64 =
     ?= outcome ?|
@@ -66,6 +74,16 @@
     ++# text_of (entry_event e)
     ++# "\n"
 
+:= persist_newest \* ev. (text_of : ev -> string) (path : string) (outcome : append_outcome ev) (next : event_log ev)
+    : result (append_outcome ev) string
+    =
+    ?= entries_of next ?|
+    | newest :: _ =>
+        ?= durable_file::durable_append path (entry_line text_of newest) ?|
+        | Ok () => Ok outcome
+        | Error message => Error message
+    | [] => Error "an append always adds an entry"
+
 := append_durably \* ev.
     (text_of : ev -> string) (path : string) (expected : i64) (id : command_id) (hash : payload_hash) (event : ev)
     (log : event_log ev)
@@ -73,13 +91,7 @@
     =
     := outcome = append expected id hash event log
     ?= outcome ?|
-    | Appended next =>
-        ?= entries_of next ?|
-        | newest :: _ =>
-            ?= durable_file::durable_append path (entry_line text_of newest) ?|
-            | Ok () => Ok outcome
-            | Error message => Error message
-        | [] => Error "an append always adds an entry"
+    | Appended next => persist_newest text_of path outcome next
     | _ => Ok outcome
 
 := written \* ev. (result : result (append_outcome ev) string) : append_outcome ev =
@@ -159,19 +171,26 @@
     | Intact :: i64 -> audit
     | Corrupt :: i64 * string * string -> audit
 
+:= before_cut (line : string) (cut : i32) : string = ? cut < 0i32 ?> line |: sm'::substring 0i32 cut line
+
+:= after_cut (line : string) (cut : i32) : string = ? cut < 0i32 ?> "" |: sm'::substring (cut + 1i32) (sm'::length line - cut - 1i32) line
+
 := frame_verdict (frame : i64) (line : string) : option audit =
     := cut = sm'::last_index_of "\t" line
-    := body = ? cut < 0i32 ?> line |: sm'::substring 0i32 cut line
-    := stored = ? cut < 0i32 ?> "" |: sm'::substring (cut + 1i32) (sm'::length line - cut - 1i32) line
+    := body = before_cut line cut
+    := stored = after_cut line cut
     := recomputed = line_checksum body
     ? stored = recomputed ?> None |: Some (Corrupt (frame, stored, recomputed))
+
+:= line_end (text : string) (pos : i32) : i32 =
+    := stop = xml::find_from "\n" text pos
+    ? stop < 0i32 ?> sm'::length text |: stop
 
 :~ ^ audit_from (text : string) (pos : i32) (frame : i64) : audit =
     ? pos >= sm'::length text
     ?> Intact (frame - 1i64)
     |:
-        := stop = xml::find_from "\n" text pos
-        := stop = ? stop < 0i32 ?> sm'::length text |: stop
+        := stop = line_end text pos
         ?= frame_verdict frame (sm'::substring pos (stop - pos) text) ?|
         | Some bad => bad
         | None => audit_from text (stop + 1i32) (frame + 1i64)
@@ -184,47 +203,76 @@
 := two_entry_log () : event_log string =
     append 1i64 (command_id "nfe-1-cancel") (payload_hash "h2") "cancelled" (one_entry_log ()) |> appended_log
 
-///> rust
-:# an_append_at_the_expected_position_advances_the_log =
-    := first = appended_log (append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" (empty_log ()))
-    := second = append 1i64 (command_id "nfe-2") (payload_hash "h2") "authorized" first
-    ? head_of (appended_log second) <> 2i64 ?> failwith "two appends at their expected positions reach position 2"
+:= second_append () : append_outcome string = append 1i64 (command_id "nfe-2") (payload_hash "h2") "authorized" (one_entry_log ())
 
 ///> rust
-:# a_repeated_command_replays_and_a_changed_payload_collides =
-    := log = appended_log (append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" (empty_log ()))
-    ? append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" log <> Replayed 1i64
+:# an_append_at_the_expected_position_advances_the_log =
+    ? head_of (appended_log (second_append ())) <> 2i64 ?> failwith "two appends at their expected positions reach position 2"
+
+///> rust
+:# a_repeated_command_replays =
+    ? append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" (one_entry_log ()) <> Replayed 1i64
     ?> failwith "a retry of nfe-1 with its old expected position replays position 1"
-    ? append 1i64 (command_id "nfe-1") (payload_hash "h9") "cancelled" log <> Collided 1i64
+
+///> rust
+:# a_changed_payload_collides =
+    ? append 1i64 (command_id "nfe-1") (payload_hash "h9") "cancelled" (one_entry_log ()) <> Collided 1i64
     ?> failwith "nfe-1 with another payload collides with position 1"
-    ? append 0i64 (command_id "nfe-2") (payload_hash "h2") "authorized" log <> Stale 1i64
+
+///> rust
+:# a_new_command_at_a_moved_position_is_stale =
+    ? append 0i64 (command_id "nfe-2") (payload_hash "h2") "authorized" (one_entry_log ()) <> Stale 1i64
     ?> failwith "a new command at a moved position is stale at 1"
+
+:= trial_append (path : string) (expected : i64) (id : string) (hash : string) (event : string) (log : event_log string)
+    : append_outcome string
+    =
+    written (append_durably (\ (e : string) => e) path expected (command_id id) (payload_hash hash) event log)
+
+:= trial_start (path : string) : event_log string =
+    file_system::file_delete path
+    appended_log (trial_append path 0i64 "nfe-1" "h1" "authorized" (empty_log ()))
+
+:= durable_trial (path : string) : append_outcome string * append_outcome string * append_outcome string =
+    := log = trial_start path
+    := retried = trial_append path 0i64 "nfe-1" "h1" "authorized" log
+    := clashing = trial_append path 1i64 "nfe-1" "h9" "cancelled" log
+    := second = trial_append path 1i64 "nfe-2" "h2" "authorized" log
+    retried, clashing, second
+
+:= trial_lines () : string = "1\tnfe-1\th1\tauthorized\n2\tnfe-2\th2\tauthorized\n"
+
+:= trial_ok (path : string) : bool =
+    := retried, clashing, second = durable_trial path
+    (retried, clashing, outcome_position second) = (Replayed 1i64, Collided 1i64, 2i64)
+
+:= retry_trial_path () : string = durable_file::trial_path "spiral-event-log-trial.txt"
+
+:= file_trial_path () : string = durable_file::trial_path "spiral-event-log-trial-file.txt"
+
+///> rust
+:# a_durable_retry_replays_and_a_changed_payload_collides =
+    := path = retry_trial_path ()
+    ? trial_ok path = !- ?> failwith "the retry replays, the changed payload collides, the new command appends"
+    file_system::file_delete path
 
 ///> rust
 :# only_a_real_append_reaches_the_file =
-    := path = durable_file::trial_path "spiral-event-log-trial.txt"
+    := path = file_trial_path ()
+    durable_trial path |> ignore
+    ? file_system::read_all_text path <> trial_lines () ?> failwith "only the two real appends are on disk, in order"
     file_system::file_delete path
-    := text (e : string) : string = e
-    := empty : event_log string = empty_log ()
-    := log =
-        appended_log (
-            written (append_durably text path 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" empty)
-        )
-    := retried = written (append_durably text path 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" log)
-    := clashing = written (append_durably text path 1i64 (command_id "nfe-1") (payload_hash "h9") "cancelled" log)
-    := second = written (append_durably text path 1i64 (command_id "nfe-2") (payload_hash "h2") "authorized" log)
-    ? (retried, clashing, outcome_position second) <> (Replayed 1i64, Collided 1i64, 2i64)
-    ?> failwith "the retry replays, the changed payload collides, the new command appends"
-    ? file_system::read_all_text path <> "1\tnfe-1\th1\tauthorized\n2\tnfe-2\th2\tauthorized\n"
-    ?> failwith "only the two real appends are on disk, in order"
-    file_system::file_delete path
+
+:= resent () : submission transmitted = retransmit (transmit (Queued "nfe-1"))
+
+///> rust
+:# a_retransmission_is_attempt_two =
+    ?= resent () ?|
+    | Transmitted (_, attempt) => ? attempt = 2i64 = !- ?> failwith "a retransmission is attempt 2"
 
 ///> rust
 :# a_submission_is_receipted_only_after_transmission =
-    := sent = retransmit (transmit (Queued "nfe-1"))
-    ?= sent ?|
-    | Transmitted (_, attempt) => ? attempt = 2i64 = !- ?> failwith "a retransmission is attempt 2"
-    ? receipt_of (acknowledge sent "135260000000001") = "135260000000001" = !-
+    ? receipt_of (acknowledge (resent ()) "135260000000001") = "135260000000001" = !-
     ?> failwith "the authority's protocol number is the receipt"
 
 ///> rust
@@ -264,6 +312,9 @@
 :# a_fact_is_the_id_and_hash_at_a_position =
     ? fact_at 2i64 (two_entry_log ()) <> Some (command_id "nfe-1-cancel", payload_hash "h2")
     ?> failwith "position 2 is the cancellation"
+
+///> rust
+:# nothing_is_recorded_past_the_head =
     ? fact_at 3i64 (two_entry_log ()) <> None ?> failwith "nothing is recorded past the head"
 
 ///> rust
@@ -271,10 +322,11 @@
     ? audit_frames (framed_text (\ (e : string) => e) (two_entry_log ())) <> Intact 2i64
     ?> failwith "both frames of a written log check out"
 
+:= edited_frames () : string = sm'::replace "cancelled" "cancelleD" (framed_text (\ (e : string) => e) (two_entry_log ()))
+
 ///> rust
 :# a_changed_event_is_corrupt_at_its_frame =
-    := text = sm'::replace "cancelled" "cancelleD" (framed_text (\ (e : string) => e) (two_entry_log ()))
-    ?= audit_frames text ?|
+    ?= audit_frames (edited_frames ()) ?|
     | Corrupt (frame, _, _) => ? frame <> 2i64 ?> failwith "the edited second frame no longer matches its checksum"
     | Intact _ => failwith "an edited frame is not intact"
 

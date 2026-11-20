@@ -48,7 +48,17 @@ pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
 
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
-  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  case value >= 0 - half && value < half {
+    True -> value
+    False -> int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  }
+}
+
+pub fn spiral_wrap_i32(value: Int) -> Int {
+  case value >= -2147483648 && value <= 2147483647 {
+    True -> value
+    False -> spiral_wrap_signed(value, 32)
+  }
 }
 
 
@@ -68,7 +78,7 @@ pub fn closure0(capt: Nil) -> fn(Int) -> Us0 {
             False -> {
                 let v3 = spiral_array_create_filled(2, 0)
                 spiral_array_set(v3, 0, v0)
-                let v4 = spiral_wrap_signed(v0 + 1, 32)
+                let v4 = spiral_wrap_i32(v0 + 1)
                 spiral_array_set(v3, 1, v4)
                 Us0Item("hi", v3)
             }
@@ -90,11 +100,11 @@ pub fn main() {
             Us0Item(v2, v3) -> {
                 let v4 = spiral_string_length(v2)
                 let v5 = v3.size
-                let v6 = spiral_wrap_signed(v4 + v5, 32)
+                let v6 = spiral_wrap_i32(v4 + v5)
                 let v7 = spiral_array_get(v3, 0)
-                let v8 = spiral_wrap_signed(v6 + v7, 32)
+                let v8 = spiral_wrap_i32(v6 + v7)
                 let v9 = spiral_array_get(v3, 1)
-                spiral_wrap_signed(v8 + v9, 32)
+                spiral_wrap_i32(v8 + v9)
             }
         }
     let v13 = method1(v0)
@@ -104,13 +114,13 @@ pub fn main() {
             Us0Item(v14, v15) -> {
                 let v16 = spiral_string_length(v14)
                 let v17 = v15.size
-                let v18 = spiral_wrap_signed(v16 + v17, 32)
+                let v18 = spiral_wrap_i32(v16 + v17)
                 let v19 = spiral_array_get(v15, 0)
-                let v20 = spiral_wrap_signed(v18 + v19, 32)
+                let v20 = spiral_wrap_i32(v18 + v19)
                 let v21 = spiral_array_get(v15, 1)
-                spiral_wrap_signed(v20 + v21, 32)
+                spiral_wrap_i32(v20 + v21)
             }
         }
-    let v25 = spiral_wrap_signed(v12 + v24, 32)
-    spiral_wrap_signed(v25 + 26, 32)
+    let v25 = spiral_wrap_i32(v12 + v24)
+    spiral_wrap_i32(v25 + 26)
 }

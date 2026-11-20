@@ -57,33 +57,48 @@
 
 := digit_value (c : string) : i64 = conv (sm'::index_of c "0123456789") : i64
 
+:= is_digit (c : string) : bool = sm'::index_of c "0123456789" >= 0i32
+
+:= overflows (acc : i64) (c : string) : bool = acc > (9223372036854775807i64 - digit_value c) / 10i64
+
+:= scale_after (seen_point : bool) (scale : i32) : i32 = ? seen_point ?> scale + 1i32 |: scale
+
+:= digits_done (acc : i64) (scale : i32) (digits : i32) : option decimal =
+    ? digits = 0i32 ?> None |: Some { units = acc; scale = scale }
+
+:= digit_step (s : string) (i : i32) (acc : i64) (scale : i32) (seen_point : bool) (digits : i32) : option (i64 * i32 * bool * i32) =
+    := c = sm'::substring i 1i32 s
+    ? c = "."
+    ?> (? seen_point ?> None |: Some (acc, scale, !+, digits))
+    |? is_digit c
+    ?> (? overflows acc c ?> None |: Some (acc * 10i64 + digit_value c, scale_after seen_point scale, seen_point, digits + 1i32))
+    |: None
+
 :~ ^ digits_from
     (s : string) (i : i32) (acc : i64) (scale : i32) (seen_point : bool) (digits : i32)
     : option decimal
     =
     ? i >= sm'::length s
-    ?> (? digits = 0i32 ?> None |: Some { units = acc; scale = scale })
+    ?> digits_done acc scale digits
     |:
-        := c = sm'::substring i 1i32 s
-        ? c = "."
-        ?> (? seen_point ?> None |: digits_from s (i + 1i32) acc scale !+ digits)
-        |? sm'::index_of c "0123456789" >= 0i32 && acc > (9223372036854775807i64 - digit_value c) / 10i64
-        ?> None
-        |? sm'::index_of c "0123456789" >= 0i32 ?>
-            := scale = ? seen_point ?> scale + 1i32 |: scale
-            digits_from s (i + 1i32) (acc * 10i64 + digit_value c) scale seen_point (digits + 1i32)
-        |: None
+        ?= digit_step s i acc scale seen_point digits ?|
+        | Some (acc, scale, seen_point, digits) => digits_from s (i + 1i32) acc scale seen_point digits
+        | None => None
+
+:= unsigned_body (sign : string) (s : string) : string =
+    ? sign = "-" || sign = "+" ?> sm'::substring 1i32 (sm'::length s - 1i32) s |: s
+
+:= signed (sign : string) (d : decimal) : decimal = normalized (? sign = "-" ?> negate d |: d)
+
+:= parse_signed (s : string) : option decimal =
+    := sign = sm'::substring 0i32 1i32 s
+    ?= digits_from (unsigned_body sign s) 0i32 0i64 0i32 !- 0i32 ?|
+    | Some d => Some (signed sign d)
+    | None => None
 
 := parse (text : string) : option decimal =
     := s = sm'::trim text
-    ? s = ""
-    ?> None
-    |:
-        := sign = sm'::substring 0i32 1i32 s
-        := body = ? sign = "-" || sign = "+" ?> sm'::substring 1i32 (sm'::length s - 1i32) s |: s
-        ?= digits_from body 0i32 0i64 0i32 !- 0i32 ?|
-        | Some d => Some (normalized (? sign = "-" ?> negate d |: d))
-        | None => None
+    ? s = "" ?> None |: parse_signed s
 
 :~ ^ digits_text (n : i64) (acc : string) : string =
     := digit = sm'::substring (conv (n % 10i64) : i32) 1i32 "0123456789"
@@ -92,51 +107,119 @@
 :~ ^ zero_padded (text : string) (width : i32) : string =
     ? sm'::length text >= width ?> text |: zero_padded ("0" ++# text) width
 
+:= fraction_text (sign : string) (magnitude : i64) (scale : i32) : string =
+    := digits = zero_padded (digits_text magnitude "") (scale + 1i32)
+    := whole = sm'::length digits - scale
+    sign ++# sm'::substring 0i32 whole digits ++# "." ++# sm'::substring whole scale digits
+
 := text (a : decimal) : string =
     := negative = a::units < 0i64
     := magnitude = ? negative ?> 0i64 - a::units |: a::units
     := sign = ? negative ?> "-" |: ""
-    ? a::scale <= 0i32
-    ?> sign ++# digits_text magnitude ""
-    |:
-        := digits = zero_padded (digits_text magnitude "") (a::scale + 1i32)
-        := whole = sm'::length digits - a::scale
-        sign ++# sm'::substring 0i32 whole digits ++# "." ++# sm'::substring whole a::scale digits
+    ? a::scale <= 0i32 ?> sign ++# digits_text magnitude "" |: fraction_text sign magnitude a::scale
+
+:= parsed (s : string) : decimal =
+    ?= parse s ?|
+    | Some x => x
+    | None => failwith ("parses " ++# s)
+
+:| binary_op =
+    | Add
+    | Subtract
+    | Multiply
+    | Modulo
+    | Divide : i32
+
+:= apply_binary (op : binary_op) (a : decimal) (b : decimal) : decimal =
+    ?= op ?|
+    | Add => add a b
+    | Subtract => subtract a b
+    | Multiply => multiply a b
+    | Modulo => modulo a b
+    | Divide places => divide places a b
+
+:= expect_binary (cases : list (binary_op * string * string * string * string)) : () =
+    cases |> listm::iter (\ (op, a, b, want, why) => ? text (apply_binary op (parsed a) (parsed b)) <> want ?> failwith why)
+
+:= expect_text (cases : list (string * string * string)) : () =
+    cases |> listm::iter (\ (input, want, why) => ? text (parsed input) <> want ?> failwith why)
+
+:= expect_rejected (cases : list (string * string)) : () =
+    cases |> listm::iter (\ (input, why) => ?= parse input ?| Some _ => failwith why | None => ())
+
+:= exact_cases () : list (binary_op * string * string * string * string) =
+    [
+        (Add, "0.1", "0.2", "0.3", "0.1 + 0.2 = 0.3")
+        (Subtract, "10", "0.01", "9.99", "10 - 0.01")
+        (Multiply, "1.5", "-2.25", "-3.375", "1.5 * -2.25")
+        (Divide 4i32, "1", "3", "0.3333", "1 div 3 at 4 places")
+        (Divide 0i32, "1.25", "1", "1", "a finer dividend truncates to the places")
+    ]
+
+:= modulo_cases () : list (binary_op * string * string * string * string) =
+    [
+        (Modulo, "10", "3", "1", "10 mod 3")
+        (Modulo, "-10", "3", "-1", "the remainder takes the dividend's sign")
+        (Modulo, "5.5", "2", "1.5", "a decimal remainder")
+    ]
+
+:= normal_text_cases () : list (string * string * string) =
+    [
+        ("+007.500", "7.5", "sign, leading and trailing zeros")
+    ]
+
+:= bound_text_cases () : list (string * string * string) =
+    [
+        ("9223372036854775807", "9223372036854775807", "the largest i64 parses")
+    ]
+
+:= round_cases () : list (i32 * string * string * string) =
+    [
+        (0i32, "2.5", "3", "2.5 rounds up")
+        (0i32, "-2.5", "-2", "-2.5 rounds toward positive infinity")
+        (0i32, "-2.51", "-3", "-2.51 rounds down")
+        (2i32, "1.005", "1.01", "half up at two places")
+    ]
+
+:= malformed_cases () : list (string * string) =
+    [
+        ("1.2.3", "two points")
+        ("12a", "a letter")
+        ("-", "a bare sign")
+        ("", "empty")
+    ]
+
+:= overflow_cases () : list (string * string) =
+    [
+        ("9223372036854775808", "one past the largest i64 overflows")
+        ("131400000000000000000000", "a 24-digit number is not a decimal")
+    ]
 
 ///> rust
 :# decimals_are_exact =
-    := d (s : string) = ?= parse s ?| Some x => x | None => failwith ("parses " ++# s)
-    ? text (add (d "0.1") (d "0.2")) <> "0.3" ?> failwith "0.1 + 0.2 = 0.3"
-    ? text (subtract (d "10") (d "0.01")) <> "9.99" ?> failwith "10 - 0.01"
-    ? text (multiply (d "1.5") (d "-2.25")) <> "-3.375" ?> failwith "1.5 * -2.25"
-    ? text (d "+007.500") <> "7.5" ?> failwith "sign, leading and trailing zeros"
-    ? compare (d "2.50") (d "2.5") <> 0i32 || compare (d "-1") (d "0.5") <> -1i32 ?> failwith "compare"
-    ? text (divide 4i32 (d "1") (d "3")) <> "0.3333" ?> failwith "1 div 3 at 4 places"
-    ? text (divide 0i32 (d "1.25") (d "1")) <> "1" ?> failwith "a finer dividend truncates to the places"
+    expect_binary (exact_cases ())
+    expect_text (normal_text_cases ())
+
+///> rust
+:# compare_orders_by_value =
+    ? compare (parsed "2.50") (parsed "2.5") <> 0i32 || compare (parsed "-1") (parsed "0.5") <> -1i32 ?> failwith "compare"
 
 ///> rust
 :# round_follows_xpath =
-    := d (s : string) = ?= parse s ?| Some x => x | None => failwith ("parses " ++# s)
-    ? text (round (d "2.5")) <> "3" ?> failwith "2.5 rounds up"
-    ? text (round (d "-2.5")) <> "-2" ?> failwith "-2.5 rounds toward positive infinity"
-    ? text (round (d "-2.51")) <> "-3" ?> failwith "-2.51 rounds down"
-    ? text (round_to 2i32 (d "1.005")) <> "1.01" ?> failwith "half up at two places"
-    := cents = round (multiply (d "12.345") (d "100"))
-    ? text (divide 2i32 cents (d "100")) <> "12.35" ?> failwith "the EN 16931 two-place idiom"
+    round_cases () |> listm::iter (\ (places, input, want, why) => ? text (round_to places (parsed input)) <> want ?> failwith why)
+    ? text (round (parsed "2.5")) <> "3" ?> failwith "2.5 rounds up"
+
+///> rust
+:# the_two_place_rounding_idiom_holds =
+    := cents = round (multiply (parsed "12.345") (parsed "100"))
+    ? text (divide 2i32 cents (parsed "100")) <> "12.35" ?> failwith "the EN 16931 two-place idiom"
 
 ///> rust
 :# rejects_malformed_numbers =
-    ?= parse "1.2.3" ?| Some _ => failwith "two points" | None => ()
-    ?= parse "12a" ?| Some _ => failwith "a letter" | None => ()
-    ?= parse "-" ?| Some _ => failwith "a bare sign" | None => ()
-    ?= parse "" ?| Some _ => failwith "empty" | None => ()
+    expect_rejected (malformed_cases ())
 
 ///> rust
 :# modulo_and_the_i64_bound_follow_xpath =
-    := d (s : string) = ?= parse s ?| Some x => x | None => failwith ("parses " ++# s)
-    ? text (modulo (d "10") (d "3")) <> "1" ?> failwith "10 mod 3"
-    ? text (modulo (d "-10") (d "3")) <> "-1" ?> failwith "the remainder takes the dividend's sign"
-    ? text (modulo (d "5.5") (d "2")) <> "1.5" ?> failwith "a decimal remainder"
-    ? text (d "9223372036854775807") <> "9223372036854775807" ?> failwith "the largest i64 parses"
-    ?= parse "9223372036854775808" ?| Some _ => failwith "one past the largest i64 overflows" | None => ()
-    ?= parse "131400000000000000000000" ?| Some _ => failwith "a 24-digit number is not a decimal" | None => ()
+    expect_binary (modulo_cases ())
+    expect_text (bound_text_cases ())
+    expect_rejected (overflow_cases ())

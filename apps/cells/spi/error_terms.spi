@@ -1,0 +1,35 @@
+///- --package .
+:< erlang_term
+:# error_terms static =
+    :< testing
+
+:== trm = erlang_term::term
+
+:~ exc (name : string) (fields : list trm) : trm =
+    map_of (pair "__struct__" (erlang_term::atom name) :: pair "__exception__" (erlang_term::atom "true") :: fields)
+
+:~ process_error (message : trm) (exit_status : trm) (output : trm) (reason : trm) : trm =
+    exc "Elixir.Spiral.Cells.ProcessError" [ pair "message" message; pair "exit_status" exit_status; pair "output" output; pair "reason" reason ]
+
+:~ timeout_error (message : trm) (timeout : trm) (output : trm) : trm =
+    exc "Elixir.Spiral.Cells.TimeoutError" [ pair "message" message; pair "timeout" timeout; pair "output" output ]
+
+:~ spiral_error (message : trm) (details : trm) (result : trm) : trm =
+    exc "Elixir.Spiral.Cells.SpiralError" [ pair "message" message; pair "details" details; pair "result" result ]
+
+:~ field_is (key : string) (m : trm) (name : string) : bool = is_atom name (field_or key m (erlang_term::atom "none"))
+
+:~ key_count (m : trm) : i32 = count_of (erlang_term::apply "maps" "keys" [ m ])
+
+///> gleam
+:# a_process_error_is_an_elixir_exception_struct =
+    := e = process_error (erlang_term::of "boom") (erlang_term::of 3i32) (erlang_term::of "out") (erlang_term::atom "tool_missing")
+    (field_is "__struct__" e "Elixir.Spiral.Cells.ProcessError", field_is "__exception__" e "true", field_is "reason" e "tool_missing", key_count e)
+    |> _assert_eq (!+, !+, !+, 6i32)
+
+///> gleam
+:# timeout_and_spiral_errors_carry_their_own_fields =
+    := t = timeout_error (erlang_term::of "late") (erlang_term::of 5i32) (erlang_term::of "")
+    := s = spiral_error (erlang_term::of "m") (erlang_term::of "d") (erlang_term::atom "nil")
+    (field_is "__struct__" t "Elixir.Spiral.Cells.TimeoutError", key_count t, equal (field_or "details" s (erlang_term::atom "none")) (erlang_term::of "d"), key_count s)
+    |> _assert_eq (!+, 5i32, !+, 5i32)

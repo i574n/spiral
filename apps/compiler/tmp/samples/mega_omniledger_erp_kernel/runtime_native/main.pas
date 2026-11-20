@@ -1,8 +1,8 @@
 program SpiralGenerated;
 {$mode delphi}{$H+}
 {$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}
-{$MAXSTACKSIZE $10000000}
-uses SysUtils, Math;
+{$IFDEF WINDOWS}{$MAXSTACKSIZE $10000000}{$ENDIF}
+uses {$IFDEF UNIX}cthreads, {$ENDIF}SysUtils, Math;
 type
   TUS0 = record tag: LongInt; c0_0: Int64; c0_1: Int64; c0_2: Int64; c0_3: Int64; c0_4: Int64; c0_5: AnsiString; c1_0: Int64; c1_1: Int64; c1_2: AnsiString; end;
 function US0_TypedFxHashedStatementChecksumValidationAccepted(a0: Int64; a1: Int64; a2: Int64; a3: Int64; a4: Int64; a5: AnsiString): TUS0;
@@ -3344,7 +3344,7 @@ begin
   v48 := v47 and v46;
   if v48 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-usd-eur-determined-tie-rounding-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-usd-eur-determined-tie-rounding-runtime-mismatch'); Halt(1); end;
   end;
   v49 := 0 + 1;
   v50 := v49 + 1;
@@ -3397,7 +3397,7 @@ begin
   v85 := v84 and v83;
   if v85 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-statement-expected-raw-append-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-statement-expected-raw-append-runtime-mismatch'); Halt(1); end;
   end;
   v86 := 0 + 1;
   v87 := v86 + 1;
@@ -3483,7 +3483,7 @@ begin
   v151 := v150 = 0;
   if v151 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-statement-two-writer-raw-CAS-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-statement-two-writer-raw-CAS-runtime-mismatch'); Halt(1); end;
   end;
   v152 := 0 + 1;
   v153 := v152 + 1;
@@ -3610,7 +3610,7 @@ begin
   v250 := v249 = 0;
   if v250 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-statement-three-writer-raw-CAS-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-statement-three-writer-raw-CAS-runtime-mismatch'); Halt(1); end;
   end;
   v251 := 0 + 1;
   v252 := v251 + 1;
@@ -3778,7 +3778,7 @@ begin
   v382 := v381 = 0;
   if v382 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-statement-recursive-writer-raw-CAS-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-statement-recursive-writer-raw-CAS-runtime-mismatch'); Halt(1); end;
   end;
   v383 := 0 + 1;
   v384 := v383 + 1;
@@ -4137,7 +4137,7 @@ begin
   v665 := v664 and v657;
   if v665 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-statement-recursive-writer-checksummed-restart-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-statement-recursive-writer-checksummed-restart-runtime-mismatch'); Halt(1); end;
   end;
   v666 := 0 + 1;
   v667 := v666 + 1;
@@ -4562,7 +4562,7 @@ begin
   v1004 := v1003 and v1002;
   if v1004 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-statement-recursive-writer-restart-invariant-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-statement-recursive-writer-restart-invariant-runtime-mismatch'); Halt(1); end;
   end;
   v1005 := 0 + 1;
   v1006 := v1005 + 1;
@@ -4896,7 +4896,7 @@ begin
   v1270 := v1269 and v1268;
   if v1270 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-statement-stale-writer-conflict-program-append-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-statement-stale-writer-conflict-program-append-runtime-mismatch'); Halt(1); end;
   end;
   v1271 := 0 + 1;
   v1272 := v1271 + 1;
@@ -5393,7 +5393,7 @@ begin
   v1667 := v1665 and v1666;
   if v1667 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-statement-stale-writer-conflict-program-append-associativity-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-statement-stale-writer-conflict-program-append-associativity-runtime-mismatch'); Halt(1); end;
   end;
   v1668 := 0 + 1;
   v1669 := v1668 + 1;
@@ -5982,7 +5982,7 @@ begin
   v2138 := v2137 and v2136;
   if v2138 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-statement-recursive-writer-appended-tail-restart-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-statement-recursive-writer-appended-tail-restart-runtime-mismatch'); Halt(1); end;
   end;
   v2139 := 0 + 1;
   v2140 := v2139 + 1;
@@ -6403,7 +6403,7 @@ begin
   v2475 := v2473 and v2474;
   if v2475 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-statement-recursive-writer-crash-phase-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-statement-recursive-writer-crash-phase-runtime-mismatch'); Halt(1); end;
   end;
   v2476 := 0 + 1;
   v2477 := v2476 + 1;
@@ -6824,7 +6824,7 @@ begin
   v2812 := v2810 and v2811;
   if v2812 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-statement-indexed-durable-commit-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-statement-indexed-durable-commit-runtime-mismatch'); Halt(1); end;
   end;
   v2813 := 0 + 1;
   v2814 := v2813 + 1;
@@ -7018,7 +7018,7 @@ begin
   v2954 := v2953 and v2952;
   if v2954 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-hashed-statement-event-store-decision-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-hashed-statement-event-store-decision-runtime-mismatch'); Halt(1); end;
   end;
   v2955 := 0 + 1;
   v2956 := v2955 + 1;
@@ -7186,7 +7186,7 @@ begin
   v3090 := v3089 = 0;
   if v3090 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-hashed-statement-proven-retry-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-hashed-statement-proven-retry-runtime-mismatch'); Halt(1); end;
   end;
   v3091 := 0 + 1;
   v3092 := v3091 + 1;
@@ -7286,7 +7286,7 @@ begin
   v3162 := v3161 and v3160;
   if v3162 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-hashed-statement-history-enumeration-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-hashed-statement-history-enumeration-runtime-mismatch'); Halt(1); end;
   end;
   v3163 := 0 + 1;
   v3164 := v3163 + 1;
@@ -7339,7 +7339,7 @@ begin
   v3199 := v3198 and v3197;
   if v3199 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-hashed-statement-history-index-lookup-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-hashed-statement-history-index-lookup-runtime-mismatch'); Halt(1); end;
   end;
   v3200 := 0 + 1;
   v3201 := v3200 + 1;
@@ -7442,7 +7442,7 @@ begin
   v3274 := v3273 and v3269;
   if v3274 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-hashed-statement-identity-lookup-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-hashed-statement-identity-lookup-runtime-mismatch'); Halt(1); end;
   end;
   v3275 := 0 + 1;
   v3276 := v3275 + 1;
@@ -7542,7 +7542,7 @@ begin
   v3346 := v3345 and v3344;
   if v3346 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-hashed-statement-membership-lookup-program-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-hashed-statement-membership-lookup-program-runtime-mismatch'); Halt(1); end;
   end;
   v3347 := 0 + 1;
   v3348 := v3347 + 1;
@@ -7733,7 +7733,7 @@ begin
   v3485 := v3484 and v3483;
   if v3485 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-hashed-statement-membership-lookup-program-append-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-hashed-statement-membership-lookup-program-append-runtime-mismatch'); Halt(1); end;
   end;
   v3486 := 0 + 1;
   v3487 := v3486 + 1;
@@ -7918,7 +7918,7 @@ begin
   v3618 := v3617 and v3616;
   if v3618 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-hashed-statement-identity-retry-stability-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-hashed-statement-identity-retry-stability-runtime-mismatch'); Halt(1); end;
   end;
   v3619 := v3579 = v3611;
   v3620 := v3580 = v3612;
@@ -7927,13 +7927,35 @@ begin
   v3623 := v3622 and v3621;
   if v3623 then begin
   end else begin
-      begin WriteLn(StdErr, 'typed-FX-hashed-statement-identity-retry-stability-runtime-mismatch'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'typed-FX-hashed-statement-identity-retry-stability-runtime-mismatch'); Halt(1); end;
   end;
   Result := 0;
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
+var SpiralExitCode: LongInt;
+procedure SpiralRun;
 begin
+  {$IFDEF WINDOWS}SetTextCodePage(Output, CP_UTF8); SetTextCodePage(StdErr, CP_UTF8);{$ENDIF}
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
-  Halt(SpiralMain);
+  SpiralExitCode := SpiralMain;
+  Flush(Output);
+end;
+{$IFNDEF WINDOWS}
+function SpiralThreadMain(p: Pointer): PtrInt;
+begin
+  SpiralRun;
+  Result := 0;
+end;
+var SpiralThread, SpiralThreadId: TThreadID;
+{$ENDIF}
+begin
+  {$IFDEF WINDOWS}
+  SpiralRun;
+  Halt(SpiralExitCode);
+  {$ELSE}
+  SpiralThread := BeginThread(@SpiralThreadMain, nil, SpiralThreadId, 268435456);
+  WaitForThreadTerminate(SpiralThread, 0);
+  Halt(SpiralExitCode and 255);
+  {$ENDIF}
 end.

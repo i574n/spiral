@@ -1,4 +1,4 @@
-alias Spiral.Cells.Document
+alias Spiral.Cells.Domain
 
 {root, out, names} =
   case System.argv() do
@@ -7,7 +7,7 @@ alias Spiral.Cells.Document
   end
 
 File.mkdir_p!(out)
-through = fn spi, spir -> spi |> Document.parse_spi(spir) |> Document.to_livemd() |> Document.parse_livemd() end
+through = fn spi, spir -> spi |> Domain.parse_spi_doc(spir) |> Domain.to_livemd_doc() |> Domain.parse_livemd_doc() end
 nested_package? = fn name ->
   name |> Path.dirname() |> Path.split() |> Enum.scan(&Path.join(&2, &1)) |> Enum.reject(&(&1 == "."))
   |> Enum.any?(fn dir -> Enum.any?(["spiral.toml", "package.spiproj"], &File.regular?(Path.join([root, dir, &1]))) end)
@@ -65,13 +65,13 @@ results =
     {lines, removed} = spi |> String.split("\n") |> drop.(String.replace(name, "\\", "/"), keep)
     edited = Enum.join(lines, "\n")
     back = through.(edited, spir)
-    canon = Document.to_spi_tested(back)
+    canon = Domain.to_spi_tested_doc(back)
     nonblank = fn text -> text |> String.split("\n") |> Enum.map(&String.trim_trailing/1) |> Enum.reject(blank?) end
     kept_content = nonblank.(canon) == nonblank.(edited)
     again = through.(canon, spir)
-    fixpoint = Document.to_spi_tested(again) == canon
-    spir_kept = spir == "" or Document.to_spir_tested(back) == spir
-    test_names = fn text -> text |> Document.parse_spi(spir) |> Document.tests() |> Enum.map(& &1.name) end
+    fixpoint = Domain.to_spi_tested_doc(again) == canon
+    spir_kept = spir == "" or Domain.to_spir_tested_doc(back) == spir
+    test_names = fn text -> text |> Domain.parse_spi_doc(spir) |> Domain.tests_doc() |> Enum.map(& &1.name) end
     names_kept = test_names.(canon) == test_names.(spi)
     left = edited |> String.split("\n") |> Enum.count(&String.starts_with?(&1, "/// ### "))
     target = Path.join(out, name)

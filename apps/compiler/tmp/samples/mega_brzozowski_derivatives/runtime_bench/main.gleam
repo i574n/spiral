@@ -3,7 +3,17 @@ import gleam/list
 import gleam/option
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
-  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  case value >= 0 - half && value < half {
+    True -> value
+    False -> int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  }
+}
+
+pub fn spiral_wrap_i32(value: Int) -> Int {
+  case value >= -2147483648 && value <= 2147483647 {
+    True -> value
+    False -> spiral_wrap_signed(value, 32)
+  }
 }
 
 pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
@@ -89,7 +99,7 @@ pub fn random_bit_input_1(v0: Int, v1: Int, v2: Uh1) -> #(Uh1, Int) {
             let v4 = spiral_wrap_unsigned(v0 * 1103515245, 64)
             let v5 = spiral_wrap_unsigned(v4 + 12345, 64)
             let v6 = int.bitwise_and(v5, 2147483647)
-            let v7 = spiral_wrap_signed(v1 - 1, 32)
+            let v7 = spiral_wrap_i32(v1 - 1)
             let v8 = int.bitwise_shift_right(v6, 16)
             let v9 = int.bitwise_and(v8, 1)
             let v10 = v9 == 0
@@ -489,11 +499,11 @@ pub fn loop_0(v0: Uh0, v1: Int, v2: Int, v3: Int, v4: Int) -> Int {
             let v11 =
                 case v9 {
                     True -> {
-                        spiral_wrap_signed(v4 + 1, 32)
+                        spiral_wrap_i32(v4 + 1)
                     }
                     False -> v4
                 }
-            let v12 = spiral_wrap_signed(v2 - 1, 32)
+            let v12 = spiral_wrap_i32(v2 - 1)
             loop_0(v0, v1, v12, v8, v11)
         }
         False -> v4
@@ -503,7 +513,7 @@ pub fn zeros_input_14(v0: Int, v1: Uh1) -> Uh1 {
     let v2 = 0 < v0
     case v2 {
         True -> {
-            let v3 = spiral_wrap_signed(v0 - 1, 32)
+            let v3 = spiral_wrap_i32(v0 - 1)
             let v5 = Uh1InputCons(Us0BitZero, v1)
             zeros_input_14(v3, v5)
         }
@@ -520,7 +530,7 @@ pub fn loop_13(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
             let v9 =
                 case v7 {
                     True -> {
-                        spiral_wrap_signed(v3 + 1, 32)
+                        spiral_wrap_i32(v3 + 1)
                     }
                     False -> v3
                 }
@@ -530,11 +540,11 @@ pub fn loop_13(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
             let v16 =
                 case v14 {
                     True -> {
-                        spiral_wrap_signed(v9 + 1, 32)
+                        spiral_wrap_i32(v9 + 1)
                     }
                     False -> v9
                 }
-            let v17 = spiral_wrap_signed(v2 + 1, 32)
+            let v17 = spiral_wrap_i32(v2 + 1)
             loop_13(v0, v1, v17, v16)
         }
     }
@@ -620,11 +630,11 @@ pub fn loop_15(v0: Uh0, v1: Int, v2: Int, v3: Int, v4: Int) -> Int {
             let v13 =
                 case v11 {
                     True -> {
-                        spiral_wrap_signed(v4 + 1, 32)
+                        spiral_wrap_i32(v4 + 1)
                     }
                     False -> v4
                 }
-            let v14 = spiral_wrap_signed(v2 - 1, 32)
+            let v14 = spiral_wrap_i32(v2 - 1)
             loop_15(v0, v1, v14, v8, v13)
         }
         False -> v4
@@ -641,7 +651,7 @@ pub fn loop_17(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
             let v11 =
                 case v9 {
                     True -> {
-                        spiral_wrap_signed(v3 + 1, 32)
+                        spiral_wrap_i32(v3 + 1)
                     }
                     False -> v3
                 }
@@ -652,11 +662,11 @@ pub fn loop_17(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
             let v20 =
                 case v18 {
                     True -> {
-                        spiral_wrap_signed(v11 + 1, 32)
+                        spiral_wrap_i32(v11 + 1)
                     }
                     False -> v11
                 }
-            let v21 = spiral_wrap_signed(v2 + 1, 32)
+            let v21 = spiral_wrap_i32(v2 + 1)
             loop_17(v0, v1, v21, v20)
         }
     }
@@ -687,11 +697,11 @@ pub fn loop_18(v0: Int, v1: Int, v2: Int, v3: Int) -> Int {
             let v11 =
                 case v9 {
                     True -> {
-                        spiral_wrap_signed(v3 + 1, 32)
+                        spiral_wrap_i32(v3 + 1)
                     }
                     False -> v3
                 }
-            let v12 = spiral_wrap_signed(v1 - 1, 32)
+            let v12 = spiral_wrap_i32(v1 - 1)
             loop_18(v0, v12, v7, v11)
         }
         False -> v3
@@ -945,11 +955,11 @@ pub fn loop_20(v0: Int, v1: Int, v2: Int, v3: Int) -> Int {
             let v11 =
                 case v9 {
                     True -> {
-                        spiral_wrap_signed(v3 + 1, 32)
+                        spiral_wrap_i32(v3 + 1)
                     }
                     False -> v3
                 }
-            let v12 = spiral_wrap_signed(v1 - 1, 32)
+            let v12 = spiral_wrap_i32(v1 - 1)
             loop_20(v0, v12, v7, v11)
         }
         False -> v3
@@ -1018,7 +1028,7 @@ pub fn loop_22(v0: Int, v1: Int, v2: Int) -> Int {
             let v9 =
                 case v7 {
                     True -> {
-                        spiral_wrap_signed(v2 + 1, 32)
+                        spiral_wrap_i32(v2 + 1)
                     }
                     False -> v2
                 }
@@ -1028,11 +1038,11 @@ pub fn loop_22(v0: Int, v1: Int, v2: Int) -> Int {
             let v17 =
                 case v15 {
                     True -> {
-                        spiral_wrap_signed(v9 + 1, 32)
+                        spiral_wrap_i32(v9 + 1)
                     }
                     False -> v9
                 }
-            let v18 = spiral_wrap_signed(v1 + 1, 32)
+            let v18 = spiral_wrap_i32(v1 + 1)
             loop_22(v0, v18, v17)
         }
     }
@@ -1042,7 +1052,7 @@ pub fn loop_24(v0: SpiralArray(Int), v1: Int) -> Nil {
     case v2 {
         True -> {
             spiral_array_set(v0, v1, 0)
-            let v3 = spiral_wrap_signed(v1 + 1, 32)
+            let v3 = spiral_wrap_i32(v1 + 1)
             loop_24(v0, v3)
         }
         False -> Nil
@@ -1053,7 +1063,7 @@ pub fn loop_25(v0: SpiralArray(Int), v1: Int) -> Nil {
     case v2 {
         True -> {
             spiral_array_set(v0, v1, 0)
-            let v3 = spiral_wrap_signed(v1 + 1, 32)
+            let v3 = spiral_wrap_i32(v1 + 1)
             loop_25(v0, v3)
         }
         False -> Nil
@@ -1121,7 +1131,7 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                             False -> 0
                         }
                     spiral_array_set(v3, v13, v33)
-                    let v34 = spiral_wrap_signed(v13 + 1, 32)
+                    let v34 = spiral_wrap_i32(v13 + 1)
                     spiral_array_set(v4, v10, v34)
                     spiral_array_set(v6, 0, v34)
                     v13
@@ -1130,7 +1140,7 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
             }
         }
         False -> {
-            let v37 = spiral_wrap_signed(v11 - 1, 32)
+            let v37 = spiral_wrap_i32(v11 - 1)
             let v38 = spiral_array_get(v0, v37)
             let v39 = v38 == v7
             let v42 =
@@ -1152,7 +1162,7 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
             case v45 {
                 True -> v37
                 False -> {
-                    let v46 = spiral_wrap_signed(v10 + 1, 32)
+                    let v46 = spiral_wrap_i32(v10 + 1)
                     let v47 = int.bitwise_and(v46, 8191)
                     probe_27(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v47)
                 }
@@ -1161,10 +1171,10 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
     }
 }
 pub fn interned_node_26(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int), v3: SpiralArray(Int), v4: SpiralArray(Int), v5: SpiralArray(Int), v6: SpiralArray(Int), v7: Int, v8: Int, v9: Int) -> Int {
-    let v10 = spiral_wrap_signed(v7 * 1024, 32)
-    let v11 = spiral_wrap_signed(v10 + v8, 32)
-    let v12 = spiral_wrap_signed(v11 * 4099, 32)
-    let v13 = spiral_wrap_signed(v12 + v9, 32)
+    let v10 = spiral_wrap_i32(v7 * 1024)
+    let v11 = spiral_wrap_i32(v10 + v8)
+    let v12 = spiral_wrap_i32(v11 * 4099)
+    let v13 = spiral_wrap_i32(v12 + v9)
     let v14 = int.bitwise_and(v13, 8191)
     probe_27(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v14)
 }
@@ -1342,8 +1352,8 @@ pub fn interned_of_regex_raw_28(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: 
     }
 }
 pub fn interned_derivative_raw_35(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int), v3: SpiralArray(Int), v4: SpiralArray(Int), v5: SpiralArray(Int), v6: SpiralArray(Int), v7: Int, v8: Int) -> Int {
-    let v9 = spiral_wrap_signed(v7 * 2, 32)
-    let v10 = spiral_wrap_signed(v9 + v8, 32)
+    let v9 = spiral_wrap_i32(v7 * 2)
+    let v10 = spiral_wrap_i32(v9 + v8)
     let v11 = spiral_array_get(v5, v10)
     let v12 = v11 == 0
     case v12 {
@@ -1404,12 +1414,12 @@ pub fn interned_derivative_raw_35(v0: SpiralArray(Int), v1: SpiralArray(Int), v2
                         }
                     }
                 }
-            let v42 = spiral_wrap_signed(v41 + 1, 32)
+            let v42 = spiral_wrap_i32(v41 + 1)
             spiral_array_set(v5, v10, v42)
             v41
         }
         False -> {
-            spiral_wrap_signed(v11 - 1, 32)
+            spiral_wrap_i32(v11 - 1)
         }
     }
 }
@@ -1448,11 +1458,11 @@ pub fn loop_32(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int),
             let v18 =
                 case v16 {
                     True -> {
-                        spiral_wrap_signed(v11 + 1, 32)
+                        spiral_wrap_i32(v11 + 1)
                     }
                     False -> v11
                 }
-            let v19 = spiral_wrap_signed(v9 - 1, 32)
+            let v19 = spiral_wrap_i32(v9 - 1)
             loop_32(v0, v1, v2, v3, v4, v5, v6, v7, v8, v19, v15, v18)
         }
         False -> v11
@@ -1468,7 +1478,7 @@ pub fn loop_36(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int),
             let v16 =
                 case v14 {
                     True -> {
-                        spiral_wrap_signed(v10 + 1, 32)
+                        spiral_wrap_i32(v10 + 1)
                     }
                     False -> v10
                 }
@@ -1478,11 +1488,11 @@ pub fn loop_36(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int),
             let v23 =
                 case v21 {
                     True -> {
-                        spiral_wrap_signed(v16 + 1, 32)
+                        spiral_wrap_i32(v16 + 1)
                     }
                     False -> v16
                 }
-            let v24 = spiral_wrap_signed(v9 + 1, 32)
+            let v24 = spiral_wrap_i32(v9 + 1)
             loop_36(v0, v1, v2, v3, v4, v5, v6, v7, v8, v24, v23)
         }
     }

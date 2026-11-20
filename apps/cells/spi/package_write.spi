@@ -1,0 +1,41 @@
+///- --package .
+:< erlang_term
+:# package_write static =
+    :< testing
+
+:~ must_write (path : string) (content : string) : () =
+    ? erlang_file::file_written path content ?> () |: failwith ("could not write " ^^ path)
+
+:~ no_real (real_in : term) : bool = erlang_term::equal real_in (erlang_term::atom "nil") || erlang_term::equal real_in (erlang_term::of "")
+
+:~ trimmed_end (s : string) : string = erlang_term::apply "string" "trim" [ erlang_term::of s; erlang_term::atom "trailing" ] |> erlang_term::cast
+
+:~ real_line (real_in : string) : string = trimmed_end real_in ^^ "\n"
+
+:~ real_text (dir : string) (text : string) (real_in : string) : string =
+    must_write (erlang_file::joined_path dir "main_real.spir") (real_line real_in)
+    manifest::with_real_main text
+
+:~ with_real (dir : string) (text : string) (real_in : term) : string = ? no_real real_in ?> text |: real_text dir text (erlang_term::cast real_in)
+
+:~ package_text (names : term) (imports : term) (package_dir : string) : string =
+    mount_plan::notebook_package_text (mount_plan::texts names) (mount_plan::texts imports) package_dir
+
+:~ write_manifest (dir : string) (text : string) (real_in : term) : () =
+    must_write (erlang_file::joined_path dir "package.spiproj") (with_real dir text real_in)
+
+:~ write_console (dir : string) (console : string) : term =
+    must_write (erlang_file::joined_path dir "console.spi") console
+    erlang_term::atom "ok"
+
+:~ write_package (dir : string) (names : term) (imports : term) (package_dir : string) (real_in : term) (console : string) : term =
+    write_manifest dir (package_text names imports package_dir) real_in
+    write_console dir console
+
+///> gleam
+:# a_real_main_is_written_with_one_trailing_newline =
+    real_line "(main)\n\n  " |> _assert_eq "(main)\n"
+
+///> gleam
+:# nil_and_empty_mean_no_real_main =
+    (no_real (erlang_term::atom "nil"), no_real (erlang_term::of ""), no_real (erlang_term::of "x")) |> _assert_eq (!+, !+, !-)

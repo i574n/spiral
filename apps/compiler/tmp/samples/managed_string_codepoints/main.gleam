@@ -56,7 +56,17 @@ pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
 
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
-  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  case value >= 0 - half && value < half {
+    True -> value
+    False -> int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  }
+}
+
+pub fn spiral_wrap_i32(value: Int) -> Int {
+  case value >= -2147483648 && value <= 2147483647 {
+    True -> value
+    False -> spiral_wrap_signed(value, 32)
+  }
 }
 
 
@@ -81,10 +91,10 @@ pub fn codepoint_length_loop_1(v0: String, v1: String, v2: String, v3: Int, v4: 
                 case v10 {
                     True -> v4
                     False -> {
-                        spiral_wrap_signed(v4 + 1, 32)
+                        spiral_wrap_i32(v4 + 1)
                     }
                 }
-            let v13 = spiral_wrap_signed(v3 + 1, 32)
+            let v13 = spiral_wrap_i32(v3 + 1)
             codepoint_length_loop_1(v0, v1, v2, v13, v12, v5)
         }
     }
@@ -105,7 +115,7 @@ pub fn codepoint_byte_offset_loop_2(v0: String, v1: String, v2: String, v3: Int,
                 }
             case v11 {
                 True -> {
-                    let v12 = spiral_wrap_signed(v4 + 1, 32)
+                    let v12 = spiral_wrap_i32(v4 + 1)
                     codepoint_byte_offset_loop_2(v0, v1, v2, v3, v12, v5, v6)
                 }
                 False -> {
@@ -113,8 +123,8 @@ pub fn codepoint_byte_offset_loop_2(v0: String, v1: String, v2: String, v3: Int,
                     case v14 {
                         True -> v4
                         False -> {
-                            let v15 = spiral_wrap_signed(v4 + 1, 32)
-                            let v16 = spiral_wrap_signed(v5 + 1, 32)
+                            let v15 = spiral_wrap_i32(v4 + 1)
+                            let v16 = spiral_wrap_i32(v5 + 1)
                             codepoint_byte_offset_loop_2(v0, v1, v2, v3, v15, v16, v6)
                         }
                     }
@@ -136,7 +146,7 @@ pub fn main() {
     let v21 = runtime_byte_0(v0, 1)
     let v23 = runtime_byte_0(v3, 0)
     let v28 = codepoint_byte_offset_loop_2(v6, v21, v23, 2, 0, 0, 10)
-    let v29 = spiral_wrap_signed(v28 - 1, 32)
+    let v29 = spiral_wrap_i32(v28 - 1)
     let v30 = spiral_string_slice("Aéλ🙂Z", v19, v29)
     let v32 = runtime_byte_0(v0, 1)
     let v34 = runtime_byte_0(v3, 0)
@@ -144,7 +154,7 @@ pub fn main() {
     let v41 = runtime_byte_0(v0, 1)
     let v43 = runtime_byte_0(v3, 0)
     let v48 = codepoint_byte_offset_loop_2(v6, v41, v43, 4, 0, 0, 10)
-    let v49 = spiral_wrap_signed(v48 - 1, 32)
+    let v49 = spiral_wrap_i32(v48 - 1)
     let v50 = spiral_string_slice("Aéλ🙂Z", v39, v49)
     let v52 = runtime_byte_0(v0, 1)
     let v54 = runtime_byte_0(v3, 0)
@@ -152,7 +162,7 @@ pub fn main() {
     let v61 = runtime_byte_0(v0, 1)
     let v63 = runtime_byte_0(v3, 0)
     let v68 = codepoint_byte_offset_loop_2(v6, v61, v63, 4, 0, 0, 10)
-    let v69 = spiral_wrap_signed(v68 - 1, 32)
+    let v69 = spiral_wrap_i32(v68 - 1)
     let v70 = spiral_string_slice("Aéλ🙂Z", v59, v69)
     let v72 = runtime_byte_0(v0, 1)
     let v74 = runtime_byte_0(v3, 0)

@@ -49,7 +49,7 @@
     |> into_iter
     |> enumerate
     |> iter_collect
-    |> am'::vec_map' from_pair
+    |> am'::vec_map from_pair
     |> am'::from_vec
 
 ///> rust

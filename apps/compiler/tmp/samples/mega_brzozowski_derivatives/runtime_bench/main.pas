@@ -1,8 +1,8 @@
 program SpiralGenerated;
 {$mode delphi}{$H+}
 {$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}
-{$MAXSTACKSIZE $10000000}
-uses SysUtils, Math;
+{$IFDEF WINDOWS}{$MAXSTACKSIZE $10000000}{$ENDIF}
+uses {$IFDEF UNIX}cthreads, {$ENDIF}SysUtils, Math;
 type
   TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TUH0 = class;
@@ -2322,7 +2322,7 @@ begin
               Result := v13;
               Exit;
           end else begin
-              begin WriteLn(StdErr, 'brzozowski-interned-store-full'); Halt(1); end;
+              begin Flush(Output); WriteLn(StdErr, 'brzozowski-interned-store-full'); Halt(1); end;
           end;
       end else begin
           v37 := v11 - 1;
@@ -3411,7 +3411,7 @@ begin
   end;
   if v120 then begin
   end else begin
-      begin WriteLn(StdErr, 'brzozowski-bench-engines-disagree'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-bench-engines-disagree'); Halt(1); end;
   end;
   v121 := 200;
   v122 := 32;
@@ -3438,7 +3438,7 @@ begin
   end;
   if v135 then begin
   end else begin
-      begin WriteLn(StdErr, 'brzozowski-bench-engines-disagree'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-bench-engines-disagree'); Halt(1); end;
   end;
   v136 := 200;
   v137 := 32;
@@ -3493,7 +3493,7 @@ begin
       v171 := v143;
       v172 := v144;
   end else begin
-      begin WriteLn(StdErr, 'brzozowski-interned-store-init'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-interned-store-init'); Halt(1); end;
   end;
   v173 := US0_BitZero;
   v174 := UH0_RegexChar(v173);
@@ -3639,7 +3639,7 @@ begin
       v251 := v223;
       v252 := v224;
   end else begin
-      begin WriteLn(StdErr, 'brzozowski-interned-store-init'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-interned-store-init'); Halt(1); end;
   end;
   v253 := US0_BitZero;
   v254 := UH0_RegexChar(v253);
@@ -3688,28 +3688,30 @@ begin
   end;
   if v273 then begin
   end else begin
-      begin WriteLn(StdErr, 'brzozowski-bench-engines-disagree'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-bench-engines-disagree'); Halt(1); end;
   end;
   v274 := v57 = 16;
   if v274 then begin
   end else begin
-      begin WriteLn(StdErr, 'brzozowski-bench-zero-runs-count'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-bench-zero-runs-count'); Halt(1); end;
   end;
   v275 := v40 = 93;
   if v275 then begin
   end else begin
-      begin WriteLn(StdErr, 'brzozowski-bench-ends-with-zero-count'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-bench-ends-with-zero-count'); Halt(1); end;
   end;
   v276 := v41 = 97;
   if v276 then begin
   end else begin
-      begin WriteLn(StdErr, 'brzozowski-bench-fourth-from-end-count'); Halt(1); end;
+      begin Flush(Output); WriteLn(StdErr, 'brzozowski-bench-fourth-from-end-count'); Halt(1); end;
   end;
   Result := 0;
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
 var SpiralExitCode: LongInt;
+procedure SpiralRun;
 begin
+  {$IFDEF WINDOWS}SetTextCodePage(Output, CP_UTF8); SetTextCodePage(StdErr, CP_UTF8);{$ENDIF}
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
   SpiralExitCode := SpiralMain;
@@ -3717,5 +3719,23 @@ begin
   if UH0_RegexEpsilon_shared <> nil then UH0_RegexEpsilon_shared.Free;
   if UH1_InputEmpty_shared <> nil then UH1_InputEmpty_shared.Free;
   if UH2_RegexListNil_shared <> nil then UH2_RegexListNil_shared.Free;
+  Flush(Output);
+end;
+{$IFNDEF WINDOWS}
+function SpiralThreadMain(p: Pointer): PtrInt;
+begin
+  SpiralRun;
+  Result := 0;
+end;
+var SpiralThread, SpiralThreadId: TThreadID;
+{$ENDIF}
+begin
+  {$IFDEF WINDOWS}
+  SpiralRun;
   Halt(SpiralExitCode);
+  {$ELSE}
+  SpiralThread := BeginThread(@SpiralThreadMain, nil, SpiralThreadId, 268435456);
+  WaitForThreadTerminate(SpiralThread, 0);
+  Halt(SpiralExitCode and 255);
+  {$ENDIF}
 end.

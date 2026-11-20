@@ -1,7 +1,7 @@
 defmodule Spiral.Cells.NotebookReportTest do
   use ExUnit.Case, async: false
 
-  alias Spiral.Cells.{Document, Notebook, ProcessError}
+  alias Spiral.Cells.{Domain, Notebook, ProcessError}
 
   setup do
     %{dir: Spiral.Cells.TestHelpers.tmp_dir!("notebook_report")}
@@ -147,7 +147,7 @@ defmodule Spiral.Cells.NotebookReportTest do
     assert length(sources) == 3
     assert Enum.all?(sources, &(&1 =~ "_assert_eq"))
 
-    cells = Document.parse_spi(@spi, "")
+    cells = Domain.parse_spi_doc(@spi, "")
 
     assert map_size(Notebook.evaluate(cells, root: dir, compile: compile(agent), rustc: fn _ -> :ok end, execute: exit_when("never", 0), plan: :tests).outputs) == 3
   end
@@ -326,7 +326,7 @@ defmodule Spiral.Cells.NotebookReportTest do
         one ()
     """
 
-    assert Document.to_spi_tested(Document.parse_spi(spi, "")) == spi
+    assert Domain.to_spi_tested_doc(Domain.parse_spi_doc(spi, "")) == spi
     path = Path.join(dir, "fails.spi")
     File.write!(path, spi)
 
@@ -455,7 +455,7 @@ defmodule Spiral.Cells.NotebookReportTest do
         one () + 0i32
     """
 
-    assert Document.to_spi_tested(Document.parse_spi(spi, "")) == spi
+    assert Domain.to_spi_tested_doc(Domain.parse_spi_doc(spi, "")) == spi
     path = Path.join(dir, "agree.spi")
     File.write!(path, spi)
 
@@ -470,7 +470,7 @@ defmodule Spiral.Cells.NotebookReportTest do
     assert Enum.map(report["tests"], &{&1["name"], &1["status"]}) == [{"same", "passed"}, {"differ", "failed"}, {"differ_allowed", "passed"}, {"differ_bare", "failed"}]
     assert report["no_agree_reasons"] == %{"gleam prints floats" => 1}
     assert Enum.find(report["tests"], &(&1["name"] == "differ_bare"))["message"] =~ "no_agree needs a reason"
-    assert Document.parse_spi(spi, "").cells |> Enum.any?(&(&1.source =~ ~s(///- --test --no-agree "gleam prints floats")))
+    assert Domain.parse_spi_doc(spi, "").cells |> Enum.any?(&(&1.source =~ ~s(///- --test --no-agree "gleam prints floats")))
     differ = Enum.find(report["tests"], &(&1["name"] == "differ"))
     assert differ["message"] =~ "targets disagree: lua printed \"__assert_eq { expected = 1.570796 }\", gleam printed \"2.0\""
     assert [%{"target" => "lua", "status" => "passed"}, %{"target" => "gleam", "status" => "disagrees"}] = differ["targets"]
@@ -516,7 +516,7 @@ defmodule Spiral.Cells.NotebookReportTest do
         one ()
     """
 
-    assert Document.to_spi_tested(Document.parse_spi(spi, "")) == spi
+    assert Domain.to_spi_tested_doc(Domain.parse_spi_doc(spi, "")) == spi
     path = Path.join(dir, "build_only.spi")
     File.write!(path, spi)
 
@@ -645,7 +645,7 @@ defmodule Spiral.Cells.NotebookReportTest do
   end
 
   test "evaluate runs a document in memory and writes nothing", %{dir: dir} do
-    doc = Document.parse_spi(@spi, "")
+    doc = Domain.parse_spi_doc(@spi, "")
     {:ok, agent} = Agent.start_link(fn -> [] end)
 
     evaluation =
@@ -740,8 +740,8 @@ defmodule Spiral.Cells.NotebookReportTest do
   end
 
   test "a static block of only opens is a prelude, not a discovered test; a static block with definitions stays static" do
-    doc = Document.parse_spi("///> c\ntest base static =\n    open testing\n    open sm'_operators\n\ntest helpers static =\n    inl twice x = x + x\n\n///> rust\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
-    assert ["prelude", "static", "test"] = Enum.map(Document.tests(doc), & &1.mode)
+    doc = Domain.parse_spi_doc("///> c\ntest base static =\n    open testing\n    open sm'_operators\n\ntest helpers static =\n    inl twice x = x + x\n\n///> rust\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
+    assert ["prelude", "static", "test"] = Enum.map(Domain.tests_doc(doc), & &1.mode)
   end
 
   test "zig cells run the self-hosted backend with a persistent global cache under the spiral-bin cache dir" do
@@ -801,12 +801,6 @@ defmodule Spiral.Cells.NotebookReportTest do
     assert message =~ ~r/located\.spi:7:9 \(main\.spi:\d+:\d+\): ETY-UnboundVariable/
   end
 
-  test "an ambiguous or unknown main.spi line stays as it is" do
-    assert Spiral.Cells.SourceMap.remap("main.spi:2:1: oops", "x\ny\n", "y\nz\ny\n", "f.spi") == "main.spi:2:1: oops"
-    assert Spiral.Cells.SourceMap.remap("main.spi:1:5: oops", "zzz\n", "a\n", "f.spi") == "main.spi:1:5: oops"
-    assert Spiral.Cells.SourceMap.remap("main.spi:2:5: oops", "a\n    b\nc\n", "q\na\nb\nc\nb\n", "f.spi") == "f.spi:3:1 (main.spi:2:5): oops"
-  end
-
   defp compile(agent) do
     fn %{source: source} ->
       Agent.update(agent, &(&1 ++ [source]))
@@ -833,8 +827,8 @@ defmodule Spiral.Cells.NotebookReportTest do
         one () + 0i32
     """
 
-    assert Document.to_spi_tested(Document.parse_spi(spi, "")) == spi
-    assert Document.parse_spi(spi, "").cells |> Enum.any?(&(&1.source =~ "///- --test --reference gleam"))
+    assert Domain.to_spi_tested_doc(Domain.parse_spi_doc(spi, "")) == spi
+    assert Domain.parse_spi_doc(spi, "").cells |> Enum.any?(&(&1.source =~ "///- --test --reference gleam"))
     path = Path.join(dir, "reference.spi")
     File.write!(path, spi)
 

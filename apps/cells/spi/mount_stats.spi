@@ -1,0 +1,141 @@
+///- --package .
+:< erlang_term
+:# mount_stats static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ str (s : string) : term = erlang_term::of s
+
+:~ forward (path : string) : string =
+    := p = text::replace path "\\" "/"
+    ? text::length p >= 2i32 && text::slice_len p 1i32 1i32 = ":" ?> text::lowercase (text::take p 1i32) ++ text::drop p 1i32 |: p
+
+///> gleam
+:# forward_turns_backslashes_and_lowercases_a_drive_letter =
+    (forward "C:\\Work\\a", forward "/repo/b", forward "ab:c", forward "") |> _assert_eq ("c:/Work/a", "/repo/b", "ab:c", "")
+
+:~ skipped () : list string = [ "target"; "node_modules"; "build"; "dist"; ".git"; "deps"; "playwright-report"; "test-results" ]
+
+:~ ends_with (s : string) (p : string) : bool = text::length s >= text::length p && text::drop s (text::length s - text::length p) = p
+
+:~ is_source (name : string) : bool = memo::has_text (manifest::manifest_names ()) name || ends_with name ".spi" || ends_with name ".spir"
+
+:~ is_regular (path : string) : bool = erlang_term::apply "filelib" "is_regular" [ str path ] |> erlang_term::cast
+
+:~ is_dir (path : string) : bool = erlang_term::apply "filelib" "is_dir" [ str path ] |> erlang_term::cast
+
+:~ names_in (dir : string) : list string =
+    := r = erlang_term::apply "file" "list_dir" [ str dir ]
+    ? mount_text::is_ok_tuple r ?> listm::map erlang_file::text_of (erlang_term::items_of (erlang_term::element_at 2i32 r)) |: []
+
+:~ posix () : term = erlang_term::list_term [ tuple [ erlang_term::atom "time"; erlang_term::atom "posix" ] ]
+
+:~ info_at (path : string) (n : i32) : i64 =
+    := r = erlang_term::apply "file" "read_file_info" [ str path; posix () ]
+    ? mount_text::is_ok_tuple r ?> erlang_term::element_at n (erlang_term::element_at 2i32 r) |> erlang_term::cast |: 0i64
+
+:~ size_of (path : string) : i64 = info_at path 2i32
+
+:~ mtime_of (path : string) : i64 = info_at path 6i32
+
+:~ counted (path : string) (name : string) : bool = is_regular path && is_source name
+
+:~ descends (path : string) (name : string) : bool = is_dir path && not (memo::has_text (skipped ()) name)
+
+:~ ^ walk (dir : string) (acc : i64) : i64 = listm::fold (walk_name dir) acc (names_in dir)
+
+:& :~ walk_name (dir : string) (acc : i64) (name : string) : i64 =
+    := path = erlang_file::joined_path dir name
+    ? counted path name ?> (? mtime_of path > acc ?> mtime_of path |: acc)
+    |? descends path name ?> walk path acc
+    |: acc
+
+:~ newest (dir : string) : i64 = walk dir 0i64
+
+:~ stat_row (rel : string) (path : string) : term = tuple [ str rel; tuple [ erlang_term::of (size_of path); erlang_term::of (mtime_of path) ] ]
+
+:~ rel_of (prefix : string) (name : string) : string = ? prefix = "" ?> name |: prefix ++ "/" ++ name
+
+:~ ^ stats (dir : string) (prefix : string) (acc : list term) : list term = listm::fold (stat_name dir prefix) acc (names_in dir)
+
+:& :~ stat_name (dir : string) (pre : string) (acc : list term) (n : string) : list term =
+    := path = erlang_file::joined_path dir n
+    := rel = rel_of pre n
+    ? counted path n ?> stat_row rel path :: acc |? descends path n ?> stats path rel acc |: acc
+
+:~ short_hash (t : term) : string = text::take (memo_bounds::hex_lower (mount_text::term_hash t)) 16i32
+
+:~ sorted (xs : list term) : term = erlang_term::apply "lists" "sort" [ erlang_term::list_term xs ]
+
+:~ sources_fingerprint (dir : string) : string = short_hash (sorted (stats dir "" []))
+
+:~ field (entry : term) (k : string) : term = erlang_term::apply "maps" "get" [ erlang_term::atom k; entry ]
+
+:~ field_text (entry : term) (k : string) : string = erlang_file::text_of (field entry k)
+
+:~ kind_of (entry : term) : string = erlang_term::apply "erlang" "atom_to_binary" [ field entry "kind" ] |> erlang_file::text_of
+
+:~ patches_fingerprint (entry : term) : string = short_hash (tuple [ field entry "package_dir"; field entry "patches" ])
+
+:~ stamp (entry : term) : string =
+    := k = kind_of entry
+    := sources = "\t" ++ sources_fingerprint (field_text entry "target")
+    ? k = "shadow" ?> sources |? k = "patched" ?> sources ++ "\t" ++ patches_fingerprint entry |: ""
+
+:~ entry_line (entry : term) : string = field_text entry "name" ++ "\t" ++ kind_of entry ++ "\t" ++ forward (field_text entry "target") ++ stamp entry
+
+:~ keysorted (keyed : list term) : list term = erlang_term::items_of (erlang_term::apply "lists" "keysort" [ erlang_term::of 1i32; erlang_term::list_term keyed ])
+
+:~ by_name (entries : term) : list term =
+    := keyed = listm::map (\ (e : term) => tuple [ field e "name"; e ]) (erlang_term::items_of entries)
+    listm::map (erlang_term::element_at 2i32) (keysorted keyed)
+
+:~ mount_key (entries : term) : string =
+    := payload = "v3\n" ++ sm'::concat_list "\n" (listm::map entry_line (by_name entries))
+    text::take (memo_bounds::hex_lower (mount_text::sha256 (str payload))) 16i32
+
+:== dep = { name : string; target : string; import : string }
+
+:~ dep_of (row : term) : dep = { name = memo_bounds::el row 1i32; target = memo_bounds::el row 2i32; import = memo_bounds::el row 3i32 }
+
+:== tools = { dotnet : string; dll : string }
+
+:~ deps_in (t : tools) (dir : string) : list dep = listm::map dep_of (mount_text::declared_dependencies dir t::dotnet t::dll)
+
+:== walked = { named : list string; found : list term; queue : list string }
+
+:~ admits (w : walked) (d : dep) : bool = not (memo::has_text w::named d::name) && mount_text::has_manifest d::target
+
+:~ visit (w : walked) (d : dep) : walked =
+    ? admits w d ?> { named = d::name :: w::named; found = tuple [ str d::target; str d::name ] :: w::found; queue = listm::append w::queue [ d::target ] } |: w
+
+:~ ^ closure (t : tools) (w : walked) : list term =
+    ?= w::queue ?|
+    | [] => listm::rev w::found
+    | dir :: rest => closure t (listm::fold visit { named = w::named; found = w::found; queue = rest } (deps_in t dir))
+
+:~ pair_at (p : term) (n : i32) : string = erlang_file::text_of (erlang_term::element_at n p)
+
+:~ names_of (ps : list term) : list string = listm::map (\ p => pair_at p 2i32) ps
+
+:~ dirs_of (ps : list term) : list string = listm::map (\ p => pair_at p 1i32) ps
+
+:~ dependency_closure (targets : term) (dotnet : string) (dll : string) : term =
+    := ps = erlang_term::items_of targets
+    erlang_term::list_term (closure { dotnet; dll } { named = names_of ps; found = []; queue = dirs_of ps })
+
+:~ import_of (d : dep) : string = d::import
+
+:~ outside (named : list string) (d : dep) : bool = not (memo::has_text named d::name)
+
+:~ imports_in (t : tools) (ps : list term) : list string =
+    := deps = listm::concat (listm::map (deps_in t) (dirs_of ps))
+    memo::uniq_from (listm::map import_of (memo::keep (outside (names_of ps)) deps)) (dict::empty ()) []
+
+:~ qualified_imports (targets : term) (dotnet : string) (dll : string) : term =
+    erlang_term::list_term (listm::map str (imports_in { dotnet; dll } (erlang_term::items_of targets)))
+
+///> gleam
+:# an_empty_dir_has_no_newest_source_and_no_stats =
+    (newest "/no/such/dir", sources_fingerprint "/no/such/dir" = short_hash (sorted [])) |> _assert_eq (0i64, !+)

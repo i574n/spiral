@@ -1,0 +1,38 @@
+///- --package .
+:# watch_probe static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ probe_args (code : string) : erlang_term::term =
+    [ "-noshell"; "-eval"; code ] |> listm::map erlang_term::charlist |> erlang_term::list_term
+
+:~ erl_exe () : erlang_term::term = erlang_term::apply "os" "find_executable" [ erlang_term::charlist "erl" ]
+
+:~ probe_opts (code : string) : list erlang_term::term =
+    [ erlang_term::atom "exit_status"; erlang_term::tuple [ erlang_term::atom "args"; probe_args code ] ]
+
+:~ probe_port (code : string) : erlang_port::port = erlang_port::open_executable (erl_exe ()) (probe_opts code)
+
+:~ next_tag (sel : erlang_watch::ewsel) : string = erlang_watch::ev_tag (erlang_watch::watch_within sel 5000i32)
+
+:~ caller_down_tag (p : erlang_port::port) (mon : erlang_process::monitor) : string =
+    := e = erlang_watch::watch_within (erlang_watch::watch_main p mon) 5000i32
+    erlang_port::close p |> ignore
+    erlang_watch::ev_tag e
+
+///> gleam
+:# watch_main_sees_data_then_exit_status =
+    := sel = erlang_watch::watch_main (probe_port "io:format(\"hi~n\"), halt(0).") (erlang_watch::trap_and_monitor (erlang_process::self ()))
+    (next_tag sel, next_tag sel) |> _assert_eq ("data", "exit0")
+
+///> gleam
+:# watch_after_sees_port_closed =
+    erlang_process::trap_exits !+
+    := sel = erlang_watch::watch_after (probe_port "halt(0).")
+    (next_tag sel, next_tag sel) |> _assert_eq ("exit0", "port_closed")
+
+///> gleam
+:# watch_main_sees_caller_down =
+    := p = probe_port "timer:sleep(30000), halt(0)."
+    caller_down_tag p (erlang_watch::trap_and_monitor (erlang_process::spawn_unlinked (\ () => ()))) |> _assert_eq "caller_down"

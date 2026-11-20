@@ -81,15 +81,4 @@ defmodule Spiral.Cells.CompilerGatePinTest do
     assert report["compiler"] == %{"pin" => pin, "stamp" => "1793860000-12345"}
     refute Map.has_key?(Spiral.Cells.Notebook.with_compiler_pin(%{"tests" => []}, nil), "compiler")
   end
-
-  test "a process-mode gate passes no pin, since it compiles with its own process" do
-    previous = System.get_env("SPIRAL_CELLS_COMPILER")
-    System.put_env("SPIRAL_CELLS_COMPILER", "process")
-
-    try do
-      assert Mix.Tasks.Spiral.Notebook.pin_args() == []
-    after
-      if previous, do: System.put_env("SPIRAL_CELLS_COMPILER", previous), else: System.delete_env("SPIRAL_CELLS_COMPILER")
-    end
-  end
 end

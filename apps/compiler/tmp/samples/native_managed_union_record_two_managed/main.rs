@@ -28,8 +28,8 @@ fn method1(mut v0: Rc<dyn Fn(i32) -> US0>) -> US0 {
     v0(4i32)
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<dyn Fn(i32) -> US0> = closure0();
-    let v1: US0 = method0(v0.clone());
+    let derive_v0: Rc<dyn Fn(i32) -> US0> = closure0();
+    let v1: US0 = method0(derive_v0.clone());
     let v12: i32 = match v1 {
         US0::US0_Empty => {
             3i32
@@ -38,7 +38,7 @@ fn spiral_main() -> i32 {
             let v2: Rc<str> = v2;
             let mut v3: Rc<RefCell<Vec<i32>>> = v3;
             let v4: i32 = (v2.len() as i32);
-            let v5: i32 = (v3.clone().borrow().len() as i32);
+            let v5: i32 = (v3.borrow().len() as i32);
             let v6: i32 = v4.wrapping_add(v5);
             let v7: i32 = v3.borrow()[0i32 as usize];
             let v8: i32 = v6.wrapping_add(v7);
@@ -47,7 +47,7 @@ fn spiral_main() -> i32 {
             v10
         }
     };
-    let v13: US0 = method1(v0);
+    let v13: US0 = method1(derive_v0);
     let v24: i32 = match v13 {
         US0::US0_Empty => {
             3i32
@@ -56,7 +56,7 @@ fn spiral_main() -> i32 {
             let v14: Rc<str> = v14;
             let v15: Rc<RefCell<Vec<i32>>> = v15;
             let v16: i32 = (v14.len() as i32);
-            let v17: i32 = (v15.clone().borrow().len() as i32);
+            let v17: i32 = (v15.borrow().len() as i32);
             let v18: i32 = v16.wrapping_add(v17);
             let v19: i32 = v15.borrow()[0i32 as usize];
             let v20: i32 = v18.wrapping_add(v19);

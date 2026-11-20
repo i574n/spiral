@@ -78,6 +78,8 @@
 
 := charlist (text : string) : term = apply "unicode" "characters_to_list" [ of text ]
 
+:= charlist_text (c : term) : string = apply "unicode" "characters_to_binary" [ c ] |> cast
+
 :~ ^ items_from (reversed : term) (acc : list term) : list term =
     ? equal reversed (list_term [])
     ?> acc
@@ -109,6 +111,20 @@
 
 := integer_text (t : term) : string = apply "erlang" "integer_to_binary" [ t ] |> cast
 
+:= pair (key : string) (value : term) : term = tuple [ atom key; value ]
+
+:= is_atom (name : string) (t : term) : bool = equal t (atom name)
+
+:= field_or (key : string) (m : term) (fallback : term) : term = apply "maps" "get" [ atom key; m; fallback ]
+
+:= field_or_nil (key : string) (m : term) : term = field_or key m (atom "nil")
+
+:= map_of (pairs : list term) : term = apply "maps" "from_list" [ list_term pairs ]
+
+:= has_tag (tag : string) (t : term) : bool = is_tuple t && is_atom tag (element_at 1i32 t)
+
+:= binary_text (t : term) : string = cast t
+
 := text_at_least (a : string) (b : string) : bool = apply "erlang" ">=" [ of a; of b ] |> cast
 
 := rfc3339_seconds (stamp : string) : i64 = apply "calendar" "rfc3339_to_system_time" [ charlist stamp ] |> cast
@@ -116,7 +132,59 @@
 := zulu () : term = list_term [ tuple [ atom "offset"; charlist "Z" ] ]
 
 := rfc3339_text (seconds : i64) : string =
-    apply "unicode" "characters_to_binary" [ apply "calendar" "system_time_to_rfc3339" [ of seconds; zulu () ] ] |> cast
+    charlist_text (apply "calendar" "system_time_to_rfc3339" [ of seconds; zulu () ])
+
+:= utf8_byte_at (b : term) (i : i32) : i32 = apply "binary" "at" [ b; of i ] |> cast
+
+:= utf8_size (b : term) : i32 = apply "erlang" "byte_size" [ b ] |> cast
+
+:= utf8_tail_len (lead : i32) : i32 =
+    ? lead >= 194i32 && lead <= 223i32 ?> 1i32 |? lead >= 224i32 && lead <= 239i32 ?> 2i32 |? lead >= 240i32 && lead <= 244i32 ?> 3i32 |: 0i32
+
+:= utf8_is_cont (b : term) (i : i32) : bool = ? i < utf8_size b ?> utf8_byte_at b i >= 128i32 && utf8_byte_at b i <= 191i32 |: !-
+
+:~ ^ utf8_cont_end (b : term) (i : i32) (left : i32) : i32 =
+    ? left > 0i32 && utf8_is_cont b i ?> utf8_cont_end b (i + 1i32) (left - 1i32) |: i
+
+:= utf8_skipped (bad : term) : term =
+    := n = utf8_cont_end bad 1i32 (utf8_tail_len (utf8_byte_at bad 0i32))
+    apply "binary" "part" [ bad; of n; of (utf8_size bad - n) ]
+
+:= utf8_fffd () : term = of "�"
+
+:= utf8_joined (parts : list term) : term = apply "erlang" "iolist_to_binary" [ list_term (listm::rev parts) ]
+
+:= utf8_decoded (b : term) : term = apply "unicode" "characters_to_binary" [ b ]
+
+:= utf8_marked (r : term) (acc : list term) : list term = utf8_fffd () :: element_at 2i32 r :: acc
+
+:~ ^ utf8_repaired_from (b : term) (acc : list term) : term =
+    := r = utf8_decoded b
+    ? is_binary r ?> utf8_joined (r :: acc)
+    |? has_tag "error" r ?> utf8_repaired_from (utf8_skipped (element_at 3i32 r)) (utf8_marked r acc)
+    |: utf8_joined (utf8_marked r acc)
+
+:= utf8_repaired (b : term) : term = utf8_repaired_from b []
+
+:= json_is_list (t : term) : bool = apply "erlang" "is_list" [ t ] |> cast
+
+:= json_has_key (key : string) (m : term) : bool = apply "maps" "is_key" [ atom key; m ] |> cast
+
+:= json_plain_map (t : term) : bool = is_map t && not (json_has_key "__struct__" t)
+
+:= json_entries (m : term) : list term = listm::map (\ (e : term) => apply "erlang" "tuple_to_list" [ e ]) (items_of (apply "maps" "to_list" [ m ]))
+
+:= json_of_entries (rows : list term) : term = apply "maps" "from_list" [ list_term (listm::map (\ (l : term) => apply "erlang" "list_to_tuple" [ l ]) rows) ]
+
+:= json_safe_with (walk : list term -> list term) (x : term) : term =
+    ? is_binary x ?> utf8_repaired x |? json_is_list x ?> list_term (walk (items_of x)) |? json_plain_map x ?> json_of_entries (walk (json_entries x)) |: x
+
+:~ ^ json_walked (items : list term) (acc : list term) : list term =
+    ?= items ?|
+    | [] => listm::rev acc
+    | x :: rest => json_walked rest (json_safe_with (\ xs => json_walked xs []) x :: acc)
+
+:= json_safe (t : term) : term = ?= json_walked [ t ] [] ?| [ y ] => y | _ => t
 
 ///> gleam
 :# apply_calls_an_erlang_function =
@@ -125,7 +193,7 @@
 ///> gleam
 :# a_tuple_holds_its_items_in_order =
     := t = tuple [ atom "ok"; of 7i32 ]
-    (apply "erlang" "tuple_size" [ t ] |> cast, apply "erlang" "element" [ of 2i32; t ] |> cast)
+    (apply "erlang" "tuple_size" [ t ] |> cast, element_at 2i32 t |> cast)
     |> _assert_eq (2i32, 7i32)
 
 ///> gleam
@@ -173,4 +241,45 @@
 
 ///> gleam
 :# a_charlist_round_trips =
-    charlist "ebin" |> \ c => apply "unicode" "characters_to_binary" [ c ] |> cast |> _assert_eq "ebin"
+    charlist "ebin" |> \ c => charlist_text c |> _assert_eq "ebin"
+
+///> gleam
+:# a_pair_is_an_atom_keyed_two_tuple =
+    (equal (pair "k" (of 1i32)) (tuple [ atom "k"; of 1i32 ]), is_atom "k" (atom "k"), is_atom "k" (of "k")) |> _assert_eq (!+, !+, !-)
+
+///> gleam
+:# a_field_falls_back_when_the_key_is_missing =
+    := m = apply "maps" "from_list" [ list_term [ pair "a" (of 1i32) ] ]
+    (equal (field_or "a" m (atom "nil")) (of 1i32), is_atom "nil" (field_or "b" m (atom "nil"))) |> _assert_eq (!+, !+)
+
+///> gleam
+:# a_tag_is_the_first_element_of_a_tuple =
+    (has_tag "ok" (tuple [ atom "ok"; of 2i32 ]), has_tag "ok" (of 2i32), binary_text (of "x")) |> _assert_eq (!+, !-, "x")
+
+///> gleam
+:# a_lone_bad_byte_becomes_one_fffd =
+    := oem = apply "erlang" "list_to_binary" [ list_term [ of 97i32; of 129i32; of 98i32 ] ]
+    (binary_text (utf8_repaired oem), binary_text (utf8_repaired (of "ação"))) |> _assert_eq ("a�b", "ação")
+
+///> gleam
+:# cut_and_truncated_sequences_follow_replace_invalid =
+    := cut = apply "binary" "part" [ of "€"; of 1i32; of 2i32 ]
+    := tail = apply "binary" "part" [ of "a€"; of 0i32; of 3i32 ]
+    (binary_text (utf8_repaired cut), binary_text (utf8_repaired tail)) |> _assert_eq ("��", "a�")
+
+///> gleam
+:# json_safe_repairs_text_nested_in_maps_and_lists =
+    := bad = apply "erlang" "list_to_binary" [ list_term [ of 129i32 ] ]
+    := m = apply "maps" "from_list" [ list_term [ pair "msg" (list_term [ bad ]); pair "n" (of 3i32) ] ]
+    json_encoded (json_safe m) |> _assert_eq "{\"msg\":[\"�\"],\"n\":3}"
+
+///> gleam
+:# json_safe_keeps_structs_and_scalars =
+    := bad = apply "erlang" "list_to_binary" [ list_term [ of 129i32 ] ]
+    := s = apply "maps" "from_list" [ list_term [ pair "__struct__" (atom "Kept"); pair "x" bad ] ]
+    (equal (json_safe s) s, equal (json_safe (atom "ok")) (atom "ok")) |> _assert_eq (!+, !+)
+
+///> gleam
+:# a_nil_field_and_a_map_from_pairs =
+    := m = map_of [ pair "a" (of 1i32) ]
+    (equal (field_or_nil "a" m) (of 1i32), is_atom "nil" (field_or_nil "b" m), count_of (apply "maps" "keys" [ map_of [] ])) |> _assert_eq (!+, !+, 0i32)

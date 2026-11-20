@@ -1,8 +1,10 @@
 ///- --package .
 :# builder_output static =
     :< testing
+    :< json_tree
     :< json_value
 
+:< json_tree
 :< json_value
 
 :~ space3 (b1 : i32) (b2 : i32) : bool =

@@ -1,0 +1,35 @@
+///- --package .
+:< erlang_term
+
+:# result_shape static =
+    :< testing
+
+:~ empty_list () : term = list_term []
+
+:~ text_defaults () : list term = [ pair "stdout" (of ""); pair "source" (of ""); pair "log" (of "") ]
+
+:~ list_defaults () : list term = [ pair "html" (empty_list ()); pair "displays" (empty_list ()); pair "outputs" (empty_list ()); pair "unavailable" (empty_list ()) ]
+
+:~ nil_defaults () : list term = [ pair "value" (atom "nil"); pair "exit_status" (atom "nil"); pair "duration_ms" (atom "nil") ]
+
+:~ phase_defaults () : list term = [ pair "phases" (apply "maps" "new" []) ]
+
+:~ default_pairs () : list term = listm::append (listm::append (text_defaults ()) (list_defaults ())) (listm::append (nil_defaults ()) (phase_defaults ()))
+
+:~ defaults () : term = apply "maps" "from_list" [ list_term (default_pairs ()) ]
+
+:~ result_new (fields : term) : term = apply "maps" "merge" [ defaults (); fields ]
+
+:~ key_count (m : term) : i32 = apply "erlang" "map_size" [ m ] |> cast
+
+:~ given_log () : term = apply "maps" "from_list" [ list_term [ pair "log" (of "x") ] ]
+
+///> gleam
+:# a_new_result_has_the_eleven_struct_defaults =
+    := r = result_new (apply "maps" "new" [])
+    (key_count r, equal (field_or "stdout" r (atom "none")) (of ""), is_atom "nil" (field_or "value" r (atom "none"))) |> _assert_eq (11i32, !+, !+)
+
+///> gleam
+:# given_fields_override_the_defaults =
+    := r = result_new (given_log ())
+    (key_count r, equal (field_or "log" r (atom "none")) (of "x")) |> _assert_eq (11i32, !+)

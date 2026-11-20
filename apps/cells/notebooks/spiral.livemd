@@ -65,7 +65,7 @@ Spiral.Cells.eval!(
 
 ## Programmatic use
 
-`Spiral.Cells.run/2` returns a `Spiral.Cells.Result`:
+`Spiral.Cells.run/2` returns a result map (value, stdout, html, displays, outputs, source, exit_status, duration_ms, phases, log, unavailable):
 
 ```elixir
 {:ok, result} = Spiral.Cells.run("1i32 + 2i32", timeout: 120_000)

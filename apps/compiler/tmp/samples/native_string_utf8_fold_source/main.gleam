@@ -35,7 +35,17 @@ fn spiral_string_starts_character(bytes: BitArray, at: Int) -> Bool {
 
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
-  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  case value >= 0 - half && value < half {
+    True -> value
+    False -> int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+  }
+}
+
+pub fn spiral_wrap_i32(value: Int) -> Int {
+  case value >= -2147483648 && value <= 2147483647 {
+    True -> value
+    False -> spiral_wrap_signed(value, 32)
+  }
 }
 
 
@@ -65,7 +75,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                     let v12 = v8 < 224
                                     case v12 {
                                         True -> {
-                                            let v13 = spiral_wrap_signed(v1 + 1, 32)
+                                            let v13 = spiral_wrap_i32(v1 + 1)
                                             let v14 = v13 >= v2
                                             case v14 {
                                                 True -> panic as "UTF-8 sequence is truncated."
@@ -82,10 +92,10 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                         }
                                                     case v20 {
                                                         True -> {
-                                                            let v21 = spiral_wrap_signed(v8 - 192, 32)
-                                                            let v22 = spiral_wrap_signed(v21 * 64, 32)
-                                                            let v23 = spiral_wrap_signed(v17 - 128, 32)
-                                                            spiral_wrap_signed(v22 + v23, 32)
+                                                            let v21 = spiral_wrap_i32(v8 - 192)
+                                                            let v22 = spiral_wrap_i32(v21 * 64)
+                                                            let v23 = spiral_wrap_i32(v17 - 128)
+                                                            spiral_wrap_i32(v22 + v23)
                                                         }
                                                         False -> panic as "UTF-8 sequence has an invalid continuation byte."
                                                     }
@@ -96,12 +106,12 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                             let v28 = v8 < 240
                                             case v28 {
                                                 True -> {
-                                                    let v29 = spiral_wrap_signed(v1 + 2, 32)
+                                                    let v29 = spiral_wrap_i32(v1 + 2)
                                                     let v30 = v29 >= v2
                                                     case v30 {
                                                         True -> panic as "UTF-8 sequence is truncated."
                                                         False -> {
-                                                            let v32 = spiral_wrap_signed(v1 + 1, 32)
+                                                            let v32 = spiral_wrap_i32(v1 + 1)
                                                             let v33 = runtime_byte_2(v0, v32)
                                                             let v34 = case string.to_utf_codepoints(v33) { [spiral_byte_codepoint] -> string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }
                                                             let v35 = runtime_byte_2(v0, v29)
@@ -126,13 +136,13 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                         }
                                                                     case v42 {
                                                                         True -> {
-                                                                            let v43 = spiral_wrap_signed(v8 - 224, 32)
-                                                                            let v44 = spiral_wrap_signed(v43 * 4096, 32)
-                                                                            let v45 = spiral_wrap_signed(v34 - 128, 32)
-                                                                            let v46 = spiral_wrap_signed(v45 * 64, 32)
-                                                                            let v47 = spiral_wrap_signed(v44 + v46, 32)
-                                                                            let v48 = spiral_wrap_signed(v36 - 128, 32)
-                                                                            let v49 = spiral_wrap_signed(v47 + v48, 32)
+                                                                            let v43 = spiral_wrap_i32(v8 - 224)
+                                                                            let v44 = spiral_wrap_i32(v43 * 4096)
+                                                                            let v45 = spiral_wrap_i32(v34 - 128)
+                                                                            let v46 = spiral_wrap_i32(v45 * 64)
+                                                                            let v47 = spiral_wrap_i32(v44 + v46)
+                                                                            let v48 = spiral_wrap_i32(v36 - 128)
+                                                                            let v49 = spiral_wrap_i32(v47 + v48)
                                                                             let v50 = v49 < 2048
                                                                             case v50 {
                                                                                 True -> panic as "UTF-8 sequence is overlong."
@@ -163,15 +173,15 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                     let v63 = v8 < 245
                                                     case v63 {
                                                         True -> {
-                                                            let v64 = spiral_wrap_signed(v1 + 3, 32)
+                                                            let v64 = spiral_wrap_i32(v1 + 3)
                                                             let v65 = v64 >= v2
                                                             case v65 {
                                                                 True -> panic as "UTF-8 sequence is truncated."
                                                                 False -> {
-                                                                    let v67 = spiral_wrap_signed(v1 + 1, 32)
+                                                                    let v67 = spiral_wrap_i32(v1 + 1)
                                                                     let v68 = runtime_byte_2(v0, v67)
                                                                     let v69 = case string.to_utf_codepoints(v68) { [spiral_byte_codepoint] -> string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }
-                                                                    let v70 = spiral_wrap_signed(v1 + 2, 32)
+                                                                    let v70 = spiral_wrap_i32(v1 + 2)
                                                                     let v71 = runtime_byte_2(v0, v70)
                                                                     let v72 = case string.to_utf_codepoints(v71) { [spiral_byte_codepoint] -> string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }
                                                                     let v73 = runtime_byte_2(v0, v64)
@@ -206,16 +216,16 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                                         }
                                                                                     case v83 {
                                                                                         True -> {
-                                                                                            let v84 = spiral_wrap_signed(v8 - 240, 32)
-                                                                                            let v85 = spiral_wrap_signed(v84 * 262144, 32)
-                                                                                            let v86 = spiral_wrap_signed(v69 - 128, 32)
-                                                                                            let v87 = spiral_wrap_signed(v86 * 4096, 32)
-                                                                                            let v88 = spiral_wrap_signed(v85 + v87, 32)
-                                                                                            let v89 = spiral_wrap_signed(v72 - 128, 32)
-                                                                                            let v90 = spiral_wrap_signed(v89 * 64, 32)
-                                                                                            let v91 = spiral_wrap_signed(v88 + v90, 32)
-                                                                                            let v92 = spiral_wrap_signed(v74 - 128, 32)
-                                                                                            let v93 = spiral_wrap_signed(v91 + v92, 32)
+                                                                                            let v84 = spiral_wrap_i32(v8 - 240)
+                                                                                            let v85 = spiral_wrap_i32(v84 * 262144)
+                                                                                            let v86 = spiral_wrap_i32(v69 - 128)
+                                                                                            let v87 = spiral_wrap_i32(v86 * 4096)
+                                                                                            let v88 = spiral_wrap_i32(v85 + v87)
+                                                                                            let v89 = spiral_wrap_i32(v72 - 128)
+                                                                                            let v90 = spiral_wrap_i32(v89 * 64)
+                                                                                            let v91 = spiral_wrap_i32(v88 + v90)
+                                                                                            let v92 = spiral_wrap_i32(v74 - 128)
+                                                                                            let v93 = spiral_wrap_i32(v91 + v92)
                                                                                             let v94 = v93 < 65536
                                                                                             case v94 {
                                                                                                 True -> panic as "UTF-8 sequence is overlong."
@@ -282,11 +292,11 @@ pub fn loop_0(v0: Int, v1: Int, v2: Int) -> #(Int, Int) {
                                 }
                             }
                         }
-                    let v15 = spiral_wrap_signed(v0 + v14, 32)
-                    let v16 = spiral_wrap_signed(v1 + 1, 32)
-                    let v17 = spiral_wrap_signed(v2 * 3, 32)
+                    let v15 = spiral_wrap_i32(v0 + v14)
+                    let v16 = spiral_wrap_i32(v1 + 1)
+                    let v17 = spiral_wrap_i32(v2 * 3)
                     let v18 = v8 % 17
-                    let v19 = spiral_wrap_signed(v17 + v18, 32)
+                    let v19 = spiral_wrap_i32(v17 + v18)
                     loop_0(v15, v16, v19)
                 }
             }
@@ -321,11 +331,11 @@ pub fn loop_3(v0: Int, v1: Int, v2: Int) -> #(Int, Int) {
                                 }
                             }
                         }
-                    let v15 = spiral_wrap_signed(v0 + v14, 32)
-                    let v16 = spiral_wrap_signed(v1 + 1, 32)
-                    let v17 = spiral_wrap_signed(v2 * 3, 32)
+                    let v15 = spiral_wrap_i32(v0 + v14)
+                    let v16 = spiral_wrap_i32(v1 + 1)
+                    let v17 = spiral_wrap_i32(v2 * 3)
                     let v18 = v8 % 17
-                    let v19 = spiral_wrap_signed(v17 + v18, 32)
+                    let v19 = spiral_wrap_i32(v17 + v18)
                     loop_3(v15, v16, v19)
                 }
             }

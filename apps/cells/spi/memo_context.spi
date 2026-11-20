@@ -1,0 +1,161 @@
+///- --package .
+:< erlang_term
+:# memo_context static =
+    :< testing
+
+:~ a (name : string) : term = erlang_term::atom name
+
+:~ s (text : string) : term = erlang_term::of text
+
+:~ ap (m : string) (f : string) (args : list term) : term = erlang_term::apply m f args
+
+:~ kv (key : string) (value : term) : term = tuple [ a key; value ]
+
+:~ atoms (names : list string) : term = list_term (listm::map a names)
+
+:~ falsy (t : term) : bool = is_atom "nil" t || is_atom "false" t
+
+:~ text_or_blank (t : term) : string = ? falsy t ?> "" |: erlang_term::cast t
+
+:~ opt (opts : term) (key : string) : term = ap "proplists" "get_value" [ a key; opts; a "nil" ]
+
+:~ toolchain (f : string) (opts : term) : term = ? f = "lean" ?> tool_lookup::tool_lean opts |: tool_lookup::tool f opts
+
+:~ tool_text (f : string) (opts : term) : string = text_or_blank (toolchain f opts)
+
+:~ default_text (f : string) : string = tool_text f (list_term [])
+
+:~ field_or (key : string) (m : term) (fallback : term) : term = ap "maps" "get" [ a key; m; fallback ]
+
+:~ tool_opts () : list string =
+    [ "print_code"; "plot"; "render_plot"; "spiral"; "python"; "lua"; "pwsh"; "cc"; "dcc"; "rustc_bin"; "patches" ]
+
+:~ stub_opts () : list string = [ "compile"; "rustc"; "execute"; "target"; "host"; "build_receipt" ]
+
+:~ resolved_tools () : list string =
+    [ "rustc"; "cc"; "dcc"; "fpc"; "zig"; "gleam"; "erl"; "bun"; "python"; "lua"; "wgsl_run"; "naga"; "pwsh"; "dotnet"; "spiral"; "plot" ]
+
+:~ cells_parts () : list string =
+    [ "Domain"; "Mounts"; "Notebook"; "Result"; "Runner"; "Targets" ]
+
+:~ result_path_names () : list string =
+    := named = listm::map (\ (p : string) => "Elixir.Spiral.Cells." ^^ p) (cells_parts ())
+    "Elixir.Spiral.Cells" :: listm::append named [ "spiral_cells@domain" ]
+
+:~ result_path_modules () : term = atoms (result_path_names ())
+
+:~ stamp (path : string) : term = memo::tool_stamp path
+
+:~ any_stub (opts : term) : bool = listm::fold (\ (seen : bool) (k : string) => seen || not (is_atom "nil" (opt opts k))) !- (stub_opts ())
+
+:~ env_on () : bool =
+    := got = ap "os" "getenv" [ erlang_term::charlist "SPIRAL_CELLS_MEMO"; erlang_term::charlist "" ]
+    not (erlang_term::equal got (erlang_term::charlist "0"))
+
+:~ enabled (opts : term) : bool =
+    := m = opt opts "memo"
+    memo::memo_enabled (is_atom "true" m) (is_atom "false" m) (env_on ()) (any_stub opts)
+
+:~ memo_dir (opts : term) : string = memo_store::memo_dir (text_or_blank (opt opts "memo_dir"))
+
+:~ core_dir (opts : term) : string = erlang_term::cast (ap "filename" "join" [ toolchain "package_dir" opts; s "core" ])
+
+:~ lean_print (opts : term) : term =
+    := lean = toolchain "lean" opts
+    tuple [ a "lean"; stamp (text_or_blank (erlang_term::element_at 1i32 lean)); erlang_term::element_at 2i32 lean ]
+
+:~ named_tool (key : term) : bool = listm::fold (\ (seen : bool) (k : string) => seen || is_atom k key) !- (tool_opts ())
+
+:~ tool_key (item : term) : bool = erlang_term::is_tuple item && named_tool (erlang_term::element_at 1i32 item)
+
+:~ tool_identity (opts : term) : term =
+    := taken = list_term (listm'::filter tool_key (items_of opts))
+    := tools = list_term (listm::map (\ (t : string) => tuple [ a t; stamp (tool_text t opts) ]) (resolved_tools ()))
+    tuple [ taken; lean_print opts; tools ]
+
+:~ programs (steps : list term) : term = list_term (listm::map (\ (st : term) => field_or "program" st (s "")) steps)
+
+:~ bounded (steps : list term) : term =
+    listm'::filter (\ (st : term) => not (is_atom "true" (field_or "whole_source_key" st (a "false")))) steps |> programs
+
+:~ bound_tools (opts : term) : term =
+    := chosen = [ s (tool_text "dotnet" opts); s (tool_text "compiler_dll" opts) ]
+    tuple (listm::append chosen [ s (default_text "dotnet"); s (default_text "compiler_dll") ])
+
+:~ source_bounds (opts : term) (steps : list term) (binaries : term) : term =
+    := core = core_dir opts
+    memo_bounds::source_bounds (bounded steps) (programs steps) core binaries (memo_dir opts) (bound_tools opts)
+
+:~ kino () : term = memo::kino_identity (result_path_modules ())
+
+:~ tree_of (opts : term) (bounds : term) : term =
+    mount_text::tree_print (core_dir opts) bounds (default_text "dotnet") (default_text "compiler_dll")
+
+:~ base_of (opts : term) (binaries : term) (bounds : term) : term =
+    := compiler = tuple [ binaries; tree_of opts bounds ]
+    map_of [ kv "format" (erlang_term::of 1i32); kv "compiler" compiler; kv "kino" (kino ()); kv "tools" (tool_identity opts) ]
+
+:~ packages_of (steps : list term) (bounds : term) : term =
+    package_reach::package_indexes (programs steps) bounds (default_text "dotnet") (default_text "compiler_dll")
+
+:~ dir_kv (opts : term) : term = kv "dir" (s (memo_dir opts))
+
+:~ context_parts (opts : term) (steps : list term) (binaries : term) : list term =
+    := bounds = source_bounds opts steps binaries
+    [ dir_kv opts; kv "base" (base_of opts binaries bounds); kv "packages" (packages_of steps bounds); kv "bounds" bounds ]
+
+:~ context_on (opts : term) (steps : list term) : term =
+    map_of (context_parts opts steps (memo::compiler_binaries_print (tool_text "compiler_dll" opts)))
+
+:~ context (opts : term) (steps : term) : term = ? enabled opts ?> context_on opts (erlang_term::items_of steps) |: a "nil"
+
+:~ whole_keys (ctx : term) : bool = erlang_term::is_map ctx && is_atom "unavailable" (field_or "bounds" ctx (a "nil"))
+
+:~ second (t : term) : term = erlang_term::element_at 2i32 t
+
+:~ kept (result : term) : bool = has_tag "ok" result && erlang_term::is_map (second result)
+
+:~ ran (run : term) : term = ap "erlang" "apply" [ run; list_term [] ]
+
+:~ stored_then (dir : string) (key : string) (result : term) : term =
+    := _s = ? kept result ?> memo_store::store dir key (tuple [ a "code_result"; result ]) |: a "ok"
+    tuple [ result; a "miss" ]
+
+:~ hit_of (found : term) : term = ? has_tag "ok" found ?> second found |: a "nil"
+
+:~ recalled (dir : string) (key : string) (run : term) : term =
+    := inner = hit_of (memo_store::fetch dir key)
+    ? has_tag "code_result" inner ?> tuple [ second inner; a "hit" ] |: stored_then dir key (ran run)
+
+:~ code_key (opts : term) (code_parts : term) : string =
+    := kino = memo::kino_identity (result_path_modules ())
+    memo_key::hex_hash (tuple [ erlang_term::of 1i32; kino; tool_identity opts; code_parts ])
+
+:~ code_result (opts : term) (code_parts : term) (run : term) : term =
+    ? enabled opts ?> recalled (memo_dir opts) (code_key opts code_parts) run |: tuple [ ran run; a "off" ]
+
+///> gleam
+:# whole_source_keys_only_when_bounds_are_unavailable =
+    := bounds_map = \ (v : term) => map_of [ kv "bounds" v ]
+    (whole_keys (bounds_map (list_term [])), whole_keys (bounds_map (a "unavailable")), whole_keys (a "nil")) |> _assert_eq (!-, !+, !-)
+
+///> gleam
+:# only_an_ok_result_with_a_map_is_kept =
+    (kept (tuple [ a "ok"; map_of [] ]), kept (tuple [ a "error"; a "boom" ]), kept (tuple [ a "ok"; s "x" ])) |> _assert_eq (!+, !-, !-)
+
+///> gleam
+:# falsy_options_read_as_blank =
+    (text_or_blank (a "nil"), text_or_blank (a "false"), text_or_blank (s "dll")) |> _assert_eq ("", "", "dll")
+
+///> gleam
+:# options_switch_memo_on_and_stubbed_runs_turn_it_off =
+    := m = kv "memo" (a "true")
+    (any_stub (list_term [ m ]), any_stub (list_term [ m; kv "execute" (s "x") ]), is_atom "true" (opt (list_term [ m ]) "memo")) |> _assert_eq (!-, !+, !+)
+
+///> gleam
+:# the_result_path_modules_are_eight =
+    (listm::length (result_path_names ()) : i32) |> _assert_eq 8i32
+
+///> gleam
+:# the_smart_cell_editor_is_not_a_result_path_module =
+    listm'::filter (\ (n : string) => n = "Elixir.Spiral.Cells.SmartCell") (result_path_names ()) |> _assert_eq []
